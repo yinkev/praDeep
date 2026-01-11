@@ -43,6 +43,7 @@ logger = get_logger("KnowledgeInit")
 # Import numbered items extraction functionality
 from src.knowledge.extract_numbered_items import process_content_list
 from src.knowledge.progress_tracker import ProgressStage, ProgressTracker
+from src.knowledge.document_tracker import DocumentTracker, DocumentStatus
 
 
 class KnowledgeBaseInitializer:
@@ -70,6 +71,16 @@ class KnowledgeBaseInitializer:
         self.base_url = base_url
         self.embedding_cfg = get_embedding_config()
         self.progress_tracker = progress_tracker or ProgressTracker(kb_name, self.base_dir)
+
+        # Document tracker will be initialized after directory structure is created
+        self._document_tracker = None
+
+    @property
+    def document_tracker(self) -> DocumentTracker:
+        """Lazy initialize document tracker after KB directory exists"""
+        if self._document_tracker is None and self.kb_dir.exists():
+            self._document_tracker = DocumentTracker(self.kb_dir)
+        return self._document_tracker
 
     def _register_to_config(self):
         """Register KB to kb_config.json."""
@@ -340,6 +351,13 @@ class KnowledgeBaseInitializer:
                 file_name=doc_file.name,
             )
 
+            # Track document as processing
+            if self.document_tracker:
+                self.document_tracker.track_document(
+                    doc_file,
+                    status=DocumentStatus.PROCESSING,
+                )
+
             try:
                 # Use RAGAnything's process_document_complete method
                 # This method handles document parsing, content extraction, and insertion
@@ -354,6 +372,14 @@ class KnowledgeBaseInitializer:
                 )
                 logger.info(f"  ✓ Successfully processed: {doc_file.name}")
 
+                # Track document with hash after successful processing
+                if self.document_tracker:
+                    self.document_tracker.track_document(
+                        doc_file,
+                        status=DocumentStatus.INDEXED,
+                    )
+                    logger.info(f"  ✓ Document hash tracked: {doc_file.name}")
+
                 # Content list should be automatically saved in output_dir
                 doc_name = doc_file.stem
                 content_list_file = self.content_list_dir / f"{doc_name}.json"
@@ -364,6 +390,15 @@ class KnowledgeBaseInitializer:
                 error_msg = "Processing timeout (>10 minutes)"
                 logger.error(f"  ✗ Timeout processing {doc_file.name}")
                 logger.error("  Possible causes: Large PDF, slow embedding API, network issues")
+
+                # Track error status
+                if self.document_tracker:
+                    self.document_tracker.track_document(
+                        doc_file,
+                        status=DocumentStatus.ERROR,
+                        error_message=error_msg,
+                    )
+
                 self.progress_tracker.update(
                     ProgressStage.ERROR,
                     f"Timeout processing: {doc_file.name}",
@@ -378,6 +413,15 @@ class KnowledgeBaseInitializer:
                 import traceback
 
                 logger.error(traceback.format_exc())
+
+                # Track error status
+                if self.document_tracker:
+                    self.document_tracker.track_document(
+                        doc_file,
+                        status=DocumentStatus.ERROR,
+                        error_message=error_msg,
+                    )
+
                 self.progress_tracker.update(
                     ProgressStage.ERROR,
                     f"Failed to process file: {doc_file.name}",

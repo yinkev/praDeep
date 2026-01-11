@@ -15,6 +15,7 @@ _project_root = Path(__file__).parent.parent.parent.parent
 sys.path.insert(0, str(_project_root))
 
 from src.agents.chat import ChatAgent, SessionManager
+from src.api.utils.user_memory import get_user_memory_manager
 from src.logging import get_logger
 from src.services.config import load_config_with_main
 
@@ -26,8 +27,9 @@ logger = get_logger("ChatAPI", level="INFO", log_dir=log_dir)
 
 router = APIRouter()
 
-# Initialize session manager
+# Initialize session manager and memory manager
 session_manager = SessionManager()
+memory_manager = get_user_memory_manager()
 
 
 # =============================================================================
@@ -264,6 +266,15 @@ async def websocket_chat(websocket: WebSocket):
                 )
 
                 logger.info(f"Chat completed: session={session_id}, {len(full_response)} chars")
+
+                # Record interaction in memory system
+                try:
+                    memory_manager.record_interaction(module="chat", topic=kb_name if kb_name else None)
+                    memory_manager.record_question(question=message, answer=full_response[:500])
+                    if kb_name:
+                        memory_manager.record_topic(topic=kb_name, category="knowledge_base")
+                except Exception as mem_error:
+                    logger.warning(f"Failed to record memory: {mem_error}")
 
             except Exception as e:
                 logger.error(f"Chat processing error: {e}")

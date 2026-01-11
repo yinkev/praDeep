@@ -20,6 +20,9 @@ import {
   Globe,
   ChevronsLeft,
   ChevronsRight,
+  Brain,
+  BarChart3,
+  Activity,
 } from 'lucide-react'
 import { useGlobal } from '@/context/GlobalContext'
 import { getTranslation } from '@/lib/i18n'
@@ -42,6 +45,9 @@ export default function Sidebar() {
       items: [
         { name: t('Home'), href: '/', icon: Home },
         { name: t('History'), href: '/history', icon: History },
+        { name: t('Analytics'), href: '/analytics', icon: BarChart3 },
+        { name: t('Metrics'), href: '/metrics', icon: Activity },
+        { name: t('Memory'), href: '/memory', icon: Brain },
         { name: t('Knowledge Bases'), href: '/knowledge', icon: BookOpen },
         { name: t('Notebooks'), href: '/notebook', icon: Book },
       ],

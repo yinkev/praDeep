@@ -20,10 +20,11 @@ import ReactMarkdown from 'react-markdown'
 import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
 import 'katex/dist/katex.min.css'
-import { useGlobal } from '@/context/GlobalContext'
+import { useGlobal, type MediaItem } from '@/context/GlobalContext'
 import { API_BASE_URL, apiUrl } from '@/lib/api'
 import { processLatexContent } from '@/lib/latex'
 import AddToNotebookModal from '@/components/AddToNotebookModal'
+import MediaUpload from '@/components/ui/MediaUpload'
 
 const resolveArtifactUrl = (url?: string | null, outputDir?: string) => {
   if (!url) return ''
@@ -56,6 +57,7 @@ export default function SolverPage() {
 
   // Local state for input
   const [inputQuestion, setInputQuestion] = useState('')
+  const [inputMedia, setInputMedia] = useState<MediaItem[]>([])
   const [kbs, setKbs] = useState<string[]>([])
   const logContainerRef = useRef<HTMLDivElement>(null)
   const chatEndRef = useRef<HTMLDivElement>(null)
@@ -150,9 +152,14 @@ export default function SolverPage() {
   }, [solverState.messages, solverState.isSolving])
 
   const handleStart = () => {
-    if (!inputQuestion.trim()) return
-    startSolver(inputQuestion, solverState.selectedKb)
+    if (!inputQuestion.trim() && inputMedia.length === 0) return
+    startSolver(
+      inputQuestion,
+      solverState.selectedKb,
+      inputMedia.length > 0 ? inputMedia : undefined
+    )
     setInputQuestion('')
+    setInputMedia([])
   }
 
   return (
@@ -230,6 +237,31 @@ export default function SolverPage() {
                     <User className="w-5 h-5 text-slate-500 dark:text-slate-400" />
                   </div>
                   <div className="flex-1 bg-slate-100 dark:bg-slate-700 px-5 py-3.5 rounded-2xl rounded-tl-none text-slate-800 dark:text-slate-200 leading-relaxed shadow-sm overflow-hidden min-w-0 break-words">
+                    {/* Display uploaded media */}
+                    {msg.media && msg.media.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        {msg.media.map((item, mediaIdx) => (
+                          <div
+                            key={mediaIdx}
+                            className="relative w-24 h-24 rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-600 border border-slate-300 dark:border-slate-500"
+                          >
+                            {item.type === 'image' ? (
+                              <img
+                                src={`data:${item.mimeType};base64,${item.data}`}
+                                alt={item.name || `Uploaded image ${mediaIdx + 1}`}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <span className="text-xs text-slate-500 dark:text-slate-400">
+                                  Video
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                     <div className="prose prose-slate dark:prose-invert max-w-none prose-headings:font-bold prose-p:leading-relaxed prose-pre:bg-slate-900 prose-pre:shadow-inner prose-pre:overflow-x-auto prose-code:break-words prose-a:break-all">
                       <ReactMarkdown
                         remarkPlugins={[remarkMath]}
@@ -465,20 +497,35 @@ export default function SolverPage() {
 
         {/* Input Area */}
         <div className="p-4 bg-white dark:bg-slate-800 border-t border-slate-100 dark:border-slate-700 shrink-0">
+          {/* Media Upload Area */}
+          <div className="mb-2">
+            <MediaUpload
+              media={inputMedia}
+              onMediaChange={setInputMedia}
+              disabled={solverState.isSolving}
+              maxFiles={5}
+            />
+          </div>
           <div className="w-full relative">
             <input
               type="text"
               className="w-full px-5 py-4 pr-32 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500 text-slate-700 dark:text-slate-200 shadow-inner"
-              placeholder="Ask a difficult question..."
+              placeholder={
+                inputMedia.length > 0
+                  ? 'Describe your question about the image(s)...'
+                  : 'Ask a difficult question...'
+              }
               value={inputQuestion}
               onChange={e => setInputQuestion(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleStart()}
+              onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleStart()}
               disabled={solverState.isSolving}
             />
             <div className="absolute right-2 top-2 bottom-2 flex items-center gap-2">
               <button
                 onClick={handleStart}
-                disabled={solverState.isSolving || !inputQuestion.trim()}
+                disabled={
+                  solverState.isSolving || (!inputQuestion.trim() && inputMedia.length === 0)
+                }
                 className="h-full aspect-square bg-blue-600 text-white rounded-lg flex items-center justify-center hover:bg-blue-700 disabled:opacity-50 disabled:hover:bg-blue-600 transition-all shadow-md shadow-blue-500/20"
               >
                 {solverState.isSolving ? (

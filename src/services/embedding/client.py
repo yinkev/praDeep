@@ -4,8 +4,10 @@ Embedding Client
 
 Unified embedding client for all praDeep services.
 Now supports multiple providers through adapters.
+Includes intelligent caching to reduce redundant embedding computations.
 """
 
+import os
 from typing import List, Optional
 
 from src.logging import get_logger
@@ -21,18 +23,35 @@ class EmbeddingClient:
 
     Delegates to provider-specific adapters based on configuration.
     Supports: OpenAI, Azure OpenAI, Cohere, Ollama, Jina, HuggingFace, Google.
+    Includes caching layer to reduce redundant API calls.
     """
 
-    def __init__(self, config: Optional[EmbeddingConfig] = None):
+    def __init__(
+        self, config: Optional[EmbeddingConfig] = None, enable_cache: Optional[bool] = None
+    ):
         """
         Initialize embedding client.
 
         Args:
             config: Embedding configuration. If None, loads from environment.
+            enable_cache: Enable embedding caching. Defaults to CACHE_ENABLED env var.
         """
         self.config = config or get_embedding_config()
         self.logger = get_logger("EmbeddingClient")
         self.manager: EmbeddingProviderManager = get_embedding_provider_manager()
+
+        # Initialize cache
+        if enable_cache is None:
+            enable_cache = os.getenv("CACHE_ENABLED", "true").lower() == "true"
+        self._cache_enabled = enable_cache
+        self._cache = None
+        if enable_cache:
+            try:
+                from src.services.cache import get_cache_client
+
+                self._cache = get_cache_client()
+            except Exception as e:
+                self.logger.warning(f"Failed to initialize cache: {e}")
 
         # Initialize adapter based on binding configuration
         try:
@@ -56,36 +75,69 @@ class EmbeddingClient:
             self.logger.error(f"Failed to initialize embedding adapter: {e}")
             raise
 
-    async def embed(self, texts: List[str]) -> List[List[float]]:
+    async def embed(self, texts: List[str], skip_cache: bool = False) -> List[List[float]]:
         """
         Get embeddings for texts using the configured adapter.
 
+        Uses caching to avoid redundant embedding computations.
+        Embeddings are cached with a 30-day TTL by default.
+
         Args:
             texts: List of texts to embed
+            skip_cache: Skip cache lookup (force fresh embeddings)
 
         Returns:
             List of embedding vectors
         """
-        adapter = self.manager.get_active_adapter()
+        if not texts:
+            return []
 
-        request = EmbeddingRequest(
-            texts=texts,
-            model=self.config.model,
-            dimensions=self.config.dim,
-            input_type=self.config.input_type,  # Pass input_type for task-aware embeddings
-        )
+        # Check cache for existing embeddings
+        cached_embeddings = [None] * len(texts)
+        uncached_indices = list(range(len(texts)))
 
-        try:
-            response = await adapter.embed(request)
+        if self._cache_enabled and self._cache and not skip_cache:
+            cached_embeddings, uncached_indices = await self._cache.get_embeddings(texts)
 
-            self.logger.debug(
-                f"Generated {len(response.embeddings)} embeddings using {self.config.binding}"
+            if not uncached_indices:
+                # All embeddings found in cache
+                self.logger.debug(f"All {len(texts)} embeddings from cache")
+                return cached_embeddings
+
+        # Get embeddings for uncached texts
+        if uncached_indices:
+            uncached_texts = [texts[i] for i in uncached_indices]
+            adapter = self.manager.get_active_adapter()
+
+            request = EmbeddingRequest(
+                texts=uncached_texts,
+                model=self.config.model,
+                dimensions=self.config.dim,
+                input_type=self.config.input_type,
             )
 
-            return response.embeddings
-        except Exception as e:
-            self.logger.error(f"Embedding request failed: {e}")
-            raise
+            try:
+                response = await adapter.embed(request)
+                new_embeddings = response.embeddings
+
+                self.logger.debug(
+                    f"Generated {len(new_embeddings)} embeddings using {self.config.binding} "
+                    f"({len(texts) - len(uncached_indices)} from cache)"
+                )
+
+                # Cache the new embeddings
+                if self._cache_enabled and self._cache:
+                    await self._cache.set_embeddings(uncached_texts, new_embeddings)
+
+                # Merge cached and new embeddings
+                for idx, embedding in zip(uncached_indices, new_embeddings):
+                    cached_embeddings[idx] = embedding
+
+            except Exception as e:
+                self.logger.error(f"Embedding request failed: {e}")
+                raise
+
+        return cached_embeddings
 
     def embed_sync(self, texts: List[str]) -> List[List[float]]:
         """

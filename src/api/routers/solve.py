@@ -17,6 +17,7 @@ from src.agents.solve import MainSolver
 from src.api.utils.history import ActivityType, history_manager
 from src.api.utils.log_interceptor import LogInterceptor
 from src.api.utils.task_id_manager import TaskIDManager
+from src.api.utils.user_memory import get_user_memory_manager
 
 _project_root = Path(__file__).parent.parent.parent.parent
 sys.path.insert(0, str(_project_root))
@@ -43,9 +44,10 @@ async def websocket_solve(websocket: WebSocket):
         data = await websocket.receive_json()
         question = data.get("question")
         kb_name = data.get("kb_name", "ai_textbook")
+        media = data.get("media", [])  # List of media items (images/videos)
 
-        if not question:
-            await websocket.send_json({"type": "error", "content": "Question is required"})
+        if not question and not media:
+            await websocket.send_json({"type": "error", "content": "Question or media is required"})
             return
 
         task_key = f"solve_{kb_name}_{hash(str(question))}"
@@ -186,7 +188,7 @@ async def websocket_solve(websocket: WebSocket):
 
                 logger.progress(f"[{task_id}] Solving started")
 
-                result = await solver.solve(question, verbose=True)
+                result = await solver.solve(question, verbose=True, media=media)
 
                 logger.success(f"[{task_id}] Solving completed")
                 task_manager.update_task_status(task_id, "completed")
@@ -252,6 +254,18 @@ async def websocket_solve(websocket: WebSocket):
                         else ""
                     ),
                 )
+
+                # Record in memory system
+                try:
+                    memory = get_user_memory_manager()
+                    memory.record_interaction(module="solve", topic=kb_name, success=True)
+                    memory.record_question(
+                        question=question,
+                        answer=result.get("final_answer", "")[:500] if result.get("final_answer") else None
+                    )
+                    memory.record_topic(topic=kb_name, category="knowledge_base")
+                except Exception as mem_err:
+                    logger.warning(f"[{task_id}] Memory recording failed: {mem_err}")
 
         except Exception as e:
             # Mark connection as closed before sending error (to prevent log_pusher from interfering)
