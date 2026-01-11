@@ -99,7 +99,15 @@ npm run dev
 
 This uses **Turbopack** by default for faster development builds.
 
-The frontend will be available at `http://localhost:3782` (or port configured in `config/main.yaml`).
+The frontend will be available at `http://localhost:3783` (or port configured in `config/main.yaml`).
+
+**Recommended**: Start both frontend and backend together from the project root (with venv activated):
+
+```bash
+python scripts/start_web.py
+```
+
+This starts the frontend on port 3783 and the backend API on port 8783.
 
 ### Build
 
@@ -265,15 +273,15 @@ Configured in `lib/api.ts`:
 
 ```typescript
 export const apiUrl =
-  process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8001";
-export const wsUrl = process.env.NEXT_PUBLIC_WS_BASE || "ws://localhost:8001";
+  process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8783";
+export const wsUrl = process.env.NEXT_PUBLIC_WS_BASE || "ws://localhost:8783";
 ```
 
 Set in `.env.local`:
 
 ```bash
-NEXT_PUBLIC_API_BASE=http://localhost:8001
-NEXT_PUBLIC_WS_BASE=ws://localhost:8001
+NEXT_PUBLIC_API_BASE=http://localhost:8783
+NEXT_PUBLIC_WS_BASE=ws://localhost:8783
 ```
 
 ### Next.js Configuration

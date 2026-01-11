@@ -272,24 +272,24 @@ cp .env.example .env
 | `EMBEDDING_MODEL` | **Yes** | Embedding model name |
 | `EMBEDDING_API_KEY` | **Yes** | Embedding API key |
 | `EMBEDDING_HOST` | **Yes** | Embedding API endpoint |
-| `BACKEND_PORT` | No | Backend port (default: `8001`) |
-| `FRONTEND_PORT` | No | Frontend port (default: `3782`) |
-| `NEXT_PUBLIC_API_BASE` | No | **Frontend API URL** - Set this for remote/LAN access (e.g., `http://192.168.1.100:8001`) |
+| `BACKEND_PORT` | No | Backend port (default: `8783`) |
+| `FRONTEND_PORT` | No | Frontend port (default: `3783`) |
+| `NEXT_PUBLIC_API_BASE` | No | **Frontend API URL** - Set this for remote/LAN access (e.g., `http://192.168.1.100:8783`) |
 | `TTS_*` | No | Text-to-Speech settings |
 | `SEARCH_PROVIDER` | No | Search provider (options: `perplexity`, `baidu`, default: `perplexity`) |
 | `PERPLEXITY_API_KEY` | No | For Perplexity web search |
 | `BAIDU_API_KEY` | No | For Baidu AI search |
 
-> 💡 **Remote Access**: If accessing from another device (e.g., `192.168.31.66:3782`), add to `.env`:
+> 💡 **Remote Access**: If accessing from another device (e.g., `192.168.31.66:3783`), add to `.env`:
 > ```bash
-> NEXT_PUBLIC_API_BASE=http://192.168.31.66:8001
+> NEXT_PUBLIC_API_BASE=http://192.168.31.66:8783
 > ```
 
 </details>
 
 **③ Configure Ports & LLM** *(Optional)*
 
-- **Ports**: Set in `.env` file → `BACKEND_PORT` / `FRONTEND_PORT` (defaults: 8001/3782)
+- **Ports**: Set in `.env` file → `BACKEND_PORT` / `FRONTEND_PORT` (defaults: 8783/3783)
 - **LLM**: Edit `config/agents.yaml` → `temperature` / `max_tokens` per module
 - See [Configuration Docs](config/README.md) for details
 
@@ -310,7 +310,7 @@ cp .env.example .env
 
 **⑤ Create Your Own Knowledge Base** *(After Launch)*
 
-1. Go to http://localhost:3782/knowledge
+1. Go to http://localhost:3783/knowledge
 2. Click "New Knowledge Base" → Enter name → Upload PDF/TXT/MD files
 3. Monitor progress in terminal
 
@@ -336,7 +336,7 @@ docker compose logs -f          # View logs
 ```bash
 # Linux/macOS (AMD64)
 docker run -d --name deeptutor \
-  -p 8001:8001 -p 3782:3782 \
+  -p 8783:8783 -p 3783:3783 \
   --env-file .env \
   -v $(pwd)/data:/app/data \
   -v $(pwd)/config:/app/config:ro \
@@ -371,8 +371,8 @@ docker compose up --build # Rebuild after changes
 
 ```bash
 docker run -d --name deeptutor \
-  -p 8001:8001 -p 3782:3782 \
-  -e NEXT_PUBLIC_API_BASE_EXTERNAL=https://your-server.com:8001 \
+  -p 8783:8783 -p 3783:3783 \
+  -e NEXT_PUBLIC_API_BASE_EXTERNAL=https://your-server.com:8783 \
   --env-file .env \
   -v $(pwd)/data:/app/data \
   ghcr.io/hkuds/deeptutor:latest
@@ -382,10 +382,10 @@ docker run -d --name deeptutor \
 
 ```bash
 docker run -d --name deeptutor \
-  -p 9001:9001 -p 3000:3000 \
-  -e BACKEND_PORT=9001 \
-  -e FRONTEND_PORT=3000 \
-  -e NEXT_PUBLIC_API_BASE_EXTERNAL=https://your-server.com:9001 \
+  -p 9783:9783 -p 4783:4783 \
+  -e BACKEND_PORT=9783 \
+  -e FRONTEND_PORT=4783 \
+  -e NEXT_PUBLIC_API_BASE_EXTERNAL=https://your-server.com:9783 \
   --env-file .env \
   -v $(pwd)/data:/app/data \
   ghcr.io/hkuds/deeptutor:latest
@@ -408,7 +408,7 @@ docker run -d --name deeptutor \
 conda create -n deeptutor python=3.10 && conda activate deeptutor
 
 # Or using venv
-python -m venv venv && source venv/bin/activate  # Windows: venv\Scripts\activate
+python -m venv .venv && source .venv/bin/activate  # Windows: .venv\Scripts\activate
 ```
 
 **2. Install Dependencies**:
@@ -432,23 +432,23 @@ python scripts/start_web.py    # Start frontend + backend
 **Backend** (FastAPI):
 ```bash
 python src/api/run_server.py
-# Or: uvicorn src.api.main:app --host 0.0.0.0 --port 8001 --reload
+# Or: uvicorn src.api.main:app --host 0.0.0.0 --port 8783 --reload
 ```
 
 **Frontend** (Next.js):
 ```bash
-cd web && npm install && npm run dev -- -p 3782
+cd web && npm install && npm run dev -- -p 3783
 ```
 
 **Note**: Create `web/.env.local`:
 ```
-NEXT_PUBLIC_API_BASE=http://localhost:8001
+NEXT_PUBLIC_API_BASE=http://localhost:8783
 ```
 
 | Service | Default Port |
 |:---:|:---:|
-| Backend | `8001` |
-| Frontend | `3782` |
+| Backend | `8783` |
+| Frontend | `3783` |
 
 </details>
 
@@ -456,8 +456,8 @@ NEXT_PUBLIC_API_BASE=http://localhost:8001
 
 | Service | URL | Description |
 |:---:|:---|:---|
-| **Frontend** | http://localhost:3782 | Main web interface |
-| **API Docs** | http://localhost:8001/docs | Interactive API documentation |
+| **Frontend** | http://localhost:3783 | Main web interface |
+| **API Docs** | http://localhost:8783/docs | Interactive API documentation |
 
 ---
 
@@ -1172,11 +1172,11 @@ asyncio.run(main())
 **Checklist**
 - Confirm Python version >= 3.10
 - Confirm all dependencies installed: `pip install -r requirements.txt`
-- Check if port 8001 is in use
+- Check if port 8783 is in use
 - Check `.env` file configuration
 
 **Solutions**
-- **Change port**: Set `BACKEND_PORT=9001` in `.env` file
+- **Change port**: Set `BACKEND_PORT=9783` in `.env` file
 - **Check logs**: Review terminal error messages
 
 </details>
@@ -1196,11 +1196,11 @@ Ctrl+C sometimes only terminates the frontend process while the backend continue
 
 ```bash
 # macOS/Linux: Find and kill the process
-lsof -i :8001
+lsof -i :8783
 kill -9 <PID>
 
 # Windows: Find and kill the process
-netstat -ano | findstr :8001
+netstat -ano | findstr :8783
 taskkill /PID <PID> /F
 ```
 
@@ -1245,7 +1245,7 @@ npm --version   # Should show version number
 <summary><b>Frontend cannot connect to backend?</b></summary>
 
 **Checklist**
-- Confirm backend is running (visit http://localhost:8001/docs)
+- Confirm backend is running (visit http://localhost:8783/docs)
 - Check browser console for error messages
 
 **Solution**
@@ -1253,7 +1253,7 @@ npm --version   # Should show version number
 Create `.env.local` in `web` directory:
 
 ```bash
-NEXT_PUBLIC_API_BASE=http://localhost:8001
+NEXT_PUBLIC_API_BASE=http://localhost:8783
 ```
 
 </details>
@@ -1267,7 +1267,7 @@ When deploying to a cloud server, the frontend shows connection errors like "Fai
 
 **Cause**
 
-The default API URL is `localhost:8001`, which points to the user's local machine in the browser, not your server.
+The default API URL is `localhost:8783`, which points to the user's local machine in the browser, not your server.
 
 **Solution**
 
@@ -1276,19 +1276,19 @@ Set the `NEXT_PUBLIC_API_BASE_EXTERNAL` environment variable to your server's pu
 ```bash
 # Using docker run
 docker run -d --name deeptutor \
-  -e NEXT_PUBLIC_API_BASE_EXTERNAL=https://your-server.com:8001 \
+  -e NEXT_PUBLIC_API_BASE_EXTERNAL=https://your-server.com:8783 \
   ... other options ...
   ghcr.io/hkuds/deeptutor:latest
 
 # Or in .env file
-NEXT_PUBLIC_API_BASE_EXTERNAL=https://your-server.com:8001
+NEXT_PUBLIC_API_BASE_EXTERNAL=https://your-server.com:8783
 ```
 
 **Custom Port Example:**
 ```bash
-# If using backend port 9001
--e BACKEND_PORT=9001 \
--e NEXT_PUBLIC_API_BASE_EXTERNAL=https://your-server.com:9001
+# If using backend port 9783
+-e BACKEND_PORT=9783 \
+-e NEXT_PUBLIC_API_BASE_EXTERNAL=https://your-server.com:9783
 ```
 
 </details>
@@ -1302,10 +1302,10 @@ Set both the port environment variables AND the port mappings:
 
 ```bash
 docker run -d --name deeptutor \
-  -p 9001:9001 -p 4000:4000 \
-  -e BACKEND_PORT=9001 \
-  -e FRONTEND_PORT=4000 \
-  -e NEXT_PUBLIC_API_BASE_EXTERNAL=http://localhost:9001 \
+  -p 9783:9783 -p 4783:4783 \
+  -e BACKEND_PORT=9783 \
+  -e FRONTEND_PORT=4783 \
+  -e NEXT_PUBLIC_API_BASE_EXTERNAL=http://localhost:9783 \
   ... other env vars ...
   ghcr.io/hkuds/deeptutor:latest
 ```
@@ -1324,7 +1324,7 @@ docker run -d --name deeptutor \
 
 **Solution**
 - **Check backend logs**
-- **Confirm URL format**: `ws://localhost:8001/api/v1/...`
+- **Confirm URL format**: `ws://localhost:8783/api/v1/...`
 
 </details>
 

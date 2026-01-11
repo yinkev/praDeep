@@ -11,7 +11,7 @@ The API module is built on FastAPI and provides:
 - CORS middleware for cross-origin requests
 - Unified error handling and logging
 
-## 🏗�?Architecture
+## 🏗�?Architecture
 
 ```
 api/
@@ -19,17 +19,17 @@ api/
 ├── main.py                  # FastAPI application setup
 ├── run_server.py            # Server startup script
 ├── routers/                 # API route modules
-�?  ├── solve.py            # Problem solving endpoints
-�?  ├── question.py         # Question generation endpoints
-�?  ├── research.py         # Research endpoints
-�?  ├── knowledge.py        # Knowledge base endpoints
-�?  ├── guide.py            # Guided learning endpoints
-�?  ├── co_writer.py        # Co-Writer endpoints
-�?  ├── notebook.py         # Notebook endpoints
-�?  ├── ideagen.py          # Idea generation endpoints
-�?  ├── dashboard.py        # Dashboard endpoints
-�?  ├── settings.py         # Settings endpoints
-�?  └── system.py           # System endpoints
+�?  ├── solve.py            # Problem solving endpoints
+�?  ├── question.py         # Question generation endpoints
+�?  ├── research.py         # Research endpoints
+�?  ├── knowledge.py        # Knowledge base endpoints
+�?  ├── guide.py            # Guided learning endpoints
+�?  ├── co_writer.py        # Co-Writer endpoints
+�?  ├── notebook.py         # Notebook endpoints
+�?  ├── ideagen.py          # Idea generation endpoints
+�?  ├── dashboard.py        # Dashboard endpoints
+�?  ├── settings.py         # Settings endpoints
+�?  └── system.py           # System endpoints
 └── utils/                   # API utilities
     ├── history.py          # Activity history management
     ├── log_interceptor.py  # Log interception for streaming
@@ -134,7 +134,7 @@ All WebSocket endpoints follow a similar pattern:
 
 **Example (Solve)**:
 ```javascript
-const ws = new WebSocket('ws://localhost:8001/api/v1/solve');
+const ws = new WebSocket('ws://localhost:8783/api/v1/solve');
 ws.onopen = () => {
   ws.send(JSON.stringify({
     question: "Your question here",
@@ -153,7 +153,7 @@ Standard REST API endpoints return JSON responses:
 
 **Example (Knowledge Base List)**:
 ```bash
-curl http://localhost:8001/api/v1/knowledge/list
+curl http://localhost:8783/api/v1/knowledge/list
 ```
 
 ## 📁 Static File Serving
@@ -171,13 +171,21 @@ The API serves static files from `data/user/` via `/api/outputs/`:
 
 ### Server Port
 
+The backend runs on **port 8783** by default.
+
 Configured in `config/main.yaml`:
 
 ```yaml
 server:
-  backend_port: 8001
+  backend_port: 8783
   frontend_port: 3782
 ```
+
+### API Documentation
+
+Interactive API documentation is available at:
+- **Swagger UI**: http://localhost:8783/docs
+- **ReDoc**: http://localhost:8783/redoc
 
 ### CORS
 
@@ -193,19 +201,33 @@ app.add_middleware(
 
 ## 🚀 Running the Server
 
-### Using run_server.py
+### Recommended Method
+
+Start the backend server with virtual environment activated:
+
+```bash
+# Activate your virtual environment first
+source venv/bin/activate  # or your venv path
+
+# Start the server
+python scripts/start_web.py
+```
+
+### Alternative Methods
+
+#### Using run_server.py
 
 ```bash
 python src/api/run_server.py
 ```
 
-### Using uvicorn directly
+#### Using uvicorn directly
 
 ```bash
-uvicorn src.api.main:app --host 0.0.0.0 --port 8001 --reload
+uvicorn src.api.main:app --host 0.0.0.0 --port 8783 --reload
 ```
 
-### Using main.py
+#### Using main.py
 
 ```bash
 python src/api/main.py
@@ -218,7 +240,7 @@ python src/api/main.py
 - **Tools**: `src/tools/` - Tool implementations
 - **Frontend**: `web/` - Next.js frontend
 
-## 🛠�?Development
+## 🛠�?Development
 
 ### Adding a New Endpoint
 

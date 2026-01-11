@@ -87,11 +87,19 @@ max_tokens = params["max_tokens"]    # 8192
 - **Research Module**: Planning, researching, reporting, RAG, queue, and preset configurations
 - **Solve Module**: Iteration limits, citation settings, agent-specific non-LLM parameters
 
+**Port Configuration:**
+
+The server ports are configured in `config/main.yaml` under the `server` section:
+- **Frontend port**: `3783` - The port where the web UI is served
+- **Backend port**: `8783` - The port where the API server runs
+
+To change these ports, edit the `server` section in `config/main.yaml`:
+
 **Key sections:**
 ```yaml
 server:
-  backend_port: 8001
-  frontend_port: 3782
+  backend_port: 8783
+  frontend_port: 3783
 
 system:
   language: en  # "zh" or "en"
