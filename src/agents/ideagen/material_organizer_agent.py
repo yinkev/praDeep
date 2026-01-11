@@ -42,7 +42,10 @@ class MaterialOrganizerAgent(BaseAgent):
         )
 
     async def process(
-        self, records: list[dict[str, Any]], user_thoughts: str | None = None
+        self,
+        records: list[dict[str, Any]],
+        user_thoughts: str | None = None,
+        notebook_context: dict[str, Any] | None = None,
     ) -> list[dict[str, Any]]:
         """
         Organize materials and extract knowledge points
@@ -50,6 +53,10 @@ class MaterialOrganizerAgent(BaseAgent):
         Args:
             records: Notebook record list
             user_thoughts: Optional user thoughts
+            notebook_context: Optional notebook metadata containing:
+                - name: Notebook name
+                - description: Notebook description
+                - project_goal: User's overall research goal
 
         Returns:
             Knowledge point list, each containing:
@@ -79,9 +86,26 @@ class MaterialOrganizerAgent(BaseAgent):
         if user_thoughts and user_thoughts.strip():
             user_thoughts_text = f"\n\nUser Additional Thoughts:\n{user_thoughts}"
 
+        # Add notebook/project context if available
+        context_text = ""
+        if notebook_context:
+            notebook_name = notebook_context.get("name", "")
+            notebook_desc = notebook_context.get("description", "")
+            project_goal = notebook_context.get("project_goal", "")
+
+            if notebook_name or notebook_desc or project_goal:
+                context_text = "\n\n=== PROJECT CONTEXT ===\n"
+                if notebook_name:
+                    context_text += f"Notebook: {notebook_name}\n"
+                if notebook_desc:
+                    context_text += f"Description: {notebook_desc}\n"
+                if project_goal:
+                    context_text += f"Research Goal: {project_goal}\n"
+
         system_prompt = self._prompts.get("system", "")
         user_template = self._prompts.get("user_template", "")
         user_prompt = user_template.format(
+            context_text=context_text,
             materials_text=materials_text,
             user_thoughts_text=user_thoughts_text,
         )

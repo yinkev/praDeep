@@ -2,8 +2,8 @@
 
 import base64
 import binascii
-import logging
 from io import BytesIO
+import logging
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
 
@@ -104,13 +104,9 @@ class Qwen3VLEmbeddingAdapter(BaseEmbeddingAdapter):
             self._dtype = torch.float16
 
         try:
-            self._processor = AutoProcessor.from_pretrained(
-                model_name, trust_remote_code=True
-            )
+            self._processor = AutoProcessor.from_pretrained(model_name, trust_remote_code=True)
         except Exception:
-            self._processor = AutoTokenizer.from_pretrained(
-                model_name, trust_remote_code=True
-            )
+            self._processor = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 
         self._model = AutoModel.from_pretrained(
             model_name, trust_remote_code=True, torch_dtype=self._dtype
@@ -135,9 +131,7 @@ class Qwen3VLEmbeddingAdapter(BaseEmbeddingAdapter):
         embeddings = self._maybe_normalize(embeddings, request)
         return embeddings.cpu().tolist()
 
-    def _embed_images(
-        self, images: List[str], request: EmbeddingRequest
-    ) -> List[List[float]]:
+    def _embed_images(self, images: List[str], request: EmbeddingRequest) -> List[List[float]]:
         pil_images = self._load_images(images)
         try:
             inputs = self._processor(images=pil_images, return_tensors="pt")
@@ -181,7 +175,10 @@ class Qwen3VLEmbeddingAdapter(BaseEmbeddingAdapter):
 
     def _pool_outputs(self, outputs: Any, attention_mask: Any = None):
         try:
-            import torch
+            import importlib.util
+
+            if importlib.util.find_spec("torch") is None:
+                raise ImportError("torch not found")
         except ImportError as exc:
             raise ImportError(
                 "Qwen3-VL embedding requires torch. Install with: pip install torch"

@@ -39,6 +39,7 @@ from src.logging import LightRAGLogContext, get_logger
 logger = get_logger("KnowledgeInit")
 
 # Import numbered items extraction functionality
+from src.knowledge.document_tracker import DocumentStatus, DocumentTracker
 from src.knowledge.extract_numbered_items import process_content_list
 
 
@@ -79,6 +80,9 @@ class DocumentAdder:
         self.llm_cfg = get_llm_config()
         self.progress_tracker = progress_tracker
 
+        # Initialize document tracker for incremental indexing
+        self.document_tracker = DocumentTracker(self.kb_dir)
+
     def get_existing_files(self) -> set:
         """Get list of existing documents"""
         existing_files = set()
@@ -88,21 +92,47 @@ class DocumentAdder:
                     existing_files.add(file_path.name)
         return existing_files
 
-    def add_documents(self, source_files: list[str], skip_duplicates: bool = True) -> list[Path]:
+    def detect_document_changes(self) -> dict:
         """
-        Add documents to knowledge base
+        Detect document changes using content-hash based comparison.
+
+        Returns:
+            Dictionary with change summary including:
+            - new_files: Files not yet indexed
+            - modified_files: Files with changed content
+            - deleted_files: Files removed from disk
+            - unchanged_files: Files with no changes
+        """
+        logger.info("Detecting document changes using content hashes...")
+        return self.document_tracker.get_incremental_summary()
+
+    def add_documents(
+        self,
+        source_files: list[str],
+        skip_duplicates: bool = True,
+        force_reprocess: bool = False,
+    ) -> tuple[list[Path], list[Path]]:
+        """
+        Add documents to knowledge base with content-hash based change detection.
+
+        This method now uses SHA256 content hashes to detect:
+        - New files (not yet in metadata)
+        - Modified files (content changed since last indexing)
+        - Unchanged files (content identical to last indexing)
 
         Args:
             source_files: List of document files to add
-            skip_duplicates: Whether to skip duplicate files (files with same name)
+            skip_duplicates: Whether to skip unchanged files (uses hash comparison)
+            force_reprocess: If True, reprocess even unchanged files
 
         Returns:
-            List of successfully added new file paths
+            Tuple of (new_files, modified_files) that need processing
         """
         logger.info(f"Adding documents to knowledge base '{self.kb_name}'...")
+        logger.info("Using content-hash based change detection for incremental indexing")
 
-        existing_files = self.get_existing_files()
         new_files = []
+        modified_files = []
         skipped_files = []
 
         for source in source_files:
@@ -111,30 +141,162 @@ class DocumentAdder:
                 logger.warning(f"  ⚠ Source file does not exist: {source}")
                 continue
 
-            # Check if already exists
-            if source_path.name in existing_files:
-                if skip_duplicates:
-                    logger.info(f"  → Skipped (already exists): {source_path.name}")
-                    skipped_files.append(source_path.name)
-                    continue
-                logger.warning(f"  ⚠ Overwriting existing file: {source_path.name}")
+            # Calculate hash of source file
+            source_hash = DocumentTracker.calculate_file_hash(source_path)
 
-            # Copy to raw directory
+            # Check if file exists in raw directory
             dest_path = self.raw_dir / source_path.name
-            shutil.copy2(source_path, dest_path)
-            new_files.append(dest_path)
-            logger.info(f"  ✓ Added: {source_path.name}")
+            if dest_path.exists():
+                # Check if content has changed using document tracker
+                tracked_info = self.document_tracker.get_document_info(source_path.name)
+
+                if tracked_info:
+                    if tracked_info.file_hash == source_hash and not force_reprocess:
+                        if skip_duplicates:
+                            logger.info(f"  → Skipped (unchanged): {source_path.name}")
+                            skipped_files.append(source_path.name)
+                            continue
+                    else:
+                        # Content has changed - mark as modified
+                        logger.info(f"  ↻ Modified: {source_path.name} (content changed)")
+                        shutil.copy2(source_path, dest_path)
+                        modified_files.append(dest_path)
+                        continue
+                else:
+                    # File exists but not tracked - treat as modified
+                    logger.info(f"  ↻ Modified (untracked): {source_path.name}")
+                    shutil.copy2(source_path, dest_path)
+                    modified_files.append(dest_path)
+                    continue
+            else:
+                # New file
+                shutil.copy2(source_path, dest_path)
+                new_files.append(dest_path)
+                logger.info(f"  ✓ Added (new): {source_path.name}")
 
         if skipped_files:
-            logger.info(f"\nSkipped {len(skipped_files)} existing files")
+            logger.info(f"\nSkipped {len(skipped_files)} unchanged files (content hash match)")
+
+        if modified_files:
+            logger.info(f"Detected {len(modified_files)} modified files (content hash mismatch)")
 
         logger.info(f"Successfully added {len(new_files)} new files")
-        return new_files
 
-    async def process_new_documents(self, new_files: list[Path]):
-        """Process newly added documents. Re-reads config to catch .env changes."""
-        if not new_files:
-            logger.warning("No new files to process")
+        return new_files, modified_files
+
+    async def cleanup_document_from_rag(self, filename: str) -> bool:
+        """
+        Clean up a document's data from RAG storage before reprocessing.
+
+        This enables true incremental updates for modified documents by:
+        1. Removing old chunks associated with the document
+        2. Removing entities and relations linked to those chunks
+        3. Clearing parse cache for the document
+
+        Args:
+            filename: Name of the document file to clean up
+
+        Returns:
+            True if cleanup was successful, False otherwise
+        """
+        logger.info(f"Cleaning up RAG data for modified document: {filename}")
+
+        try:
+            # Find document ID in doc_status
+            doc_status_file = self.rag_storage_dir / "kv_store_doc_status.json"
+            if doc_status_file.exists():
+                with open(doc_status_file, encoding="utf-8") as f:
+                    doc_status = json.load(f)
+
+                # Find and remove entries for this document
+                docs_to_remove = []
+                for doc_id, info in doc_status.items():
+                    if info.get("file_path") == filename:
+                        docs_to_remove.append(doc_id)
+                        logger.info(f"  Found RAG document: {doc_id}")
+
+                for doc_id in docs_to_remove:
+                    del doc_status[doc_id]
+                    logger.info(f"  Removed document status: {doc_id}")
+
+                # Save updated doc_status
+                with open(doc_status_file, "w", encoding="utf-8") as f:
+                    json.dump(doc_status, f, indent=2, ensure_ascii=False)
+
+            # Clean up text chunks for this document
+            chunks_file = self.rag_storage_dir / "kv_store_text_chunks.json"
+            if chunks_file.exists():
+                with open(chunks_file, encoding="utf-8") as f:
+                    chunks = json.load(f)
+
+                chunks_to_remove = []
+                for chunk_id, chunk_info in chunks.items():
+                    # Check if chunk belongs to this document
+                    if isinstance(chunk_info, dict):
+                        chunk_file = chunk_info.get("file_path", "")
+                        if filename in chunk_file or filename.split(".")[0] in chunk_id:
+                            chunks_to_remove.append(chunk_id)
+
+                for chunk_id in chunks_to_remove:
+                    del chunks[chunk_id]
+
+                if chunks_to_remove:
+                    logger.info(f"  Removed {len(chunks_to_remove)} text chunks")
+                    with open(chunks_file, "w", encoding="utf-8") as f:
+                        json.dump(chunks, f, indent=2, ensure_ascii=False)
+
+            # Clean up full_docs for this document
+            full_docs_file = self.rag_storage_dir / "kv_store_full_docs.json"
+            if full_docs_file.exists():
+                with open(full_docs_file, encoding="utf-8") as f:
+                    full_docs = json.load(f)
+
+                docs_to_remove = [
+                    doc_id
+                    for doc_id, info in full_docs.items()
+                    if isinstance(info, dict) and filename in info.get("file_path", "")
+                ]
+
+                for doc_id in docs_to_remove:
+                    del full_docs[doc_id]
+
+                if docs_to_remove:
+                    logger.info(f"  Removed {len(docs_to_remove)} full document entries")
+                    with open(full_docs_file, "w", encoding="utf-8") as f:
+                        json.dump(full_docs, f, indent=2, ensure_ascii=False)
+
+            logger.info(f"  ✓ RAG cleanup complete for: {filename}")
+            return True
+
+        except Exception as e:
+            logger.error(f"  ✗ RAG cleanup failed for {filename}: {e}")
+            return False
+
+    async def process_new_documents(
+        self,
+        new_files: list[Path],
+        modified_files: list[Path] = None,
+    ):
+        """
+        Process newly added and modified documents with incremental indexing.
+
+        This method now supports:
+        - Processing new files (added to RAG)
+        - Processing modified files (RAG cleanup + re-add)
+        - Tracking document hashes after successful processing
+
+        Args:
+            new_files: List of new files to process
+            modified_files: List of modified files requiring RAG cleanup first
+
+        Returns:
+            List of successfully processed files
+        """
+        modified_files = modified_files or []
+        all_files = list(new_files) + list(modified_files)
+
+        if not all_files:
+            logger.warning("No new or modified files to process")
             return None
 
         logger.info(f"\nProcessing {len(new_files)} new documents...")
@@ -259,6 +421,7 @@ class DocumentAdder:
             """
             try:
                 import numpy as np
+
                 embeddings = await embedding_client.embed(texts)
                 # Convert to numpy array - LightRAG requires .size attribute
                 return np.array(embeddings)
@@ -285,11 +448,27 @@ class DocumentAdder:
             await rag._ensure_lightrag_initialized()
             logger.info("✓ Loaded existing knowledge base")
 
-        # Process each new document
+        # Clean up RAG data for modified files before reprocessing
+        if modified_files:
+            logger.info(f"\nCleaning up RAG data for {len(modified_files)} modified files...")
+            for doc_file in modified_files:
+                await self.cleanup_document_from_rag(doc_file.name)
+
+        # Process all documents (new + modified)
         processed_files = []
-        total_files = len(new_files)
-        for idx, doc_file in enumerate(new_files, 1):
-            logger.info(f"\nProcessing: {doc_file.name}")
+        total_files = len(all_files)
+        modified_file_names = {f.name for f in modified_files}
+
+        for idx, doc_file in enumerate(all_files, 1):
+            is_modified = doc_file.name in modified_file_names
+            status_label = "modified" if is_modified else "new"
+            logger.info(f"\nProcessing ({status_label}): {doc_file.name}")
+
+            # Mark document as processing in tracker
+            self.document_tracker.track_document(
+                doc_file,
+                status=DocumentStatus.PROCESSING,
+            )
 
             is_pdf = doc_file.suffix.lower() == ".pdf"
             file_message = (
@@ -347,6 +526,13 @@ class DocumentAdder:
                 logger.info(f"  ✓ Successfully processed: {doc_file.name}")
                 processed_files.append(doc_file)
 
+                # Track document with updated hash after successful processing
+                self.document_tracker.track_document(
+                    doc_file,
+                    status=DocumentStatus.INDEXED,
+                )
+                logger.info(f"  ✓ Document hash tracked: {doc_file.name}")
+
                 # Content list should be automatically saved
                 doc_name = doc_file.stem
                 content_list_file = self.content_list_dir / f"{doc_name}.json"
@@ -358,6 +544,14 @@ class DocumentAdder:
                 logger.error(
                     "  Possible causes: Large PDF (MinerU parsing), slow embedding API, network issues"
                 )
+
+                # Track error status
+                self.document_tracker.track_document(
+                    doc_file,
+                    status=DocumentStatus.ERROR,
+                    error_message="Processing timeout (>10 minutes)",
+                )
+
                 if self.progress_tracker:
                     from src.knowledge.progress_tracker import ProgressStage
 
@@ -373,6 +567,14 @@ class DocumentAdder:
                 import traceback
 
                 logger.error(traceback.format_exc())
+
+                # Track error status
+                self.document_tracker.track_document(
+                    doc_file,
+                    status=DocumentStatus.ERROR,
+                    error_message=str(e),
+                )
+
                 if self.progress_tracker:
                     from src.knowledge.progress_tracker import ProgressStage
 
@@ -444,7 +646,9 @@ class DocumentAdder:
         # Debug: list what's in doc_dir
         try:
             doc_dir_contents = list(doc_dir.iterdir())
-            logger.info(f"    _find_mineru_output_dir: {doc_dir.name} contains: {[p.name for p in doc_dir_contents]}")
+            logger.info(
+                f"    _find_mineru_output_dir: {doc_dir.name} contains: {[p.name for p in doc_dir_contents]}"
+            )
         except Exception as e:
             logger.error(f"    _find_mineru_output_dir: Failed to list {doc_dir}: {e}")
 
@@ -563,7 +767,9 @@ class DocumentAdder:
                             logger.debug(f"    Image already exists: {img_file.name}")
 
                 if image_count > 0:
-                    logger.info(f"  ✓ Moved {image_count} images from {doc_dir.name}/{output_dir.name}/images/")
+                    logger.info(
+                        f"  ✓ Moved {image_count} images from {doc_dir.name}/{output_dir.name}/images/"
+                    )
                 else:
                     logger.info(f"    No new images to move from {doc_dir.name}")
             else:
@@ -773,20 +979,29 @@ Usage examples:
     logger.info(f"Adding documents to knowledge base: {args.kb_name}")
     logger.info(f"{'=' * 60}\n")
 
-    # Add documents to raw directory
-    new_files = adder.add_documents(doc_files, skip_duplicates=not args.allow_duplicates)
+    # Add documents to raw directory with content-hash based change detection
+    new_files, modified_files = adder.add_documents(
+        doc_files, skip_duplicates=not args.allow_duplicates
+    )
 
-    if not new_files:
-        logger.info("\nNo new files need processing")
+    if not new_files and not modified_files:
+        logger.info("\nNo new or modified files need processing")
         return
 
-    # Process new documents
+    # Show incremental summary
+    total_to_process = len(new_files) + len(modified_files)
+    logger.info("\nIncremental indexing summary:")
+    logger.info(f"  New files: {len(new_files)}")
+    logger.info(f"  Modified files: {len(modified_files)}")
+    logger.info(f"  Total to process: {total_to_process}")
+
+    # Process new and modified documents
     processed_files = []
     if not args.skip_processing:
-        processed_files = await adder.process_new_documents(new_files)
+        processed_files = await adder.process_new_documents(new_files, modified_files)
     else:
         logger.info("\nSkipping document processing (--skip-processing specified)")
-        processed_files = new_files
+        processed_files = list(new_files) + list(modified_files)
 
     # Extract numbered items for new documents
     if not args.skip_processing and not args.skip_extract and processed_files:
@@ -795,7 +1010,7 @@ Usage examples:
         logger.info("\nSkipping numbered items extraction (--skip-extract specified)")
 
     # Update metadata
-    adder.update_metadata(len(new_files))
+    adder.update_metadata(len(new_files) + len(modified_files))
 
     logger.info(f"\n{'=' * 60}")
     logger.info(

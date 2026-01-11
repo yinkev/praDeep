@@ -1,7 +1,7 @@
 """Qwen3-VL-Reranker adapter for local reranking on Apple Silicon."""
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from .base import BaseRerankerAdapter, RerankRequest, RerankResponse
 
