@@ -14,6 +14,7 @@ import {
   getStoredTheme,
   type Theme,
 } from "@/lib/theme";
+import type { RagChatSourceItem, RagFilters } from "@/types/rag";
 
 // --- Types ---
 interface LogEntry {
@@ -219,7 +220,7 @@ interface IdeaGenState {
 
 // Chat Types
 interface ChatSource {
-  rag?: Array<{ kb_name: string; content: string }>;
+  rag?: RagChatSourceItem[];
   web?: Array<{ url: string; title?: string; snippet?: string }>;
 }
 
@@ -236,6 +237,7 @@ interface ChatState {
   isLoading: boolean;
   selectedKb: string;
   enableRag: boolean;
+  ragFilters: RagFilters | null;
   enableWebSearch: boolean;
   currentStage: string | null;
 }
@@ -1466,6 +1468,7 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
     isLoading: false,
     selectedKb: "",
     enableRag: false,
+    ragFilters: null,
     enableWebSearch: false,
     currentStage: null,
   });
@@ -1509,6 +1512,7 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
           history,
           kb_name: chatState.selectedKb,
           enable_rag: chatState.enableRag,
+          rag_filters: chatState.enableRag ? chatState.ragFilters : null,
           enable_web_search: chatState.enableWebSearch,
         }),
       );
@@ -1667,6 +1671,10 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
 
       // Restore session settings
       const settings = session.settings || {};
+      const ragFiltersFromSession =
+        settings.rag_filters && typeof settings.rag_filters === "object"
+          ? (settings.rag_filters as RagFilters)
+          : null;
 
       // Update ref with loaded session ID for continued conversation
       sessionIdRef.current = session.session_id;
@@ -1677,6 +1685,7 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
         messages,
         selectedKb: settings.kb_name || prev.selectedKb,
         enableRag: settings.enable_rag ?? prev.enableRag,
+        ragFilters: ragFiltersFromSession ?? prev.ragFilters,
         enableWebSearch: settings.enable_web_search ?? prev.enableWebSearch,
         isLoading: false,
         currentStage: null,
