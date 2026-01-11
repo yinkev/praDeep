@@ -1,0 +1,27 @@
+{
+  "category": "enhancement",
+  "description": "- **Friction**: Multiple agents in solve/research pipelines can fail at different stages - **Pain point**: No clear error recovery, retry logic, or user-friendly error messages mentioned - **Impact**: Users don't know if they should retry, modify input, or wait",
+  "title": "3. Agent Error States",
+  "status": "in_progress",
+  "id": "feature-1768153273690-n00iza2bm",
+  "descriptionHistory": [
+    {
+      "description": "- **Friction**: Multiple agents in solve/research pipelines can fail at different stages - **Pain point**: No clear error recovery, retry logic, or user-friendly error messages mentioned - **Impact**: Users don't know if they should retry, modify input, or wait",
+      "timestamp": "2026-01-11T17:41:13.691Z",
+      "source": "initial"
+    }
+  ],
+  "skipTests": false,
+  "model": "codex-gpt-5.2",
+  "thinkingLevel": "none",
+  "reasoningEffort": "high",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "branchName": null,
+  "priority": 2,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "startedAt": "2026-01-11T18:39:42.594Z",
+  "updatedAt": "2026-01-11T18:39:42.852Z"
+}

@@ -1,0 +1,48 @@
+{
+  "branches": [
+    {
+      "name": "feature/new",
+      "createdAt": "2026-01-11T17:34:30.369Z"
+    },
+    {
+      "name": "feature/main-1768152930728-4w0p",
+      "createdAt": "2026-01-11T17:35:31.031Z"
+    },
+    {
+      "name": "feature/main-1768152950495-tzay",
+      "createdAt": "2026-01-11T17:35:50.798Z"
+    },
+    {
+      "name": "feature/main-1768153007462-0lv1",
+      "createdAt": "2026-01-11T17:36:47.767Z"
+    },
+    {
+      "name": "feature/main-1768153014929-p5mu",
+      "createdAt": "2026-01-11T17:36:55.299Z"
+    },
+    {
+      "name": "feature/main-1768153047062-szwi",
+      "createdAt": "2026-01-11T17:37:27.353Z"
+    },
+    {
+      "name": "feature/main-1768153881552-13z3",
+      "createdAt": "2026-01-11T17:51:21.880Z"
+    },
+    {
+      "name": "feature/main-1768153894753-sh8o",
+      "createdAt": "2026-01-11T17:51:35.079Z"
+    },
+    {
+      "name": "feature/main-1768153906040-2hjc",
+      "createdAt": "2026-01-11T17:51:46.337Z"
+    },
+    {
+      "name": "feature/main-1768153977903-sz6k",
+      "createdAt": "2026-01-11T17:52:58.218Z"
+    },
+    {
+      "name": "feature/main-1768154018271-zzl3",
+      "createdAt": "2026-01-11T17:53:38.585Z"
+    }
+  ]
+}

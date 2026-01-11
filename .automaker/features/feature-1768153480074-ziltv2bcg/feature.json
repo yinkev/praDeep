@@ -1,0 +1,14 @@
+{
+  "category": "ui",
+  "description": "- Outputs scattered across timestamped folders per module - **Pain point**: No unified view, manual file browsing required - **Time sink**: Finding and comparing previous results",
+  "title": "4. Fragmented Output Management",
+  "status": "backlog",
+  "id": "feature-1768153480074-ziltv2bcg",
+  "descriptionHistory": [
+    {
+      "description": "- Outputs scattered across timestamped folders per module - **Pain point**: No unified view, manual file browsing required - **Time sink**: Finding and comparing previous results",
+      "timestamp": "2026-01-11T17:44:40.074Z",
+      "source": "initial"
+    }
+  ]
+}

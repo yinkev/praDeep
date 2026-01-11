@@ -1,0 +1,23 @@
+{
+  "id": "multimodal-input",
+  "category": "Core",
+  "title": "Image and Video Question Input",
+  "description": "Extend all agent workflows to accept image and video inputs for questions using vision-capable LLMs. Supports screenshot-based problem submission, diagram analysis, and video lecture processing.",
+  "status": "completed",
+  "priority": 1,
+  "complexity": "complex",
+  "dependencies": [],
+  "createdAt": "2026-01-11T17:24:12.300Z",
+  "updatedAt": "2026-01-11T17:44:55.118Z",
+  "startedAt": "2026-01-11T17:31:08.976Z",
+  "descriptionHistory": [],
+  "skipTests": false,
+  "model": "opus",
+  "thinkingLevel": "none",
+  "reasoningEffort": "none",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "planningMode": "full",
+  "requirePlanApproval": false,
+  "workMode": "current"
+}

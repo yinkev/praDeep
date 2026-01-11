@@ -1,0 +1,14 @@
+{
+  "id": "sso-integration",
+  "category": "Authentication",
+  "title": "Single Sign-On Integration",
+  "description": "Add SSO support via OAuth 2.0 / OIDC for integration with institutional identity providers (Google, Microsoft, SAML). Enables seamless authentication for educational institutions.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "moderate",
+  "dependencies": [
+    "user-authentication"
+  ],
+  "createdAt": "2026-01-11T17:24:12.303Z",
+  "updatedAt": "2026-01-11T17:24:12.303Z"
+}

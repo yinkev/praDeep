@@ -1,0 +1,12 @@
+{
+  "id": "keyboard-shortcuts",
+  "category": "UI",
+  "title": "Comprehensive Keyboard Shortcuts",
+  "description": "Implement keyboard navigation and shortcuts for power users covering all major actions (submit query, new session, export, navigation). Includes customizable key bindings and cheat sheet overlay.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "simple",
+  "dependencies": [],
+  "createdAt": "2026-01-11T17:24:12.305Z",
+  "updatedAt": "2026-01-11T17:24:12.305Z"
+}

@@ -1,0 +1,14 @@
+{
+  "category": "ui",
+  "description": "Track which tool combinations (RAG, web search, code execution) actually contribute to successful solve outcomes. Automatically adjust tool selection strategy in SolveAgent based on question type patterns.\n\n**Rationale:** Current tool selection relies on static logic. Users can't easily optimize tool usage without code changes. Adaptive tool selection learns from outcomes to reduce unnecessary tool calls and improve efficiency.",
+  "title": "Smart Tool Selection Auto-optimization",
+  "status": "backlog",
+  "id": "feature-1768156872274-cy4lfdc1h",
+  "descriptionHistory": [
+    {
+      "description": "Track which tool combinations (RAG, web search, code execution) actually contribute to successful solve outcomes. Automatically adjust tool selection strategy in SolveAgent based on question type patterns.\n\n**Rationale:** Current tool selection relies on static logic. Users can't easily optimize tool usage without code changes. Adaptive tool selection learns from outcomes to reduce unnecessary tool calls and improve efficiency.",
+      "timestamp": "2026-01-11T18:41:12.275Z",
+      "source": "initial"
+    }
+  ]
+}

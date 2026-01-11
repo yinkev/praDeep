@@ -1,0 +1,15 @@
+{
+  "id": "async-task-queue",
+  "category": "Performance",
+  "title": "Celery-based Async Task Queue",
+  "description": "Implement background job processing with Celery and Redis for long-running tasks like document parsing, knowledge graph construction, and batch operations. Provides task status tracking and retry mechanisms.",
+  "status": "backlog",
+  "priority": 1,
+  "complexity": "moderate",
+  "dependencies": [],
+  "createdAt": "2026-01-11T17:24:12.301Z",
+  "updatedAt": "2026-01-11T17:29:16.511Z",
+  "branchName": "main",
+  "descriptionHistory": [],
+  "startedAt": "2026-01-11T17:28:50.481Z"
+}

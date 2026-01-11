@@ -1,0 +1,28 @@
+{
+  "category": "enhancement",
+  "description": "- **Friction**: Large document uploads with parsing (MinerU) can take significant time - **Pain point**: Progress tracking exists but users may not understand why processing is slow or what's happening - **Impact**: Users may abandon uploads or create duplicate KBs",
+  "title": "2. Knowledge Base Upload & Indexing",
+  "status": "completed",
+  "id": "feature-1768153272073-9zg0mucd5",
+  "descriptionHistory": [
+    {
+      "description": "- **Friction**: Large document uploads with parsing (MinerU) can take significant time - **Pain point**: Progress tracking exists but users may not understand why processing is slow or what's happening - **Impact**: Users may abandon uploads or create duplicate KBs",
+      "timestamp": "2026-01-11T17:41:12.073Z",
+      "source": "initial"
+    }
+  ],
+  "skipTests": false,
+  "model": "codex-gpt-5.2",
+  "thinkingLevel": "none",
+  "reasoningEffort": "high",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "branchName": null,
+  "priority": 2,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "custom",
+  "startedAt": "2026-01-11T17:55:38.605Z",
+  "updatedAt": "2026-01-11T18:00:32.656Z",
+  "prUrl": "https://github.com/yinkev/praDeep/pull/10"
+}

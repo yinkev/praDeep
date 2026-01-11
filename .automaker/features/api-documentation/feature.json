@@ -1,0 +1,12 @@
+{
+  "id": "api-documentation",
+  "category": "API",
+  "title": "Interactive API Documentation",
+  "description": "Generate comprehensive OpenAPI/Swagger documentation with interactive testing interface, code examples in multiple languages, and WebSocket documentation. Auto-generated from FastAPI schema.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "simple",
+  "dependencies": [],
+  "createdAt": "2026-01-11T17:24:12.301Z",
+  "updatedAt": "2026-01-11T17:24:12.301Z"
+}

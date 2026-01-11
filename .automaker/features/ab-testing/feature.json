@@ -1,0 +1,26 @@
+{
+  "id": "ab-testing",
+  "category": "Core",
+  "title": "Prompt and Model A/B Testing Framework",
+  "description": "Built-in experimentation framework for testing different prompts, models, and parameters with statistical significance testing. Automatically distributes traffic and collects metrics.",
+  "status": "completed",
+  "priority": 2,
+  "complexity": "complex",
+  "dependencies": [
+    "feedback-loop"
+  ],
+  "createdAt": "2026-01-11T17:24:12.304Z",
+  "updatedAt": "2026-01-11T18:40:03.124Z",
+  "skipTests": false,
+  "model": "codex-gpt-5.2",
+  "thinkingLevel": "none",
+  "reasoningEffort": "high",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "branchName": null,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "descriptionHistory": [],
+  "startedAt": "2026-01-11T18:37:25.593Z"
+}

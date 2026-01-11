@@ -1,0 +1,86 @@
+{
+  "id": "advanced-search-filters",
+  "category": "Knowledge Base",
+  "title": "Advanced Knowledge Base Search Filters",
+  "description": "Add sophisticated filtering options for RAG searches including date ranges, document types, entity filters, relation filters, and semantic similarity thresholds. Provides faceted search interface.",
+  "status": "verified",
+  "priority": 2,
+  "complexity": "moderate",
+  "dependencies": [],
+  "createdAt": "2026-01-11T17:24:12.293Z",
+  "updatedAt": "2026-01-11T18:26:53.876Z",
+  "skipTests": false,
+  "model": "codex-gpt-5.2",
+  "thinkingLevel": "none",
+  "reasoningEffort": "high",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "branchName": null,
+  "planningMode": "spec",
+  "requirePlanApproval": false,
+  "workMode": "custom",
+  "descriptionHistory": [],
+  "startedAt": "2026-01-11T17:54:17.372Z",
+  "planSpec": {
+    "status": "approved",
+    "version": 1,
+    "reviewedByUser": false,
+    "content": "🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc '~/.codex/superpowers/.codex/superpowers-codex bootstrap'\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc '~/.codex/superpowers/.codex/superpowers-codex use-skill superpowers:brainstorming'\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc ls\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc 'find .. -maxdepth 3 -name AGENTS.md -print'\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc 'ls -la'\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc \\\"test -f package.json && cat package.json || echo 'no package.json'\\\"\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc 'test -f pnpm-lock.yaml && echo pnpm || true; test -f yarn.lock && echo yarn || true; test -f package-lock.json && echo npm || true'\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc 'ls web'\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc \\\"test -f web/package.json && cat web/package.json || echo 'no web/package.json'\\\"\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc \\\"rg -n \\\\\\\"\\\\\\\\bRAG\\\\\\\\b|rag\\\\\\\\b|retrieval\\\\\\\" -S src web tests docs | head\\\"\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc 'rg -n \\\"advanced-search|facet|faceted|filters|filter\\\" -S web src | head -n 50'\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc 'rg -n \\\"search\\\" -S src | head -n 50'\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc 'ls src/api'\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc 'rg -n \\\"rag\\\" src/api -S'\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc 'rg -n \\\"kb_name|knowledge base|retrieval\\\" src/api -S'\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc \\\"sed -n '180,320p' docs/api/endpoints.md\\\"\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc \\\"sed -n '1,220p' docs/TESTING.md\\\"\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc \\\"sed -n '1,240p' src/services/rag/pipeline.py\\\"\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc \\\"sed -n '1,220p' src/services/rag/service.py\\\"\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc \\\"sed -n '1,260p' src/tools/rag_tool.py\\\"\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc \\\"sed -n '1,260p' src/services/rag/components/retrievers/hybrid.py\\\"\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc 'ls src/services/rag'\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc \\\"sed -n '1,260p' src/services/rag/factory.py\\\"\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc 'ls src/services/rag/providers'\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc 'rg -n \\\"list_pipelines|get_pipeline\\\" -S src/services/rag/factory.py src/services/rag/providers -S'\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc 'ls src/services/rag/pipelines'\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc \\\"sed -n '1,280p' src/services/rag/pipelines/lightrag.py\\\"\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc \\\"sed -n '1,320p' src/services/rag/pipelines/raganything.py\\\"\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc \\\"sed -n '1,280p' src/services/rag/pipelines/llamaindex.py\\\"\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc \\\"sed -n '1,340p' src/api/routers/chat.py\\\"\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc 'rg -n \\\"enable_rag\\\" web -S'\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc \\\"sed -n '1400,1760p' web/context/GlobalContext.tsx\\\"\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc \\\"sed -n '1,260p' src/services/rag/components/indexers/vector.py\\\"\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc \\\"sed -n '1,320p' src/services/rag/components/indexers/graph.py\\\"\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc \\\"sed -n '1,220p' src/services/rag/components/retrievers/dense.py\\\"\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc \\\"sed -n '1,260p' src/services/rag/types.py\\\"\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc \\\"rg -n \\\\\\\"rag_search\\\\\\\\(|RAGService\\\\\\\\(|kb_name\\\\\\\" src/agents -S | head -n 80\\\"\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc \\\"sed -n '140,260p' src/agents/chat/chat_agent.py\\\"\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc 'rg -n \\\"document_type|doc_type|created_at|updated_at|mime|file_type\\\" -S src web | head -n 120'\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc \\\"sed -n '1,260p' src/knowledge/initializer.py\\\"\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc \\\"sed -n '1,240p' src/services/rag/components/parsers/text.py\\\"\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc \\\"sed -n '1,240p' src/services/rag/components/chunkers/semantic.py\\\"\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc 'ls src/services/rag/components/parsers'\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc 'ls src/services/rag/components/chunkers'\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc 'ls web/app'\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc \\\"sed -n '1,240p' web/app/page.tsx\\\"\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc \\\"sed -n '1,240p' web/components/HomeChat.tsx\\\"\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc 'ls web/components | rg \\\"Chat|Search|Filter\\\"'\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc 'rg -n \\\"entity|entities|relation|relations|knowledge graph|graph\\\" src/services/rag src/api web -S | head -n 200'\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc \\\"rg -n \\\\\\\"entities\\\\\\\\b|relations\\\\\\\\b|statistics\\\\\\\" src/api/routers/knowledge.py -S\\\"\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc \\\"sed -n '240,420p' src/api/routers/knowledge.py\\\"\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc \\\"rg -n \\\\\\\"class KnowledgeBaseManager|get_info\\\\\\\\(\\\\\\\" -S src/knowledge src/api | head -n 80\\\"\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc \\\"sed -n '1,260p' src/knowledge/manager.py\\\"\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc 'ls data || true; ls data/knowledge_bases 2>/dev/null | head'\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc \\\"rg -n \\\\\\\"chat/completions|retrieval\\\\\\\\.top_k|threshold\\\\\\\" src/api -S\\\"\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc \\\"sed -n '740,820p' src/api/routers/settings.py\\\"\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc 'rg -n \\\"playwright\\\" -S . | head -n 100'\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc 'cat web/package.json | rg -n \\\"playwright\\\" || true'\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc \\\"sed -n '1,220p' src/api/main.py\\\"\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc 'ls src/api/routers && cat src/api/routers/__init__.py'\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc \\\"sed -n '1,140p' web/lib/api.ts\\\"\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc 'rg -n \\\"interface ChatState\\\" -S web/context/GlobalContext.tsx'\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc \\\"sed -n '200,280p' web/context/GlobalContext.tsx\\\"\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc 'rg -n \\\"def get_kb_manager\\\" -S src/api/routers/knowledge.py src/api -n'\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc \\\"sed -n '1,120p' src/api/routers/knowledge.py\\\"\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc \\\"sed -n '320,460p' src/agents/chat/chat_agent.py\\\"\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"/bin/zsh -lc 'ls web | rg \\\"playwright|tests\\\" || true; find web -maxdepth 2 -name \\\"playwright.config.*\\\" -print'\"\n}\n1. **Problem**: Users can’t precisely constrain RAG retrieval to the subset of knowledge-base content they actually want (by time, document type, entities/relations, and similarity cutoff), and there’s no faceted UI to iteratively refine results.\n\n2. **Solution**: Add a backend “advanced RAG search” API that returns filtered retrieval results plus facet counts, then expose a faceted “Advanced Filters” panel in the Home RAG chat flow and pass selected filters through the chat WebSocket so retrieval context respects them.\n\n3. **Acceptance Criteria**:\n   - GIVEN RAG is enabled on Home, WHEN the user opens Advanced Filters and runs a preview search, THEN the UI shows facet counts (date range, document types, entities, relations) and a preview result list.\n   - GIVEN a similarity threshold is set, WHEN a preview or chat retrieval runs, THEN returned results exclude items below the threshold and the applied threshold is visible in the UI state.\n   - GIVEN document type and date range filters are set, WHEN a preview or chat retrieval runs, THEN results and facet counts reflect those constraints.\n   - GIVEN entity/relation filters are selected, WHEN a preview or chat retrieval runs, THEN results are constrained to matching entity/relation criteria.\n   - GIVEN no advanced filters are set, WHEN the user sends a normal RAG chat message, THEN behavior matches current retrieval (no regressions).\n\n4. **Files to Modify**:\n   | File | Purpose | Action |\n   |------|---------|--------|\n   | `src/services/rag/advanced_search.py` | Core filtered retrieval + facet computation (KB chunk loading, similarity scoring, filtering) | create |\n   | `src/api/routers/rag_search.py` | HTTP API for advanced RAG search (results + facets) | create |\n   | `src/api/main.py` | Register new RAG search router | modify |\n   | `src/api/routers/chat.py` | Accept `rag_filters` in WS payload and forward to agent | modify |\n   | `src/agents/chat/chat_agent.py` | Thread `rag_filters` into retrieval and sources | modify |\n   | `src/tools/rag_tool.py` | Optional: expose advanced search helper for reuse | modify |\n   | `web/context/GlobalContext.tsx` | Store advanced filter state; include filters in WS payload | modify |\n   | `web/app/page.tsx` | Add faceted Advanced Filters UI in Home chat | modify |\n   | `web/components/RagAdvancedFilters.tsx` | Reusable faceted filter panel + preview | create |\n   | `web/lib/i18n.ts` | UI strings for filters/facets | modify |\n   | `web/types/rag.ts` | Shared TS types for filters/facets/results | create |\n\n5. **Implementation Tasks**:\n```tasks\n- [ ] T001: Define backend filter models and implement advanced RAG search (load KB chunk data, score, filter, compute facets) | File: src/services/rag/advanced_search.py\n- [ ] T002: Add `/api/v1/rag/search` endpoint returning `{results, facets}` and validating filter inputs | File: src/api/routers/rag_search.py\n- [ ] T003: Register the new router in the API app | File: src/api/main.py\n- [ ] T004: Extend chat WebSocket payload to accept `rag_filters` and pass through to ChatAgent | File: src/api/routers/chat.py\n- [ ] T005: Update ChatAgent to apply `rag_filters` during RAG context retrieval and include filtered source summaries | File: src/agents/chat/chat_agent.py\n- [ ] T006: Add frontend filter/result types and wire filter state into GlobalContext chat payload | File: web/context/GlobalContext.tsx\n- [ ] T007: Implement faceted Advanced Filters UI with preview calling `/api/v1/rag/search` and integrate into Home | File: web/app/page.tsx\n- [ ] T008: Add translations for the new filter UI | File: web/lib/i18n.ts\n```\n\n6. **Verification**:\n- Manual: Run backend + web app, enable RAG on Home, open Advanced Filters, run preview, apply filters, confirm facets/results update and sending chat uses filtered retrieval context.\n- Playwright (required): Create a temporary test (e.g. `web/tmp-advanced-search-filters.spec.ts`) that:\n  - Opens Home, enables RAG, opens Advanced Filters, sets a similarity threshold, triggers preview, asserts facet UI renders and preview results update.\n  - Sends a chat message and asserts a RAG sources block appears and reflects filtered behavior.\n  - Run `cd web && npx playwright test tmp-advanced-search-filters.spec.ts`, then delete the spec file.",
+    "generatedAt": "2026-01-11T18:00:06.188Z",
+    "tasks": [
+      {
+        "id": "T001",
+        "description": "Define backend filter models and implement advanced RAG search (load KB chunk data, score, filter, compute facets)",
+        "filePath": "src/services/rag/advanced_search.py",
+        "status": "pending"
+      },
+      {
+        "id": "T002",
+        "description": "Add `/api/v1/rag/search` endpoint returning `{results, facets}` and validating filter inputs",
+        "filePath": "src/api/routers/rag_search.py",
+        "status": "pending"
+      },
+      {
+        "id": "T003",
+        "description": "Register the new router in the API app",
+        "filePath": "src/api/main.py",
+        "status": "pending"
+      },
+      {
+        "id": "T004",
+        "description": "Extend chat WebSocket payload to accept `rag_filters` and pass through to ChatAgent",
+        "filePath": "src/api/routers/chat.py",
+        "status": "pending"
+      },
+      {
+        "id": "T005",
+        "description": "Update ChatAgent to apply `rag_filters` during RAG context retrieval and include filtered source summaries",
+        "filePath": "src/agents/chat/chat_agent.py",
+        "status": "pending"
+      },
+      {
+        "id": "T006",
+        "description": "Add frontend filter/result types and wire filter state into GlobalContext chat payload",
+        "filePath": "web/context/GlobalContext.tsx",
+        "status": "pending"
+      },
+      {
+        "id": "T007",
+        "description": "Implement faceted Advanced Filters UI with preview calling `/api/v1/rag/search` and integrate into Home",
+        "filePath": "web/app/page.tsx",
+        "status": "pending"
+      },
+      {
+        "id": "T008",
+        "description": "Add translations for the new filter UI",
+        "filePath": "web/lib/i18n.ts",
+        "status": "pending"
+      }
+    ],
+    "tasksTotal": 8,
+    "tasksCompleted": 8,
+    "approvedAt": "2026-01-11T18:00:06.190Z",
+    "currentTaskId": "T008"
+  },
+  "prUrl": "https://github.com/yinkev/praDeep/pull/11"
+}

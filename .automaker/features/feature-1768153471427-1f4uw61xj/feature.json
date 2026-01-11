@@ -1,0 +1,14 @@
+{
+  "category": "ui",
+  "description": "- Users must: define topics → monitor dynamic queue → manually adjust priorities - **Pain point**: No automatic topic expansion or merging of related research - **Time sink**: Babysitting the research queue",
+  "title": "3. Research Pipeline Manual Topic Management",
+  "status": "backlog",
+  "id": "feature-1768153471427-1f4uw61xj",
+  "descriptionHistory": [
+    {
+      "description": "- Users must: define topics → monitor dynamic queue → manually adjust priorities - **Pain point**: No automatic topic expansion or merging of related research - **Time sink**: Babysitting the research queue",
+      "timestamp": "2026-01-11T17:44:31.428Z",
+      "source": "initial"
+    }
+  ]
+}

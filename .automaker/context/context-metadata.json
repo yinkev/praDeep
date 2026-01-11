@@ -1,0 +1,7 @@
+{
+  "files": {
+    "praDeep-architecture-overview.md": {
+      "description": "Comprehensive system architecture documentation for praDeep, an AI tutor platform combining a FastAPI backend with multi-agent workflows (solve, research, question generation, guided learning) and a Next.js frontend, detailing repository structure, API layer design, agent orchestration patterns, shared services (LLM/embeddings/RAG stacks), data persistence model, and deployment approach. This reference is essential for understanding how agents interact, where to find specific functionality, and how to integrate new features into the multi-agent orchestration system."
+    }
+  }
+}

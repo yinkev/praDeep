@@ -1,0 +1,14 @@
+{
+  "id": "document-annotation",
+  "category": "Knowledge Base",
+  "title": "Collaborative Document Annotation",
+  "description": "Enable users to highlight, annotate, and tag documents in knowledge base with threaded comments. Annotations are searchable and can be shared with team members.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "moderate",
+  "dependencies": [
+    "user-authentication"
+  ],
+  "createdAt": "2026-01-11T17:24:12.303Z",
+  "updatedAt": "2026-01-11T17:24:12.303Z"
+}

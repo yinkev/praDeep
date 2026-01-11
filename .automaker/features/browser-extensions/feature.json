@@ -1,0 +1,14 @@
+{
+  "id": "browser-extensions",
+  "category": "Integration",
+  "title": "Browser Extension for Quick Access",
+  "description": "Create Chrome and Firefox extensions enabling users to highlight text on any webpage and send to praDeep agents for explanation, summarization, or question generation.",
+  "status": "backlog",
+  "priority": 3,
+  "complexity": "moderate",
+  "dependencies": [
+    "user-authentication"
+  ],
+  "createdAt": "2026-01-11T17:24:12.305Z",
+  "updatedAt": "2026-01-11T17:24:12.305Z"
+}

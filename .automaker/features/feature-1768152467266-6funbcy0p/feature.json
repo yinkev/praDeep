@@ -1,0 +1,27 @@
+{
+  "category": "ui",
+  "description": "Curated repository of practice problems across subjects with AI-driven selection that adapts to user skill level. Tracks performance metrics and automatically suggests problems at the optimal difficulty level to maintain engagement and learning efficiency.\n\n**Rationale:** Learners need abundant practice opportunities beyond generated questions. A problem bank with smart selection helps users find appropriate challenges without overwhelming beginners or boring advanced users.",
+  "title": "Practice Problem Bank with Adaptive Selection",
+  "status": "in_progress",
+  "id": "feature-1768152467266-6funbcy0p",
+  "descriptionHistory": [
+    {
+      "description": "Curated repository of practice problems across subjects with AI-driven selection that adapts to user skill level. Tracks performance metrics and automatically suggests problems at the optimal difficulty level to maintain engagement and learning efficiency.\n\n**Rationale:** Learners need abundant practice opportunities beyond generated questions. A problem bank with smart selection helps users find appropriate challenges without overwhelming beginners or boring advanced users.",
+      "timestamp": "2026-01-11T17:27:47.267Z",
+      "source": "initial"
+    }
+  ],
+  "skipTests": false,
+  "model": "codex-gpt-5.2",
+  "thinkingLevel": "none",
+  "reasoningEffort": "high",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "branchName": null,
+  "priority": 2,
+  "planningMode": "full",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "startedAt": "2026-01-11T18:39:27.547Z",
+  "updatedAt": "2026-01-11T18:39:27.687Z"
+}

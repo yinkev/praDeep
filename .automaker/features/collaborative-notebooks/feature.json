@@ -1,0 +1,14 @@
+{
+  "id": "collaborative-notebooks",
+  "category": "Collaboration",
+  "title": "Real-time Collaborative Notebooks",
+  "description": "Enable multiple users to simultaneously edit notebooks with operational transformation or CRDT-based conflict resolution. Shows live cursors and real-time updates via WebSocket.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "complex",
+  "dependencies": [
+    "user-authentication"
+  ],
+  "createdAt": "2026-01-11T17:24:12.294Z",
+  "updatedAt": "2026-01-11T17:24:12.294Z"
+}

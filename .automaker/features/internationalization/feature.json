@@ -1,0 +1,12 @@
+{
+  "id": "internationalization",
+  "category": "UI",
+  "title": "Extended Language Support",
+  "description": "Expand language support beyond English and Chinese to include Spanish, French, German, Japanese, Korean, and Arabic with RTL support. Includes localized prompts and UI strings.",
+  "status": "backlog",
+  "priority": 3,
+  "complexity": "moderate",
+  "dependencies": [],
+  "createdAt": "2026-01-11T17:24:12.305Z",
+  "updatedAt": "2026-01-11T17:24:12.305Z"
+}

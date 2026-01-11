@@ -1,0 +1,14 @@
+{
+  "category": "ui",
+  "description": "- Each solve run requires: question input → KB selection → tool selection → settings configuration - **Pain point**: No saved preferences or templates for similar problem types - **Time sink**: Re-configuring same settings for similar questions",
+  "title": "2. Solve Agent Configuration Overhead",
+  "status": "backlog",
+  "id": "feature-1768153466156-iy0makc87",
+  "descriptionHistory": [
+    {
+      "description": "- Each solve run requires: question input → KB selection → tool selection → settings configuration - **Pain point**: No saved preferences or templates for similar problem types - **Time sink**: Re-configuring same settings for similar questions",
+      "timestamp": "2026-01-11T17:44:26.157Z",
+      "source": "initial"
+    }
+  ]
+}

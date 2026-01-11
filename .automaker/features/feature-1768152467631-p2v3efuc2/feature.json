@@ -1,0 +1,28 @@
+{
+  "category": "ui",
+  "description": "Interactive visualization showing mastery levels across different concepts and topics, with prerequisite relationships displayed as a skill tree. Updates automatically based on question performance, notebook activity, and solve agent interactions.\n\n**Rationale:** Users need clear visibility into what they've mastered and what requires more work. Visual progress tracking motivates learners and helps identify knowledge gaps, a standard feature in modern educational platforms.",
+  "title": "Concept Mastery Tracker with Visual Progress Maps",
+  "status": "completed",
+  "id": "feature-1768152467631-p2v3efuc2",
+  "descriptionHistory": [
+    {
+      "description": "Interactive visualization showing mastery levels across different concepts and topics, with prerequisite relationships displayed as a skill tree. Updates automatically based on question performance, notebook activity, and solve agent interactions.\n\n**Rationale:** Users need clear visibility into what they've mastered and what requires more work. Visual progress tracking motivates learners and helps identify knowledge gaps, a standard feature in modern educational platforms.",
+      "timestamp": "2026-01-11T17:27:47.632Z",
+      "source": "initial"
+    }
+  ],
+  "skipTests": false,
+  "model": "codex-gpt-5.2",
+  "thinkingLevel": "none",
+  "reasoningEffort": "high",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "branchName": null,
+  "priority": 2,
+  "planningMode": "full",
+  "requirePlanApproval": false,
+  "workMode": "custom",
+  "startedAt": "2026-01-11T17:55:11.638Z",
+  "updatedAt": "2026-01-11T17:58:47.901Z",
+  "prUrl": "https://github.com/yinkev/praDeep/pull/9"
+}

@@ -1,0 +1,23 @@
+{
+  "id": "incremental-indexing",
+  "category": "Performance",
+  "title": "Incremental Knowledge Base Indexing",
+  "description": "Optimize knowledge base updates with incremental indexing that only processes changed documents rather than rebuilding entire index. Significantly reduces update times for large knowledge bases.",
+  "status": "completed",
+  "priority": 1,
+  "complexity": "complex",
+  "dependencies": [],
+  "createdAt": "2026-01-11T17:24:12.304Z",
+  "updatedAt": "2026-01-11T17:38:27.029Z",
+  "startedAt": "2026-01-11T17:30:22.459Z",
+  "descriptionHistory": [],
+  "skipTests": false,
+  "model": "opus",
+  "thinkingLevel": "none",
+  "reasoningEffort": "none",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "planningMode": "full",
+  "requirePlanApproval": false,
+  "workMode": "current"
+}

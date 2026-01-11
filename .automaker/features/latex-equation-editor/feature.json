@@ -1,0 +1,12 @@
+{
+  "id": "latex-equation-editor",
+  "category": "UI",
+  "title": "Visual LaTeX Equation Editor",
+  "description": "Add WYSIWYG equation editor for mathematical input with symbol palette, common templates, and real-time LaTeX preview. Integrates with all text input fields across the platform.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "moderate",
+  "dependencies": [],
+  "createdAt": "2026-01-11T17:24:12.300Z",
+  "updatedAt": "2026-01-11T17:24:12.300Z"
+}

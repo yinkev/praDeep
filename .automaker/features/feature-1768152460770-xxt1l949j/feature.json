@@ -1,0 +1,26 @@
+{
+  "category": "ui",
+  "description": "Persistent memory system that remembers user preferences, common topics, recurring questions, and learning patterns across all agent interactions. Enables agents to provide increasingly personalized responses without requiring context repetition.\n\n**Rationale:** Users expect AI systems to remember their context and preferences over time. Cross-session memory creates a more natural, efficient interaction pattern and reduces repetitive setup.",
+  "title": "Cross-session Context Memory",
+  "status": "completed",
+  "id": "feature-1768152460770-xxt1l949j",
+  "descriptionHistory": [
+    {
+      "description": "Persistent memory system that remembers user preferences, common topics, recurring questions, and learning patterns across all agent interactions. Enables agents to provide increasingly personalized responses without requiring context repetition.\n\n**Rationale:** Users expect AI systems to remember their context and preferences over time. Cross-session memory creates a more natural, efficient interaction pattern and reduces repetitive setup.",
+      "timestamp": "2026-01-11T17:27:40.770Z",
+      "source": "initial"
+    }
+  ],
+  "startedAt": "2026-01-11T17:36:03.579Z",
+  "updatedAt": "2026-01-11T17:45:49.699Z",
+  "skipTests": false,
+  "model": "sonnet",
+  "thinkingLevel": "medium",
+  "reasoningEffort": "none",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "priority": 2,
+  "planningMode": "full",
+  "requirePlanApproval": false,
+  "workMode": "current"
+}

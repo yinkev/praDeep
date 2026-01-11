@@ -1,0 +1,14 @@
+{
+  "id": "research-paper-recommendations",
+  "category": "Agent Enhancement",
+  "title": "AI-powered Paper Recommendation Engine",
+  "description": "Enhance Research Agent with ML-based paper recommendation using citation networks, semantic similarity, and user reading history. Integrates with arXiv, Semantic Scholar, and OpenAlex APIs.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "complex",
+  "dependencies": [],
+  "createdAt": "2026-01-11T17:24:12.296Z",
+  "updatedAt": "2026-01-11T17:45:36.929Z",
+  "startedAt": "2026-01-11T17:37:32.329Z",
+  "descriptionHistory": []
+}

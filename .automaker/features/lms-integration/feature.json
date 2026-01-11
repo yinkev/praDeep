@@ -1,0 +1,15 @@
+{
+  "id": "lms-integration",
+  "category": "Integration",
+  "title": "LMS Integration (Canvas, Moodle, Blackboard)",
+  "description": "Develop LTI integration for embedding praDeep within learning management systems. Supports grade passback, single sign-on, and assignment creation from LMS.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "complex",
+  "dependencies": [
+    "sso-integration",
+    "rbac-system"
+  ],
+  "createdAt": "2026-01-11T17:24:12.305Z",
+  "updatedAt": "2026-01-11T17:24:12.305Z"
+}

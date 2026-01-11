@@ -1,0 +1,15 @@
+{
+  "id": "batch-document-upload",
+  "category": "Knowledge Base",
+  "title": "Batch Document Upload with Progress Tracking",
+  "description": "Enable simultaneous upload of multiple documents (PDFs, images, text files) with real-time progress indicators, parallel parsing, and error handling per file. Supports drag-and-drop and folder uploads.",
+  "status": "backlog",
+  "priority": 1,
+  "complexity": "moderate",
+  "dependencies": [],
+  "createdAt": "2026-01-11T17:24:12.293Z",
+  "updatedAt": "2026-01-11T17:29:18.472Z",
+  "branchName": "main",
+  "descriptionHistory": [],
+  "startedAt": "2026-01-11T17:28:59.211Z"
+}

@@ -1,0 +1,15 @@
+{
+  "id": "agent-performance-monitoring",
+  "category": "Core",
+  "title": "Agent Performance Analytics Dashboard",
+  "description": "Implement real-time performance monitoring for all agent workflows tracking response times, token efficiency, success rates, and error patterns. Provides aggregated statistics per agent type with exportable reports and visual charts.",
+  "status": "backlog",
+  "priority": 1,
+  "complexity": "moderate",
+  "dependencies": [],
+  "createdAt": "2026-01-11T17:24:12.288Z",
+  "updatedAt": "2026-01-11T17:46:53.072Z",
+  "branchName": "main",
+  "descriptionHistory": [],
+  "startedAt": "2026-01-11T17:46:45.984Z"
+}

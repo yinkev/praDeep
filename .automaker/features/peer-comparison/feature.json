@@ -1,0 +1,15 @@
+{
+  "id": "peer-comparison",
+  "category": "Learning Features",
+  "title": "Anonymous Peer Performance Comparison",
+  "description": "Enable users to compare their learning metrics with anonymized peer cohorts studying similar topics. Shows percentile rankings and improvement suggestions without revealing identities.",
+  "status": "backlog",
+  "priority": 3,
+  "complexity": "moderate",
+  "dependencies": [
+    "learning-analytics",
+    "user-authentication"
+  ],
+  "createdAt": "2026-01-11T17:24:12.299Z",
+  "updatedAt": "2026-01-11T17:24:12.299Z"
+}

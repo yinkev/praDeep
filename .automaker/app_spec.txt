@@ -1,0 +1,302 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project_specification>
+  <project_name>praDeep (AI Tutor)</project_name>
+
+  <overview>
+    praDeep is a full-stack AI tutoring system that combines a FastAPI backend with a Next.js frontend, built around multi-agent workflows and a local RAG (Retrieval-Augmented Generation) knowledge base. The system provides intelligent learning assistance through seven specialized agent workflows: Solve (dual-loop problem-solving with citations), Research (DR-in-KG 2.0 dynamic research pipeline), Question (ReAct-style question generation with validation), Guide (session-based learning plans with HTML generation), Co-writer (text editing with RAG/web augmentation and TTS narration), IdeaGen (multi-stage idea filtering from knowledge), and Chat (multi-turn RAG/web-augmented conversations). The platform supports multiple LLM providers (OpenAI, Ollama, Azure, Groq, OpenRouter), multiple embedding providers, and multiple RAG pipelines (RAGAnything with MinerU parsing + LightRAG knowledge graphs). It features hybrid retrieval with reranking, knowledge base management with entity/relation graphs, and comprehensive logging and token tracking.
+  </overview>
+
+  <technology_stack>
+    <technology>Python 3.10+</technology>
+    <technology>FastAPI 0.100+</technology>
+    <technology>Uvicorn (ASGI server)</technology>
+    <technology>Pydantic 2.0+ (data validation)</technology>
+    <technology>Next.js 16.1+ (React 19 frontend)</technology>
+    <technology>TypeScript 5</technology>
+    <technology>Tailwind CSS 3.4</technology>
+    <technology>React Markdown with KaTeX support</technology>
+    <technology>Mermaid (diagram rendering)</technology>
+    <technology>Cytoscape (graph visualization)</technology>
+    <technology>Framer Motion (animations)</technology>
+    <technology>OpenAI SDK 1.30+</technology>
+    <technology>LightRAG (knowledge graph RAG)</technology>
+    <technology>RAGAnything (multimodal RAG with MinerU)</technology>
+    <technology>LlamaIndex (document parsing)</technology>
+    <technology>LlamaParse (PDF parsing)</technology>
+    <technology>tiktoken (token counting)</technology>
+    <technology>Perplexity AI / Baidu AI Search (web search)</technology>
+    <technology>arXiv API (paper search)</technology>
+    <technology>WebSockets (real-time updates)</technology>
+    <technology>aiohttp/httpx (async HTTP)</technology>
+    <technology>nest-asyncio (async support)</technology>
+    <technology>python-dotenv (configuration)</technology>
+    <technology>PyYAML (config files)</technology>
+    <technology>Black/Ruff (code formatting/linting)</technology>
+    <technology>Pre-commit hooks</technology>
+  </technology_stack>
+
+  <core_capabilities>
+    <capability>Multi-agent AI tutoring with 7 specialized workflows (Solve, Research, Question, Guide, Co-writer, IdeaGen, Chat)</capability>
+    <capability>Local RAG knowledge base with hybrid retrieval (naive, local, global, hybrid modes)</capability>
+    <capability>Knowledge graph construction with entity/relation extraction via LightRAG</capability>
+    <capability>Multi-provider LLM support (OpenAI, Ollama, Azure, Groq, OpenRouter, local servers)</capability>
+    <capability>Multi-provider embedding support (OpenAI, Cohere, Jina, Ollama, Qwen3-VL)</capability>
+    <capability>Document parsing with MinerU for PDFs, images, and multimodal content</capability>
+    <capability>Dual-loop problem-solving architecture (Analysis Loop → Solve Loop)</capability>
+    <capability>DR-in-KG 2.0 research pipeline with dynamic topic queue and parallel execution</capability>
+    <capability>ReAct-style question generation with validation workflow and exam mimic mode</capability>
+    <capability>Session-based guided learning with interactive HTML page generation</capability>
+    <capability>Co-writing assistance with text rewriting, expansion, shortening, and TTS narration</capability>
+    <capability>Idea generation workflow with multi-stage filtering from notebook knowledge</capability>
+    <capability>Multi-turn chat with conversation history management and token-based truncation</capability>
+    <capability>Web search integration (Perplexity AI, Baidu AI Search)</capability>
+    <capability>Academic paper search (arXiv API)</capability>
+    <capability>Code execution sandbox for computational tasks</capability>
+    <capability>Real-time progress updates via WebSocket</capability>
+    <capability>Comprehensive token tracking and cost reporting</capability>
+    <capability>Citation management with formatted references</capability>
+    <capability>Multilingual support (English and Chinese)</capability>
+  </core_capabilities>
+
+  <implemented_features>
+    <feature>
+      <name>Solve Agent Workflow</name>
+      <description>Dual-loop architecture for problem-solving: Analysis Loop (InvestigateAgent + NoteAgent) for understanding questions and gathering knowledge, followed by Solve Loop (ManagerAgent, SolveAgent, ToolAgent, ResponseAgent) for generating step-by-step solutions with citations</description>
+      <file_locations>
+        <location>src/agents/solve/main_solver.py</location>
+        <location>src/agents/solve/analysis_loop/investigate_agent.py</location>
+        <location>src/agents/solve/analysis_loop/note_agent.py</location>
+        <location>src/agents/solve/solve_loop/manager_agent.py</location>
+        <location>src/agents/solve/solve_loop/solve_agent.py</location>
+        <location>src/agents/solve/solve_loop/response_agent.py</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>Research Agent Workflow</name>
+      <description>DR-in-KG 2.0 research pipeline with three phases: Planning (topic rephrasing and decomposition), Researching (dynamic topic queue with parallel execution support), and Reporting (citation-aware report generation). Supports both series and parallel execution modes.</description>
+      <file_locations>
+        <location>src/agents/research/research_pipeline.py</location>
+        <location>src/agents/research/agents/rephrase_agent.py</location>
+        <location>src/agents/research/agents/decompose_agent.py</location>
+        <location>src/agents/research/agents/research_agent.py</location>
+        <location>src/agents/research/agents/reporting_agent.py</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>Question Generation Agent</name>
+      <description>ReAct-style question generation with validation workflow. Includes QuestionGenerationAgent for creating questions and QuestionValidationWorkflow for quality assurance. Supports batch generation, parallel generation, and custom mode with exam mimic capabilities.</description>
+      <file_locations>
+        <location>src/agents/question/coordinator.py</location>
+        <location>src/agents/question/agents/generation_agent.py</location>
+        <location>src/agents/question/validation_workflow.py</location>
+        <location>src/agents/question/tools/exam_mimic.py</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>Guide Agent Workflow</name>
+      <description>Session-based guided learning system. LocateAgent identifies knowledge points from notebooks, InteractiveAgent generates HTML learning pages, ChatAgent handles Q&amp;A during sessions, and SummaryAgent creates completion summaries.</description>
+      <file_locations>
+        <location>src/agents/guide/guide_manager.py</location>
+        <location>src/agents/guide/agents/locate_agent.py</location>
+        <location>src/agents/guide/agents/interactive_agent.py</location>
+        <location>src/agents/guide/agents/chat_agent.py</location>
+        <location>src/agents/guide/agents/summary_agent.py</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>Co-writer Agent</name>
+      <description>Text editing assistant supporting rewrite, shorten, and expand operations with optional RAG or web search context augmentation. Includes auto-marking feature for annotations and TTS narration capabilities.</description>
+      <file_locations>
+        <location>src/agents/co_writer/edit_agent.py</location>
+        <location>src/agents/co_writer/narrator_agent.py</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>IdeaGen Workflow</name>
+      <description>Multi-stage idea generation from notebook knowledge: loose filtering of knowledge points, exploration of research ideas (5+ per point), strict filtering based on feasibility, and markdown statement generation.</description>
+      <file_locations>
+        <location>src/agents/ideagen/idea_generation_workflow.py</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>Chat Agent</name>
+      <description>Lightweight conversational agent with multi-turn support, token-based context truncation, optional RAG retrieval, web search integration, and streaming response generation.</description>
+      <file_locations>
+        <location>src/agents/chat/chat_agent.py</location>
+        <location>src/agents/chat/session_manager.py</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>RAG Knowledge Base System</name>
+      <description>Configurable RAG pipeline supporting multiple providers (RAGAnything, LightRAG). Features hybrid retrieval modes (naive, local, global, hybrid), knowledge graph construction with entities/relations, and multi-provider embeddings.</description>
+      <file_locations>
+        <location>src/knowledge/manager.py</location>
+        <location>src/tools/rag_tool.py</location>
+        <location>src/services/rag/service.py</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>Multi-provider LLM Support</name>
+      <description>Unified LLM interface supporting multiple providers: OpenAI, Azure OpenAI, Ollama, LM Studio, Groq, OpenRouter, and local LLM servers. Includes provider configuration management and automatic routing.</description>
+      <file_locations>
+        <location>src/services/llm/</location>
+        <location>settings.py</location>
+        <location>src/api/routers/llm_provider.py</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>Web Search Integration</name>
+      <description>Dual provider web search supporting Perplexity AI and Baidu AI Search APIs. Returns structured results with citations and search results for RAG augmentation.</description>
+      <file_locations>
+        <location>src/tools/web_search.py</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>Paper Search Tool</name>
+      <description>Academic paper search using arXiv API with year-based filtering for finding relevant research papers.</description>
+      <file_locations>
+        <location>src/tools/paper_search_tool.py</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>Code Executor</name>
+      <description>Sandboxed Python code execution for computational tasks within agent workflows.</description>
+      <file_locations>
+        <location>src/tools/code_executor.py</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>FastAPI Backend</name>
+      <description>REST and WebSocket API server with routers for all agent workflows, knowledge base management, LLM/embedding provider configuration, and system settings.</description>
+      <file_locations>
+        <location>src/api/run_server.py</location>
+        <location>src/api/routers/solve.py</location>
+        <location>src/api/routers/research.py</location>
+        <location>src/api/routers/question.py</location>
+        <location>src/api/routers/guide.py</location>
+        <location>src/api/routers/chat.py</location>
+        <location>src/api/routers/knowledge.py</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>Next.js Frontend</name>
+      <description>Modern React 19 frontend with pages for Solver, Research, Question, Guide, Co-writer, IdeaGen, Notebook, Knowledge Base, and Settings. Features real-time WebSocket updates, LaTeX rendering, Mermaid diagrams, and responsive design.</description>
+      <file_locations>
+        <location>web/app/solver/page.tsx</location>
+        <location>web/app/research/page.tsx</location>
+        <location>web/app/question/page.tsx</location>
+        <location>web/app/guide/page.tsx</location>
+        <location>web/app/co_writer/page.tsx</location>
+        <location>web/app/ideagen/page.tsx</location>
+        <location>web/app/knowledge/page.tsx</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>Unified Logging System</name>
+      <description>Comprehensive logging with console, file, and WebSocket handlers. Supports LLM call logging, stage progress tracking, and cost reporting.</description>
+      <file_locations>
+        <location>src/logging/config.py</location>
+        <location>src/logging/handlers/console.py</location>
+        <location>src/logging/handlers/file.py</location>
+        <location>src/logging/handlers/websocket.py</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>Token Tracking and Cost Reporting</name>
+      <description>Tracks token usage across all LLM calls with cost estimation. Provides per-agent and per-stage breakdowns with exportable reports.</description>
+      <file_locations>
+        <location>src/agents/solve/utils/token_tracker.py</location>
+        <location>src/agents/research/utils/token_tracker.py</location>
+        <location>src/logging/stats/</location>
+      </file_locations>
+    </feature>
+  </implemented_features>
+
+  <additional_requirements>
+    <requirement>Python &gt;= 3.10</requirement>
+    <requirement>Node.js &gt;= 18 for frontend</requirement>
+    <requirement>LLM provider API key (OpenAI, Anthropic, or local server)</requirement>
+    <requirement>Embedding provider API key or local Ollama</requirement>
+    <requirement>Optional: Perplexity API key for web search</requirement>
+    <requirement>Optional: arXiv API access for paper search</requirement>
+    <requirement>Optional: CUDA-capable GPU for local LLM inference</requirement>
+    <requirement>Data directory structure: data/knowledge_bases/ for KB storage, data/user/ for runs/sessions/logs</requirement>
+  </additional_requirements>
+
+  <development_guidelines>
+    <guideline>Python 3.10+ required with type hints throughout</guideline>
+    <guideline>Use Black for code formatting (line-length=100)</guideline>
+    <guideline>Use Ruff for linting with pycodestyle errors, pyflakes, and isort rules</guideline>
+    <guideline>Follow async/await patterns for all LLM and I/O operations</guideline>
+    <guideline>Use Pydantic models for request/response validation</guideline>
+    <guideline>Agents inherit from BaseAgent for unified LLM interface and token tracking</guideline>
+    <guideline>Prompts managed via PromptManager with language-specific templates (zh/en)</guideline>
+    <guideline>Configuration via YAML files in config/ directory with main.yaml as primary</guideline>
+    <guideline>Environment variables for secrets (API keys) via .env file</guideline>
+    <guideline>Pre-commit hooks for code quality enforcement</guideline>
+    <guideline>All API routes defined in src/api/routers/ with FastAPI dependency injection</guideline>
+  </development_guidelines>
+
+  <implementation_roadmap>
+    <phase>
+      <name>Core Multi-Agent Framework</name>
+      <status>completed</status>
+      <description>Unified BaseAgent class, LLM service factory with multi-provider routing, prompt management system, token tracking, and logging infrastructure</description>
+    </phase>
+    <phase>
+      <name>Solve Agent Workflow</name>
+      <status>completed</status>
+      <description>Dual-loop architecture with Analysis Loop (Investigate + Note) and Solve Loop (Manager, Solve, Tool, Response agents) with citation management</description>
+    </phase>
+    <phase>
+      <name>Research Agent Workflow</name>
+      <status>completed</status>
+      <description>DR-in-KG 2.0 pipeline with planning, dynamic topic queue, parallel/series execution modes, and citation-aware reporting</description>
+    </phase>
+    <phase>
+      <name>Question Generation Agent</name>
+      <status>completed</status>
+      <description>ReAct-style generation with validation workflow, batch generation, parallel generation, custom mode, and exam mimic tools</description>
+    </phase>
+    <phase>
+      <name>Guide Agent Workflow</name>
+      <status>completed</status>
+      <description>Session-based learning with knowledge point identification, interactive HTML generation, in-session chat, and completion summaries</description>
+    </phase>
+    <phase>
+      <name>Co-writer Agent</name>
+      <status>completed</status>
+      <description>Text editing operations (rewrite, shorten, expand), RAG/web augmentation, auto-marking, and TTS narration support</description>
+    </phase>
+    <phase>
+      <name>IdeaGen Workflow</name>
+      <status>completed</status>
+      <description>Multi-stage idea generation with loose filtering, exploration, strict filtering, and statement generation</description>
+    </phase>
+    <phase>
+      <name>Chat Agent</name>
+      <status>completed</status>
+      <description>Multi-turn conversation with history management, token truncation, RAG/web retrieval, and streaming support</description>
+    </phase>
+    <phase>
+      <name>RAG Knowledge Base System</name>
+      <status>completed</status>
+      <description>Multi-provider RAG (RAGAnything, LightRAG), hybrid retrieval modes, knowledge graph with entities/relations, document parsing</description>
+    </phase>
+    <phase>
+      <name>FastAPI Backend</name>
+      <status>completed</status>
+      <description>REST/WebSocket API with routers for all agents, knowledge base management, provider configuration, and system settings</description>
+    </phase>
+    <phase>
+      <name>Next.js Frontend</name>
+      <status>completed</status>
+      <description>React 19 UI with pages for all workflows, real-time WebSocket updates, LaTeX/Mermaid rendering, and responsive design</description>
+    </phase>
+    <phase>
+      <name>Multi-provider LLM/Embedding Support</name>
+      <status>completed</status>
+      <description>Unified interface for OpenAI, Ollama, Azure, Groq, OpenRouter, and local servers with runtime switching</description>
+    </phase>
+  </implementation_roadmap>
+</project_specification>

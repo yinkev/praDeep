@@ -1,0 +1,15 @@
+{
+  "id": "health-monitoring",
+  "category": "Operations",
+  "title": "System Health Monitoring Dashboard",
+  "description": "Create operational dashboard monitoring service health, LLM provider status, database connections, queue depths, and error rates. Integrates with alerting systems (PagerDuty, Slack).",
+  "status": "backlog",
+  "priority": 1,
+  "complexity": "moderate",
+  "dependencies": [],
+  "createdAt": "2026-01-11T17:24:12.304Z",
+  "updatedAt": "2026-01-11T17:28:55.169Z",
+  "branchName": "main",
+  "descriptionHistory": [],
+  "startedAt": "2026-01-11T17:28:11.155Z"
+}

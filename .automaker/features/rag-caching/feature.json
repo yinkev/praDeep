@@ -1,0 +1,23 @@
+{
+  "id": "rag-caching",
+  "category": "Performance",
+  "title": "RAG Query Result Caching",
+  "description": "Implement intelligent caching layer for RAG queries using Redis or in-memory cache with TTL. Reduces redundant embedding computations and LLM calls for similar queries.",
+  "status": "completed",
+  "priority": 1,
+  "complexity": "moderate",
+  "dependencies": [],
+  "createdAt": "2026-01-11T17:24:12.292Z",
+  "updatedAt": "2026-01-11T17:39:54.742Z",
+  "startedAt": "2026-01-11T17:31:26.259Z",
+  "descriptionHistory": [],
+  "skipTests": false,
+  "model": "opus",
+  "thinkingLevel": "none",
+  "reasoningEffort": "none",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "planningMode": "full",
+  "requirePlanApproval": false,
+  "workMode": "current"
+}

@@ -1,0 +1,15 @@
+{
+  "id": "content-moderation",
+  "category": "Security",
+  "title": "AI Content Moderation System",
+  "description": "Implement input/output filtering for inappropriate content, PII detection, and jailbreak attempt prevention using OpenAI Moderation API and custom rules. Logs flagged content for review.",
+  "status": "backlog",
+  "priority": 1,
+  "complexity": "moderate",
+  "dependencies": [],
+  "createdAt": "2026-01-11T17:24:12.302Z",
+  "updatedAt": "2026-01-11T17:29:19.128Z",
+  "branchName": "main",
+  "descriptionHistory": [],
+  "startedAt": "2026-01-11T17:28:51.312Z"
+}

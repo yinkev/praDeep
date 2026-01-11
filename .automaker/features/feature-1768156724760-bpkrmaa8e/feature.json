@@ -1,0 +1,31 @@
+{
+  "category": "Uncategorized",
+  "description": "## Parent Task Context (Already Completed)\n\n> **Note:** The following parent task has already been completed. This context is provided to help you understand the background and requirements for this sub-task. Do not re-implement the parent task - focus only on the new sub-task described below.\n\n### Smart Study Schedule Generator\n\n**Description:** AI-powered study planner that analyzes user goals, available time, and learning patterns to generate personalized study schedules. Integrates with the guided learning agent to allocate time for different topics and automatically adjusts based on progress and performance.\n\n**Rationale:** Students need structured study plans to manage their learning effectively. This addresses time management challenges and helps users stay consistent with their learning goals, a common pain point in self-directed learning platforms.\n\n---\n\n## Task Description\n\nImplement it",
+  "title": "Implement smart study schedule generator",
+  "images": [],
+  "imagePaths": [],
+  "textFilePaths": [],
+  "skipTests": false,
+  "model": "codex-gpt-5.2-codex",
+  "thinkingLevel": "none",
+  "reasoningEffort": "medium",
+  "priority": 2,
+  "planningMode": "full",
+  "requirePlanApproval": false,
+  "dependencies": [
+    "feature-1768152466034-trdfl87y1"
+  ],
+  "workMode": "current",
+  "titleGenerating": false,
+  "status": "backlog",
+  "id": "feature-1768156724760-bpkrmaa8e",
+  "descriptionHistory": [
+    {
+      "description": "## Parent Task Context (Already Completed)\n\n> **Note:** The following parent task has already been completed. This context is provided to help you understand the background and requirements for this sub-task. Do not re-implement the parent task - focus only on the new sub-task described below.\n\n### Smart Study Schedule Generator\n\n**Description:** AI-powered study planner that analyzes user goals, available time, and learning patterns to generate personalized study schedules. Integrates with the guided learning agent to allocate time for different topics and automatically adjusts based on progress and performance.\n\n**Rationale:** Students need structured study plans to manage their learning effectively. This addresses time management challenges and helps users stay consistent with their learning goals, a common pain point in self-directed learning platforms.\n\n---\n\n## Task Description\n\nImplement it",
+      "timestamp": "2026-01-11T18:38:44.850Z",
+      "source": "initial"
+    }
+  ],
+  "startedAt": "2026-01-11T18:38:44.923Z",
+  "updatedAt": "2026-01-11T18:39:40.464Z"
+}

@@ -1,0 +1,29 @@
+{
+  "category": "Maintenance",
+  "description": "Pull latest from origin/main and resolve conflicts. Merge origin/main into the current branch (feature/main-1768152930728-4w0p), resolving any merge conflicts that arise. After resolving conflicts, ensure the code compiles and tests pass.",
+  "title": "Resolve Merge Conflicts",
+  "images": [],
+  "imagePaths": [],
+  "skipTests": false,
+  "model": "codex-gpt-5.2-codex",
+  "thinkingLevel": "none",
+  "priority": 1,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "titleGenerating": false,
+  "status": "in_progress",
+  "dependencies": [],
+  "id": "feature-1768156436208-0tzbg2chz",
+  "descriptionHistory": [
+    {
+      "description": "Pull latest from origin/main and resolve conflicts. Merge origin/main into the current branch (feature/main-1768152930728-4w0p), resolving any merge conflicts that arise. After resolving conflicts, ensure the code compiles and tests pass.",
+      "timestamp": "2026-01-11T18:33:56.305Z",
+      "source": "initial"
+    }
+  ],
+  "startedAt": "2026-01-11T18:33:56.339Z",
+  "updatedAt": "2026-01-11T18:33:56.397Z",
+  "reasoningEffort": "medium",
+  "textFilePaths": [],
+  "workMode": "current"
+}

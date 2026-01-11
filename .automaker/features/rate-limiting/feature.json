@@ -1,0 +1,14 @@
+{
+  "id": "rate-limiting",
+  "category": "API",
+  "title": "API Rate Limiting and Quotas",
+  "description": "Add per-user and per-endpoint rate limiting using token bucket algorithm with Redis. Implements tiered quotas based on user roles and subscription levels.",
+  "status": "backlog",
+  "priority": 1,
+  "complexity": "simple",
+  "dependencies": [
+    "user-authentication"
+  ],
+  "createdAt": "2026-01-11T17:24:12.301Z",
+  "updatedAt": "2026-01-11T17:24:12.301Z"
+}

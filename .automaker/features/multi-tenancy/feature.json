@@ -1,0 +1,15 @@
+{
+  "id": "multi-tenancy",
+  "category": "Core",
+  "title": "Multi-tenant Organization Support",
+  "description": "Implement tenant isolation for organizations (schools, companies) with separate knowledge bases, user groups, and billing. Supports white-labeling and custom domain mapping.",
+  "status": "backlog",
+  "priority": 3,
+  "complexity": "complex",
+  "dependencies": [
+    "database-migration",
+    "rbac-system"
+  ],
+  "createdAt": "2026-01-11T17:24:12.303Z",
+  "updatedAt": "2026-01-11T17:24:12.303Z"
+}

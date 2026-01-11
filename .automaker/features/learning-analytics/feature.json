@@ -1,0 +1,16 @@
+{
+  "id": "learning-analytics",
+  "category": "Learning Features",
+  "title": "Comprehensive Learning Analytics",
+  "description": "Create analytics dashboard showing learning progress, time spent per topic, knowledge gaps, strength areas, and predictive success metrics. Visualizes learning trajectories over time.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "moderate",
+  "dependencies": [
+    "user-profiles"
+  ],
+  "createdAt": "2026-01-11T17:24:12.299Z",
+  "updatedAt": "2026-01-11T17:45:46.272Z",
+  "startedAt": "2026-01-11T17:38:35.921Z",
+  "descriptionHistory": []
+}

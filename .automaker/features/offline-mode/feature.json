@@ -1,0 +1,12 @@
+{
+  "id": "offline-mode",
+  "category": "Core",
+  "title": "Offline Mode with Local LLM Support",
+  "description": "Enable fully offline operation using local LLMs (Ollama) and cached knowledge bases. Syncs sessions when connection is restored. Ideal for low-connectivity environments.",
+  "status": "backlog",
+  "priority": 3,
+  "complexity": "complex",
+  "dependencies": [],
+  "createdAt": "2026-01-11T17:24:12.305Z",
+  "updatedAt": "2026-01-11T17:24:12.305Z"
+}

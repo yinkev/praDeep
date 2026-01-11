@@ -1,0 +1,201 @@
+{
+  "category": "ui",
+  "description": "AI-powered study planner that analyzes user goals, available time, and learning patterns to generate personalized study schedules. Integrates with the guided learning agent to allocate time for different topics and automatically adjusts based on progress and performance.\n\n**Rationale:** Students need structured study plans to manage their learning effectively. This addresses time management challenges and helps users stay consistent with their learning goals, a common pain point in self-directed learning platforms.",
+  "title": "Smart Study Schedule Generator",
+  "status": "in_progress",
+  "id": "feature-1768152466034-trdfl87y1",
+  "descriptionHistory": [
+    {
+      "description": "AI-powered study planner that analyzes user goals, available time, and learning patterns to generate personalized study schedules. Integrates with the guided learning agent to allocate time for different topics and automatically adjusts based on progress and performance.\n\n**Rationale:** Students need structured study plans to manage their learning effectively. This addresses time management challenges and helps users stay consistent with their learning goals, a common pain point in self-directed learning platforms.",
+      "timestamp": "2026-01-11T17:27:46.034Z",
+      "source": "initial"
+    }
+  ],
+  "skipTests": false,
+  "model": "codex-gpt-5.2",
+  "thinkingLevel": "none",
+  "reasoningEffort": "high",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "priority": 2,
+  "planningMode": "full",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "startedAt": "2026-01-11T18:39:14.577Z",
+  "updatedAt": "2026-01-11T18:39:14.718Z",
+  "planSpec": {
+    "status": "approved",
+    "version": 1,
+    "reviewedByUser": false,
+    "content": "🔧 Tool: Task\nInput: {\n  \"description\": \"Explore codebase structure\",\n  \"prompt\": \"Thoroughly explore this codebase to understand its structure for implementing an AI-powered study planner feature. I need to understand:\\n\\n1. Overall project structure (frontend/backend organization)\\n2. Existing agent patterns in src/agents/\\n3. API router patterns in src/api/routers/\\n4. Frontend page patterns in web/app/\\n5. Any existing learning/study related features\\n6. Database/storage patterns used\\n7. How agents communicate with the frontend\\n8. The guided learning agent if it exists\\n\\nProvide a comprehensive summary of the codebase architecture, key patterns, and relevant existing code that would inform the study planner implementation.\",\n  \"subagent_type\": \"Explore\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"find /Users/kyin/Projects/praDeep -type f -name \\\"*.md\\\" | head -20\",\n  \"description\": \"Find markdown documentation files for project overview\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"ls -la /Users/kyin/Projects/praDeep/\",\n  \"description\": \"List root directory structure\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"ls -la /Users/kyin/Projects/praDeep/src/\",\n  \"description\": \"List src directory structure\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"ls -la /Users/kyin/Projects/praDeep/web/\",\n  \"description\": \"List web directory structure\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"ls -la /Users/kyin/Projects/praDeep/src/agents/\",\n  \"description\": \"List agents directory\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"ls -la /Users/kyin/Projects/praDeep/src/api/routers/\",\n  \"description\": \"List API routers\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"ls -la /Users/kyin/Projects/praDeep/web/app/\",\n  \"description\": \"List web app pages\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"ls -la /Users/kyin/Projects/praDeep/src/services/\",\n  \"description\": \"List services\"\n}\n\n🔧 Tool: Read\nInput: {\n  \"file_path\": \"/Users/kyin/Projects/praDeep/Communication.md\"\n}\n\n🔧 Tool: Read\nInput: {\n  \"file_path\": \"/Users/kyin/Projects/praDeep/README.md\",\n  \"limit\": 150\n}\n\n🔧 Tool: Read\nInput: {\n  \"file_path\": \"/Users/kyin/Projects/praDeep/src/agents/base_agent.py\",\n  \"limit\": 100\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"find /Users/kyin/Projects/praDeep/src/agents -type f -name \\\"*.py\\\" | head -20\",\n  \"description\": \"Find all agent Python files\"\n}\n\n🔧 Tool: Read\nInput: {\n  \"file_path\": \"/Users/kyin/Projects/praDeep/src/agents/guide\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"find /Users/kyin/Projects/praDeep/src/agents/guide -type f -name \\\"*.py\\\"\",\n  \"description\": \"Find guide agent files\"\n}\n\n🔧 Tool: Read\nInput: {\n  \"file_path\": \"/Users/kyin/Projects/praDeep/src/agents/guide/__init__.py\"\n}\n\n🔧 Tool: Read\nInput: {\n  \"file_path\": \"/Users/kyin/Projects/praDeep/src/agents/guide/guide_manager.py\",\n  \"limit\": 100\n}\n\n🔧 Tool: Read\nInput: {\n  \"file_path\": \"/Users/kyin/Projects/praDeep/src/agents/ideagen\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"find /Users/kyin/Projects/praDeep/src/agents/ideagen -type f -name \\\"*.py\\\"\",\n  \"description\": \"Find ideagen agent files\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"find /Users/kyin/Projects/praDeep/src/agents/solve -type f -name \\\"*.py\\\"\",\n  \"description\": \"Find solve agent files\"\n}\n\n🔧 Tool: Read\nInput: {\n  \"file_path\": \"/Users/kyin/Projects/praDeep/src/agents/solve/main_solver.py\",\n  \"limit\": 80\n}\n\n🔧 Tool: Read\nInput: {\n  \"file_path\": \"/Users/kyin/Projects/praDeep/src/agents/ideagen/__init__.py\"\n}\n\n🔧 Tool: Read\nInput: {\n  \"file_path\": \"/Users/kyin/Projects/praDeep/src/agents/ideagen/idea_generation_workflow.py\",\n  \"limit\": 80\n}\n\n🔧 Tool: Read\nInput: {\n  \"file_path\": \"/Users/kyin/Projects/praDeep/src/api/routers/guide.py\",\n  \"limit\": 100\n}\n\n🔧 Tool: Read\nInput: {\n  \"file_path\": \"/Users/kyin/Projects/praDeep/src/api/routers/ideagen.py\",\n  \"limit\": 80\n}\n\n🔧 Tool: Read\nInput: {\n  \"file_path\": \"/Users/kyin/Projects/praDeep/src/api/routers/solve.py\",\n  \"limit\": 80\n}\n\n🔧 Tool: Read\nInput: {\n  \"file_path\": \"/Users/kyin/Projects/praDeep/web/app/guide/page.tsx\",\n  \"limit\": 100\n}\n\n🔧 Tool: Read\nInput: {\n  \"file_path\": \"/Users/kyin/Projects/praDeep/web/app/ideagen/page.tsx\",\n  \"limit\": 100\n}\n\n🔧 Tool: Read\nInput: {\n  \"file_path\": \"/Users/kyin/Projects/praDeep/web/context/GlobalContext.tsx\",\n  \"limit\": 100\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"find /Users/kyin/Projects/praDeep/src/knowledge -type f -name \\\"*.py\\\" | head -20\",\n  \"description\": \"Find knowledge system files\"\n}\n\n🔧 Tool: Read\nInput: {\n  \"file_path\": \"/Users/kyin/Projects/praDeep/src/knowledge/initializer.py\",\n  \"limit\": 80\n}\n\n🔧 Tool: Read\nInput: {\n  \"file_path\": \"/Users/kyin/Projects/praDeep/config/main.yaml\",\n  \"limit\": 150\n}\n\n🔧 Tool: Read\nInput: {\n  \"file_path\": \"/Users/kyin/Projects/praDeep/src/knowledge/manager.py\",\n  \"limit\": 80\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"find /Users/kyin/Projects/praDeep/config -type f -name \\\"*.yaml\\\"\",\n  \"description\": \"Find configuration files\"\n}\n\n🔧 Tool: Read\nInput: {\n  \"file_path\": \"/Users/kyin/Projects/praDeep/config/agents.yaml\",\n  \"limit\": 100\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"find /Users/kyin/Projects/praDeep/src/agents -type d -name \\\"prompts\\\"\",\n  \"description\": \"Find prompts directories\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"find /Users/kyin/Projects/praDeep/src/agents/guide -name \\\"*.yaml\\\" | head -10\",\n  \"description\": \"Find guide agent prompts\"\n}\n\n🔧 Tool: Read\nInput: {\n  \"file_path\": \"/Users/kyin/Projects/praDeep/web/app\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"ls -la /Users/kyin/Projects/praDeep/web/app/\",\n  \"description\": \"List web app directory\"\n}\n\n🔧 Tool: Read\nInput: {\n  \"file_path\": \"/Users/kyin/Projects/praDeep/web/app/page.tsx\",\n  \"limit\": 80\n}\n\n🔧 Tool: Read\nInput: {\n  \"file_path\": \"/Users/kyin/Projects/praDeep/src/agents/guide/prompts/en/locate_agent.yaml\",\n  \"limit\": 60\n}\n\n🔧 Tool: Read\nInput: {\n  \"file_path\": \"/Users/kyin/Projects/praDeep/src/agents/guide/agents/base_guide_agent.py\",\n  \"limit\": 80\n}\n\n🔧 Tool: Read\nInput: {\n  \"file_path\": \"/Users/kyin/Projects/praDeep/src/agents/guide/agents/interactive_agent.py\",\n  \"limit\": 80\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"ls -la /Users/kyin/Projects/praDeep/web/components/ | head -20\",\n  \"description\": \"List web components\"\n}\n\n🔧 Tool: Read\nInput: {\n  \"file_path\": \"/Users/kyin/Projects/praDeep/web/lib/api.ts\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"find /Users/kyin/Projects/praDeep/src/api/utils -type f -name \\\"*.py\\\"\",\n  \"description\": \"Find API utility files\"\n}\n\n🔧 Tool: Read\nInput: {\n  \"file_path\": \"/Users/kyin/Projects/praDeep/src/api/utils/notebook_manager.py\",\n  \"limit\": 80\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"find /Users/kyin/Projects/praDeep/src -name \\\"main.py\\\" -o -name \\\"app.py\\\" | head -5\",\n  \"description\": \"Find main FastAPI application file\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"ls -la /Users/kyin/Projects/praDeep/src/api/\",\n  \"description\": \"List API directory\"\n}\n\n🔧 Tool: Read\nInput: {\n  \"file_path\": \"/Users/kyin/Projects/praDeep/src/api/routers/chat.py\",\n  \"limit\": 100\n}\n\n🔧 Tool: Read\nInput: {\n  \"file_path\": \"/Users/kyin/Projects/praDeep/src/api/main.py\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"grep -r \\\"study\\\" /Users/kyin/Projects/praDeep/src --include=\\\"*.py\\\" | head -20\",\n  \"description\": \"Search for any existing study-related code\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"ls -la /Users/kyin/Projects/praDeep/docs/\",\n  \"description\": \"List documentation files\"\n}\n\n🔧 Tool: Read\nInput: {\n  \"file_path\": \"/Users/kyin/Projects/praDeep/docs/praDeep-architecture-overview.md\",\n  \"limit\": 100\n}\n\n🔧 Tool: Read\nInput: {\n  \"file_path\": \"/Users/kyin/Projects/praDeep/src/services/llm\"\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"find /Users/kyin/Projects/praDeep/src/services/llm -type f -name \\\"*.py\\\" | head -10\",\n  \"description\": \"Find LLM service files\"\n}\n\n🔧 Tool: Read\nInput: {\n  \"file_path\": \"/Users/kyin/Projects/praDeep/src/services/prompt/manager.py\",\n  \"limit\": 80\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"find /Users/kyin/Projects/praDeep/src/services -type d\",\n  \"description\": \"Find service modules\"\n}\n\n🔧 Tool: Read\nInput: {\n  \"file_path\": \"/Users/kyin/Projects/praDeep/web/app/solver/page.tsx\",\n  \"limit\": 120\n}\n\n🔧 Tool: Bash\nInput: {\n  \"command\": \"head -100 /Users/kyin/Projects/praDeep/src/agents/guide/agents/chat_agent.py\",\n  \"description\": \"Look at chat agent implementation\"\n}\n# AI-Powered Study Planner Specification\n\n## 1. Problem Statement\n\nStudents using praDeep's self-directed learning platform lack structured study plans to manage their learning effectively. They struggle to organize their time across different topics, maintain consistency with learning goals, and adjust their study strategies based on progress. This feature provides AI-generated personalized study schedules that integrate with existing guided learning sessions.\n\n## 2. User Story\n\nAs a **student using praDeep**, I want **an AI-powered study planner that analyzes my goals, available time, and learning patterns to generate personalized study schedules**, so that **I can effectively manage my learning time, stay consistent with my goals, and automatically adjust my study plan based on my progress and performance**.\n\n## 3. Acceptance Criteria\n\n### Happy Path\n- **GIVEN** a user has notebooks with learning content and sets study goals with available time, **WHEN** they request a study plan, **THEN** the system generates a personalized schedule with topic allocations, time blocks, and difficulty progression\n- **GIVEN** a generated study plan exists, **WHEN** a user completes a learning session, **THEN** the plan automatically adjusts remaining schedule based on performance\n- **GIVEN** a user has an active study plan, **WHEN** they view the planner page, **THEN** they see their current schedule, progress metrics, and upcoming sessions\n\n### Edge Cases\n- **GIVEN** a user has no notebooks, **WHEN** they access the study planner, **THEN** they see a prompt to create notebooks first with helpful guidance\n- **GIVEN** a user sets unrealistic time constraints, **WHEN** generating a plan, **THEN** the system suggests a modified realistic schedule with clear explanation\n- **GIVEN** a user misses multiple scheduled sessions, **WHEN** viewing the plan, **THEN** the system offers to rebalance the remaining schedule\n\n### Error Handling\n- **GIVEN** LLM service is unavailable, **WHEN** generating a plan, **THEN** the system displays a friendly error with retry option\n- **GIVEN** invalid goal parameters, **WHEN** submitting plan request, **THEN** validation errors are displayed inline with correction suggestions\n- **GIVEN** WebSocket connection drops, **WHEN** plan generation is in progress, **THEN** the frontend shows reconnection status and resumes when possible\n\n## 4. Technical Context\n\n| Aspect | Value |\n|--------|-------|\n| Affected Files | `src/agents/study_planner/` (new), `src/api/routers/study_planner.py` (new), `web/app/study-planner/page.tsx` (new), `web/context/GlobalContext.tsx`, `config/agents.yaml`, `config/main.yaml` |\n| Dependencies | Existing: FastAPI, Next.js, TailwindCSS, LightRAG; No new external dependencies |\n| Constraints | Must follow BaseAgent pattern, YAML-based prompts, WebSocket streaming, filesystem persistence |\n| Patterns to Follow | Guide module session management, IdeaGen multi-notebook selection, WebSocket progress streaming, PromptManager for prompts |\n\n## 5. Non-Goals\n\n- **Calendar integration** (Google Calendar, iCal export) - not in initial scope\n- **Mobile notifications/reminders** - not in initial scope\n- **Social/collaborative study features** - not in initial scope\n- **Spaced repetition algorithm** - may be added later\n- **Real-time study timer/pomodoro** - UI only shows schedule\n- **Payment/subscription features** - out of scope\n\n## 6. Implementation Tasks\n\n```tasks\n## Phase 1: Foundation - Backend Agent Infrastructure\n- [ ] T001: Create study_planner agent directory structure with __init__.py | File: src/agents/study_planner/__init__.py\n- [ ] T002: Implement GoalAnalyzerAgent to parse user goals and constraints | File: src/agents/study_planner/goal_analyzer_agent.py\n- [ ] T003: Implement ScheduleGeneratorAgent to create study schedules | File: src/agents/study_planner/schedule_generator_agent.py\n- [ ] T004: Implement ProgressTrackerAgent to analyze performance and suggest adjustments | File: src/agents/study_planner/progress_tracker_agent.py\n- [ ] T005: Create English YAML prompts for all three agents | File: src/agents/study_planner/prompts/en/\n- [ ] T006: Implement StudyPlannerWorkflow to orchestrate agents | File: src/agents/study_planner/workflow.py\n\n## Phase 2: Core Implementation - API and Data Layer\n- [ ] T007: Define StudyPlan and StudySession data models | File: src/api/routers/study_planner.py\n- [ ] T008: Implement REST endpoints for plan CRUD operations | File: src/api/routers/study_planner.py\n- [ ] T009: Implement WebSocket endpoint for plan generation with streaming | File: src/api/routers/study_planner.py\n- [ ] T010: Add study planner configuration to agents.yaml | File: config/agents.yaml\n- [ ] T011: Add study planner paths to main.yaml | File: config/main.yaml\n- [ ] T012: Register study_planner router in main API app | File: src/api/main.py\n\n## Phase 3: Frontend Implementation\n- [ ] T013: Create StudyPlannerState interface in GlobalContext | File: web/context/GlobalContext.tsx\n- [ ] T014: Implement study planner page with goal input form | File: web/app/study-planner/page.tsx\n- [ ] T015: Add schedule calendar/timeline visualization component | File: web/app/study-planner/page.tsx\n- [ ] T016: Implement progress dashboard with metrics display | File: web/app/study-planner/page.tsx\n- [ ] T017: Add WebSocket integration for real-time plan generation | File: web/app/study-planner/page.tsx\n- [ ] T018: Implement session completion tracking UI | File: web/app/study-planner/page.tsx\n\n## Phase 4: Integration & Testing\n- [ ] T019: Integrate with guided learning agent for session linkage | File: src/agents/study_planner/workflow.py\n- [ ] T020: Add plan persistence and session state recovery | File: src/api/routers/study_planner.py\n- [ ] T021: Create Playwright verification test for core workflow | File: tests/study-planner-verify.spec.ts\n- [ ] T022: Run verification test and fix any issues | File: tests/study-planner-verify.spec.ts\n- [ ] T023: Delete temporary verification test after success | File: tests/study-planner-verify.spec.ts\n```\n\n## 7. Success Metrics\n\n| Metric | Criteria |\n|--------|----------|\n| Plan Generation | User can generate a study plan from selected notebooks within 30 seconds |\n| Schedule Display | Generated schedule displays correctly with topic allocations and time blocks |\n| Progress Tracking | Completing a guided learning session updates the study plan progress |\n| Plan Adjustment | System can recalculate remaining schedule when user modifies availability |\n| Data Persistence | Study plans persist across page refreshes and sessions |\n| WebSocket Streaming | Real-time progress updates display during plan generation |\n\n## 8. Risks & Mitigations\n\n| Risk | Mitigation |\n|------|------------|\n| LLM generates unrealistic schedules | Add validation layer with time constraint checks; provide manual override options |\n| Complex integration with guide module | Follow existing GuideManager session patterns; use shared notebook data structures |\n| WebSocket connection instability | Implement reconnection logic; persist intermediate state for recovery |\n| Performance with large notebooks | Limit analyzed content per notebook; implement content summarization |\n| User abandons long-running generation | Show granular progress; allow cancellation; cache partial results |\n\n---",
+    "generatedAt": "2026-01-11T17:39:16.892Z",
+    "tasks": [
+      {
+        "id": "T001",
+        "description": "Create study_planner agent directory structure with __init__.py",
+        "filePath": "src/agents/study_planner/__init__.py",
+        "phase": "Phase 1: Foundation - Backend Agent Infrastructure",
+        "status": "pending"
+      },
+      {
+        "id": "T002",
+        "description": "Implement GoalAnalyzerAgent to parse user goals and constraints",
+        "filePath": "src/agents/study_planner/goal_analyzer_agent.py",
+        "phase": "Phase 1: Foundation - Backend Agent Infrastructure",
+        "status": "pending"
+      },
+      {
+        "id": "T003",
+        "description": "Implement ScheduleGeneratorAgent to create study schedules",
+        "filePath": "src/agents/study_planner/schedule_generator_agent.py",
+        "phase": "Phase 1: Foundation - Backend Agent Infrastructure",
+        "status": "pending"
+      },
+      {
+        "id": "T004",
+        "description": "Implement ProgressTrackerAgent to analyze performance and suggest adjustments",
+        "filePath": "src/agents/study_planner/progress_tracker_agent.py",
+        "phase": "Phase 1: Foundation - Backend Agent Infrastructure",
+        "status": "pending"
+      },
+      {
+        "id": "T005",
+        "description": "Create English YAML prompts for all three agents",
+        "filePath": "src/agents/study_planner/prompts/en/",
+        "phase": "Phase 1: Foundation - Backend Agent Infrastructure",
+        "status": "pending"
+      },
+      {
+        "id": "T006",
+        "description": "Implement StudyPlannerWorkflow to orchestrate agents",
+        "filePath": "src/agents/study_planner/workflow.py",
+        "phase": "Phase 1: Foundation - Backend Agent Infrastructure",
+        "status": "pending"
+      },
+      {
+        "id": "T007",
+        "description": "Define StudyPlan and StudySession data models",
+        "filePath": "src/api/routers/study_planner.py",
+        "phase": "Phase 2: Core Implementation - API and Data Layer",
+        "status": "pending"
+      },
+      {
+        "id": "T008",
+        "description": "Implement REST endpoints for plan CRUD operations",
+        "filePath": "src/api/routers/study_planner.py",
+        "phase": "Phase 2: Core Implementation - API and Data Layer",
+        "status": "pending"
+      },
+      {
+        "id": "T009",
+        "description": "Implement WebSocket endpoint for plan generation with streaming",
+        "filePath": "src/api/routers/study_planner.py",
+        "phase": "Phase 2: Core Implementation - API and Data Layer",
+        "status": "pending"
+      },
+      {
+        "id": "T010",
+        "description": "Add study planner configuration to agents.yaml",
+        "filePath": "config/agents.yaml",
+        "phase": "Phase 2: Core Implementation - API and Data Layer",
+        "status": "pending"
+      },
+      {
+        "id": "T011",
+        "description": "Add study planner paths to main.yaml",
+        "filePath": "config/main.yaml",
+        "phase": "Phase 2: Core Implementation - API and Data Layer",
+        "status": "pending"
+      },
+      {
+        "id": "T012",
+        "description": "Register study_planner router in main API app",
+        "filePath": "src/api/main.py",
+        "phase": "Phase 2: Core Implementation - API and Data Layer",
+        "status": "pending"
+      },
+      {
+        "id": "T013",
+        "description": "Create StudyPlannerState interface in GlobalContext",
+        "filePath": "web/context/GlobalContext.tsx",
+        "phase": "Phase 3: Frontend Implementation",
+        "status": "pending"
+      },
+      {
+        "id": "T014",
+        "description": "Implement study planner page with goal input form",
+        "filePath": "web/app/study-planner/page.tsx",
+        "phase": "Phase 3: Frontend Implementation",
+        "status": "pending"
+      },
+      {
+        "id": "T015",
+        "description": "Add schedule calendar/timeline visualization component",
+        "filePath": "web/app/study-planner/page.tsx",
+        "phase": "Phase 3: Frontend Implementation",
+        "status": "pending"
+      },
+      {
+        "id": "T016",
+        "description": "Implement progress dashboard with metrics display",
+        "filePath": "web/app/study-planner/page.tsx",
+        "phase": "Phase 3: Frontend Implementation",
+        "status": "pending"
+      },
+      {
+        "id": "T017",
+        "description": "Add WebSocket integration for real-time plan generation",
+        "filePath": "web/app/study-planner/page.tsx",
+        "phase": "Phase 3: Frontend Implementation",
+        "status": "pending"
+      },
+      {
+        "id": "T018",
+        "description": "Implement session completion tracking UI",
+        "filePath": "web/app/study-planner/page.tsx",
+        "phase": "Phase 3: Frontend Implementation",
+        "status": "pending"
+      },
+      {
+        "id": "T019",
+        "description": "Integrate with guided learning agent for session linkage",
+        "filePath": "src/agents/study_planner/workflow.py",
+        "phase": "Phase 4: Integration & Testing",
+        "status": "pending"
+      },
+      {
+        "id": "T020",
+        "description": "Add plan persistence and session state recovery",
+        "filePath": "src/api/routers/study_planner.py",
+        "phase": "Phase 4: Integration & Testing",
+        "status": "pending"
+      },
+      {
+        "id": "T021",
+        "description": "Create Playwright verification test for core workflow",
+        "filePath": "tests/study-planner-verify.spec.ts",
+        "phase": "Phase 4: Integration & Testing",
+        "status": "pending"
+      },
+      {
+        "id": "T022",
+        "description": "Run verification test and fix any issues",
+        "filePath": "tests/study-planner-verify.spec.ts",
+        "phase": "Phase 4: Integration & Testing",
+        "status": "pending"
+      },
+      {
+        "id": "T023",
+        "description": "Delete temporary verification test after success",
+        "filePath": "tests/study-planner-verify.spec.ts",
+        "phase": "Phase 4: Integration & Testing",
+        "status": "pending"
+      }
+    ],
+    "tasksTotal": 23,
+    "tasksCompleted": 3,
+    "approvedAt": "2026-01-11T17:39:16.893Z",
+    "currentTaskId": "T004"
+  },
+  "branchName": null
+}

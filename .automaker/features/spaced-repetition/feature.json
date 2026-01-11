@@ -1,0 +1,14 @@
+{
+  "id": "spaced-repetition",
+  "category": "Learning Features",
+  "title": "Spaced Repetition Learning System",
+  "description": "Integrate spaced repetition algorithm (SM-2 or FSRS) for Guide Agent sessions, scheduling review sessions based on forgetting curves. Tracks mastery levels per knowledge point.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "complex",
+  "dependencies": [
+    "user-profiles"
+  ],
+  "createdAt": "2026-01-11T17:24:12.299Z",
+  "updatedAt": "2026-01-11T17:24:12.299Z"
+}

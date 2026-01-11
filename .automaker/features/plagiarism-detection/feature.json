@@ -1,0 +1,12 @@
+{
+  "id": "plagiarism-detection",
+  "category": "Core",
+  "title": "Text Similarity and Plagiarism Detection",
+  "description": "Add plagiarism checking for Co-writer outputs and student submissions using semantic similarity and n-gram overlap analysis. Compares against knowledge base and web sources.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "complex",
+  "dependencies": [],
+  "createdAt": "2026-01-11T17:24:12.302Z",
+  "updatedAt": "2026-01-11T17:24:12.302Z"
+}

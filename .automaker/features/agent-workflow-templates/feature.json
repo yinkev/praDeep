@@ -1,0 +1,14 @@
+{
+  "id": "agent-workflow-templates",
+  "category": "Core",
+  "title": "Customizable Agent Workflow Templates",
+  "description": "Allow users to create, save, and share custom agent workflow templates with pre-configured prompts, tool selections, and execution parameters. Includes template marketplace for community sharing.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "moderate",
+  "dependencies": [
+    "user-profiles"
+  ],
+  "createdAt": "2026-01-11T17:24:12.294Z",
+  "updatedAt": "2026-01-11T17:24:12.294Z"
+}
