@@ -92,6 +92,37 @@ PATCH /api/v1/knowledge-bases/{kb_id}
 DELETE /api/v1/knowledge-bases/{kb_id}
 ```
 
+### Refresh Knowledge Base
+
+`POST /api/v1/knowledge/{kb_name}/refresh`
+
+Refresh/re-index a knowledge base by reprocessing all documents.
+
+**Request Body (optional):**
+```json
+{
+  "full": false,         // Clean content_list and images too
+  "no_backup": false,    // Skip RAG storage backup
+  "skip_extract": false, // Skip numbered items extraction
+  "batch_size": 20       // Batch size for extraction
+}
+```
+
+**Response:**
+```json
+{
+  "message": "Refresh started for knowledge base 'my_kb'",
+  "status": "processing",
+  "options": {
+    "full": false,
+    "backup": true,
+    "extract": true
+  }
+}
+```
+
+**Progress:** Track via WebSocket at `/api/v1/knowledge/{kb_name}/progress/ws`
+
 ---
 
 ## Documents

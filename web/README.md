@@ -218,6 +218,28 @@ Global styles in `app/globals.css` including:
 - Upload documents
 - View knowledge base details
 
+#### KB Management Features
+
+Each knowledge base card includes action buttons (visible on hover):
+
+- **Re-index Button** (`RefreshCw` icon): Rebuilds the RAG index from existing documents
+  - Calls `POST /api/v1/knowledge/{kb_name}/refresh` with `{ full: true }`
+  - Shows spinning animation while re-indexing is in progress
+  - Progress is tracked in real-time via WebSocket (`/api/v1/knowledge/{kb_name}/progress/ws`)
+  - Useful when documents have been modified or indexing needs to be refreshed
+
+- **Upload Button** (`Upload` icon): Opens modal to upload additional documents to the KB
+
+- **Delete Button** (`Trash2` icon): Permanently deletes the knowledge base (with confirmation)
+
+#### Progress Tracking
+
+The page maintains WebSocket connections to each knowledge base for real-time progress updates:
+
+- Progress state is persisted to `localStorage` to survive page refreshes
+- Stuck progress states (older than 30 minutes) are automatically cleaned up
+- Progress can be manually cleared using the X button on each KB card
+
 ### Problem Solving (`/solver`)
 
 - Input problem

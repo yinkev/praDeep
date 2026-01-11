@@ -253,6 +253,116 @@ with open("kb_backup.json", "w") as f:
     json.dump(export, f)
 ```
 
+## Refreshing/Re-indexing Knowledge Bases
+
+Over time, you may need to refresh or re-index a knowledge base to ensure optimal performance and accuracy.
+
+### When to Refresh
+
+You should consider refreshing a knowledge base when:
+
+- **Corrupted index**: Search results become inconsistent or retrieval quality degrades unexpectedly
+- **Updated documents**: Source documents have been modified outside the system
+- **Embedding model change**: You want to re-embed documents with a different or updated model
+- **Configuration changes**: Chunking strategy or other processing settings have been modified
+- **Recovery**: After system crashes or interrupted processing operations
+
+### Via Web UI
+
+1. Navigate to **Knowledge Bases** in the sidebar
+2. Find the knowledge base card you want to refresh
+3. Click the **Re-index** button on the card
+4. Confirm the re-indexing operation
+5. Monitor progress in the card's status indicator
+
+### Via API
+
+```bash
+# Basic refresh - reprocesses only documents that have changed
+curl -X POST http://localhost:8783/api/v1/knowledge/{kb_name}/refresh \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json"
+```
+
+### Full Reprocessing
+
+For a complete rebuild of the knowledge base (re-processes all documents regardless of changes):
+
+```bash
+# Full refresh - reprocesses all documents from scratch
+curl -X POST http://localhost:8783/api/v1/knowledge/{kb_name}/refresh \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"full": true}'
+```
+
+The `full` option is useful when:
+- Switching to a new embedding model
+- Changing chunking parameters
+- Recovering from data corruption
+- Ensuring complete consistency after major updates
+
+::: warning
+Full reprocessing can take significant time for large knowledge bases and will incur embedding API costs for all documents.
+:::
+
+## Image Extraction
+
+DeepTutor automatically extracts and processes images from documents during ingestion.
+
+### Automatic Extraction
+
+When you upload PDFs or other documents containing images:
+
+- Images are automatically detected and extracted during document processing
+- The MinerU parser handles image extraction from various document formats
+- Extracted images maintain their original quality and context
+
+### Storage Location
+
+Extracted images are stored in the knowledge base's dedicated image directory:
+
+```
+data/
+└── knowledge_bases/
+    └── {kb_name}/
+        ├── documents/
+        ├── embeddings/
+        └── images/           # Extracted images stored here
+            ├── doc1_img001.png
+            ├── doc1_img002.png
+            └── ...
+```
+
+### Supported Image Sources
+
+The MinerU parser extracts images from:
+
+| Format | Image Extraction |
+|--------|-----------------|
+| PDF | Embedded images, figures, diagrams |
+| DOCX | Inline images, floating images |
+| HTML | Referenced images (if accessible) |
+| Markdown | Referenced images (if accessible) |
+
+### Accessing Extracted Images
+
+Images can be referenced in chat responses when relevant to the query. The system associates images with their surrounding text context for accurate retrieval.
+
+```python
+# Query that may return image references
+response = client.chat.completions.create(
+    knowledge_base_id=kb.id,
+    messages=[{"role": "user", "content": "Show me the architecture diagram"}],
+    include_images=True
+)
+
+# Access image references
+for image in response.choices[0].images:
+    print(f"Image: {image.path}")
+    print(f"Caption: {image.caption}")
+```
+
 ## Best Practices
 
 ### 1. Organize by Topic

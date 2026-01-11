@@ -1,6 +1,6 @@
-"use client";
+'use client'
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   BookOpen,
   Database,
@@ -15,484 +15,473 @@ import {
   Loader2,
   X,
   RefreshCw,
-} from "lucide-react";
-import { apiUrl, wsUrl } from "@/lib/api";
+} from 'lucide-react'
+import { apiUrl, wsUrl } from '@/lib/api'
 
 interface KnowledgeBase {
-  name: string;
-  is_default: boolean;
+  name: string
+  is_default: boolean
   statistics: {
-    raw_documents: number;
-    images: number;
-    content_lists: number;
-    rag_initialized: boolean;
+    raw_documents: number
+    images: number
+    content_lists: number
+    rag_initialized: boolean
     rag?: {
-      chunks?: number;
-      entities?: number;
-      relations?: number;
-    };
-  };
+      chunks?: number
+      entities?: number
+      relations?: number
+    }
+  }
 }
 
 interface ProgressInfo {
-  stage: string;
-  message: string;
-  current: number;
-  total: number;
-  file_name?: string;
-  progress_percent: number;
-  error?: string;
+  stage: string
+  message: string
+  current: number
+  total: number
+  file_name?: string
+  progress_percent: number
+  error?: string
 }
 
 export default function KnowledgePage() {
-  const [kbs, setKbs] = useState<KnowledgeBase[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [uploadModalOpen, setUploadModalOpen] = useState(false);
-  const [createModalOpen, setCreateModalOpen] = useState(false);
-  const [targetKb, setTargetKb] = useState<string>("");
-  const [uploading, setUploading] = useState(false);
-  const [files, setFiles] = useState<FileList | null>(null);
-  const [newKbName, setNewKbName] = useState("");
-  const [dragActive, setDragActive] = useState(false);
-  const [progressMap, setProgressMap] = useState<Record<string, ProgressInfo>>(
-    {},
-  );
+  const [kbs, setKbs] = useState<KnowledgeBase[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [uploadModalOpen, setUploadModalOpen] = useState(false)
+  const [createModalOpen, setCreateModalOpen] = useState(false)
+  const [targetKb, setTargetKb] = useState<string>('')
+  const [uploading, setUploading] = useState(false)
+  const [files, setFiles] = useState<FileList | null>(null)
+  const [newKbName, setNewKbName] = useState('')
+  const [dragActive, setDragActive] = useState(false)
+  const [reindexingKb, setReindexingKb] = useState<string | null>(null)
+  const [progressMap, setProgressMap] = useState<Record<string, ProgressInfo>>({})
   // Use ref only for WebSocket connections (no need for state as it's not used in render)
-  const wsConnectionsRef = useRef<Record<string, WebSocket>>({});
-  const kbsNamesRef = useRef<string[]>([]);
+  const wsConnectionsRef = useRef<Record<string, WebSocket>>({})
+  const kbsNamesRef = useRef<string[]>([])
 
   // Restore progress state from localStorage (with cleanup of stuck states)
   useEffect(() => {
     try {
-      const saved = localStorage.getItem("kb_progress_map");
+      const saved = localStorage.getItem('kb_progress_map')
       if (saved) {
-        const parsed = JSON.parse(saved);
+        const parsed = JSON.parse(saved)
 
         // Clean up stuck progress states (older than 30 minutes and not completed/error)
-        const now = new Date().getTime();
-        const thirtyMinutes = 30 * 60 * 1000;
-        const cleaned: Record<string, ProgressInfo> = {};
+        const now = new Date().getTime()
+        const thirtyMinutes = 30 * 60 * 1000
+        const cleaned: Record<string, ProgressInfo> = {}
 
         Object.entries(parsed).forEach(([kbName, progress]: [string, any]) => {
           if (progress.timestamp) {
-            const progressTime = new Date(progress.timestamp).getTime();
-            const age = now - progressTime;
+            const progressTime = new Date(progress.timestamp).getTime()
+            const age = now - progressTime
 
             // Keep if: completed, error, or recent (< 30 min)
             if (
-              progress.stage === "completed" ||
-              progress.stage === "error" ||
+              progress.stage === 'completed' ||
+              progress.stage === 'error' ||
               age < thirtyMinutes
             ) {
-              cleaned[kbName] = progress;
+              cleaned[kbName] = progress
             } else {
               console.log(
-                `[KB Progress] Clearing stuck progress for ${kbName} (age: ${Math.round(age / 60000)} min)`,
-              );
+                `[KB Progress] Clearing stuck progress for ${kbName} (age: ${Math.round(age / 60000)} min)`
+              )
             }
           } else {
             // No timestamp, keep completed/error, clear others
-            if (progress.stage === "completed" || progress.stage === "error") {
-              cleaned[kbName] = progress;
+            if (progress.stage === 'completed' || progress.stage === 'error') {
+              cleaned[kbName] = progress
             }
           }
-        });
+        })
 
-        setProgressMap(cleaned);
-        localStorage.setItem("kb_progress_map", JSON.stringify(cleaned));
+        setProgressMap(cleaned)
+        localStorage.setItem('kb_progress_map', JSON.stringify(cleaned))
       }
     } catch (e) {
-      console.error("Failed to load progress from localStorage:", e);
+      console.error('Failed to load progress from localStorage:', e)
     }
-  }, []);
+  }, [])
 
   // Persist progress state to localStorage
   useEffect(() => {
     try {
-      localStorage.setItem("kb_progress_map", JSON.stringify(progressMap));
+      localStorage.setItem('kb_progress_map', JSON.stringify(progressMap))
     } catch (e) {
-      console.error("Failed to save progress to localStorage:", e);
+      console.error('Failed to save progress to localStorage:', e)
     }
-  }, [progressMap]);
+  }, [progressMap])
 
   // Define fetchKnowledgeBases using useCallback to ensure it's available
   const fetchKnowledgeBases = useCallback(async () => {
     try {
-      setLoading(true);
-      setError(null);
+      setLoading(true)
+      setError(null)
 
-      const baseUrl = apiUrl("");
-      const listUrl = apiUrl("/api/v1/knowledge/list");
-      const healthUrl = apiUrl("/api/v1/knowledge/health");
+      const baseUrl = apiUrl('')
+      const listUrl = apiUrl('/api/v1/knowledge/list')
+      const healthUrl = apiUrl('/api/v1/knowledge/health')
 
-      console.log("🔍 Fetching knowledge bases...");
-      console.log("  Base URL:", baseUrl);
-      console.log("  List URL:", listUrl);
-      console.log("  Health URL:", healthUrl);
+      console.log('🔍 Fetching knowledge bases...')
+      console.log('  Base URL:', baseUrl)
+      console.log('  List URL:', listUrl)
+      console.log('  Health URL:', healthUrl)
 
       // Test health check endpoint first
       try {
-        const healthRes = await fetch(healthUrl);
-        const healthData = await healthRes.json();
-        console.log("✅ Health check response:", healthData);
+        const healthRes = await fetch(healthUrl)
+        const healthData = await healthRes.json()
+        console.log('✅ Health check response:', healthData)
       } catch (healthErr) {
-        console.warn("⚠️ Health check failed:", healthErr);
+        console.warn('⚠️ Health check failed:', healthErr)
       }
 
       // Fetch knowledge base list
       const res = await fetch(listUrl, {
-        method: "GET",
+        method: 'GET',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
-      });
+      })
 
-      console.log("📡 Response status:", res.status, res.statusText);
-      console.log(
-        "📡 Response headers:",
-        Object.fromEntries(res.headers.entries()),
-      );
+      console.log('📡 Response status:', res.status, res.statusText)
+      console.log('📡 Response headers:', Object.fromEntries(res.headers.entries()))
 
       if (!res.ok) {
-        let errorMessage = `HTTP ${res.status}: Failed to fetch knowledge bases`;
-        let errorDetail = "";
+        let errorMessage = `HTTP ${res.status}: Failed to fetch knowledge bases`
+        let errorDetail = ''
         try {
-          const errorData = await res.json();
-          errorDetail = errorData.detail || errorData.message || "";
-          errorMessage = errorDetail || errorMessage;
-          console.error("❌ Error response:", errorData);
+          const errorData = await res.json()
+          errorDetail = errorData.detail || errorData.message || ''
+          errorMessage = errorDetail || errorMessage
+          console.error('❌ Error response:', errorData)
         } catch (parseErr) {
-          const text = await res.text();
-          console.error("❌ Error response (text):", text);
-          errorMessage = `${errorMessage}. Response: ${text.substring(0, 200)}`;
+          const text = await res.text()
+          console.error('❌ Error response (text):', text)
+          errorMessage = `${errorMessage}. Response: ${text.substring(0, 200)}`
         }
-        throw new Error(errorMessage);
+        throw new Error(errorMessage)
       }
 
-      const data = await res.json();
-      console.log("✅ Received knowledge bases:", data);
-      console.log("✅ Data type:", Array.isArray(data) ? "array" : typeof data);
-      console.log("✅ Data length:", Array.isArray(data) ? data.length : "N/A");
+      const data = await res.json()
+      console.log('✅ Received knowledge bases:', data)
+      console.log('✅ Data type:', Array.isArray(data) ? 'array' : typeof data)
+      console.log('✅ Data length:', Array.isArray(data) ? data.length : 'N/A')
 
       if (!Array.isArray(data)) {
-        throw new Error(
-          `Invalid response format: expected array, got ${typeof data}`,
-        );
+        throw new Error(`Invalid response format: expected array, got ${typeof data}`)
       }
 
-      setKbs(data);
-      setError(null); // Clear previous error - empty list is not an error, it's just empty state
+      setKbs(data)
+      setError(null) // Clear previous error - empty list is not an error, it's just empty state
     } catch (err: any) {
-      console.error("❌ Error fetching knowledge bases:", err);
-      console.error("❌ Error stack:", err.stack);
+      console.error('❌ Error fetching knowledge bases:', err)
+      console.error('❌ Error stack:', err.stack)
 
       let errorMessage =
-        err.message ||
-        "Failed to load knowledge bases. Please ensure the backend is running.";
+        err.message || 'Failed to load knowledge bases. Please ensure the backend is running.'
 
       // Provide more detailed message for network errors
-      if (err.name === "TypeError" && err.message.includes("fetch")) {
-        errorMessage = `Network error: Cannot connect to backend at ${apiUrl("")}. Please ensure the backend is running.`;
+      if (err.name === 'TypeError' && err.message.includes('fetch')) {
+        errorMessage = `Network error: Cannot connect to backend at ${apiUrl('')}. Please ensure the backend is running.`
       }
 
-      setError(errorMessage);
+      setError(errorMessage)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  }, []);
+  }, [])
 
   useEffect(() => {
-    fetchKnowledgeBases();
-  }, [fetchKnowledgeBases]);
+    fetchKnowledgeBases()
+  }, [fetchKnowledgeBases])
 
   // Establish WebSocket connections for all KBs to receive progress updates (only when KB names change)
   useEffect(() => {
     // Skip if still loading or kbs is not yet loaded
     if (loading || !kbs) {
-      return;
+      return
     }
 
     // Only re-establish connections if KB names actually changed
-    const currentKbNames = [...kbs.map((kb) => kb.name)].sort();
-    const currentKbNamesStr = currentKbNames.join(",");
-    const prevKbNames = [...(kbsNamesRef.current || [])].sort();
-    const prevKbNamesStr = prevKbNames.join(",");
+    const currentKbNames = [...kbs.map(kb => kb.name)].sort()
+    const currentKbNamesStr = currentKbNames.join(',')
+    const prevKbNames = [...(kbsNamesRef.current || [])].sort()
+    const prevKbNamesStr = prevKbNames.join(',')
 
     // If KB names haven't changed, don't re-establish connections
     if (
       currentKbNamesStr === prevKbNamesStr &&
-      currentKbNamesStr !== "" &&
+      currentKbNamesStr !== '' &&
       Object.keys(wsConnectionsRef.current).length > 0
     ) {
       // Update statistics in existing connections context, but don't reconnect
-      return;
+      return
     }
 
     // If kbs is empty and we have connections, close them all
     if (kbs.length === 0) {
       if (Object.keys(wsConnectionsRef.current).length > 0) {
-        Object.values(wsConnectionsRef.current).forEach((ws) => {
-          if (
-            ws &&
-            (ws.readyState === WebSocket.OPEN ||
-              ws.readyState === WebSocket.CONNECTING)
-          ) {
-            ws.close();
+        Object.values(wsConnectionsRef.current).forEach(ws => {
+          if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+            ws.close()
           }
-        });
-        wsConnectionsRef.current = {};
+        })
+        wsConnectionsRef.current = {}
       }
-      kbsNamesRef.current = [];
-      return;
+      kbsNamesRef.current = []
+      return
     }
 
     // Close old connections that are no longer needed
     Object.entries(wsConnectionsRef.current).forEach(([kbName, ws]) => {
-      if (!kbs.find((kb) => kb.name === kbName)) {
-        if (
-          ws &&
-          (ws.readyState === WebSocket.OPEN ||
-            ws.readyState === WebSocket.CONNECTING)
-        ) {
-          ws.close();
+      if (!kbs.find(kb => kb.name === kbName)) {
+        if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+          ws.close()
         }
-        delete wsConnectionsRef.current[kbName];
+        delete wsConnectionsRef.current[kbName]
       }
-    });
+    })
 
     const connections: Record<string, WebSocket> = {
       ...wsConnectionsRef.current,
-    };
+    }
 
-    kbs.forEach((kb) => {
+    kbs.forEach(kb => {
       // Only create new connection if one doesn't exist
-      if (
-        connections[kb.name] &&
-        connections[kb.name].readyState !== WebSocket.CLOSED
-      ) {
-        return;
+      if (connections[kb.name] && connections[kb.name].readyState !== WebSocket.CLOSED) {
+        return
       }
       // Connect to all KBs (not just uninitialized ones)
       // This allows receiving progress updates when adding documents
-      const ws = new WebSocket(
-        wsUrl(`/api/v1/knowledge/${kb.name}/progress/ws`),
-      );
+      const ws = new WebSocket(wsUrl(`/api/v1/knowledge/${kb.name}/progress/ws`))
 
       ws.onopen = () => {
-        console.log(`[Progress WS] Connected for KB: ${kb.name}`);
-      };
+        console.log(`[Progress WS] Connected for KB: ${kb.name}`)
+      }
 
-      ws.onmessage = (event) => {
+      ws.onmessage = event => {
         try {
-          const data = JSON.parse(event.data);
-          if (data.type === "progress" && data.data) {
+          const data = JSON.parse(event.data)
+          if (data.type === 'progress' && data.data) {
             // If KB is already initialized (ready), ignore stale in-progress updates
             // Only accept 'completed' or 'error' or recent updates (within 5 minutes)
             if (kb.statistics.rag_initialized) {
-              const progressStage = data.data.stage;
-              const progressTime = data.data.timestamp
-                ? new Date(data.data.timestamp).getTime()
-                : 0;
-              const now = new Date().getTime();
-              const fiveMinutes = 5 * 60 * 1000;
+              const progressStage = data.data.stage
+              const progressTime = data.data.timestamp ? new Date(data.data.timestamp).getTime() : 0
+              const now = new Date().getTime()
+              const fiveMinutes = 5 * 60 * 1000
 
               // Skip stale in-progress updates for already-ready KBs
-              if (progressStage !== "completed" && progressStage !== "error") {
+              if (progressStage !== 'completed' && progressStage !== 'error') {
                 if (!progressTime || now - progressTime > fiveMinutes) {
-                  console.log(
-                    `[Progress WS] Ignoring stale progress for ready KB: ${kb.name}`,
-                  );
-                  return;
+                  console.log(`[Progress WS] Ignoring stale progress for ready KB: ${kb.name}`)
+                  return
                 }
               }
             }
 
-            setProgressMap((prev) => {
+            setProgressMap(prev => {
               const updated = {
                 ...prev,
                 [kb.name]: data.data,
-              };
+              }
               // Auto-persist to localStorage
               try {
-                localStorage.setItem(
-                  "kb_progress_map",
-                  JSON.stringify(updated),
-                );
+                localStorage.setItem('kb_progress_map', JSON.stringify(updated))
               } catch (e) {
-                console.error("Failed to save progress to localStorage:", e);
+                console.error('Failed to save progress to localStorage:', e)
               }
-              return updated;
-            });
+              return updated
+            })
 
             // Don't auto-refresh KB list when completed or error
             // User can manually refresh using the refresh button
-          } else if (data.type === "error") {
-            console.error(
-              `[Progress WS] Error for KB ${kb.name}:`,
-              data.message,
-            );
+          } else if (data.type === 'error') {
+            console.error(`[Progress WS] Error for KB ${kb.name}:`, data.message)
           }
         } catch (e) {
-          console.error(
-            `[Progress WS] Error parsing message for ${kb.name}:`,
-            e,
-          );
+          console.error(`[Progress WS] Error parsing message for ${kb.name}:`, e)
         }
-      };
+      }
 
-      ws.onerror = (error) => {
-        console.error(`[Progress WS] Error for ${kb.name}:`, error);
-      };
+      ws.onerror = error => {
+        console.error(`[Progress WS] Error for ${kb.name}:`, error)
+      }
 
       ws.onclose = () => {
-        console.log(`[Progress WS] Closed for KB: ${kb.name}`);
-      };
+        console.log(`[Progress WS] Closed for KB: ${kb.name}`)
+      }
 
-      connections[kb.name] = ws;
-      wsConnectionsRef.current[kb.name] = ws;
-    });
+      connections[kb.name] = ws
+      wsConnectionsRef.current[kb.name] = ws
+    })
 
-    kbsNamesRef.current = kbs.map((kb) => kb.name);
+    kbsNamesRef.current = kbs.map(kb => kb.name)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [kbs, loading]);
+  }, [kbs, loading])
 
   // Cleanup all connections on component unmount
   useEffect(() => {
     return () => {
-      Object.values(wsConnectionsRef.current).forEach((ws) => {
-        if (
-          ws &&
-          (ws.readyState === WebSocket.OPEN ||
-            ws.readyState === WebSocket.CONNECTING)
-        ) {
-          ws.close();
+      Object.values(wsConnectionsRef.current).forEach(ws => {
+        if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+          ws.close()
         }
-      });
-      wsConnectionsRef.current = {};
-    };
-  }, []);
+      })
+      wsConnectionsRef.current = {}
+    }
+  }, [])
 
   const handleDelete = async (name: string) => {
     if (
-      !confirm(
-        `Are you sure you want to delete knowledge base "${name}"? This cannot be undone.`,
-      )
+      !confirm(`Are you sure you want to delete knowledge base "${name}"? This cannot be undone.`)
     )
-      return;
+      return
 
     try {
       const res = await fetch(apiUrl(`/api/v1/knowledge/${name}`), {
-        method: "DELETE",
-      });
-      if (!res.ok) throw new Error("Failed to delete knowledge base");
+        method: 'DELETE',
+      })
+      if (!res.ok) throw new Error('Failed to delete knowledge base')
 
       // Also clear progress state for this KB
-      clearProgress(name);
+      clearProgress(name)
 
-      fetchKnowledgeBases();
+      fetchKnowledgeBases()
     } catch (err) {
-      console.error(err);
-      alert("Failed to delete knowledge base");
+      console.error(err)
+      alert('Failed to delete knowledge base')
     }
-  };
+  }
+
+  const handleReindex = async (name: string) => {
+    if (!confirm(`Re-index "${name}"? This will rebuild the RAG index from existing documents.`))
+      return
+
+    setReindexingKb(name)
+    setProgressMap(prev => {
+      const updated = { ...prev }
+      delete updated[name]
+      return updated
+    })
+
+    try {
+      const res = await fetch(apiUrl(`/api/v1/knowledge/${name}/refresh`), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ full: true }),
+      })
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}))
+        throw new Error(errorData.detail || 'Failed to start re-indexing')
+      }
+    } catch (err: any) {
+      alert(`Failed to re-index: ${err.message}`)
+    } finally {
+      setReindexingKb(null)
+    }
+  }
 
   // Clear progress state for a specific KB (frontend + backend)
   const clearProgress = async (kbName: string) => {
     // Clear frontend state
-    setProgressMap((prev) => {
-      const updated = { ...prev };
-      delete updated[kbName];
+    setProgressMap(prev => {
+      const updated = { ...prev }
+      delete updated[kbName]
       try {
-        localStorage.setItem("kb_progress_map", JSON.stringify(updated));
+        localStorage.setItem('kb_progress_map', JSON.stringify(updated))
       } catch (e) {
-        console.error("Failed to save progress to localStorage:", e);
+        console.error('Failed to save progress to localStorage:', e)
       }
-      return updated;
-    });
+      return updated
+    })
 
     // Clear backend progress file
     try {
       await fetch(apiUrl(`/api/v1/knowledge/${kbName}/progress/clear`), {
-        method: "POST",
-      });
-      console.log(`[Progress] Cleared backend progress for KB: ${kbName}`);
+        method: 'POST',
+      })
+      console.log(`[Progress] Cleared backend progress for KB: ${kbName}`)
     } catch (e) {
-      console.error("Failed to clear backend progress:", e);
+      console.error('Failed to clear backend progress:', e)
     }
-  };
+  }
 
   // Clear all stuck progress states
   const clearAllStuckProgress = () => {
-    setProgressMap((prev) => {
-      const cleaned: Record<string, ProgressInfo> = {};
+    setProgressMap(prev => {
+      const cleaned: Record<string, ProgressInfo> = {}
       Object.entries(prev).forEach(([kbName, progress]) => {
         // Only keep completed and error states
-        if (progress.stage === "completed" || progress.stage === "error") {
-          cleaned[kbName] = progress;
+        if (progress.stage === 'completed' || progress.stage === 'error') {
+          cleaned[kbName] = progress
         }
-      });
+      })
       try {
-        localStorage.setItem("kb_progress_map", JSON.stringify(cleaned));
+        localStorage.setItem('kb_progress_map', JSON.stringify(cleaned))
       } catch (e) {
-        console.error("Failed to save progress to localStorage:", e);
+        console.error('Failed to save progress to localStorage:', e)
       }
-      return cleaned;
-    });
-  };
+      return cleaned
+    })
+  }
 
   const handleUpload = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!files || files.length === 0 || !targetKb) return;
+    e.preventDefault()
+    if (!files || files.length === 0 || !targetKb) return
 
-    setUploading(true);
-    const formData = new FormData();
-    Array.from(files).forEach((file) => {
-      formData.append("files", file);
-    });
+    setUploading(true)
+    const formData = new FormData()
+    Array.from(files).forEach(file => {
+      formData.append('files', file)
+    })
 
     try {
       const res = await fetch(apiUrl(`/api/v1/knowledge/${targetKb}/upload`), {
-        method: "POST",
+        method: 'POST',
         body: formData,
-      });
-      if (!res.ok) throw new Error("Upload failed");
+      })
+      if (!res.ok) throw new Error('Upload failed')
 
-      setUploadModalOpen(false);
-      setFiles(null);
+      setUploadModalOpen(false)
+      setFiles(null)
       // Refresh immediately to establish WebSocket connection
-      await fetchKnowledgeBases();
-      alert("Files uploaded successfully! Processing started in background.");
+      await fetchKnowledgeBases()
+      alert('Files uploaded successfully! Processing started in background.')
     } catch (err) {
-      console.error(err);
-      alert("Failed to upload files");
+      console.error(err)
+      alert('Failed to upload files')
     } finally {
-      setUploading(false);
+      setUploading(false)
     }
-  };
+  }
 
   const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newKbName || !files || files.length === 0) return;
+    e.preventDefault()
+    if (!newKbName || !files || files.length === 0) return
 
-    setUploading(true);
-    const formData = new FormData();
-    formData.append("name", newKbName);
-    Array.from(files).forEach((file) => {
-      formData.append("files", file);
-    });
+    setUploading(true)
+    const formData = new FormData()
+    formData.append('name', newKbName)
+    Array.from(files).forEach(file => {
+      formData.append('files', file)
+    })
 
     try {
-      const res = await fetch(apiUrl("/api/v1/knowledge/create"), {
-        method: "POST",
+      const res = await fetch(apiUrl('/api/v1/knowledge/create'), {
+        method: 'POST',
         body: formData,
-      });
+      })
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.detail || "Creation failed");
+        const errorData = await res.json()
+        throw new Error(errorData.detail || 'Creation failed')
       }
 
-      const result = await res.json();
+      const result = await res.json()
 
       // Immediately display new KB in frontend (optimistic update)
       const newKb: KnowledgeBase = {
@@ -504,69 +493,67 @@ export default function KnowledgePage() {
           content_lists: 0,
           rag_initialized: false,
         },
-      };
+      }
 
       // Add to list (if not exists)
-      setKbs((prev) => {
-        const exists = prev.some((kb) => kb.name === newKb.name);
+      setKbs(prev => {
+        const exists = prev.some(kb => kb.name === newKb.name)
         if (exists) {
-          return prev;
+          return prev
         }
-        return [newKb, ...prev];
-      });
+        return [newKb, ...prev]
+      })
 
       // Initialize progress state
-      setProgressMap((prev) => ({
+      setProgressMap(prev => ({
         ...prev,
         [newKb.name]: {
-          stage: "initializing",
-          message: "Initializing knowledge base...",
+          stage: 'initializing',
+          message: 'Initializing knowledge base...',
           current: 0,
           total: 0,
-          file_name: "",
+          file_name: '',
           progress_percent: 0,
           timestamp: new Date().toISOString(),
         },
-      }));
+      }))
 
-      setCreateModalOpen(false);
-      setFiles(null);
-      setNewKbName("");
+      setCreateModalOpen(false)
+      setFiles(null)
+      setNewKbName('')
 
       // Delay refresh to get full info (but user can already see the new KB)
       setTimeout(async () => {
-        await fetchKnowledgeBases();
-      }, 1000);
+        await fetchKnowledgeBases()
+      }, 1000)
 
-      alert(
-        "Knowledge base created successfully! Initialization started in background.",
-      );
+      alert('Knowledge base created successfully! Initialization started in background.')
     } catch (err: any) {
-      console.error(err);
-      alert(`Failed to create knowledge base: ${err.message}`);
+      console.error(err)
+      alert(`Failed to create knowledge base: ${err.message}`)
     } finally {
-      setUploading(false);
+      setUploading(false)
     }
-  };
+  }
 
   const handleDrag = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setDragActive(true);
-    } else if (e.type === "dragleave") {
-      setDragActive(false);
+    e.preventDefault()
+    e.stopPropagation()
+    if (e.type === 'dragenter' || e.type === 'dragover') {
+      setDragActive(true)
+    } else if (e.type === 'dragleave') {
+      setDragActive(false)
     }
-  }, []);
+  }, [])
 
   const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
+    e.preventDefault()
+    e.stopPropagation()
+    setDragActive(false)
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      setFiles(e.dataTransfer.files);
+      setFiles(e.dataTransfer.files)
     }
-  }, []);
+  }, [])
 
   return (
     <div className="animate-fade-in h-screen overflow-y-auto p-6">
@@ -584,8 +571,8 @@ export default function KnowledgePage() {
         <div className="flex gap-3">
           <button
             onClick={async () => {
-              setLoading(true);
-              await fetchKnowledgeBases();
+              setLoading(true)
+              await fetchKnowledgeBases()
             }}
             className="bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-2 border border-slate-200 dark:border-slate-600 shadow-sm hover:shadow"
             title="Refresh knowledge bases"
@@ -595,9 +582,9 @@ export default function KnowledgePage() {
           </button>
           <button
             onClick={() => {
-              setFiles(null);
-              setNewKbName("");
-              setCreateModalOpen(true);
+              setFiles(null)
+              setNewKbName('')
+              setCreateModalOpen(true)
             }}
             className="bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-800 dark:hover:bg-slate-200 transition-colors flex items-center gap-2 shadow-lg shadow-slate-900/20"
           >
@@ -618,7 +605,7 @@ export default function KnowledgePage() {
       {/* Loading State */}
       {loading && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1, 2, 3].map((i) => (
+          {[1, 2, 3].map(i => (
             <div
               key={i}
               className="bg-white dark:bg-slate-800 h-48 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 animate-pulse"
@@ -630,7 +617,7 @@ export default function KnowledgePage() {
       {/* KB Grid */}
       {!loading && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {kbs.map((kb) => (
+          {kbs.map(kb => (
             <div
               key={kb.name}
               className="group bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-md transition-all duration-300 hover:-translate-y-1 overflow-hidden flex flex-col"
@@ -642,9 +629,7 @@ export default function KnowledgePage() {
                     <Database className="w-5 h-5 text-blue-500 dark:text-blue-400" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-slate-900 dark:text-slate-100">
-                      {kb.name}
-                    </h3>
+                    <h3 className="font-bold text-slate-900 dark:text-slate-100">{kb.name}</h3>
                     {kb.is_default && (
                       <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 text-[10px] font-bold uppercase tracking-wide border border-blue-100 dark:border-blue-800 mt-1">
                         Default
@@ -654,10 +639,20 @@ export default function KnowledgePage() {
                 </div>
                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
+                    onClick={() => handleReindex(kb.name)}
+                    disabled={reindexingKb === kb.name}
+                    className="p-2 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors disabled:opacity-50"
+                    title="Re-index Knowledge Base"
+                  >
+                    <RefreshCw
+                      className={`w-4 h-4 ${reindexingKb === kb.name ? 'animate-spin' : ''}`}
+                    />
+                  </button>
+                  <button
                     onClick={() => {
-                      setTargetKb(kb.name);
-                      setFiles(null);
-                      setUploadModalOpen(true);
+                      setTargetKb(kb.name)
+                      setFiles(null)
+                      setUploadModalOpen(true)
                     }}
                     className="p-2 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                     title="Upload Documents"
@@ -701,93 +696,88 @@ export default function KnowledgePage() {
                       <Layers className="w-3 h-3" /> Status
                     </span>
                     {(() => {
-                      const progress = progressMap[kb.name];
+                      const progress = progressMap[kb.name]
                       if (progress) {
-                        if (progress.stage === "completed") {
+                        if (progress.stage === 'completed') {
                           return (
                             <span className="text-emerald-600 dark:text-emerald-400 font-bold">
                               Ready
                             </span>
-                          );
-                        } else if (progress.stage === "error") {
+                          )
+                        } else if (progress.stage === 'error') {
                           return (
-                            <span className="text-red-600 dark:text-red-400 font-bold">
-                              Error
-                            </span>
-                          );
+                            <span className="text-red-600 dark:text-red-400 font-bold">Error</span>
+                          )
                         } else {
                           // Display current stage and progress
                           const stageLabels: Record<string, string> = {
-                            initializing: "Initializing",
-                            processing_documents: "Processing",
-                            processing_file: "Processing File",
-                            extracting_items: "Extracting Items",
-                          };
-                          const stageLabel =
-                            stageLabels[progress.stage] || progress.stage;
+                            initializing: 'Initializing',
+                            processing_documents: 'Processing',
+                            processing_file: 'Processing File',
+                            extracting_items: 'Extracting Items',
+                          }
+                          const stageLabel = stageLabels[progress.stage] || progress.stage
                           return (
                             <span className="text-blue-600 dark:text-blue-400 font-bold flex items-center gap-1">
                               <Loader2 className="w-3 h-3 animate-spin" />
                               {stageLabel} {progress.progress_percent}%
                             </span>
-                          );
+                          )
                         }
                       }
                       return (
                         <span
                           className={
                             kb.statistics.rag_initialized
-                              ? "text-emerald-600 dark:text-emerald-400 font-bold"
-                              : "text-slate-400 dark:text-slate-500"
+                              ? 'text-emerald-600 dark:text-emerald-400 font-bold'
+                              : 'text-slate-400 dark:text-slate-500'
                           }
                         >
-                          {kb.statistics.rag_initialized
-                            ? "Ready"
-                            : "Not Indexed"}
+                          {kb.statistics.rag_initialized ? 'Ready' : 'Not Indexed'}
                         </span>
-                      );
+                      )
                     })()}
                   </div>
                   <div className="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
                     {(() => {
-                      const progress = progressMap[kb.name];
+                      const progress = progressMap[kb.name]
                       if (progress) {
-                        const percent = progress.progress_percent;
-                        let bgColor = "bg-blue-500";
-                        if (progress.stage === "completed") {
-                          bgColor = "bg-emerald-500";
-                        } else if (progress.stage === "error") {
-                          bgColor = "bg-red-500";
+                        const percent = progress.progress_percent
+                        let bgColor = 'bg-blue-500'
+                        if (progress.stage === 'completed') {
+                          bgColor = 'bg-emerald-500'
+                        } else if (progress.stage === 'error') {
+                          bgColor = 'bg-red-500'
                         }
                         return (
                           <div
                             className={`h-full rounded-full ${bgColor} transition-all duration-300`}
                             style={{ width: `${percent}%` }}
                           />
-                        );
+                        )
                       }
                       return (
                         <div
-                          className={`h-full rounded-full ${kb.statistics.rag_initialized ? "bg-emerald-500 w-full" : "bg-slate-300 w-0"}`}
+                          className={`h-full rounded-full ${kb.statistics.rag_initialized ? 'bg-emerald-500 w-full' : 'bg-slate-300 w-0'}`}
                         />
-                      );
+                      )
                     })()}
                   </div>
                   {(() => {
-                    const progress = progressMap[kb.name];
+                    const progress = progressMap[kb.name]
                     if (progress && progress.message) {
                       return (
                         <div className="mt-2 space-y-1">
                           <div className="text-[10px] text-slate-600 dark:text-slate-400 font-medium flex items-center justify-between">
                             <span>{progress.message}</span>
                             {/* Clear button for stuck states */}
-                            {progress.stage !== "completed" && (
+                            {progress.stage !== 'completed' && (
                               <button
-                                onClick={async (e) => {
-                                  e.stopPropagation();
-                                  await clearProgress(kb.name);
+                                onClick={async e => {
+                                  e.stopPropagation()
+                                  await clearProgress(kb.name)
                                   // Refresh KB list to show correct status
-                                  fetchKnowledgeBases();
+                                  fetchKnowledgeBases()
                                 }}
                                 className="text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition-colors"
                                 title="Clear progress status"
@@ -799,9 +789,7 @@ export default function KnowledgePage() {
                           {progress.file_name && (
                             <div className="text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-1">
                               <FileText className="w-3 h-3" />
-                              <span className="truncate">
-                                {progress.file_name}
-                              </span>
+                              <span className="truncate">{progress.file_name}</span>
                             </div>
                           )}
                           {progress.current > 0 && progress.total > 0 && (
@@ -815,7 +803,7 @@ export default function KnowledgePage() {
                             </div>
                           )}
                         </div>
-                      );
+                      )
                     }
                     if (kb.statistics.rag) {
                       return (
@@ -824,9 +812,9 @@ export default function KnowledgePage() {
                           <span>•</span>
                           <span>{kb.statistics.rag.entities} entities</span>
                         </div>
-                      );
+                      )
                     }
-                    return null;
+                    return null
                   })()}
                 </div>
               </div>
@@ -868,7 +856,7 @@ export default function KnowledgePage() {
                   type="text"
                   required
                   value={newKbName}
-                  onChange={(e) => setNewKbName(e.target.value)}
+                  onChange={e => setNewKbName(e.target.value)}
                   placeholder="e.g., Math101"
                   className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                 />
@@ -881,8 +869,8 @@ export default function KnowledgePage() {
                 <div
                   className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors ${
                     dragActive
-                      ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30"
-                      : "border-slate-200 dark:border-slate-600 hover:border-blue-400 dark:hover:border-blue-500 bg-slate-50 dark:bg-slate-700/50"
+                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
+                      : 'border-slate-200 dark:border-slate-600 hover:border-blue-400 dark:hover:border-blue-500 bg-slate-50 dark:bg-slate-700/50'
                   }`}
                   onDragEnter={handleDrag}
                   onDragLeave={handleDrag}
@@ -894,7 +882,7 @@ export default function KnowledgePage() {
                     multiple
                     className="hidden"
                     id="kb-file-upload"
-                    onChange={(e) => setFiles(e.target.files)}
+                    onChange={e => setFiles(e.target.files)}
                     accept=".pdf,.txt,.md"
                   />
                   <label
@@ -902,12 +890,12 @@ export default function KnowledgePage() {
                     className="cursor-pointer flex flex-col items-center gap-2"
                   >
                     <Upload
-                      className={`w-8 h-8 ${dragActive ? "text-blue-500 dark:text-blue-400" : "text-slate-400 dark:text-slate-500"}`}
+                      className={`w-8 h-8 ${dragActive ? 'text-blue-500 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500'}`}
                     />
                     <span className="text-sm font-medium text-slate-600 dark:text-slate-300">
                       {files && files.length > 0
                         ? `${files.length} files selected`
-                        : "Drag & drop files here or click to browse"}
+                        : 'Drag & drop files here or click to browse'}
                     </span>
                     <span className="text-xs text-slate-400 dark:text-slate-500">
                       Supports PDF, TXT, MD
@@ -926,16 +914,10 @@ export default function KnowledgePage() {
                 </button>
                 <button
                   type="submit"
-                  disabled={
-                    !newKbName || !files || files.length === 0 || uploading
-                  }
+                  disabled={!newKbName || !files || files.length === 0 || uploading}
                   className="flex-1 py-2.5 rounded-xl bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 font-medium hover:bg-slate-800 dark:hover:bg-slate-200 disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  {uploading ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    "Create & Initialize"
-                  )}
+                  {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Create & Initialize'}
                 </button>
               </div>
             </form>
@@ -959,11 +941,8 @@ export default function KnowledgePage() {
               </button>
             </div>
             <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
-              Upload PDF, TXT, or MD files to{" "}
-              <strong className="text-slate-700 dark:text-slate-200">
-                {targetKb}
-              </strong>
-              .
+              Upload PDF, TXT, or MD files to{' '}
+              <strong className="text-slate-700 dark:text-slate-200">{targetKb}</strong>.
             </p>
 
             <form onSubmit={handleUpload} className="space-y-4">
@@ -973,7 +952,7 @@ export default function KnowledgePage() {
                   multiple
                   className="hidden"
                   id="file-upload"
-                  onChange={(e) => setFiles(e.target.files)}
+                  onChange={e => setFiles(e.target.files)}
                   accept=".pdf,.txt,.md"
                 />
                 <label
@@ -984,7 +963,7 @@ export default function KnowledgePage() {
                   <span className="text-sm font-medium text-slate-600 dark:text-slate-300">
                     {files && files.length > 0
                       ? `${files.length} files selected`
-                      : "Click to browse files"}
+                      : 'Click to browse files'}
                   </span>
                 </label>
               </div>
@@ -1002,11 +981,7 @@ export default function KnowledgePage() {
                   disabled={!files || uploading}
                   className="flex-1 py-2.5 rounded-xl bg-blue-600 text-white font-medium hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  {uploading ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    "Upload"
-                  )}
+                  {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Upload'}
                 </button>
               </div>
             </form>
@@ -1014,5 +989,5 @@ export default function KnowledgePage() {
         </div>
       )}
     </div>
-  );
+  )
 }

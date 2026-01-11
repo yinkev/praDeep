@@ -73,6 +73,11 @@ Each router module handles endpoints for a specific feature:
 - `GET /api/v1/knowledge/{kb_name}` - Get knowledge base details
 - `POST /api/v1/knowledge/create` - Create knowledge base
 - `POST /api/v1/knowledge/{kb_name}/upload` - Upload documents
+- `POST /api/v1/knowledge/{kb_name}/refresh` - Refresh/rebuild knowledge base
+- `DELETE /api/v1/knowledge/{kb_name}` - Delete knowledge base
+- `GET /api/v1/knowledge/{kb_name}/progress` - Get initialization progress
+- `POST /api/v1/knowledge/{kb_name}/progress/clear` - Clear progress state
+- `WS /api/v1/knowledge/{kb_name}/progress/ws` - WebSocket for real-time progress
 
 #### guide.py
 - `POST /api/v1/guide/create_session` - Create learning session
@@ -155,6 +160,49 @@ Standard REST API endpoints return JSON responses:
 ```bash
 curl http://localhost:8783/api/v1/knowledge/list
 ```
+
+**Example (Knowledge Base Refresh)**:
+
+The refresh endpoint rebuilds a knowledge base by reprocessing all documents.
+
+```bash
+# Basic refresh (creates backup, processes all documents)
+curl -X POST http://localhost:8783/api/v1/knowledge/my_kb/refresh
+
+# Full refresh with options
+curl -X POST http://localhost:8783/api/v1/knowledge/my_kb/refresh \
+  -H "Content-Type: application/json" \
+  -d '{
+    "full": true,
+    "no_backup": false,
+    "skip_extract": false,
+    "batch_size": 50
+  }'
+```
+
+**Refresh Options**:
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `full` | bool | `false` | Full refresh: also cleans content_list, images, and numbered_items.json |
+| `no_backup` | bool | `false` | Skip creating backup of RAG storage before cleaning |
+| `skip_extract` | bool | `false` | Skip numbered items extraction after document processing |
+| `batch_size` | int | `20` | Batch size for numbered items extraction |
+
+**Response**:
+```json
+{
+  "message": "Refresh started for knowledge base 'my_kb'. Processing in background.",
+  "name": "my_kb",
+  "options": {
+    "full": true,
+    "no_backup": false,
+    "skip_extract": false,
+    "batch_size": 50
+  }
+}
+```
+
+**Progress Tracking**: Monitor refresh progress via WebSocket at `/api/v1/knowledge/{kb_name}/progress/ws`
 
 ## 📁 Static File Serving
 

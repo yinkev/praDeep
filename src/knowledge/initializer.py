@@ -295,10 +295,18 @@ class KnowledgeBaseInitializer:
             """
             Unified embedding function using EmbeddingClient.
             Supports multiple providers: OpenAI, Cohere, Jina, Ollama, etc.
+
+            IMPORTANT: Must return numpy.ndarray, not List[List[float]].
+            LightRAG internally calls .size on the embedding result to determine
+            dimensions. If we return a plain Python list, this causes:
+                AttributeError: 'list' object has no attribute 'size'
+            Converting to np.array() provides the .size attribute LightRAG expects.
             """
             try:
+                import numpy as np
                 embeddings = await embedding_client.embed(texts)
-                return embeddings
+                # Convert to numpy array - LightRAG requires .size attribute
+                return np.array(embeddings)
             except Exception as e:
                 logger.error(f"Embedding failed: {e}")
                 raise
@@ -397,27 +405,73 @@ class KnowledgeBaseInitializer:
         # Display statistics
         await self.display_statistics(rag)
 
+    def _find_mineru_output_dir(self, doc_dir: Path) -> Path | None:
+        """Find MinerU output directory (auto, hybrid_auto, txt, ocr, etc.)"""
+        # MinerU output patterns in order of preference
+        # hybrid-auto-engine backend creates "hybrid_auto" directory
+        # vlm backends create "vlm" directory
+        patterns = ["hybrid_auto", "auto", "txt", "ocr", "vlm"]
+
+        # Debug: list what's in doc_dir
+        try:
+            doc_dir_contents = list(doc_dir.iterdir())
+            logger.info(f"    _find_mineru_output_dir: {doc_dir.name} contains: {[p.name for p in doc_dir_contents]}")
+        except Exception as e:
+            logger.error(f"    _find_mineru_output_dir: Failed to list {doc_dir}: {e}")
+
+        for pattern in patterns:
+            output_dir = doc_dir / pattern
+            if output_dir.exists() and output_dir.is_dir():
+                logger.info(f"    Found MinerU output dir (pattern={pattern}): {output_dir}")
+                return output_dir
+
+        # Fallback: find any directory that contains _content_list.json
+        try:
+            for subdir in doc_dir.iterdir():
+                if subdir.is_dir():
+                    content_list_files = list(subdir.glob("*_content_list.json"))
+                    if content_list_files:
+                        logger.info(f"    Found MinerU output dir (fallback): {subdir}")
+                        return subdir
+        except (OSError, StopIteration):
+            pass
+
+        logger.info(f"    No MinerU output dir found in: {doc_dir}")
+        return None
+
     async def fix_structure(self):
         """
         Fix the nested structure created by process_document_complete.
         Flattens content_list directories and moves images to the correct location.
         """
         logger.info("\nFixing directory structure...")
+        logger.info(f"  content_list_dir: {self.content_list_dir}")
+        logger.info(f"  images_dir: {self.images_dir}")
+
+        # List what's in content_list_dir for debugging
+        content_list_contents = list(self.content_list_dir.glob("*"))
+        logger.info(f"  Content list directory contains: {[p.name for p in content_list_contents]}")
 
         # Find nested content lists
         content_list_moves = []
         for doc_dir in self.content_list_dir.glob("*"):
             if not doc_dir.is_dir():
+                logger.debug(f"  Skipping non-directory: {doc_dir.name}")
                 continue
 
-            auto_dir = doc_dir / "auto"
-            if not auto_dir.exists():
+            logger.info(f"  Processing doc_dir: {doc_dir.name}")
+            output_dir = self._find_mineru_output_dir(doc_dir)
+            if not output_dir:
+                logger.warning(f"  No MinerU output dir found for: {doc_dir.name}")
                 continue
+
+            logger.info(f"  Found MinerU output: {output_dir.name}")
 
             # Find the _content_list.json file
-            for json_file in auto_dir.glob("*_content_list.json"):
+            for json_file in output_dir.glob("*_content_list.json"):
                 target_file = self.content_list_dir / f"{doc_dir.name}.json"
                 content_list_moves.append((json_file, target_file))
+                logger.info(f"  Will move: {json_file.name} -> {target_file.name}")
 
         # Move content list files
         for source, target in content_list_moves:
@@ -428,21 +482,35 @@ class KnowledgeBaseInitializer:
                 logger.error(f"  ✗ Error moving {source.name}: {e!s}")
 
         # Find and move nested images
-        for doc_dir in self.content_list_dir.glob("*"):
+        logger.info("  Scanning for nested images...")
+        doc_dirs_found = list(self.content_list_dir.glob("*"))
+        logger.info(f"  Found {len(doc_dirs_found)} items in content_list_dir for image scan")
+
+        for doc_dir in doc_dirs_found:
             if not doc_dir.is_dir():
+                logger.debug(f"  Skipping non-directory for images: {doc_dir.name}")
                 continue
 
-            auto_dir = doc_dir / "auto"
-            if not auto_dir.exists():
+            logger.info(f"  Checking doc_dir for images: {doc_dir.name}")
+            output_dir = self._find_mineru_output_dir(doc_dir)
+            if not output_dir:
+                logger.info(f"    No MinerU output dir found in {doc_dir.name}")
                 continue
 
-            images_dir = auto_dir / "images"
+            logger.info(f"    Found output_dir: {output_dir}")
+            images_dir = output_dir / "images"
+            logger.info(f"    Looking for images at: {images_dir}")
+            logger.info(f"    images_dir.exists(): {images_dir.exists()}")
+
             if images_dir.exists() and images_dir.is_dir():
+                image_files = list(images_dir.glob("*"))
+                logger.info(f"    Found {len(image_files)} files in images_dir")
+
                 image_count = 0
                 # Ensure target directory exists
                 self.images_dir.mkdir(parents=True, exist_ok=True)
 
-                for img_file in images_dir.glob("*"):
+                for img_file in image_files:
                     if img_file.is_file() and img_file.exists():
                         target_img = self.images_dir / img_file.name
                         if not target_img.exists():
@@ -459,9 +527,15 @@ class KnowledgeBaseInitializer:
                                 )
                             except Exception as e:
                                 logger.error(f"  ✗ Error moving image {img_file.name}: {e!s}")
+                        else:
+                            logger.debug(f"    Image already exists: {img_file.name}")
 
                 if image_count > 0:
-                    logger.info(f"  ✓ Moved {image_count} images from {doc_dir.name}/auto/images/")
+                    logger.info(f"  ✓ Moved {image_count} images from {doc_dir.name}/{output_dir.name}/images/")
+                else:
+                    logger.info(f"    No new images to move from {doc_dir.name}")
+            else:
+                logger.info(f"    No images directory found at {images_dir}")
 
         # Clean up nested directories
         for doc_dir in self.content_list_dir.glob("*"):
