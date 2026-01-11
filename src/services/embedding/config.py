@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 
 # Load environment variables
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
-load_dotenv(PROJECT_ROOT / "DeepTutor.env", override=False)
+load_dotenv(PROJECT_ROOT / "praDeep.env", override=False)
 load_dotenv(PROJECT_ROOT / ".env", override=False)
 
 
@@ -114,6 +114,7 @@ def get_embedding_config() -> EmbeddingConfig:
         "huggingface": "HF",
         "ollama": "OLLAMA",
         "lm_studio": "LM_STUDIO",
+        "qwen3_vl": "QWEN3_VL",
     }
 
     prefix = prefix_map.get(binding, "")
@@ -140,7 +141,7 @@ def get_embedding_config() -> EmbeddingConfig:
 
     # Check if API key is required
     # Local providers (Ollama, LM Studio) don't need API keys
-    providers_without_key = ["ollama", "lm_studio"]
+    providers_without_key = ["ollama", "lm_studio", "qwen3_vl"]
     requires_key = binding not in providers_without_key
 
     if requires_key and not api_key:
@@ -148,7 +149,13 @@ def get_embedding_config() -> EmbeddingConfig:
             f"Error: EMBEDDING_API_KEY not set for binding '{binding}'. "
             f"Set {prefix}_EMBEDDING_API_KEY or EMBEDDING_API_KEY in .env file"
         )
-    if not base_url:
+
+    # Check if base_url is required
+    # Fully local providers (qwen3_vl) don't need a host URL
+    providers_without_host = ["qwen3_vl"]
+    requires_host = binding not in providers_without_host
+
+    if requires_host and not base_url:
         raise ValueError(
             f"Error: EMBEDDING_HOST not set for binding '{binding}'. "
             f"Set {prefix}_EMBEDDING_HOST or EMBEDDING_HOST in .env file"

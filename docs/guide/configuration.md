@@ -78,4 +78,4 @@ data/
 
 ---
 
-📖 **Full reference**: [config/README.md](https://github.com/HKUDS/DeepTutor/tree/main/config)
+📖 **Full reference**: [config/README.md](https://github.com/HKUDS/praDeep/tree/main/config)

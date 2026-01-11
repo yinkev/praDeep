@@ -1,22 +1,22 @@
 import { defineConfig } from 'vitepress'
 
 export default defineConfig({
-  title: "DeepTutor",
+  title: "praDeep",
   description: "AI-Powered Personalized Learning Assistant",
 
-  // GitHub Pages 部署配置
-  base: '/DeepTutor/',
+  // GitHub Pages deployment configuration
+  base: '/praDeep/',
 
   head: [
-    ['link', { rel: 'icon', href: '/DeepTutor/logo.png' }]
+    ['link', { rel: 'icon', href: '/praDeep/logo.png' }]
   ],
 
-  // 忽略 localhost 链接检查（这些是示例地址，构建时不可访问）
+  // Ignore localhost link checks (these are example addresses, not accessible during build)
   ignoreDeadLinks: [
     /^http:\/\/localhost/
   ],
 
-  // 国际化配置
+  // Internationalization configuration
   locales: {
     root: {
       label: 'English',
@@ -24,12 +24,89 @@ export default defineConfig({
       themeConfig: {
         nav: [
           { text: 'Home', link: '/' },
-          { text: 'Guide', link: '/guide/getting-started' },
-          { text: 'Features', link: '/features/overview' },
+          {
+            text: 'Docs',
+            items: [
+              { text: 'Getting Started', link: '/getting-started/' },
+              { text: 'Configuration', link: '/configuration/' },
+              { text: 'Guides', link: '/guides/' },
+              { text: 'API Reference', link: '/api/' }
+            ]
+          },
+          { text: 'Architecture', link: '/architecture/' },
+          { text: 'Research', link: '/research/' },
           { text: 'Roadmap', link: '/roadmap' },
-          { text: 'GitHub', link: 'https://github.com/HKUDS/DeepTutor' }
+          { text: 'GitHub', link: 'https://github.com/HKUDS/praDeep' }
         ],
         sidebar: {
+          '/getting-started/': [
+            {
+              text: 'Getting Started',
+              items: [
+                { text: 'Overview', link: '/getting-started/' },
+                { text: 'Installation', link: '/getting-started/installation' },
+                { text: 'Quickstart', link: '/getting-started/quickstart' },
+                { text: 'First Steps', link: '/getting-started/first-steps' }
+              ]
+            }
+          ],
+          '/configuration/': [
+            {
+              text: 'Configuration',
+              items: [
+                { text: 'Overview', link: '/configuration/' },
+                { text: 'Environment Variables', link: '/configuration/environment' },
+                { text: 'Model Configuration', link: '/configuration/models' },
+                { text: 'Storage Settings', link: '/configuration/storage' },
+                { text: 'Advanced Options', link: '/configuration/advanced' }
+              ]
+            }
+          ],
+          '/architecture/': [
+            {
+              text: 'Architecture',
+              items: [
+                { text: 'Overview', link: '/architecture/' },
+                { text: 'System Overview', link: '/architecture/system-overview' },
+                { text: 'Components', link: '/architecture/components' },
+                { text: 'Data Flow', link: '/architecture/data-flow' }
+              ]
+            }
+          ],
+          '/api/': [
+            {
+              text: 'API Reference',
+              items: [
+                { text: 'Overview', link: '/api/' },
+                { text: 'Endpoints', link: '/api/endpoints' },
+                { text: 'SDK', link: '/api/sdk' },
+                { text: 'Webhooks', link: '/api/webhooks' }
+              ]
+            }
+          ],
+          '/guides/': [
+            {
+              text: 'How-To Guides',
+              items: [
+                { text: 'Overview', link: '/guides/' },
+                { text: 'Knowledge Bases', link: '/guides/knowledge-bases' },
+                { text: 'Local Models', link: '/guides/local-models' },
+                { text: 'Deployment', link: '/guides/deployment' }
+              ]
+            }
+          ],
+          '/research/': [
+            {
+              text: 'Research',
+              items: [
+                { text: 'Overview', link: '/research/' },
+                { text: 'Embedding Models', link: '/research/embedding-models' },
+                { text: 'Apple Silicon Benchmarks', link: '/research/apple-silicon-benchmarks' },
+                { text: 'Cost Analysis', link: '/research/cost-analysis' },
+                { text: 'Architecture Decisions', link: '/research/decisions' }
+              ]
+            }
+          ],
           '/guide/': [
             {
               text: 'Guide',
@@ -42,7 +119,7 @@ export default defineConfig({
           ]
         },
         editLink: {
-          pattern: 'https://github.com/HKUDS/DeepTutor/edit/main/docs/:path',
+          pattern: 'https://github.com/HKUDS/praDeep/edit/main/docs/:path',
           text: 'Edit this page on GitHub'
         },
         footer: {
@@ -61,7 +138,7 @@ export default defineConfig({
           { text: '指南', link: '/zh/guide/getting-started' },
           { text: '功能', link: '/zh/features/overview' },
           { text: '路线图', link: '/zh/roadmap' },
-          { text: 'GitHub', link: 'https://github.com/HKUDS/DeepTutor' }
+          { text: 'GitHub', link: 'https://github.com/HKUDS/praDeep' }
         ],
         sidebar: {
           '/zh/guide/': [
@@ -76,14 +153,14 @@ export default defineConfig({
           ]
         },
         editLink: {
-          pattern: 'https://github.com/HKUDS/DeepTutor/edit/main/docs/:path',
+          pattern: 'https://github.com/HKUDS/praDeep/edit/main/docs/:path',
           text: '在 GitHub 上编辑此页'
         },
         footer: {
           message: '基于 AGPL-3.0 许可证发布',
           copyright: '© 2025-2026 香港大学数据智能实验室'
         },
-        // 中文界面文本
+        // Chinese interface text
         outline: {
           label: '本页目录'
         },
@@ -106,13 +183,13 @@ export default defineConfig({
     logo: '/logo.png',
 
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/HKUDS/DeepTutor' },
+      { icon: 'github', link: 'https://github.com/HKUDS/praDeep' },
       { icon: 'discord', link: 'https://discord.gg/zpP9cssj' },
       {
         icon: {
           svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.212 1.17 4.203 3.002 5.55a.59.59 0 0 1 .213.665l-.39 1.48c-.019.07-.048.141-.048.213 0 .163.13.295.29.295a.32.32 0 0 0 .167-.054l1.903-1.114a.864.864 0 0 1 .717-.098 10.16 10.16 0 0 0 2.837.403c.276 0 .543-.027.811-.05-.857-2.578.157-4.972 1.932-6.446 1.703-1.415 3.882-1.98 5.853-1.838-.576-3.583-4.196-6.348-8.596-6.348zM5.785 5.991c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 0 1-1.162 1.178A1.17 1.17 0 0 1 4.623 7.17c0-.651.52-1.18 1.162-1.18zm5.813 0c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 0 1-1.162 1.178 1.17 1.17 0 0 1-1.162-1.178c0-.651.52-1.18 1.162-1.18zm5.34 2.867c-1.797-.052-3.746.512-5.28 1.786-1.72 1.428-2.687 3.72-1.78 6.22.942 2.453 3.666 4.229 6.884 4.229.826 0 1.622-.12 2.361-.336a.722.722 0 0 1 .598.082l1.584.926a.272.272 0 0 0 .14.047c.134 0 .24-.111.24-.247 0-.06-.023-.12-.038-.177l-.327-1.233a.49.49 0 0 1 .176-.554C23.048 18.276 24 16.577 24 14.71c0-3.38-3.251-6.136-7.062-5.852zm-2.073 2.703c.536 0 .97.44.97.983a.976.976 0 0 1-.97.983.976.976 0 0 1-.97-.983c0-.542.434-.983.97-.983zm4.146 0c.536 0 .97.44.97.983a.976.976 0 0 1-.97.983.976.976 0 0 1-.97-.983c0-.542.434-.983.97-.983z"/></svg>'
         },
-        link: 'https://github.com/HKUDS/DeepTutor/issues/78',
+        link: 'https://github.com/HKUDS/praDeep/issues/78',
         ariaLabel: 'WeChat'
       }
     ],

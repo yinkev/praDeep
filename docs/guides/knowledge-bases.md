@@ -1,6 +1,6 @@
 ---
 title: Knowledge Bases Guide
-description: Complete guide to creating and managing knowledge bases in DeepTutor
+description: Complete guide to creating and managing knowledge bases in praDeep
 ---
 
 # Knowledge Bases Guide
@@ -9,7 +9,7 @@ Learn how to create, populate, and optimize knowledge bases for effective docume
 
 ## Prerequisites
 
-- DeepTutor installed and running
+- praDeep installed and running
 - API key configured (for cloud embeddings) or local model set up
 - Documents ready for upload (PDF, DOCX, MD, or TXT)
 
@@ -39,9 +39,9 @@ curl -X POST http://localhost:8783/api/v1/knowledge-bases \
 ### Via Python SDK
 
 ```python
-from deeptutor import DeepTutor
+from deeptutor import praDeep
 
-client = DeepTutor()
+client = praDeep()
 kb = client.knowledge_bases.create(
     name="Machine Learning Course",
     description="CS229 lecture notes and textbook"
@@ -308,7 +308,7 @@ Full reprocessing can take significant time for large knowledge bases and will i
 
 ## Image Extraction
 
-DeepTutor automatically extracts and processes images from documents during ingestion.
+praDeep automatically extracts and processes images from documents during ingestion.
 
 ### Automatic Extraction
 

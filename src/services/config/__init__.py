@@ -2,7 +2,7 @@
 Configuration Service
 =====================
 
-Unified configuration loading for all DeepTutor modules.
+Unified configuration loading for all praDeep modules.
 
 Usage:
     from src.services.config import load_config_with_main, PROJECT_ROOT

@@ -5,7 +5,7 @@ description: Configure LLM and embedding models
 
 # Model Configuration
 
-DeepTutor supports a variety of language models and embedding models for different use cases.
+praDeep supports a variety of language models and embedding models for different use cases.
 
 ## Supported LLM Providers
 

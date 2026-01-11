@@ -1,11 +1,11 @@
 ---
 title: Quickstart
-description: Get DeepTutor running in 5 minutes
+description: Get praDeep running in 5 minutes
 ---
 
 # Quickstart
 
-Get DeepTutor running in 5 minutes with this quickstart guide.
+Get praDeep running in 5 minutes with this quickstart guide.
 
 ## Step 1: Configure Environment
 
@@ -57,19 +57,19 @@ The frontend runs on port **3783** and the backend API runs on port **8783**.
 ### Basic Question
 ```
 User: What are the main concepts in chapter 3?
-DeepTutor: Based on the document, the main concepts in chapter 3 include...
+praDeep: Based on the document, the main concepts in chapter 3 include...
 ```
 
 ### Generate Practice Questions
 ```
 User: Create 5 practice questions from this material
-DeepTutor: Here are 5 practice questions based on your document...
+praDeep: Here are 5 practice questions based on your document...
 ```
 
 ### Deep Research Mode
 ```
 User: Research the latest developments in this topic
-DeepTutor: I'll conduct a systematic exploration of this topic...
+praDeep: I'll conduct a systematic exploration of this topic...
 ```
 
 ## Next Steps

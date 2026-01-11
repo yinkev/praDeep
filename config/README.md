@@ -1,6 +1,6 @@
 # Configuration Directory
 
-This directory contains all configuration files for the DeepTutor system. Configuration files are organized by module and utilize YAML format.
+This directory contains all configuration files for the praDeep system. Configuration files are organized by module and utilize YAML format.
 
 ## 📁 Configuration Files
 
@@ -181,7 +181,7 @@ solve:
 
 Configuration files follow a hierarchy:
 
-1. **Environment Variables** (`.env` or `DeepTutor.env`)
+1. **Environment Variables** (`.env` or `praDeep.env`)
    - LLM API keys and endpoints
    - Model names
    - Override all other settings
@@ -224,7 +224,7 @@ max_tokens = params["max_tokens"]
 
 ## 🔑 Environment Variables
 
-Required environment variables (in `.env` or `DeepTutor.env`):
+Required environment variables (in `.env` or `praDeep.env`):
 
 ```bash
 # LLM Configuration (Required)
@@ -270,7 +270,7 @@ PERPLEXITY_API_KEY=your_perplexity_key  # For web search
 ## ⚠️ Important Notes
 
 1. **Agent parameters centralization**: All `temperature` and `max_tokens` settings MUST be in `agents.yaml`. Do NOT hardcode these values in agent code.
-2. **Model configuration**: LLM model names should only be set via environment variables (`.env` or `DeepTutor.env`), not in config files.
+2. **Model configuration**: LLM model names should only be set via environment variables (`.env` or `praDeep.env`), not in config files.
 3. **Path consistency**: All modules use paths from `main.yaml` to ensure consistency. Use relative paths from project root for portability.
 4. **Language setting**: System language is set in `main.yaml` (`system.language`) and shared by all modules. Individual modules should not override this.
 5. **Research presets**: Use presets in `main.yaml` (research.presets: quick/medium/deep/auto) for different research depth requirements.

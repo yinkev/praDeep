@@ -1,11 +1,11 @@
 ---
 title: Installation
-description: Step-by-step installation guide for DeepTutor
+description: Step-by-step installation guide for praDeep
 ---
 
 # Installation
 
-This guide covers the installation process for DeepTutor across different platforms.
+This guide covers the installation process for praDeep across different platforms.
 
 ## System Requirements
 
@@ -35,8 +35,8 @@ This guide covers the installation process for DeepTutor across different platfo
 
 ```bash
 # Clone the repository
-git clone https://github.com/HKUDS/DeepTutor.git
-cd DeepTutor
+git clone https://github.com/HKUDS/praDeep.git
+cd praDeep
 
 # Copy environment configuration
 cp .env.example .env
@@ -49,8 +49,8 @@ docker-compose up -d
 
 ```bash
 # Clone the repository
-git clone https://github.com/HKUDS/DeepTutor.git
-cd DeepTutor
+git clone https://github.com/HKUDS/praDeep.git
+cd praDeep
 
 # Create virtual environment
 python -m venv .venv

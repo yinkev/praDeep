@@ -2,7 +2,7 @@
 Embedding Client
 ================
 
-Unified embedding client for all DeepTutor services.
+Unified embedding client for all praDeep services.
 Now supports multiple providers through adapters.
 """
 

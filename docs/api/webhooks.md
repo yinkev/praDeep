@@ -1,11 +1,11 @@
 ---
 title: Webhooks
-description: Webhook events and configuration for DeepTutor
+description: Webhook events and configuration for praDeep
 ---
 
 # Webhooks
 
-DeepTutor can send webhook notifications for various events, enabling real-time integrations with external systems.
+praDeep can send webhook notifications for various events, enabling real-time integrations with external systems.
 
 ## Configuration
 
@@ -164,9 +164,9 @@ All webhook requests include a signature for verification.
 
 | Header | Description |
 |--------|-------------|
-| `X-DeepTutor-Signature` | HMAC-SHA256 signature |
-| `X-DeepTutor-Timestamp` | Unix timestamp |
-| `X-DeepTutor-Event` | Event type |
+| `X-praDeep-Signature` | HMAC-SHA256 signature |
+| `X-praDeep-Timestamp` | Unix timestamp |
+| `X-praDeep-Event` | Event type |
 
 ### Verification (Python)
 
@@ -260,8 +260,8 @@ app = Flask(__name__)
 
 @app.route('/webhooks/deeptutor', methods=['POST'])
 def handle_webhook():
-    signature = request.headers.get('X-DeepTutor-Signature')
-    timestamp = request.headers.get('X-DeepTutor-Timestamp')
+    signature = request.headers.get('X-praDeep-Signature')
+    timestamp = request.headers.get('X-praDeep-Timestamp')
 
     if not verify_signature(request.data, signature, WEBHOOK_SECRET, timestamp):
         return 'Invalid signature', 401

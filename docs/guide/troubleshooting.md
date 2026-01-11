@@ -45,4 +45,4 @@ taskkill /PID <PID> /F
 
 ---
 
-📖 **Full FAQ**: [GitHub README](https://github.com/HKUDS/DeepTutor#-faq)
+📖 **Full FAQ**: [GitHub README](https://github.com/HKUDS/praDeep#-faq)

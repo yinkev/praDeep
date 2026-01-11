@@ -4,7 +4,7 @@
 Configuration Loader
 ====================
 
-Unified configuration loading for all DeepTutor modules.
+Unified configuration loading for all praDeep modules.
 Provides YAML configuration loading, path resolution, and language parsing.
 """
 
@@ -13,12 +13,12 @@ from typing import Any
 
 import yaml
 
-# PROJECT_ROOT points to the actual project root directory (DeepTutor/)
+# PROJECT_ROOT points to the actual project root directory (praDeep/)
 # Path(__file__) = src/services/config/loader.py
 # .parent = src/services/config/
 # .parent.parent = src/services/
 # .parent.parent.parent = src/
-# .parent.parent.parent.parent = DeepTutor/ (project root)
+# .parent.parent.parent.parent = praDeep/ (project root)
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 
 

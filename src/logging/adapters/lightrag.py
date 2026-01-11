@@ -3,7 +3,7 @@
 LightRAG Log Forwarder
 ======================
 
-Forwards LightRAG and RAG-Anything logs to DeepTutor's unified logging system.
+Forwards LightRAG and RAG-Anything logs to praDeep's unified logging system.
 """
 
 from contextlib import contextmanager
@@ -14,13 +14,13 @@ from typing import Optional
 
 class LightRAGLogForwarder(logging.Handler):
     """
-    Handler that forwards LightRAG logger messages to DeepTutor logger.
+    Handler that forwards LightRAG logger messages to praDeep logger.
     """
 
     def __init__(self, ai_tutor_logger, add_prefix: bool = True):
         """
         Args:
-            ai_tutor_logger: DeepTutor Logger instance
+            ai_tutor_logger: praDeep Logger instance
             add_prefix: Whether to add [LightRAG] prefix to messages
         """
         super().__init__()
@@ -31,7 +31,7 @@ class LightRAGLogForwarder(logging.Handler):
 
     def emit(self, record: logging.LogRecord):
         """
-        Forward log record to DeepTutor logger.
+        Forward log record to praDeep logger.
         All logs are forwarded as info level to maintain consistent format.
         """
         try:
@@ -127,7 +127,7 @@ def LightRAGLogContext(logger_name: Optional[str] = None, scene: Optional[str] =
         else:
             logger_name = "Main"
 
-    # Get DeepTutor logger
+    # Get praDeep logger
     ai_tutor_logger = get_logger(logger_name)
 
     # Get forwarding settings

@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="assets/logo-ver2.png" alt="DeepTutor Logo" width="150" style="border-radius: 15px;">
+<img src="assets/logo-ver2.png" alt="praDeep Logo" width="150" style="border-radius: 15px;">
 
-# DeepTutor: AI-Powered Personalized Learning Assistant
+# praDeep: AI-Powered Personalized Learning Assistant
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.100%2B-009688?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
@@ -16,7 +16,7 @@
   &nbsp;&nbsp;
   <a href="./Communication.md"><img src="https://img.shields.io/badge/Feishu-Join_Group-00D4AA?style=for-the-badge&logo=feishu&logoColor=white" alt="Feishu"></a>
   &nbsp;&nbsp;
-  <a href="https://github.com/HKUDS/DeepTutor/issues/78"><img src="https://img.shields.io/badge/WeChat-Join_Group-07C160?style=for-the-badge&logo=wechat&logoColor=white" alt="WeChat"></a>
+  <a href="https://github.com/HKUDS/praDeep/issues/78"><img src="https://img.shields.io/badge/WeChat-Join_Group-07C160?style=for-the-badge&logo=wechat&logoColor=white" alt="WeChat"></a>
 </p>
 
 
@@ -37,29 +37,29 @@
 ---
 ### 📰 News
 
-> **[2026.1.1]** Join our [Discord Community](https://discord.gg/zpP9cssj) and [GitHub Discussions](https://github.com/HKUDS/DeepTutor/discussions) - shape the future of DeepTutor! 💬
+> **[2026.1.1]** Join our [Discord Community](https://discord.gg/zpP9cssj) and [GitHub Discussions](https://github.com/HKUDS/praDeep/discussions) - shape the future of praDeep! 💬
 
-> **[2025.12.30]** Visit our [Official Website](https://hkuds.github.io/DeepTutor/) for more details!
+> **[2025.12.30]** Visit our [Official Website](https://hkuds.github.io/praDeep/) for more details!
 
-> **[2025.12.29]** DeepTutor is now live! ✨
+> **[2025.12.29]** praDeep is now live! ✨
 
 ### 📦 Releases
 
-> **[2026.1.9]** Release [v0.4.1](https://github.com/HKUDS/DeepTutor/releases/tag/v0.4.1) with LLM Provider system overhaul, Question Generation robustness improvements, and codebase cleanup - Thanks to all the contributors!
+> **[2026.1.9]** Release [v0.4.1](https://github.com/HKUDS/praDeep/releases/tag/v0.4.1) with LLM Provider system overhaul, Question Generation robustness improvements, and codebase cleanup - Thanks to all the contributors!
 <details>
 <summary>History releases</summary>
 
-> **[2026.1.9]** Release [v0.4.0](https://github.com/HKUDS/DeepTutor/releases/tag/v0.4.0) with new code structure, multiple llm & embeddings support - Thanks to all the contributors!
+> **[2026.1.9]** Release [v0.4.0](https://github.com/HKUDS/praDeep/releases/tag/v0.4.0) with new code structure, multiple llm & embeddings support - Thanks to all the contributors!
 
-> **[2026.1.5]** [v0.3.0](https://github.com/HKUDS/DeepTutor/releases/tag/v0.3.0) - Unified PromptManager architecture, CI/CD automation & pre-built Docker images on GHCR
+> **[2026.1.5]** [v0.3.0](https://github.com/HKUDS/praDeep/releases/tag/v0.3.0) - Unified PromptManager architecture, CI/CD automation & pre-built Docker images on GHCR
 
-> **[2026.1.2]** [v0.2.0](https://github.com/HKUDS/DeepTutor/releases/tag/v0.2.0) - Docker deployment, Next.js 16 & React 19 upgrade, WebSocket security & critical vulnerability fixes
+> **[2026.1.2]** [v0.2.0](https://github.com/HKUDS/praDeep/releases/tag/v0.2.0) - Docker deployment, Next.js 16 & React 19 upgrade, WebSocket security & critical vulnerability fixes
 
 </details>
 
 ---
 
-## Key Features of DeepTutor
+## Key Features of praDeep
 
 ### 📚 Massive Document Knowledge Q&A
 • **Smart Knowledge Base**: Upload textbooks, research papers, technical manuals, and domain-specific documents. Build a comprehensive AI-powered knowledge repository for instant access.<br>
@@ -208,15 +208,15 @@
 </table>
 
 <p align="center">
-  <sub>🌙 Use DeepTutor in <b>Dark Mode</b>!</sub>
+  <sub>🌙 Use praDeep in <b>Dark Mode</b>!</sub>
 </p>
 
 ---
 
-## 🏛️ DeepTutor's Framework
+## 🏛️ praDeep's Framework
 
 <div align="center">
-<img src="assets/figs/full-pipe.png" alt="DeepTutor Full-Stack Workflow" width="100%">
+<img src="assets/figs/full-pipe.png" alt="praDeep Full-Stack Workflow" width="100%">
 </div>
 
 ### 💬 User Interface Layer
@@ -250,8 +250,8 @@
 **① Clone Repository**
 
 ```bash
-git clone https://github.com/HKUDS/DeepTutor.git
-cd DeepTutor
+git clone https://github.com/HKUDS/praDeep.git
+cd praDeep
 ```
 
 **② Set Up Environment Variables**
@@ -1411,16 +1411,16 @@ This will extract numbered items (Definitions, Theorems, Equations, etc.) from y
 <div align="center">
 
 <p>
-  <a href="https://github.com/HKUDS/DeepTutor/stargazers"><img src="assets/roster/stargazers.svg" alt="Stargazers"/></a>
+  <a href="https://github.com/HKUDS/praDeep/stargazers"><img src="assets/roster/stargazers.svg" alt="Stargazers"/></a>
   &nbsp;&nbsp;
-  <a href="https://github.com/HKUDS/DeepTutor/network/members"><img src="assets/roster/forkers.svg" alt="Forkers"/></a>
+  <a href="https://github.com/HKUDS/praDeep/network/members"><img src="assets/roster/forkers.svg" alt="Forkers"/></a>
 </p>
 
-<a href="https://www.star-history.com/#HKUDS/DeepTutor&type=timeline&legend=top-left">
+<a href="https://www.star-history.com/#HKUDS/praDeep&type=timeline&legend=top-left">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=HKUDS/DeepTutor&type=timeline&theme=dark&legend=top-left" />
-    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=HKUDS/DeepTutor&type=timeline&legend=top-left" />
-    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=HKUDS/DeepTutor&type=timeline&legend=top-left" />
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=HKUDS/praDeep&type=timeline&theme=dark&legend=top-left" />
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=HKUDS/praDeep&type=timeline&legend=top-left" />
+    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=HKUDS/praDeep&type=timeline&legend=top-left" />
   </picture>
 </a>
 
@@ -1430,10 +1430,10 @@ This will extract numbered items (Definitions, Theorems, Equations, etc.) from y
 
 <div align="center">
 
-We hope DeepTutor could become a gift for the community. 🎁
+We hope praDeep could become a gift for the community. 🎁
 
-<a href="https://github.com/HKUDS/DeepTutor/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=HKUDS/DeepTutor&max=999" />
+<a href="https://github.com/HKUDS/praDeep/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=HKUDS/praDeep&max=999" />
 </a>
 
 </div>
@@ -1448,14 +1448,14 @@ We hope DeepTutor could become a gift for the community. 🎁
 
 **[Data Intelligence Lab @ HKU](https://github.com/HKUDS)**
 
-[⭐ Star us](https://github.com/HKUDS/DeepTutor/stargazers) · [🐛 Report a bug](https://github.com/HKUDS/DeepTutor/issues) · [💬 Discussions](https://github.com/HKUDS/DeepTutor/discussions)
+[⭐ Star us](https://github.com/HKUDS/praDeep/stargazers) · [🐛 Report a bug](https://github.com/HKUDS/praDeep/issues) · [💬 Discussions](https://github.com/HKUDS/praDeep/discussions)
 
 ---
 
 This project is licensed under the ***[AGPL-3.0 License](LICENSE)***.
 
-*✨ Thanks for visiting **DeepTutor**!*
+*✨ Thanks for visiting **praDeep**!*
 
-<img src="https://visitor-badge.laobi.icu/badge?page_id=HKUDS.DeepTutor&style=for-the-badge&color=00d4ff" alt="Views">
+<img src="https://visitor-badge.laobi.icu/badge?page_id=HKUDS.praDeep&style=for-the-badge&color=00d4ff" alt="Views">
 
 </div>

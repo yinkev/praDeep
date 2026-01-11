@@ -20,6 +20,7 @@ class EmbeddingRequest:
 
     Args:
         texts: List of texts to embed
+        images: Optional list of image inputs (file paths or base64 strings)
         model: Model name to use
         dimensions: Embedding vector dimensions (optional)
         input_type: Input type hint for task-aware embeddings (optional)
@@ -34,6 +35,7 @@ class EmbeddingRequest:
 
     texts: List[str]
     model: str
+    images: Optional[List[str]] = None
     dimensions: Optional[int] = None
     input_type: Optional[str] = None
     encoding_format: Optional[str] = "float"

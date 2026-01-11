@@ -5,7 +5,7 @@ description: Running embedding and LLM models locally for privacy and cost savin
 
 # Local Models Guide
 
-Run DeepTutor with local models for enhanced privacy, reduced costs, and offline operation.
+Run praDeep with local models for enhanced privacy, reduced costs, and offline operation.
 
 ## Prerequisites
 
@@ -239,7 +239,7 @@ ollama pull llama3.1:8b
 ollama pull nomic-embed-text
 ```
 
-### 3. Configure DeepTutor
+### 3. Configure praDeep
 
 ```bash
 # .env

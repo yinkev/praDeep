@@ -1,12 +1,12 @@
-# Contributing to DeepTutor
+# Contributing to praDeep
 
-Thank you for your interest in contributing to DeepTutor! We are trying to make DeepTutor smooth and robust, for every developers to develop and conribute.
+Thank you for your interest in contributing to praDeep! We are trying to make praDeep smooth and robust, for every developers to develop and conribute.
 
 Join our community for discussion and support:
 
 <p align="center">
   <a href="https://discord.gg/zpP9cssj"><img src="https://img.shields.io/badge/Discord-Join_Community-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord"></a>&nbsp;
-    <a href="https://github.com/HKUDS/DeepTutor/issues/78"><img src="https://img.shields.io/badge/WeChat-Join_Group-07C160?style=for-the-badge&logo=wechat&logoColor=white" alt="WeChat"></a>&nbsp;
+    <a href="https://github.com/HKUDS/praDeep/issues/78"><img src="https://img.shields.io/badge/WeChat-Join_Group-07C160?style=for-the-badge&logo=wechat&logoColor=white" alt="WeChat"></a>&nbsp;
   <a href="./Communication.md"><img src="https://img.shields.io/badge/Feishu-Join_Group-00D4AA?style=for-the-badge&logo=feishu&logoColor=white" alt="Feishu"></a>
 </p>
 
@@ -48,7 +48,7 @@ conda install -c conda-forge pre-commit
 
 **Step 2: Install Git hooks (recommended)**
 ```bash
-cd DeepTutor
+cd praDeep
 pre-commit install
 ```
 > After this, hooks will run **automatically** on every commit — no need to remember!
@@ -99,11 +99,11 @@ git commit --no-verify -m "Emergency fix"
 
 ### 💡 How to Get Started
 
-1. Check our [Issues](https://github.com/HKUDS/DeepTutor/issues) for tasks labeled `good first issue` or `help wanted`
+1. Check our [Issues](https://github.com/HKUDS/praDeep/issues) for tasks labeled `good first issue` or `help wanted`
 2. Comment on the issue you'd like to work on
 3. Follow the contribution process above
 4. Join our [Discord](https://discord.gg/aka9p9EW) if you have questions!
 
 ---
 
-### Let's build DeepTutor TOGETHER! 🚀
+### Let's build praDeep TOGETHER! 🚀

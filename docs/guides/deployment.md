@@ -1,11 +1,11 @@
 ---
 title: Deployment Guide
-description: Production deployment strategies for DeepTutor
+description: Production deployment strategies for praDeep
 ---
 
 # Deployment Guide
 
-Deploy DeepTutor in production environments with Docker, Kubernetes, or traditional hosting.
+Deploy praDeep in production environments with Docker, Kubernetes, or traditional hosting.
 
 ## Prerequisites
 
@@ -28,8 +28,8 @@ Deploy DeepTutor in production environments with Docker, Kubernetes, or traditio
 ### 1. Clone and Configure
 
 ```bash
-git clone https://github.com/HKUDS/DeepTutor.git
-cd DeepTutor
+git clone https://github.com/HKUDS/praDeep.git
+cd praDeep
 
 # Copy and edit environment
 cp .env.example .env
@@ -210,7 +210,7 @@ server {
 ### 1. Helm Chart
 
 ```bash
-# Add DeepTutor Helm repo
+# Add praDeep Helm repo
 helm repo add deeptutor https://charts.deeptutor.io
 helm repo update
 
@@ -333,7 +333,7 @@ spec:
 
 ### Prometheus Metrics
 
-DeepTutor exposes Prometheus metrics at `/metrics`:
+praDeep exposes Prometheus metrics at `/metrics`:
 
 ```yaml
 # prometheus.yml
@@ -356,7 +356,7 @@ scrape_configs:
 
 ### Grafana Dashboard
 
-Import the DeepTutor dashboard:
+Import the praDeep dashboard:
 
 ```bash
 # Dashboard ID: 12345

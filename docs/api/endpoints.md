@@ -1,11 +1,11 @@
 ---
 title: API Endpoints
-description: Complete REST API endpoint reference for DeepTutor
+description: Complete REST API endpoint reference for praDeep
 ---
 
 # API Endpoints
 
-Complete reference for all DeepTutor REST API endpoints.
+Complete reference for all praDeep REST API endpoints.
 
 ## Knowledge Bases
 

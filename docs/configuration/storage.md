@@ -5,7 +5,7 @@ description: Database and file storage settings
 
 # Storage Configuration
 
-Configure databases, vector stores, and file storage for DeepTutor.
+Configure databases, vector stores, and file storage for praDeep.
 
 ## Database Options
 

@@ -1,11 +1,11 @@
 ---
 title: How-To Guides
-description: Practical guides for common DeepTutor tasks and workflows
+description: Practical guides for common praDeep tasks and workflows
 ---
 
 # How-To Guides
 
-Step-by-step guides for accomplishing specific tasks with DeepTutor.
+Step-by-step guides for accomplishing specific tasks with praDeep.
 
 ## Available Guides
 
@@ -46,4 +46,4 @@ Each guide follows a consistent format:
 
 ## Request a Guide
 
-Missing a guide? [Open an issue](https://github.com/HKUDS/DeepTutor/issues/new?template=feature_request.yml) with the "documentation" label.
+Missing a guide? [Open an issue](https://github.com/HKUDS/praDeep/issues/new?template=feature_request.yml) with the "documentation" label.

@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="../../assets/logo-ver2.png" alt="DeepTutor Logo" width="150" style="border-radius: 15px;">
+<img src="../../assets/logo-ver2.png" alt="praDeep Logo" width="150" style="border-radius: 15px;">
 
-# DeepTutor: Tu Asistente Personal de Aprendizaje
+# praDeep: Tu Asistente Personal de Aprendizaje
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/downloads/)
 [![Next.js](https://img.shields.io/badge/Next.js-14-000000?style=flat-square&logo=next.js&logoColor=white)](https://nextjs.org/)
@@ -28,14 +28,14 @@
 </div>
 
 ---
-> **[2026.1.1]** ¡Feliz Año Nuevo! Únete a nuestras [GitHub Discussions](https://github.com/HKUDS/DeepTutor/discussions) — ¡moldea el futuro de DeepTutor! 💬
+> **[2026.1.1]** ¡Feliz Año Nuevo! Únete a nuestras [GitHub Discussions](https://github.com/HKUDS/praDeep/discussions) — ¡moldea el futuro de praDeep! 💬
 
-> **[2025.12.30]** ¡Visita nuestro [Sitio Web Oficial](https://hkuds.github.io/DeepTutor/) para más detalles!
+> **[2025.12.30]** ¡Visita nuestro [Sitio Web Oficial](https://hkuds.github.io/praDeep/) para más detalles!
 
-> **[2025.12.29]** ¡DeepTutor v0.1 ya está disponible! ✨
+> **[2025.12.29]** ¡praDeep v0.1 ya está disponible! ✨
 ---
 
-## Características Clave de DeepTutor
+## Características Clave de praDeep
 
 ### 📚 Q&A de Conocimiento de Documentos Masivos
 • **Base de Conocimiento Inteligente**: Sube libros de texto, artículos de investigación, manuales técnicos y documentos específicos del dominio. Construye un repositorio de conocimiento completo impulsado por IA para acceso instantáneo.<br>
@@ -186,14 +186,14 @@
 </table>
 
 <p align="center">
-  <sub>🌙 ¡Usa DeepTutor en <b>Modo Oscuro</b>!</sub>
+  <sub>🌙 ¡Usa praDeep en <b>Modo Oscuro</b>!</sub>
 </p>
 
 <details>
 <summary><b>Arquitectura del Sistema</b></summary>
 <br>
 
-![DeepTutor Full-Stack Workflow](../../assets/figs/full-pipe.png)
+![praDeep Full-Stack Workflow](../../assets/figs/full-pipe.png)
 
 </details>
 
@@ -201,7 +201,7 @@
 
 > ¡Síguenos para nuestras futuras actualizaciones!
 - [ ] Soporte para servicios LLM locales (ej. ollama)
-- [ ] Refactorización del módulo RAG (ver [Discussions](https://github.com/HKUDS/DeepTutor/discussions))
+- [ ] Refactorización del módulo RAG (ver [Discussions](https://github.com/HKUDS/praDeep/discussions))
 - [ ] Codificación profunda desde generación de ideas
 - [ ] Interacción personalizada con el cuaderno
 
@@ -212,8 +212,8 @@
 **① Clonar Repositorio**
 
 ```bash
-git clone https://github.com/HKUDS/DeepTutor.git
-cd DeepTutor
+git clone https://github.com/HKUDS/praDeep.git
+cd praDeep
 ```
 
 **② Configurar Variables de Entorno**
@@ -406,11 +406,11 @@ Este proyecto está licenciado bajo la **[AGPL-3.0](LICENSE)**.
 ## ⭐ Historial de Stars
 
 <div align="center">
-<a href="https://star-history.com/#HKUDS/DeepTutor&Date">
+<a href="https://star-history.com/#HKUDS/praDeep&Date">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=HKUDS/DeepTutor&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=HKUDS/DeepTutor&type=Date" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=HKUDS/DeepTutor&type=Date" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=HKUDS/praDeep&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=HKUDS/praDeep&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=HKUDS/praDeep&type=Date" />
  </picture>
 </a>
 </div>
@@ -438,7 +438,7 @@ conda install -c conda-forge pre-commit
 
 **Paso 2: Instalar Git hooks**
 ```bash
-cd DeepTutor
+cd praDeep
 pre-commit install
 ```
 
@@ -514,11 +514,11 @@ git commit --no-verify -m "Corrección de emergencia"
 
 **[Laboratorio de Inteligencia de Datos @ HKU](https://github.com/HKUDS)**
 
-[⭐ Síguenos](https://github.com/HKUDS/DeepTutor/stargazers) · [🐛 Reportar un bug](https://github.com/HKUDS/DeepTutor/issues) · [💬 Discusiones](https://github.com/HKUDS/DeepTutor/discussions)
+[⭐ Síguenos](https://github.com/HKUDS/praDeep/stargazers) · [🐛 Reportar un bug](https://github.com/HKUDS/praDeep/issues) · [💬 Discusiones](https://github.com/HKUDS/praDeep/discussions)
 
 ---
-*✨ ¡Gracias por visitar **DeepTutor**!*
+*✨ ¡Gracias por visitar **praDeep**!*
 
-<img src="https://visitor-badge.laobi.icu/badge?page_id=HKUDS.DeepTutor&style=for-the-badge&color=00d4ff" alt="Views">
+<img src="https://visitor-badge.laobi.icu/badge?page_id=HKUDS.praDeep&style=for-the-badge&color=00d4ff" alt="Views">
 
 </div>

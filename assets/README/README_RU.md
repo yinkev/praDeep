@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="../../assets/logo-ver2.png" alt="Логотип DeepTutor" width="150" style="border-radius: 15px;">
+<img src="../../assets/logo-ver2.png" alt="Логотип praDeep" width="150" style="border-radius: 15px;">
 
-# DeepTutor: Персональный учебный ассистент на базе ИИ
+# praDeep: Персональный учебный ассистент на базе ИИ
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/downloads/)
 [![Next.js](https://img.shields.io/badge/Next.js-16-000000?style=flat-square&logo=next.js&logoColor=white)](https://nextjs.org/)
@@ -28,16 +28,16 @@
 </div>
 
 ---
-> **[2026.1.3]** Вышел DeepTutor [v0.2.0](https://github.com/HKUDS/DeepTutor/releases/tag/v0.2.0) - спасибо всем участникам! ❤️
+> **[2026.1.3]** Вышел praDeep [v0.2.0](https://github.com/HKUDS/praDeep/releases/tag/v0.2.0) - спасибо всем участникам! ❤️
 
-> **[2026.1.1]** С Новым годом! Присоединяйтесь к нашим [обсуждениям на GitHub](https://github.com/HKUDS/DeepTutor/discussions) — формируйте будущее DeepTutor! 💬
+> **[2026.1.1]** С Новым годом! Присоединяйтесь к нашим [обсуждениям на GitHub](https://github.com/HKUDS/praDeep/discussions) — формируйте будущее praDeep! 💬
 
-> **[2025.12.30]** Посетите наш [официальный сайт](https://hkuds.github.io/DeepTutor/) для получения дополнительной информации!
+> **[2025.12.30]** Посетите наш [официальный сайт](https://hkuds.github.io/praDeep/) для получения дополнительной информации!
 
-> **[2025.12.29]** DeepTutor v0.1 уже в сети! ✨
+> **[2025.12.29]** praDeep v0.1 уже в сети! ✨
 ---
 
-## Ключевые особенности DeepTutor
+## Ключевые особенности praDeep
 
 ### 📚 Q&A по знаниям из массивов документов
 • **Интеллектуальная база знаний**: Загружайте учебники, научные статьи, технические руководства и документы, специфичные для области. Создавайте исчерпывающий репозиторий знаний на основе ИИ для мгновенного доступа.<br>
@@ -186,15 +186,15 @@
 </table>
 
 <p align="center">
-  <sub>🌙 Используйте DeepTutor в <b>темном режиме</b>!</sub>
+  <sub>🌙 Используйте praDeep в <b>темном режиме</b>!</sub>
 </p>
 
 ---
 
-## 🏛️ Фреймворк DeepTutor
+## 🏛️ Фреймворк praDeep
 
 <div align="center">
-<img src="../../assets/figs/full-pipe.png" alt="Рабочий процесс DeepTutor Full-Stack" width="100%">
+<img src="../../assets/figs/full-pipe.png" alt="Рабочий процесс praDeep Full-Stack" width="100%">
 </div>
 
 ### 💬 Слой пользовательского интерфейса
@@ -219,7 +219,7 @@
 
 > 🌟 Поставьте звезду, чтобы следить за нашими будущими обновлениями!
 - [ ] Поддержка локальных LLM-сервисов (например, ollama)
-- [ ] Рефакторинг модуля RAG (см. [Обсуждения](https://github.com/HKUDS/DeepTutor/discussions))
+- [ ] Рефакторинг модуля RAG (см. [Обсуждения](https://github.com/HKUDS/praDeep/discussions))
 - [ ] Глубокое кодирование из генерации идей
 - [ ] Персонализированное взаимодействие с блокнотом
 
@@ -230,8 +230,8 @@
 **① Клонирование репозитория**
 
 ```bash
-git clone https://github.com/HKUDS/DeepTutor.git
-cd DeepTutor
+git clone https://github.com/HKUDS/praDeep.git
+cd praDeep
 ```
 
 **② Настройка переменных окружения**
@@ -1308,11 +1308,11 @@ python src/knowledge/extract_numbered_items.py --kb <kb_name> --base-dir ./data/
 ## ⭐ История звезд
 
 <div align="center">
-<a href="https://star-history.com/#HKUDS/DeepTutor&Date">
+<a href="https://star-history.com/#HKUDS/praDeep&Date">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=HKUDS/DeepTutor&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=HKUDS/DeepTutor&type=Date" />
-   <img alt="График истории звезд" src="https://api.star-history.com/svg?repos=HKUDS/DeepTutor&type=Date" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=HKUDS/praDeep&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=HKUDS/praDeep&type=Date" />
+   <img alt="График истории звезд" src="https://api.star-history.com/svg?repos=HKUDS/praDeep&type=Date" />
  </picture>
 </a>
 </div> 2-->
@@ -1329,20 +1329,20 @@ python src/knowledge/extract_numbered_items.py --kb <kb_name> --base-dir ./data/
 
 **[Лаборатория интеллектуальных данных @ HKU](https://github.com/HKUDS)**
 
-[⭐ Поставьте звезду](https://github.com/HKUDS/DeepTutor/stargazers) · [🐛 Сообщить об ошибке](https://github.com/HKUDS/DeepTutor/issues) · [💬 Обсуждения](https://github.com/HKUDS/DeepTutor/discussions)
+[⭐ Поставьте звезду](https://github.com/HKUDS/praDeep/stargazers) · [🐛 Сообщить об ошибке](https://github.com/HKUDS/praDeep/issues) · [💬 Обсуждения](https://github.com/HKUDS/praDeep/discussions)
 
-[![Рейтинг звезд репозитория для @HKUDS/DeepTutor](https://reporoster.com/stars/dark/HKUDS/DeepTutor)](https://github.com/HKUDS/DeepTutor/stargazers)
+[![Рейтинг звезд репозитория для @HKUDS/praDeep](https://reporoster.com/stars/dark/HKUDS/praDeep)](https://github.com/HKUDS/praDeep/stargazers)
 
-[![Форкеры репозитория для @HKUDS/DeepTutor](https://reporoster.com/forks/dark/HKUDS/DeepTutor)](https://github.com/HKUDS/DeepTutor/network/members)
+[![Форкеры репозитория для @HKUDS/praDeep](https://reporoster.com/forks/dark/HKUDS/praDeep)](https://github.com/HKUDS/praDeep/network/members)
 
 ## История звезд
 
-[![График истории звезд](https://api.star-history.com/svg?repos=HKUDS/DeepTutor&type=timeline&legend=top-left)](https://www.star-history.com/#HKUDS/DeepTutor&type=timeline&legend=top-left)
+[![График истории звезд](https://api.star-history.com/svg?repos=HKUDS/praDeep&type=timeline&legend=top-left)](https://www.star-history.com/#HKUDS/praDeep&type=timeline&legend=top-left)
 
 ---
 
-*✨ Спасибо за посещение **DeepTutor**!*
+*✨ Спасибо за посещение **praDeep**!*
 
-<img src="https://visitor-badge.laobi.icu/badge?page_id=HKUDS.DeepTutor&style=for-the-badge&color=00d4ff" alt="Просмотры">
+<img src="https://visitor-badge.laobi.icu/badge?page_id=HKUDS.praDeep&style=for-the-badge&color=00d4ff" alt="Просмотры">
 
 </div>

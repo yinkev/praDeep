@@ -1,6 +1,6 @@
 # Features
 
-DeepTutor provides six specialized modules for AI-powered learning.
+praDeep provides six specialized modules for AI-powered learning.
 
 <div class="feature-nav">
 
@@ -8,16 +8,16 @@ DeepTutor provides six specialized modules for AI-powered learning.
 
 | Module | Description | Documentation |
 |:-------|:------------|:--------------|
-| 🧠 **Smart Solver** | Multi-agent problem solving with dual-loop reasoning | [Details →](https://github.com/HKUDS/DeepTutor#-smart-solver) |
-| 🎯 **Question Generator** | Custom quiz generation & exam style mimicking | [Details →](https://github.com/HKUDS/DeepTutor#-question-generator) |
-| 🎓 **Guided Learning** | Personalized learning paths with interactive visualization | [Details →](https://github.com/HKUDS/DeepTutor#-guided-learning) |
-| 🔬 **Deep Research** | Systematic topic exploration with dynamic topic queue | [Details →](https://github.com/HKUDS/DeepTutor#-deep-research) |
-| 💡 **IdeaGen** | Automated research idea generation with multi-stage filtering | [Details →](https://github.com/HKUDS/DeepTutor#-automated-ideagen) |
-| ✏️ **Co-Writer** | AI-assisted writing with TTS narration | [Details →](https://github.com/HKUDS/DeepTutor#-interactive-ideagen-co-writer) |
+| 🧠 **Smart Solver** | Multi-agent problem solving with dual-loop reasoning | [Details →](https://github.com/HKUDS/praDeep#-smart-solver) |
+| 🎯 **Question Generator** | Custom quiz generation & exam style mimicking | [Details →](https://github.com/HKUDS/praDeep#-question-generator) |
+| 🎓 **Guided Learning** | Personalized learning paths with interactive visualization | [Details →](https://github.com/HKUDS/praDeep#-guided-learning) |
+| 🔬 **Deep Research** | Systematic topic exploration with dynamic topic queue | [Details →](https://github.com/HKUDS/praDeep#-deep-research) |
+| 💡 **IdeaGen** | Automated research idea generation with multi-stage filtering | [Details →](https://github.com/HKUDS/praDeep#-automated-ideagen) |
+| ✏️ **Co-Writer** | AI-assisted writing with TTS narration | [Details →](https://github.com/HKUDS/praDeep#-interactive-ideagen-co-writer) |
 
 ## Architecture
 
-<img src="/full-pipe.png" alt="DeepTutor Architecture" style="width: 100%; border-radius: 8px; margin: 24px 0;">
+<img src="/full-pipe.png" alt="praDeep Architecture" style="width: 100%; border-radius: 8px; margin: 24px 0;">
 
 ### System Layers
 
@@ -30,7 +30,7 @@ DeepTutor provides six specialized modules for AI-powered learning.
 
 ## Provider Support
 
-DeepTutor works with multiple LLM and embedding providers:
+praDeep works with multiple LLM and embedding providers:
 
 ::: details LLM Providers
 - OpenAI (GPT-4o, GPT-4)
@@ -54,4 +54,4 @@ DeepTutor works with multiple LLM and embedding providers:
 
 ---
 
-📖 **Full documentation**: [GitHub README](https://github.com/HKUDS/DeepTutor)
+📖 **Full documentation**: [GitHub README](https://github.com/HKUDS/praDeep)

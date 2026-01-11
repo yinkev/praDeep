@@ -1,15 +1,15 @@
 ---
 title: Getting Started
-description: Quick start guide for DeepTutor
+description: Quick start guide for praDeep
 ---
 
 # Getting Started
 
-Welcome to DeepTutor! This guide will help you get up and running quickly.
+Welcome to praDeep! This guide will help you get up and running quickly.
 
 ## Overview
 
-DeepTutor is an AI-powered learning companion that transforms any document into an interactive learning experience. Whether you're studying for exams, conducting research, or exploring new topics, DeepTutor provides intelligent assistance tailored to your needs.
+praDeep is an AI-powered learning companion that transforms any document into an interactive learning experience. Whether you're studying for exams, conducting research, or exploring new topics, praDeep provides intelligent assistance tailored to your needs.
 
 ## Quick Navigation
 
@@ -17,7 +17,7 @@ DeepTutor is an AI-powered learning companion that transforms any document into 
 |-------|-------------|
 | [Installation](./installation.md) | System requirements and installation steps |
 | [Quickstart](./quickstart.md) | Get running in 5 minutes |
-| [First Steps](./first-steps.md) | Your first interaction with DeepTutor |
+| [First Steps](./first-steps.md) | Your first interaction with praDeep |
 
 ## Prerequisites
 

@@ -1,11 +1,11 @@
 ---
 title: First Steps
-description: Your first interactions with DeepTutor
+description: Your first interactions with praDeep
 ---
 
 # First Steps
 
-This guide walks you through your first meaningful interactions with DeepTutor.
+This guide walks you through your first meaningful interactions with praDeep.
 
 ## Understanding the Interface
 

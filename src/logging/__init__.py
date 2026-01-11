@@ -1,5 +1,5 @@
 """
-Unified Logging System for DeepTutor
+Unified Logging System for praDeep
 =====================================
 
 A clean, consistent logging system with:

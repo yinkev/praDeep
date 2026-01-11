@@ -1,7 +1,7 @@
 # ============================================
-# DeepTutor Docker Compose Configuration
+# praDeep Docker Compose Configuration
 # ============================================
-# This file provides orchestration for DeepTutor services
+# This file provides orchestration for praDeep services
 #
 # Usage:
 #   Production:  docker compose up -d
@@ -15,7 +15,7 @@
 
 services:
   # ============================================
-  # All-in-One DeepTutor Service
+  # All-in-One praDeep Service
   # ============================================
   deeptutor:
     build:

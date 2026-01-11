@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="../../assets/logo-ver2.png" alt="DeepTutor Logo" width="150" style="border-radius: 15px;">
+<img src="../../assets/logo-ver2.png" alt="praDeep Logo" width="150" style="border-radius: 15px;">
 
-# DeepTutor: あなたのパーソナル学習アシスタント
+# praDeep: あなたのパーソナル学習アシスタント
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/downloads/)
 [![Next.js](https://img.shields.io/badge/Next.js-14-000000?style=flat-square&logo=next.js&logoColor=white)](https://nextjs.org/)
@@ -28,14 +28,14 @@
 </div>
 
 ---
-> **[2026.1.1]** 新年あけましておめでとうございます！[GitHub Discussions](https://github.com/HKUDS/DeepTutor/discussions) に参加して、DeepTutor の未来を一緒に創りましょう！💬
+> **[2026.1.1]** 新年あけましておめでとうございます！[GitHub Discussions](https://github.com/HKUDS/praDeep/discussions) に参加して、praDeep の未来を一緒に創りましょう！💬
 
-> **[2025.12.30]** 詳細は [公式ウェブサイト](https://hkuds.github.io/DeepTutor/) をご覧ください！
+> **[2025.12.30]** 詳細は [公式ウェブサイト](https://hkuds.github.io/praDeep/) をご覧ください！
 
-> **[2025.12.29]** DeepTutor v0.1 がリリースされました！✨
+> **[2025.12.29]** praDeep v0.1 がリリースされました！✨
 ---
 
-## DeepTutor の主要機能
+## praDeep の主要機能
 
 ### 📚 大規模ドキュメント知識Q&A
 • **スマート知識ベース**：教科書、研究論文、技術マニュアル、ドメイン固有のドキュメントをアップロード。包括的な AI 駆動の知識リポジトリを構築し、即座にアクセス可能にします。<br>
@@ -186,15 +186,15 @@
 </table>
 
 <p align="center">
-  <sub>🌙 <b>ダークモード</b> で DeepTutor を使用！</sub>
+  <sub>🌙 <b>ダークモード</b> で praDeep を使用！</sub>
 </p>
 
 ---
 
-## 🏛️ DeepTutor のフレームワーク
+## 🏛️ praDeep のフレームワーク
 
 <div align="center">
-<img src="../../assets/figs/full-pipe.png" alt="DeepTutor Full-Stack Workflow" width="100%">
+<img src="../../assets/figs/full-pipe.png" alt="praDeep Full-Stack Workflow" width="100%">
 </div>
 
 ### 💬 ユーザーインターフェース層
@@ -219,7 +219,7 @@
 
 > 🌟 今後の更新をフォローするために Star してください！
 - [ ] ローカル LLM サービスのサポート（例：ollama）
-- [ ] RAG モジュールのリファクタリング（[Discussions](https://github.com/HKUDS/DeepTutor/discussions) を参照）
+- [ ] RAG モジュールのリファクタリング（[Discussions](https://github.com/HKUDS/praDeep/discussions) を参照）
 - [ ] アイデア生成からの深いコーディング
 - [ ] ノートブックとのパーソナライズされたインタラクション
 
@@ -230,8 +230,8 @@
 **① リポジトリをクローン**
 
 ```bash
-git clone https://github.com/HKUDS/DeepTutor.git
-cd DeepTutor
+git clone https://github.com/HKUDS/praDeep.git
+cd praDeep
 ```
 
 **② 環境変数を設定**
@@ -422,11 +422,11 @@ python scripts/start.py
 ## ⭐ Star History
 
 <div align="center">
-<a href="https://star-history.com/#HKUDS/DeepTutor&Date">
+<a href="https://star-history.com/#HKUDS/praDeep&Date">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=HKUDS/DeepTutor&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=HKUDS/DeepTutor&type=Date" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=HKUDS/DeepTutor&type=Date" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=HKUDS/praDeep&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=HKUDS/praDeep&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=HKUDS/praDeep&type=Date" />
  </picture>
 </a>
 </div>
@@ -454,7 +454,7 @@ conda install -c conda-forge pre-commit
 
 **ステップ 2: Git hooks をインストール**
 ```bash
-cd DeepTutor
+cd praDeep
 pre-commit install
 ```
 
@@ -530,11 +530,11 @@ git commit --no-verify -m "緊急修正"
 
 **[香港大学データインテリジェンスラボ](https://github.com/HKUDS)**
 
-[⭐ Star us](https://github.com/HKUDS/DeepTutor/stargazers) · [🐛 Report a bug](https://github.com/HKUDS/DeepTutor/issues) · [💬 Discussions](https://github.com/HKUDS/DeepTutor/discussions)
+[⭐ Star us](https://github.com/HKUDS/praDeep/stargazers) · [🐛 Report a bug](https://github.com/HKUDS/praDeep/issues) · [💬 Discussions](https://github.com/HKUDS/praDeep/discussions)
 
 ---
-*✨ **DeepTutor** のご利用ありがとうございます！*
+*✨ **praDeep** のご利用ありがとうございます！*
 
-<img src="https://visitor-badge.laobi.icu/badge?page_id=HKUDS.DeepTutor&style=for-the-badge&color=00d4ff" alt="Views">
+<img src="https://visitor-badge.laobi.icu/badge?page_id=HKUDS.praDeep&style=for-the-badge&color=00d4ff" alt="Views">
 
 </div>

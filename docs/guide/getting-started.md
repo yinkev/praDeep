@@ -1,6 +1,6 @@
 # Quick Start
 
-Get DeepTutor running in under 5 minutes.
+Get praDeep running in under 5 minutes.
 
 ## Prerequisites
 
@@ -14,8 +14,8 @@ Get DeepTutor running in under 5 minutes.
 
 ```bash [Quick Install]
 # Clone and setup
-git clone https://github.com/HKUDS/DeepTutor.git
-cd DeepTutor
+git clone https://github.com/HKUDS/praDeep.git
+cd praDeep
 
 # Configure API keys
 cp .env.example .env
@@ -53,7 +53,7 @@ EMBEDDING_API_KEY=your_api_key
 EMBEDDING_HOST=https://api.openai.com/v1
 ```
 
-> 📖 **Full configuration options**: See [Configuration](/guide/configuration) or [README](https://github.com/HKUDS/DeepTutor#step-1-pre-configuration)
+> 📖 **Full configuration options**: See [Configuration](/guide/configuration) or [README](https://github.com/HKUDS/praDeep#step-1-pre-configuration)
 
 ## Access Points
 
@@ -75,4 +75,4 @@ That's it! Start exploring with the **Solver**, **Question Generator**, or **Dee
 
 - [Configuration →](/guide/configuration)
 - [Troubleshooting →](/guide/troubleshooting)
-- [Full Installation Guide →](https://github.com/HKUDS/DeepTutor#-getting-started)
+- [Full Installation Guide →](https://github.com/HKUDS/praDeep#-getting-started)

@@ -83,14 +83,49 @@ class DenseRetriever(BaseComponent):
 
         # Sort by similarity
         results.sort(key=lambda x: x[0], reverse=True)
-        top_results = results[: self.top_k]
+
+        top_k_before = max(self.top_k, 20)
+        candidates = results[:top_k_before]
+
+        reranked_results = None
+        used_reranker = False
+
+        if candidates:
+            try:
+                from src.services.reranker import get_reranker_service
+
+                reranker = get_reranker_service()
+                if reranker:
+                    passages = [
+                        self._build_rerank_passage(item) for _, item in candidates
+                    ]
+                    rerank_results = await reranker.rerank(query, passages)
+                    reranked_results = []
+                    for rerank_result in rerank_results[: self.top_k]:
+                        _, item = candidates[rerank_result.index]
+                        reranked_results.append((rerank_result.score, item))
+                    used_reranker = True
+            except Exception as exc:
+                self.logger.warning(
+                    f"Reranker unavailable, using similarity order: {exc}"
+                )
+
+        if reranked_results is None:
+            reranked_results = candidates[: self.top_k]
 
         # Build response
         content_parts = []
-        for score, item in top_results:
+        for score, item in reranked_results:
             content_parts.append(f"[Score: {score:.3f}] {item['content'][:500]}")
 
         content = "\n\n".join(content_parts)
+
+        response_results = []
+        for score, item in reranked_results:
+            enriched = dict(item)
+            if used_reranker:
+                enriched["rerank_score"] = score
+            response_results.append(enriched)
 
         return {
             "query": query,
@@ -98,7 +133,7 @@ class DenseRetriever(BaseComponent):
             "content": content,
             "mode": "dense",
             "provider": "vector",
-            "results": [item for _, item in top_results],
+            "results": response_results,
         }
 
     def _cosine_similarity(self, a: List[float], b: List[float]) -> float:
@@ -113,3 +148,25 @@ class DenseRetriever(BaseComponent):
             return 0.0
 
         return dot_product / (norm_a * norm_b)
+
+    def _build_rerank_passage(self, item: Dict[str, Any]) -> str:
+        metadata = item.get("metadata") or {}
+        parts = []
+
+        title = metadata.get("title")
+        if title:
+            parts.append(f"Title: {title}")
+
+        section = metadata.get("section")
+        if section:
+            parts.append(f"Section: {section}")
+
+        if "page" in metadata and metadata.get("page") is not None:
+            parts.append(f"Page: {metadata.get('page')}")
+
+        header = " | ".join(parts)
+        content = item.get("content", "")
+
+        if header:
+            return f"{header}\n\n{content}"
+        return content

@@ -2,7 +2,7 @@
 Embedding Service
 =================
 
-Unified embedding client for all DeepTutor modules.
+Unified embedding client for all praDeep modules.
 Supports multiple providers: OpenAI, Azure, Google, Cohere, Ollama, Jina, HuggingFace.
 
 Usage:

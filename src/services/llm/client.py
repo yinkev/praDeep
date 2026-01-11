@@ -2,7 +2,7 @@
 LLM Client
 ==========
 
-Unified LLM client for all DeepTutor services.
+Unified LLM client for all praDeep services.
 """
 
 from typing import Any, Dict, List, Optional

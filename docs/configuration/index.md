@@ -1,11 +1,11 @@
 ---
 title: Configuration
-description: Complete configuration reference for DeepTutor
+description: Complete configuration reference for praDeep
 ---
 
 # Configuration
 
-DeepTutor offers extensive configuration options to customize behavior, performance, and integrations.
+praDeep offers extensive configuration options to customize behavior, performance, and integrations.
 
 ## Configuration Files
 

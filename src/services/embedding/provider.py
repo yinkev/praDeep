@@ -14,6 +14,7 @@ from .adapters.cohere import CohereEmbeddingAdapter
 from .adapters.jina import JinaEmbeddingAdapter
 from .adapters.ollama import OllamaEmbeddingAdapter
 from .adapters.openai_compatible import OpenAICompatibleEmbeddingAdapter
+from .adapters.qwen3_vl import Qwen3VLEmbeddingAdapter
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +38,7 @@ class EmbeddingProviderManager:
         "google": OpenAICompatibleEmbeddingAdapter,
         "cohere": CohereEmbeddingAdapter,
         "ollama": OllamaEmbeddingAdapter,
+        "qwen3_vl": Qwen3VLEmbeddingAdapter,
         "lm_studio": OpenAICompatibleEmbeddingAdapter,  # LM Studio (OpenAI-compatible)
     }
 

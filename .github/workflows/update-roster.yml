@@ -3,7 +3,7 @@ name: Update Repo Roster
 on:
   # Run twice a day (at 00:00 and 12:00 UTC)
   schedule:
-    - cron: '0 0,12 * * *'
+    - cron: "0 0,12 * * *"
   # Allow manual trigger
   workflow_dispatch:
   # Run when stars/forks might change (on push to main)
@@ -11,7 +11,7 @@ on:
     branches:
       - main
     paths:
-      - 'scripts/generate_roster.py'
+      - "scripts/generate_roster.py"
 
 jobs:
   update-roster:
@@ -26,14 +26,14 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: "3.10"
 
       - name: Generate roster images
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           python scripts/generate_roster.py \
-            --repo HKUDS/DeepTutor \
+            --repo HKUDS/praDeep \
             --output assets/roster \
             --theme dark \
             --display 6

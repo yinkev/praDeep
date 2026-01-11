@@ -1,11 +1,11 @@
 ---
 title: API Reference
-description: Complete API documentation for DeepTutor
+description: Complete API documentation for praDeep
 ---
 
 # API Reference
 
-DeepTutor provides a RESTful API and WebSocket endpoints for integrating with external applications.
+praDeep provides a RESTful API and WebSocket endpoints for integrating with external applications.
 
 ## Overview
 
@@ -108,9 +108,9 @@ pip install deeptutor
 ```
 
 ```python
-from deeptutor import DeepTutor
+from deeptutor import praDeep
 
-client = DeepTutor(api_key="dt_sk_xxxxx")
+client = praDeep(api_key="dt_sk_xxxxx")
 response = client.chat.completions.create(
     knowledge_base_id="kb_123",
     messages=[{"role": "user", "content": "Summarize the paper"}]
@@ -124,9 +124,9 @@ npm install deeptutor
 ```
 
 ```javascript
-import DeepTutor from 'deeptutor';
+import praDeep from 'deeptutor';
 
-const client = new DeepTutor({ apiKey: 'dt_sk_xxxxx' });
+const client = new praDeep({ apiKey: 'dt_sk_xxxxx' });
 const response = await client.chat.completions.create({
   knowledgeBaseId: 'kb_123',
   messages: [{ role: 'user', content: 'Summarize the paper' }]

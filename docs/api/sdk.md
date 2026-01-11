@@ -1,11 +1,11 @@
 ---
 title: SDK Reference
-description: Python and JavaScript SDK documentation for DeepTutor
+description: Python and JavaScript SDK documentation for praDeep
 ---
 
 # SDK Reference
 
-Official SDKs for integrating DeepTutor into your applications.
+Official SDKs for integrating praDeep into your applications.
 
 ## Python SDK
 
@@ -18,10 +18,10 @@ pip install deeptutor
 ### Quick Start
 
 ```python
-from deeptutor import DeepTutor
+from deeptutor import praDeep
 
 # Initialize client
-client = DeepTutor(api_key="dt_sk_xxxxx")
+client = praDeep(api_key="dt_sk_xxxxx")
 
 # Create a knowledge base
 kb = client.knowledge_bases.create(
@@ -65,10 +65,10 @@ for chunk in stream:
 
 ```python
 import asyncio
-from deeptutor import AsyncDeepTutor
+from deeptutor import AsyncpraDeep
 
 async def main():
-    client = AsyncDeepTutor(api_key="dt_sk_xxxxx")
+    client = AsyncpraDeep(api_key="dt_sk_xxxxx")
 
     response = await client.chat.completions.create(
         knowledge_base_id="kb_123",
@@ -83,9 +83,9 @@ asyncio.run(main())
 ### Error Handling
 
 ```python
-from deeptutor import DeepTutor, DeepTutorError, RateLimitError, AuthenticationError
+from deeptutor import praDeep, praDeepError, RateLimitError, AuthenticationError
 
-client = DeepTutor(api_key="dt_sk_xxxxx")
+client = praDeep(api_key="dt_sk_xxxxx")
 
 try:
     response = client.chat.completions.create(
@@ -96,16 +96,16 @@ except RateLimitError as e:
     print(f"Rate limited. Retry after {e.retry_after} seconds")
 except AuthenticationError:
     print("Invalid API key")
-except DeepTutorError as e:
+except praDeepError as e:
     print(f"API error: {e.message}")
 ```
 
 ### Configuration
 
 ```python
-from deeptutor import DeepTutor
+from deeptutor import praDeep
 
-client = DeepTutor(
+client = praDeep(
     api_key="dt_sk_xxxxx",
     base_url="https://api.deeptutor.io/v1",  # Custom base URL
     timeout=60.0,  # Request timeout in seconds
@@ -128,9 +128,9 @@ yarn add deeptutor
 ### Quick Start
 
 ```typescript
-import DeepTutor from 'deeptutor';
+import praDeep from 'deeptutor';
 
-const client = new DeepTutor({ apiKey: 'dt_sk_xxxxx' });
+const client = new praDeep({ apiKey: 'dt_sk_xxxxx' });
 
 // Create a knowledge base
 const kb = await client.knowledgeBases.create({
@@ -172,9 +172,9 @@ for await (const chunk of stream) {
 ### Browser Usage
 
 ```typescript
-import DeepTutor from 'deeptutor/browser';
+import praDeep from 'deeptutor/browser';
 
-const client = new DeepTutor({ apiKey: 'dt_sk_xxxxx' });
+const client = new praDeep({ apiKey: 'dt_sk_xxxxx' });
 
 const response = await client.chat.completions.create({
   knowledgeBaseId: 'kb_123',
@@ -185,13 +185,13 @@ const response = await client.chat.completions.create({
 ### Error Handling
 
 ```typescript
-import DeepTutor, {
-  DeepTutorError,
+import praDeep, {
+  praDeepError,
   RateLimitError,
   AuthenticationError
 } from 'deeptutor';
 
-const client = new DeepTutor({ apiKey: 'dt_sk_xxxxx' });
+const client = new praDeep({ apiKey: 'dt_sk_xxxxx' });
 
 try {
   const response = await client.chat.completions.create({
@@ -203,7 +203,7 @@ try {
     console.log(`Rate limited. Retry after ${error.retryAfter} seconds`);
   } else if (error instanceof AuthenticationError) {
     console.log('Invalid API key');
-  } else if (error instanceof DeepTutorError) {
+  } else if (error instanceof praDeepError) {
     console.log(`API error: ${error.message}`);
   }
 }

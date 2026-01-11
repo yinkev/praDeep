@@ -1,7 +1,7 @@
 # ============================================
-# DeepTutor Multi-Stage Dockerfile
+# praDeep Multi-Stage Dockerfile
 # ============================================
-# This Dockerfile builds a production-ready image for DeepTutor
+# This Dockerfile builds a production-ready image for praDeep
 # containing both the FastAPI backend and Next.js frontend
 #
 # Build: docker compose build
@@ -84,8 +84,8 @@ RUN pip install --upgrade pip && \
 FROM python:3.11-slim AS production
 
 # Labels
-LABEL maintainer="DeepTutor Team" \
-      description="DeepTutor: AI-Powered Personalized Learning Assistant" \
+LABEL maintainer="praDeep Team" \
+      description="praDeep: AI-Powered Personalized Learning Assistant" \
       version="0.1.0"
 
 # Set environment variables
@@ -255,7 +255,7 @@ COPY <<'EOF' /app/entrypoint.sh
 set -e
 
 echo "============================================"
-echo "🚀 Starting DeepTutor"
+echo "🚀 Starting praDeep"
 echo "============================================"
 
 # Set default ports if not provided

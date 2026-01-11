@@ -2,19 +2,19 @@
 layout: home
 
 hero:
-  name: "DeepTutor"
+  name: "praDeep"
   text: "Your AI Learning Companion"
   tagline: Transform any document into an interactive learning experience
   image:
     src: /logo.png
-    alt: DeepTutor
+    alt: praDeep
   actions:
     - theme: brand
       text: Quick Start →
       link: /guide/getting-started
     - theme: alt
       text: GitHub
-      link: https://github.com/HKUDS/DeepTutor
+      link: https://github.com/HKUDS/praDeep
     - theme: alt
       text: 🚀 Roadmap
       link: /roadmap
@@ -52,7 +52,7 @@ features:
   --vp-home-hero-image-background-image: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 50%, rgba(240, 147, 251, 0.1) 100%);
 }
 
-/* DeepTutor 标题更大 */
+/* praDeep 标题更大 */
 .VPHero .name {
   font-size: 4rem !important;
   line-height: 1.1 !important;
@@ -74,13 +74,13 @@ features:
 }
 
 /* Hero 区域 Roadmap 按钮特殊样式 */
-.VPButton.alt[href="/DeepTutor/roadmap"] {
+.VPButton.alt[href="/praDeep/roadmap"] {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
   color: white !important;
   border: none !important;
 }
 
-.VPButton.alt[href="/DeepTutor/roadmap"]:hover {
+.VPButton.alt[href="/praDeep/roadmap"]:hover {
   box-shadow: 0 4px 16px rgba(102, 126, 234, 0.5);
   transform: translateY(-2px);
 }

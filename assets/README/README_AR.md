@@ -1,8 +1,8 @@
 <div align="center" dir="rtl">
 
-<img src="../../assets/logo-ver2.png" alt="DeepTutor Logo" width="150" style="border-radius: 15px;">
+<img src="../../assets/logo-ver2.png" alt="praDeep Logo" width="150" style="border-radius: 15px;">
 
-# DeepTutor: مساعدك الشخصي للتعلم
+# praDeep: مساعدك الشخصي للتعلم
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/downloads/)
 [![Next.js](https://img.shields.io/badge/Next.js-14-000000?style=flat-square&logo=next.js&logoColor=white)](https://nextjs.org/)
@@ -28,14 +28,14 @@
 </div>
 
 ---
-> **[2026.1.1]** سنة جديدة سعيدة! انضم إلى [GitHub Discussions](https://github.com/HKUDS/DeepTutor/discussions) — ساهم في تشكيل مستقبل DeepTutor! 💬
+> **[2026.1.1]** سنة جديدة سعيدة! انضم إلى [GitHub Discussions](https://github.com/HKUDS/praDeep/discussions) — ساهم في تشكيل مستقبل praDeep! 💬
 
-> **[2025.12.30]** زر [موقعنا الرسمي](https://hkuds.github.io/DeepTutor/) لمزيد من التفاصيل!
+> **[2025.12.30]** زر [موقعنا الرسمي](https://hkuds.github.io/praDeep/) لمزيد من التفاصيل!
 
-> **[2025.12.29]** DeepTutor v0.1 متاح الآن! ✨
+> **[2025.12.29]** praDeep v0.1 متاح الآن! ✨
 ---
 
-## الميزات الرئيسية لـ DeepTutor
+## الميزات الرئيسية لـ praDeep
 
 ### 📚 Q&A للمعرفة الوثائقية الضخمة
 • **قاعدة المعرفة الذكية**: ارفع الكتب المدرسية وأوراق البحث والكتيبات التقنية والوثائق الخاصة بالمجال. أنشئ مستودع معرفة شامل مدعوم بالذكاء الاصطناعي للوصول الفوري.<br>
@@ -186,14 +186,14 @@
 </table>
 
 <p align="center">
-  <sub>🌙 استخدم DeepTutor في <b>الوضع الداكن</b>!</sub>
+  <sub>🌙 استخدم praDeep في <b>الوضع الداكن</b>!</sub>
 </p>
 
 <details>
 <summary><b>معمارية النظام</b></summary>
 <br>
 
-![DeepTutor Full-Stack Workflow](../../assets/figs/full-pipe.png)
+![praDeep Full-Stack Workflow](../../assets/figs/full-pipe.png)
 
 </details>
 
@@ -201,7 +201,7 @@
 
 > تابعنا للحصول على تحديثات مستقبلية!
 - [ ] دعم خدمات LLM المحلية (مثل ollama)
-- [ ] إعادة هيكلة وحدة RAG (انظر [Discussions](https://github.com/HKUDS/DeepTutor/discussions))
+- [ ] إعادة هيكلة وحدة RAG (انظر [Discussions](https://github.com/HKUDS/praDeep/discussions))
 - [ ] الترميز العميق من توليد الأفكار
 - [ ] التفاعل المخصص مع دفتر الملاحظات
 
@@ -212,8 +212,8 @@
 **① استنساخ المستودع**
 
 ```bash
-git clone https://github.com/HKUDS/DeepTutor.git
-cd DeepTutor
+git clone https://github.com/HKUDS/praDeep.git
+cd praDeep
 ```
 
 **② تكوين متغيرات البيئة**
@@ -639,11 +639,11 @@ python src/knowledge/extract_numbered_items.py --kb <kb_name> --base-dir ./data/
 ## ⭐ سجل النجوم
 
 <div align="center">
-<a href="https://star-history.com/#HKUDS/DeepTutor&Date">
+<a href="https://star-history.com/#HKUDS/praDeep&Date">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=HKUDS/DeepTutor&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=HKUDS/DeepTutor&type=Date" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=HKUDS/DeepTutor&type=Date" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=HKUDS/praDeep&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=HKUDS/praDeep&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=HKUDS/praDeep&type=Date" />
  </picture>
 </a>
 </div>
@@ -671,7 +671,7 @@ conda install -c conda-forge pre-commit
 
 **الخطوة 2: تثبيت خطافات Git**
 ```bash
-cd DeepTutor
+cd praDeep
 pre-commit install
 ```
 
@@ -747,11 +747,11 @@ git commit --no-verify -m "إصلاح الطوارئ"
 
 **[مختبر ذكاء البيانات @ جامعة هونج كونج](https://github.com/HKUDS)**
 
-[⭐ Star us](https://github.com/HKUDS/DeepTutor/stargazers) · [🐛 Report a bug](https://github.com/HKUDS/DeepTutor/issues) · [💬 Discussions](https://github.com/HKUDS/DeepTutor/discussions)
+[⭐ Star us](https://github.com/HKUDS/praDeep/stargazers) · [🐛 Report a bug](https://github.com/HKUDS/praDeep/issues) · [💬 Discussions](https://github.com/HKUDS/praDeep/discussions)
 
 ---
-*✨ شكراً لزيارتك **DeepTutor**!*
+*✨ شكراً لزيارتك **praDeep**!*
 
-<img src="https://visitor-badge.laobi.icu/badge?page_id=HKUDS.DeepTutor&style=for-the-badge&color=00d4ff" alt="Views">
+<img src="https://visitor-badge.laobi.icu/badge?page_id=HKUDS.praDeep&style=for-the-badge&color=00d4ff" alt="Views">
 
 </div>

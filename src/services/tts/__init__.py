@@ -2,7 +2,7 @@
 TTS Service
 ===========
 
-Text-to-Speech configuration for DeepTutor.
+Text-to-Speech configuration for praDeep.
 
 Usage:
     from src.services.tts import get_tts_config

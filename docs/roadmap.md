@@ -20,7 +20,7 @@ Community-requested features we're considering:
 
 <div class="community-header">
   <h2>🤝 Shape the Future !</h2>
-  <p>DeepTutor is built by the community, for the community.</p>
+  <p>praDeep is built by the community, for the community.</p>
 </div>
 
 <div class="community-grid">
@@ -32,10 +32,10 @@ Community-requested features we're considering:
   <div class="card-links">
     <div class="link-row">
       <a href="https://discord.gg/zpP9cssj" class="discord">Discord</a>
-      <a href="https://github.com/HKUDS/DeepTutor/issues/78" class="wechat">WeChat</a>
+      <a href="https://github.com/HKUDS/praDeep/issues/78" class="wechat">WeChat</a>
     </div>
     <div class="link-row">
-      <a href="https://github.com/HKUDS/DeepTutor/discussions" class="github">GitHub Discussions</a>
+      <a href="https://github.com/HKUDS/praDeep/discussions" class="github">GitHub Discussions</a>
     </div>
   </div>
 </div>
@@ -45,7 +45,7 @@ Community-requested features we're considering:
   <div class="card-title">Code</div>
   <div class="card-desc">PRs welcome on <code>dev</code> branch</div>
   <div class="card-links">
-    <a href="https://github.com/HKUDS/DeepTutor/blob/main/CONTRIBUTING.md" class="github">Contributing Guide →</a>
+    <a href="https://github.com/HKUDS/praDeep/blob/main/CONTRIBUTING.md" class="github">Contributing Guide →</a>
   </div>
 </div>
 

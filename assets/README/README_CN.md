@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="../../assets/logo-ver2.png" alt="DeepTutor Logo" width="150" style="border-radius: 15px;">
+<img src="../../assets/logo-ver2.png" alt="praDeep Logo" width="150" style="border-radius: 15px;">
 
-# DeepTutor: 您的个人学习助手
+# praDeep: 您的个人学习助手
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/downloads/)
 [![Next.js](https://img.shields.io/badge/Next.js-14-000000?style=flat-square&logo=next.js&logoColor=white)](https://nextjs.org/)
@@ -28,14 +28,14 @@
 </div>
 
 ---
-> **[2026.1.1]** 新年快乐！加入我们的 [GitHub Discussions](https://github.com/HKUDS/DeepTutor/discussions) — 一起塑造 DeepTutor 的未来！💬
+> **[2026.1.1]** 新年快乐！加入我们的 [GitHub Discussions](https://github.com/HKUDS/praDeep/discussions) — 一起塑造 praDeep 的未来！💬
 
-> **[2025.12.30]** 访问我们的 [官方网站](https://hkuds.github.io/DeepTutor/) 获取更多详情！
+> **[2025.12.30]** 访问我们的 [官方网站](https://hkuds.github.io/praDeep/) 获取更多详情！
 
-> **[2025.12.29]** DeepTutor v0.1 正式发布！✨
+> **[2025.12.29]** praDeep v0.1 正式发布！✨
 ---
 
-## DeepTutor 的核心功能
+## praDeep 的核心功能
 
 ### 📚 海量文档知识问答
 • **智能知识库**：上传教科书、研究论文、技术手册和领域特定文档。构建全面的 AI 驱动知识库，实现即时访问。<br>
@@ -186,15 +186,15 @@
 </table>
 
 <p align="center">
-  <sub>🌙 在 <b>暗色模式</b> 下使用 DeepTutor！</sub>
+  <sub>🌙 在 <b>暗色模式</b> 下使用 praDeep！</sub>
 </p>
 
 ---
 
-## 🏛️ DeepTutor 的框架
+## 🏛️ praDeep 的框架
 
 <div align="center">
-<img src="../../assets/figs/full-pipe.png" alt="DeepTutor Full-Stack Workflow" width="100%">
+<img src="../../assets/figs/full-pipe.png" alt="praDeep Full-Stack Workflow" width="100%">
 </div>
 
 ### 💬 用户界面层
@@ -219,7 +219,7 @@
 
 > 🌟 Star 以关注我们的未来更新！
 - [ ] 支持本地 LLM 服务（如 ollama）
-- [ ] 重构 RAG 模块（见 [Discussions](https://github.com/HKUDS/DeepTutor/discussions)）
+- [ ] 重构 RAG 模块（见 [Discussions](https://github.com/HKUDS/praDeep/discussions)）
 - [ ] 从想法生成进行深度编码
 - [ ] 笔记本的个性化交互
 
@@ -230,8 +230,8 @@
 **① 克隆仓库**
 
 ```bash
-git clone https://github.com/HKUDS/DeepTutor.git
-cd DeepTutor
+git clone https://github.com/HKUDS/praDeep.git
+cd praDeep
 ```
 
 **② 设置环境变量**
@@ -1316,11 +1316,11 @@ python src/knowledge/extract_numbered_items.py --kb <kb_name> --base-dir ./data/
 ## ⭐ Star 历史
 
 <div align="center">
-<a href="https://star-history.com/#HKUDS/DeepTutor&Date">
+<a href="https://star-history.com/#HKUDS/praDeep&Date">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=HKUDS/DeepTutor&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=HKUDS/DeepTutor&type=Date" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=HKUDS/DeepTutor&type=Date" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=HKUDS/praDeep&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=HKUDS/praDeep&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=HKUDS/praDeep&type=Date" />
  </picture>
 </a>
 </div>
@@ -1348,7 +1348,7 @@ conda install -c conda-forge pre-commit
 
 **第 2 步：安装 Git hooks**
 ```bash
-cd DeepTutor
+cd praDeep
 pre-commit install
 ```
 
@@ -1424,11 +1424,11 @@ git commit --no-verify -m "紧急修复"
 
 **[香港大学数据智能实验室](https://github.com/HKUDS)**
 
-[⭐ Star us](https://github.com/HKUDS/DeepTutor/stargazers) · [🐛 Report a bug](https://github.com/HKUDS/DeepTutor/issues) · [💬 Discussions](https://github.com/HKUDS/DeepTutor/discussions)
+[⭐ Star us](https://github.com/HKUDS/praDeep/stargazers) · [🐛 Report a bug](https://github.com/HKUDS/praDeep/issues) · [💬 Discussions](https://github.com/HKUDS/praDeep/discussions)
 
 ---
-*✨ 感谢访问 **DeepTutor**！*
+*✨ 感谢访问 **praDeep**！*
 
-<img src="https://visitor-badge.laobi.icu/badge?page_id=HKUDS.DeepTutor&style=for-the-badge&color=00d4ff" alt="Views">
+<img src="https://visitor-badge.laobi.icu/badge?page_id=HKUDS.praDeep&style=for-the-badge&color=00d4ff" alt="Views">
 
 </div>
