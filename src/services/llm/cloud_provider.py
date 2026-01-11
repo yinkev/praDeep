@@ -430,8 +430,202 @@ async def fetch_models(
             return []
 
 
+async def complete_with_vision(
+    prompt: str,
+    images: List[Dict[str, str]],
+    system_prompt: str = "You are a helpful assistant.",
+    model: Optional[str] = None,
+    api_key: Optional[str] = None,
+    base_url: Optional[str] = None,
+    binding: str = "openai",
+    **kwargs,
+) -> str:
+    """
+    Complete a prompt with vision (image) inputs using cloud API providers.
+
+    Supports OpenAI-compatible vision APIs and Anthropic.
+
+    Args:
+        prompt: The user prompt
+        images: List of image dicts with format:
+                [{"type": "image", "data": base64_string, "mimeType": "image/png"}]
+        system_prompt: System prompt for context
+        model: Model name (should be a vision-capable model)
+        api_key: API key
+        base_url: Base URL for the API
+        binding: Provider binding type (openai, anthropic)
+        **kwargs: Additional parameters (temperature, max_tokens, etc.)
+
+    Returns:
+        str: The LLM response
+    """
+    binding_lower = (binding or "openai").lower()
+
+    if binding_lower in ["anthropic", "claude"]:
+        return await _anthropic_complete_with_vision(
+            model=model,
+            prompt=prompt,
+            images=images,
+            system_prompt=system_prompt,
+            api_key=api_key,
+            base_url=base_url,
+            **kwargs,
+        )
+
+    # Default to OpenAI-compatible endpoint
+    return await _openai_complete_with_vision(
+        model=model,
+        prompt=prompt,
+        images=images,
+        system_prompt=system_prompt,
+        api_key=api_key,
+        base_url=base_url,
+        **kwargs,
+    )
+
+
+async def _openai_complete_with_vision(
+    model: str,
+    prompt: str,
+    images: List[Dict[str, str]],
+    system_prompt: str,
+    api_key: Optional[str],
+    base_url: Optional[str],
+    **kwargs,
+) -> str:
+    """OpenAI-compatible vision completion."""
+    # Sanitize URL
+    if base_url:
+        base_url = sanitize_url(base_url, model)
+
+    url = (base_url or "https://api.openai.com/v1").rstrip("/")
+    if not url.endswith("/chat/completions"):
+        url += "/chat/completions"
+
+    headers = {"Content-Type": "application/json"}
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+
+    # Build multimodal user message content
+    user_content = []
+
+    # Add images first
+    for img in images:
+        if img.get("type") == "image":
+            mime_type = img.get("mimeType", "image/png")
+            data = img.get("data", "")
+            user_content.append(
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:{mime_type};base64,{data}",
+                        "detail": kwargs.get("image_detail", "auto"),
+                    },
+                }
+            )
+
+    # Add text prompt
+    if prompt:
+        user_content.append({"type": "text", "text": prompt})
+
+    data = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_content},
+        ],
+        "temperature": kwargs.get("temperature", 0.7),
+        "max_tokens": kwargs.get("max_tokens", 4096),
+    }
+
+    timeout = aiohttp.ClientTimeout(total=180)  # Longer timeout for vision
+    async with aiohttp.ClientSession(timeout=timeout) as session:
+        async with session.post(url, headers=headers, json=data) as resp:
+            if resp.status == 200:
+                result = await resp.json()
+                if "choices" in result and result["choices"]:
+                    msg = result["choices"][0].get("message", {})
+                    content = msg.get("content", "")
+                    return content
+            else:
+                error_text = await resp.text()
+                raise Exception(f"OpenAI Vision API error: {resp.status} - {error_text}")
+
+    raise Exception("Vision completion failed: no valid response")
+
+
+async def _anthropic_complete_with_vision(
+    model: str,
+    prompt: str,
+    images: List[Dict[str, str]],
+    system_prompt: str,
+    api_key: Optional[str],
+    base_url: Optional[str],
+    **kwargs,
+) -> str:
+    """Anthropic (Claude) API vision completion."""
+    api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
+    if not api_key:
+        raise ValueError("Anthropic API key is missing.")
+
+    if not base_url:
+        url = "https://api.anthropic.com/v1/messages"
+    else:
+        url = base_url.rstrip("/")
+        if not url.endswith("/messages"):
+            url += "/messages"
+
+    headers = {
+        "x-api-key": api_key,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+    }
+
+    # Build multimodal user message content (Anthropic format)
+    user_content = []
+
+    # Add images first
+    for img in images:
+        if img.get("type") == "image":
+            mime_type = img.get("mimeType", "image/png")
+            data = img.get("data", "")
+            user_content.append(
+                {
+                    "type": "image",
+                    "source": {
+                        "type": "base64",
+                        "media_type": mime_type,
+                        "data": data,
+                    },
+                }
+            )
+
+    # Add text prompt
+    if prompt:
+        user_content.append({"type": "text", "text": prompt})
+
+    data = {
+        "model": model,
+        "system": system_prompt,
+        "messages": [{"role": "user", "content": user_content}],
+        "max_tokens": kwargs.get("max_tokens", 4096),
+        "temperature": kwargs.get("temperature", 0.7),
+    }
+
+    timeout = aiohttp.ClientTimeout(total=180)  # Longer timeout for vision
+    async with aiohttp.ClientSession(timeout=timeout) as session:
+        async with session.post(url, headers=headers, json=data) as response:
+            if response.status != 200:
+                error_text = await response.text()
+                raise Exception(f"Anthropic Vision API error: {response.status} - {error_text}")
+
+            result = await response.json()
+            return result["content"][0]["text"]
+
+
 __all__ = [
     "complete",
     "stream",
     "fetch_models",
+    "complete_with_vision",
 ]

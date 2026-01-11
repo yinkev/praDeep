@@ -3,6 +3,7 @@ RAG Service
 ===========
 
 Unified RAG service providing a single entry point for all RAG operations.
+Includes intelligent caching layer for query results.
 """
 
 import os
@@ -10,6 +11,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from src.logging import get_logger
+from src.services.cache import get_cache_client
 
 # Default knowledge base directory
 DEFAULT_KB_BASE_DIR = str(
@@ -41,6 +43,7 @@ class RAGService:
         self,
         kb_base_dir: Optional[str] = None,
         provider: Optional[str] = None,
+        enable_cache: Optional[bool] = None,
     ):
         """
         Initialize RAG service.
@@ -50,11 +53,19 @@ class RAGService:
                          Defaults to data/knowledge_bases.
             provider: RAG pipeline provider to use.
                       Defaults to RAG_PROVIDER env var or "raganything".
+            enable_cache: Enable query result caching.
+                          Defaults to CACHE_ENABLED env var or True.
         """
         self.logger = get_logger("RAGService")
         self.kb_base_dir = kb_base_dir or DEFAULT_KB_BASE_DIR
         self.provider = provider or os.getenv("RAG_PROVIDER", "raganything")
         self._pipeline = None
+
+        # Initialize cache
+        if enable_cache is None:
+            enable_cache = os.getenv("CACHE_ENABLED", "true").lower() == "true"
+        self._cache_enabled = enable_cache
+        self._cache = get_cache_client() if enable_cache else None
 
     def _get_pipeline(self):
         """Get or create pipeline instance."""
@@ -85,7 +96,12 @@ class RAGService:
         return await pipeline.initialize(kb_name=kb_name, file_paths=file_paths, **kwargs)
 
     async def search(
-        self, query: str, kb_name: str, mode: str = "hybrid", **kwargs
+        self,
+        query: str,
+        kb_name: str,
+        mode: str = "hybrid",
+        skip_cache: bool = False,
+        **kwargs,
     ) -> Dict[str, Any]:
         """
         Search a knowledge base.
@@ -94,6 +110,7 @@ class RAGService:
             query: Search query
             kb_name: Knowledge base name
             mode: Search mode (hybrid, local, global, naive)
+            skip_cache: Skip cache lookup (force fresh query)
             **kwargs: Additional arguments passed to pipeline
 
         Returns:
@@ -103,6 +120,7 @@ class RAGService:
             - content: Retrieved content
             - mode: Search mode used
             - provider: Pipeline provider used
+            - cached: Whether result was from cache
 
         Example:
             service = RAGService()
@@ -110,8 +128,16 @@ class RAGService:
             print(result["answer"])
         """
         self.logger.info(f"Searching KB '{kb_name}' with query: {query[:50]}...")
-        pipeline = self._get_pipeline()
 
+        # Check cache first
+        if self._cache_enabled and self._cache and not skip_cache:
+            cached_result = await self._cache.get_query_result(query, kb_name, mode)
+            if cached_result:
+                self.logger.info(f"Cache HIT for query: {query[:50]}...")
+                cached_result["cached"] = True
+                return cached_result
+
+        pipeline = self._get_pipeline()
         result = await pipeline.search(query=query, kb_name=kb_name, mode=mode, **kwargs)
 
         # Ensure consistent return format
@@ -125,6 +151,12 @@ class RAGService:
             result["provider"] = self.provider
         if "mode" not in result:
             result["mode"] = mode
+        result["cached"] = False
+
+        # Store in cache
+        if self._cache_enabled and self._cache:
+            await self._cache.set_query_result(query, kb_name, mode, result)
+            self.logger.debug(f"Cached result for query: {query[:50]}...")
 
         return result
 
@@ -143,6 +175,12 @@ class RAGService:
             success = await service.delete("old_kb")
         """
         self.logger.info(f"Deleting KB '{kb_name}'")
+
+        # Invalidate cache entries for this KB
+        if self._cache_enabled and self._cache:
+            deleted_count = await self._cache.invalidate_kb(kb_name)
+            self.logger.info(f"Invalidated {deleted_count} cache entries for KB '{kb_name}'")
+
         pipeline = self._get_pipeline()
 
         if hasattr(pipeline, "delete"):
@@ -157,6 +195,40 @@ class RAGService:
             self.logger.info(f"Deleted KB directory: {kb_dir}")
             return True
         return False
+
+    async def invalidate_cache(self, kb_name: Optional[str] = None) -> int:
+        """
+        Invalidate cache entries.
+
+        Args:
+            kb_name: Optional KB name to invalidate. If None, invalidates all.
+
+        Returns:
+            Number of entries invalidated
+        """
+        if not self._cache:
+            return 0
+
+        if kb_name:
+            return await self._cache.invalidate_kb(kb_name)
+        else:
+            return await self._cache.clear_all()
+
+    async def get_cache_stats(self) -> dict:
+        """
+        Get cache statistics.
+
+        Returns:
+            Cache stats dictionary with hits, misses, hit_rate, etc.
+        """
+        if not self._cache:
+            return {"enabled": False}
+
+        health = await self._cache.health_check()
+        return {
+            "enabled": self._cache_enabled,
+            **health,
+        }
 
     @staticmethod
     def list_providers() -> List[Dict[str, str]]:

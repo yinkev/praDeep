@@ -5,9 +5,9 @@ Hybrid Retriever
 Hybrid retriever combining multiple retrieval strategies.
 """
 
+import json
 from pathlib import Path
 import sys
-import json
 from typing import Any, Dict, Optional
 
 from ..base import BaseComponent

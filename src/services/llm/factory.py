@@ -284,6 +284,56 @@ async def stream(
             yield chunk
 
 
+async def complete_with_vision(
+    prompt: str,
+    images: List[Dict[str, Any]],
+    system_prompt: str = "You are a helpful assistant.",
+    model: Optional[str] = None,
+    api_key: Optional[str] = None,
+    base_url: Optional[str] = None,
+    binding: Optional[str] = None,
+    **kwargs,
+) -> str:
+    """
+    Unified LLM vision completion function.
+
+    Routes to cloud_provider for vision-capable models.
+
+    Args:
+        prompt: The user prompt
+        images: List of image dicts with format:
+                [{"type": "image", "data": base64_string, "mimeType": "image/png"}]
+        system_prompt: System prompt for context
+        model: Model name (optional, uses effective config if not provided)
+        api_key: API key (optional)
+        base_url: Base URL for the API (optional)
+        binding: Provider binding type (optional)
+        **kwargs: Additional parameters (temperature, max_tokens, etc.)
+
+    Returns:
+        str: The LLM response
+    """
+    # Get effective config if parameters not provided
+    if not model or not base_url:
+        config = get_effective_config()
+        model = model or config.model
+        api_key = api_key if api_key is not None else config.api_key
+        base_url = base_url or config.base_url
+        binding = binding or config.binding or "openai"
+
+    # Vision always uses cloud provider (no local vision support yet)
+    return await cloud_provider.complete_with_vision(
+        prompt=prompt,
+        images=images,
+        system_prompt=system_prompt,
+        model=model,
+        api_key=api_key,
+        base_url=base_url,
+        binding=binding or "openai",
+        **kwargs,
+    )
+
+
 async def fetch_models(
     binding: str,
     base_url: str,
@@ -383,6 +433,7 @@ __all__ = [
     "get_mode_info",
     "complete",
     "stream",
+    "complete_with_vision",
     "fetch_models",
     "get_provider_presets",
     "API_PROVIDER_PRESETS",

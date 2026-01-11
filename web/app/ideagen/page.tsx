@@ -82,6 +82,8 @@ export default function IdeaGenPage() {
 
   // User thoughts input
   const [userThoughts, setUserThoughts] = useState("");
+  // Project/Research goal input
+  const [projectGoal, setProjectGoal] = useState("");
 
   // Use global state for generation (persists across navigation)
   const isGenerating = ideaGenState.isGenerating;
@@ -244,6 +246,7 @@ export default function IdeaGenPage() {
         JSON.stringify({
           records: recordsArray.length > 0 ? recordsArray : undefined,
           user_thoughts: userThoughts.trim() || undefined,
+          project_goal: projectGoal.trim() || undefined,
         }),
       );
     };
@@ -523,6 +526,25 @@ export default function IdeaGenPage() {
                 })}
               </div>
             )}
+          </div>
+
+          {/* Project/Research Goal Input */}
+          <div className="p-3 border-t border-slate-100 dark:border-slate-700 bg-gradient-to-b from-amber-50/30 to-transparent dark:from-amber-900/10 dark:to-transparent">
+            <label className="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1.5 mb-2">
+              <Brain className="w-3.5 h-3.5" />
+              Research Goal (Optional)
+            </label>
+            <textarea
+              value={projectGoal}
+              onChange={(e) => setProjectGoal(e.target.value)}
+              placeholder="What is your overall research objective or learning goal? This helps me understand the context better..."
+              className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-amber-200 dark:border-amber-800/50 rounded-lg text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 resize-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none"
+              rows={2}
+            />
+            <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
+              💡 Tip: Providing your research goal helps me generate more
+              relevant and focused ideas
+            </p>
           </div>
 
           {/* User Thoughts Input */}
