@@ -17,7 +17,7 @@ project_root = Path(__file__).parent.parent.parent
 load_dotenv(project_root / "praDeep.env", override=False)
 load_dotenv(project_root / ".env", override=False)
 
-# Import RAGService as the single entry point
+from src.di import get_container
 from src.services.rag.service import RAGService
 
 
@@ -61,7 +61,7 @@ async def rag_search(
         # Override provider
         result = await rag_search("What is ML?", kb_name="textbook", provider="lightrag")
     """
-    service = RAGService(kb_base_dir=kb_base_dir, provider=provider)
+    service = get_container().rag_service(kb_base_dir=kb_base_dir, provider=provider)
 
     try:
         return await service.search(query=query, kb_name=kb_name, mode=mode, **kwargs)
@@ -93,7 +93,7 @@ async def initialize_rag(
         documents = ["doc1.pdf", "doc2.txt"]
         success = await initialize_rag("my_kb", documents)
     """
-    service = RAGService(kb_base_dir=kb_base_dir, provider=provider)
+    service = get_container().rag_service(kb_base_dir=kb_base_dir, provider=provider)
     return await service.initialize(kb_name=kb_name, file_paths=documents, **kwargs)
 
 
@@ -116,7 +116,7 @@ async def delete_rag(
     Example:
         success = await delete_rag("old_kb")
     """
-    service = RAGService(kb_base_dir=kb_base_dir, provider=provider)
+    service = get_container().rag_service(kb_base_dir=kb_base_dir, provider=provider)
     return await service.delete(kb_name=kb_name)
 
 

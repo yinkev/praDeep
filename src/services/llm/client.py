@@ -202,13 +202,15 @@ def get_llm_client(config: Optional[LLMConfig] = None) -> LLMClient:
     Returns:
         LLMClient instance
     """
-    global _client
-    if _client is None:
-        _client = LLMClient(config)
-    return _client
+    from src.di import get_container
+
+    return get_container().llm_client(config)
 
 
 def reset_llm_client():
     """Reset the singleton LLM client."""
+    from src.di import get_container
+
+    get_container().clear("llm_client")
     global _client
     _client = None

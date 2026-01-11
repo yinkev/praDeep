@@ -3,12 +3,23 @@
   "category": "Core",
   "title": "User Feedback and Rating System",
   "description": "Add thumbs up/down feedback for agent responses with optional detailed comments. Aggregates feedback for model fine-tuning and prompt improvement identification.",
-  "status": "backlog",
-  "priority": 2,
+  "status": "verified",
+  "priority": 1,
   "complexity": "simple",
   "dependencies": [
     "user-authentication"
   ],
   "createdAt": "2026-01-11T17:24:12.304Z",
-  "updatedAt": "2026-01-11T17:24:12.304Z"
+  "updatedAt": "2026-01-11T19:20:54.549Z",
+  "skipTests": false,
+  "model": "codex-gpt-5.2",
+  "thinkingLevel": "none",
+  "reasoningEffort": "medium",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "descriptionHistory": [],
+  "startedAt": "2026-01-11T19:18:33.167Z"
 }

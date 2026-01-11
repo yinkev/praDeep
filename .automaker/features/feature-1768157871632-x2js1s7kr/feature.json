@@ -1,0 +1,26 @@
+{
+  "category": "enhancement",
+  "description": "When initiating first KB upload, show detailed progress visualization explaining each stage: file parsing (MinerU), embedding generation, LightRAG KG construction, numbered item indexing. Include educational tooltips explaining why each step matters for RAG quality.\n\n**Rationale:** KB ingestion can take minutes for large documents, and the multi-stage pipeline (raw → parsed → embedded → indexed) is invisible to users. Progress visualization with educational content manages expectations and builds understanding of the RAG architecture.",
+  "title": "Progress Visualization for Empty Knowledge Base Upload",
+  "status": "verified",
+  "id": "feature-1768157871632-x2js1s7kr",
+  "descriptionHistory": [
+    {
+      "description": "When initiating first KB upload, show detailed progress visualization explaining each stage: file parsing (MinerU), embedding generation, LightRAG KG construction, numbered item indexing. Include educational tooltips explaining why each step matters for RAG quality.\n\n**Rationale:** KB ingestion can take minutes for large documents, and the multi-stage pipeline (raw → parsed → embedded → indexed) is invisible to users. Progress visualization with educational content manages expectations and builds understanding of the RAG architecture.",
+      "timestamp": "2026-01-11T18:57:51.633Z",
+      "source": "initial"
+    }
+  ],
+  "skipTests": false,
+  "model": "codex-gpt-5.2",
+  "thinkingLevel": "none",
+  "reasoningEffort": "medium",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "priority": 2,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "startedAt": "2026-01-11T18:58:49.620Z",
+  "updatedAt": "2026-01-11T19:02:21.656Z"
+}

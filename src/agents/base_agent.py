@@ -26,11 +26,12 @@ if str(_project_root) not in sys.path:
     sys.path.insert(0, str(_project_root))
 
 from src.logging import LLMStats, get_logger
+from src.logging import estimate_tokens
 from src.services.config import get_agent_params
 from src.services.llm import complete as llm_complete
 from src.services.llm import get_llm_config, get_token_limit_kwargs
 from src.services.llm import stream as llm_stream
-from src.services.prompt import get_prompt_manager
+from src.di import Container, get_container
 
 
 class BaseAgent(ABC):
@@ -62,6 +63,9 @@ class BaseAgent(ABC):
         config: dict[str, Any] | None = None,
         token_tracker: Any | None = None,
         log_dir: str | None = None,
+        container: Container | None = None,
+        prompt_manager: Any | None = None,
+        metrics_service: Any | None = None,
     ):
         """
         Initialize base Agent.
@@ -126,9 +130,14 @@ class BaseAgent(ABC):
         logger_name = f"{module_name.capitalize()}.{agent_name}"
         self.logger = get_logger(logger_name, log_dir=log_dir)
 
+        # Dependencies
+        self.container = container or get_container()
+        self.prompt_manager = prompt_manager or self.container.prompt_manager()
+        self.metrics_service = metrics_service or self.container.metrics_service()
+
         # Load prompts using unified PromptManager
         try:
-            self.prompts = get_prompt_manager().load_prompts(
+            self.prompts = self.prompt_manager.load_prompts(
                 module_name=module_name,
                 agent_name=agent_name,
                 language=language,
@@ -340,6 +349,22 @@ class BaseAgent(ABC):
 
         # Record call start time
         start_time = time.time()
+        metrics = self.metrics_service.start_tracking(
+            agent_name=self.agent_name, module_name=self.module_name
+        )
+        try:
+            metrics.metadata.update(
+                {
+                    "stage": stage or self.agent_name,
+                    "model": model,
+                    "temperature": temperature,
+                    "max_tokens": max_tokens,
+                    "streaming": False,
+                }
+            )
+            metrics.add_api_call()
+        except Exception:
+            pass
 
         # Build kwargs for LLM factory
         kwargs = {
@@ -365,7 +390,8 @@ class BaseAgent(ABC):
             )
 
         # Call LLM via factory (routes to cloud or local provider)
-        response = None
+        response: str | None = None
+        success = True
         try:
             response = await llm_complete(
                 prompt=user_prompt,
@@ -376,8 +402,26 @@ class BaseAgent(ABC):
                 **kwargs,
             )
         except Exception as e:
+            success = False
+            try:
+                metrics.add_error()
+                metrics.metadata.update({"error_type": type(e).__name__, "error_message": str(e)})
+            except Exception:
+                pass
             self.logger.error(f"LLM call failed: {e}")
             raise
+        finally:
+            if response is not None:
+                try:
+                    prompt_tokens = estimate_tokens((system_prompt or "") + "\n" + (user_prompt or ""))
+                    completion_tokens = estimate_tokens(response or "")
+                    metrics.add_tokens(prompt=prompt_tokens, completion=completion_tokens, model=model)
+                except Exception:
+                    pass
+            try:
+                self.metrics_service.end_tracking(metrics, success=success)
+            except Exception:
+                pass
 
         # Calculate duration
         call_duration = time.time() - start_time
@@ -461,6 +505,23 @@ class BaseAgent(ABC):
         # Track start time
         start_time = time.time()
         full_response = ""
+        metrics = self.metrics_service.start_tracking(
+            agent_name=self.agent_name, module_name=self.module_name
+        )
+        try:
+            metrics.metadata.update(
+                {
+                    "stage": stage or self.agent_name,
+                    "model": model,
+                    "temperature": temperature,
+                    "max_tokens": max_tokens,
+                    "streaming": True,
+                }
+            )
+            metrics.add_api_call()
+        except Exception:
+            pass
+        success = True
 
         try:
             # Stream via factory (routes to cloud or local provider)
@@ -472,7 +533,7 @@ class BaseAgent(ABC):
                 base_url=self.base_url,
                 messages=messages,
                 **kwargs,
-            ):
+                ):
                 full_response += chunk
                 yield chunk
 
@@ -502,8 +563,25 @@ class BaseAgent(ABC):
                 )
 
         except Exception as e:
+            success = False
+            try:
+                metrics.add_error()
+                metrics.metadata.update({"error_type": type(e).__name__, "error_message": str(e)})
+            except Exception:
+                pass
             self.logger.error(f"LLM streaming failed: {e}")
             raise
+        finally:
+            try:
+                prompt_tokens = estimate_tokens((system_prompt or "") + "\n" + (user_prompt or ""))
+                completion_tokens = estimate_tokens(full_response or "")
+                metrics.add_tokens(prompt=prompt_tokens, completion=completion_tokens, model=model)
+            except Exception:
+                pass
+            try:
+                self.metrics_service.end_tracking(metrics, success=success)
+            except Exception:
+                pass
 
     # -------------------------------------------------------------------------
     # Prompt Helpers

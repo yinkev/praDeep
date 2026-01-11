@@ -19,7 +19,7 @@ if str(_project_root) not in sys.path:
     sys.path.insert(0, str(_project_root))
 
 from src.agents.base_agent import BaseAgent
-from src.services.prompt import get_prompt_manager
+from src.di import Container
 
 
 class ProgressTrackerAgent(BaseAgent):
@@ -40,6 +40,10 @@ class ProgressTrackerAgent(BaseAgent):
         api_key: str | None = None,
         base_url: str | None = None,
         model: str | None = None,
+        *,
+        container: Container | None = None,
+        prompt_manager: Any | None = None,
+        metrics_service: Any | None = None,
     ):
         """
         Initialize the ProgressTrackerAgent.
@@ -57,9 +61,12 @@ class ProgressTrackerAgent(BaseAgent):
             base_url=base_url,
             model=model,
             language=language,
+            container=container,
+            prompt_manager=prompt_manager,
+            metrics_service=metrics_service,
         )
         # Load prompts using unified PromptManager
-        self._prompts = get_prompt_manager().load_prompts(
+        self._prompts = self.prompt_manager.load_prompts(
             module_name="study_planner",
             agent_name="progress_tracker",
             language=language,

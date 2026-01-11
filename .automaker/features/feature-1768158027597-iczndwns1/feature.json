@@ -1,0 +1,26 @@
+{
+  "category": "refactor",
+  "description": "Implement a ToolRegistry that automatically discovers and registers tools from a dedicated tools directory using introspection. Define a Tool interface with metadata (name, description, schema, required permissions) and enable runtime tool addition/removal without code changes.\n\n**Rationale:** Tool usage is currently hard-coded in each agent's decision logic. A registry pattern would enable easier addition of new tools, better tool documentation generation, dynamic tool availability based on configuration, and simplified tool testing.",
+  "title": "Create Pluggable Tool Registry with Dynamic Discovery",
+  "status": "verified",
+  "id": "feature-1768158027597-iczndwns1",
+  "descriptionHistory": [
+    {
+      "description": "Implement a ToolRegistry that automatically discovers and registers tools from a dedicated tools directory using introspection. Define a Tool interface with metadata (name, description, schema, required permissions) and enable runtime tool addition/removal without code changes.\n\n**Rationale:** Tool usage is currently hard-coded in each agent's decision logic. A registry pattern would enable easier addition of new tools, better tool documentation generation, dynamic tool availability based on configuration, and simplified tool testing.",
+      "timestamp": "2026-01-11T19:00:27.597Z",
+      "source": "initial"
+    }
+  ],
+  "skipTests": false,
+  "model": "codex-gpt-5.2",
+  "thinkingLevel": "none",
+  "reasoningEffort": "high",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "priority": 1,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "startedAt": "2026-01-11T19:05:46.456Z",
+  "updatedAt": "2026-01-11T19:07:56.780Z"
+}

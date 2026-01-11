@@ -1,0 +1,26 @@
+{
+  "category": "ui",
+  "description": "Analyzes user questions and solve patterns to identify common misconceptions in their understanding. Proactively surfaces explanations that address these specific misconceptions before they solidify.\n\n**Rationale:** Misconceptions are a major barrier to learning. Early detection and targeted correction prevents students from building knowledge on faulty foundations, significantly improving learning outcomes.",
+  "title": "Misconception Detection and Correction",
+  "status": "verified",
+  "id": "feature-1768157476188-b8s25ro2d",
+  "descriptionHistory": [
+    {
+      "description": "Analyzes user questions and solve patterns to identify common misconceptions in their understanding. Proactively surfaces explanations that address these specific misconceptions before they solidify.\n\n**Rationale:** Misconceptions are a major barrier to learning. Early detection and targeted correction prevents students from building knowledge on faulty foundations, significantly improving learning outcomes.",
+      "timestamp": "2026-01-11T18:51:16.188Z",
+      "source": "initial"
+    }
+  ],
+  "skipTests": false,
+  "model": "codex-gpt-5.2",
+  "thinkingLevel": "none",
+  "reasoningEffort": "high",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "priority": 2,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "startedAt": "2026-01-11T18:52:32.333Z",
+  "updatedAt": "2026-01-11T18:58:55.369Z"
+}

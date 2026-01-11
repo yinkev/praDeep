@@ -1,0 +1,26 @@
+{
+  "category": "enhancement",
+  "description": "Create memory-mapped shared storage for agent memories (InvestigateMemory, SolveMemory, citation data) using multiprocessing.shared_memory or Redis. Implement copy-on-write semantics for concurrent access. Add memory pressure monitoring with automatic eviction.\n\n**Rationale:** Each agent instance maintains isolated in-memory state that's serialized to JSON files. Shared memory reduces duplication across concurrent sessions, enables efficient state passing between agent stages, and can reduce memory usage by 40-60% under load.",
+  "title": "Add Shared Memory Pool for Agent State Management",
+  "status": "verified",
+  "id": "feature-1768159600686-4m3mdnpuu",
+  "descriptionHistory": [
+    {
+      "description": "Create memory-mapped shared storage for agent memories (InvestigateMemory, SolveMemory, citation data) using multiprocessing.shared_memory or Redis. Implement copy-on-write semantics for concurrent access. Add memory pressure monitoring with automatic eviction.\n\n**Rationale:** Each agent instance maintains isolated in-memory state that's serialized to JSON files. Shared memory reduces duplication across concurrent sessions, enables efficient state passing between agent stages, and can reduce memory usage by 40-60% under load.",
+      "timestamp": "2026-01-11T19:26:40.687Z",
+      "source": "initial"
+    }
+  ],
+  "skipTests": false,
+  "model": "codex-gpt-5.2",
+  "thinkingLevel": "none",
+  "reasoningEffort": "medium",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "priority": 1,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "startedAt": "2026-01-11T19:36:22.687Z",
+  "updatedAt": "2026-01-11T19:39:59.425Z"
+}

@@ -142,13 +142,15 @@ def get_embedding_client(config: Optional[EmbeddingConfig] = None) -> EmbeddingC
     Returns:
         EmbeddingClient instance
     """
-    global _client
-    if _client is None:
-        _client = EmbeddingClient(config)
-    return _client
+    from src.di import get_container
+
+    return get_container().embedding_client(config)
 
 
 def reset_embedding_client():
     """Reset the singleton embedding client."""
+    from src.di import get_container
+
+    get_container().clear("embedding_client")
     global _client
     _client = None

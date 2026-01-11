@@ -1,0 +1,26 @@
+{
+  "category": "feature",
+  "description": "- Feature discovery time (time from signup to first use) - Feature adoption rate by cohort - Feature stickiness (% of users who return to feature) - Cross-feature usage patterns (e.g., users who use Solve + Research) - WebSocket vs REST endpoint usage distribution",
+  "title": "4. Feature Adoption",
+  "status": "verified",
+  "id": "feature-1768159534577-4hbeh7kl9",
+  "descriptionHistory": [
+    {
+      "description": "- Feature discovery time (time from signup to first use) - Feature adoption rate by cohort - Feature stickiness (% of users who return to feature) - Cross-feature usage patterns (e.g., users who use Solve + Research) - WebSocket vs REST endpoint usage distribution",
+      "timestamp": "2026-01-11T19:25:34.578Z",
+      "source": "initial"
+    }
+  ],
+  "skipTests": false,
+  "model": "codex-gpt-5.2",
+  "thinkingLevel": "none",
+  "reasoningEffort": "medium",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "priority": 1,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "startedAt": "2026-01-11T19:27:41.697Z",
+  "updatedAt": "2026-01-11T19:30:05.248Z"
+}

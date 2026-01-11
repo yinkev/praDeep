@@ -1,0 +1,26 @@
+{
+  "category": "refactor",
+  "description": "Replace direct agent-to-agent calls with an event bus pattern where agents emit domain events (e.g., KnowledgeGathered, StepCompleted) and subscribe to relevant events. Implement using a lightweight in-process event dispatcher with optional persistence for audit trails.\n\n**Rationale:** Current tight coupling between agents (e.g., MainSolver orchestrating Analysis/Solve loops) makes it difficult to modify agent behavior, add new agents, or test agents in isolation. Event-driven design would enable better separation of concerns and easier extension.",
+  "title": "Introduce Event-Driven Architecture for Agent Communication",
+  "status": "verified",
+  "id": "feature-1768158017864-0mdnkhdjo",
+  "descriptionHistory": [
+    {
+      "description": "Replace direct agent-to-agent calls with an event bus pattern where agents emit domain events (e.g., KnowledgeGathered, StepCompleted) and subscribe to relevant events. Implement using a lightweight in-process event dispatcher with optional persistence for audit trails.\n\n**Rationale:** Current tight coupling between agents (e.g., MainSolver orchestrating Analysis/Solve loops) makes it difficult to modify agent behavior, add new agents, or test agents in isolation. Event-driven design would enable better separation of concerns and easier extension.",
+      "timestamp": "2026-01-11T19:00:17.864Z",
+      "source": "initial"
+    }
+  ],
+  "skipTests": false,
+  "model": "codex-gpt-5.2",
+  "thinkingLevel": "none",
+  "reasoningEffort": "high",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "priority": 1,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "startedAt": "2026-01-11T19:05:45.273Z",
+  "updatedAt": "2026-01-11T19:08:22.503Z"
+}

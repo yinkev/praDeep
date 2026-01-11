@@ -1,0 +1,26 @@
+{
+  "category": "enhancement",
+  "description": "**Current Issues:** - RAG searches scan entire knowledge bases on each query - No indexing on `numbered_items.json` lookups - LightRAG storage may not be optimized for concurrent access **Optimizations:** - Pre-build inverted indices for numbered items during KB ingestion - Implement vector index caching (keep frequently-used embeddings in memory) - Add bloom filters for quick negative lookups before expensive RAG operations - Use memory-mapped files for large vector stores",
+  "title": "2. Knowledge Base Query Performance",
+  "status": "verified",
+  "id": "feature-1768158325844-k7n4j6m0a",
+  "descriptionHistory": [
+    {
+      "description": "**Current Issues:** - RAG searches scan entire knowledge bases on each query - No indexing on `numbered_items.json` lookups - LightRAG storage may not be optimized for concurrent access **Optimizations:** - Pre-build inverted indices for numbered items during KB ingestion - Implement vector index caching (keep frequently-used embeddings in memory) - Add bloom filters for quick negative lookups before expensive RAG operations - Use memory-mapped files for large vector stores",
+      "timestamp": "2026-01-11T19:05:25.845Z",
+      "source": "initial"
+    }
+  ],
+  "skipTests": false,
+  "model": "codex-gpt-5.2",
+  "thinkingLevel": "none",
+  "reasoningEffort": "medium",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "priority": 1,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "startedAt": "2026-01-11T19:11:09.808Z",
+  "updatedAt": "2026-01-11T19:14:12.344Z"
+}

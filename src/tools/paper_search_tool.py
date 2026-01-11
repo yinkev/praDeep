@@ -17,6 +17,8 @@ import re
 
 import arxiv
 
+from src.logging import get_logger
+
 
 class PaperSearchTool:
     """ArXiv paper search tool"""
@@ -24,6 +26,7 @@ class PaperSearchTool:
     def __init__(self):
         """Initialize search tool"""
         self.client = arxiv.Client()
+        self.logger = get_logger("PaperSearchTool")
 
     async def search_papers(
         self,
@@ -51,6 +54,62 @@ class PaperSearchTool:
                 - arxiv_id: ArXiv ID
                 - published: Publication date (ISO format)
         """
+        # Prefer the ML-based multi-source recommender if available.
+        try:
+            from src.services.paper_recommendation import get_paper_recommendation_service
+
+            current_year = datetime.now().year
+            year_range = None
+            if years_limit:
+                year_range = (max(0, current_year - years_limit), current_year)
+
+            service = get_paper_recommendation_service()
+            recommendation_type = "hybrid" if sort_by == "relevance" else "citation"
+
+            result = await service.recommend_papers(
+                query=query,
+                seed_papers=None,
+                max_results=max_results,
+                recommendation_type=recommendation_type,
+                year_range=year_range,
+                use_history=True,
+            )
+
+            papers: list[dict] = []
+            for paper in result.papers:
+                published = None
+                if paper.year:
+                    published = datetime(paper.year, 1, 1).isoformat()
+
+                papers.append(
+                    {
+                        "paper_id": paper.paper_id,
+                        "source": paper.source,
+                        "title": paper.title,
+                        "authors": paper.authors,
+                        "year": paper.year,
+                        "abstract": paper.abstract,
+                        "url": paper.url,
+                        "arxiv_id": paper.arxiv_id,
+                        "doi": paper.doi,
+                        "citation_count": paper.citation_count,
+                        "venue": paper.venue,
+                        "fields_of_study": paper.fields_of_study,
+                        "published": published,
+                        "recommendation_reason": paper.recommendation_reason,
+                        "scores": {
+                            "similarity": paper.similarity_score,
+                            "citation": paper.citation_score,
+                            "recency": paper.recency_score,
+                            "combined": paper.combined_score,
+                        },
+                    }
+                )
+
+            return papers
+        except Exception as e:
+            self.logger.warning(f"Falling back to arXiv-only search: {e}")
+
         # Determine sort method
         if sort_by == "date":
             sort_criterion = arxiv.SortCriterion.SubmittedDate
@@ -97,6 +156,8 @@ class PaperSearchTool:
                 "url": result.entry_id,
                 "arxiv_id": arxiv_id,
                 "published": published_date.isoformat(),
+                "source": "arxiv",
+                "paper_id": f"arxiv:{arxiv_id}",
             }
 
             papers.append(paper_info)

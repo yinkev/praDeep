@@ -1,0 +1,26 @@
+{
+  "category": "chore",
+  "description": "- Multiple streaming endpoints with structured events (`log`, `status`, `agent_status`, `token_stats`, `progress`, `result`) - No apparent documentation of the event schemas and streaming patterns",
+  "title": "2. WebSocket Protocol Documentation",
+  "status": "verified",
+  "id": "feature-1768157948241-egflgt54p",
+  "descriptionHistory": [
+    {
+      "description": "- Multiple streaming endpoints with structured events (`log`, `status`, `agent_status`, `token_stats`, `progress`, `result`) - No apparent documentation of the event schemas and streaming patterns",
+      "timestamp": "2026-01-11T18:59:08.241Z",
+      "source": "initial"
+    }
+  ],
+  "skipTests": false,
+  "model": "codex-gpt-5.2",
+  "thinkingLevel": "none",
+  "reasoningEffort": "high",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "priority": 2,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "startedAt": "2026-01-11T19:01:02.638Z",
+  "updatedAt": "2026-01-11T19:03:50.146Z"
+}

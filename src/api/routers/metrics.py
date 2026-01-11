@@ -20,7 +20,8 @@ from typing import Any
 from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
 
-from src.services.metrics import AgentMetrics, get_metrics_service
+from src.di import get_container
+from src.services.metrics import AgentMetrics
 
 router = APIRouter()
 
@@ -110,7 +111,7 @@ async def get_metrics_summary():
 
     Returns aggregated statistics across all modules and agents.
     """
-    service = get_metrics_service()
+    service = get_container().metrics_service()
     return service.get_summary()
 
 
@@ -125,7 +126,7 @@ async def get_agent_stats(module: str | None = Query(None, description="Filter b
     Returns:
         Dictionary of agent stats keyed by "module:agent_name"
     """
-    service = get_metrics_service()
+    service = get_container().metrics_service()
     return service.get_aggregated_stats(module=module)
 
 
@@ -136,7 +137,7 @@ async def get_module_stats():
 
     Returns statistics for each module (solve, research, guide, etc.)
     """
-    service = get_metrics_service()
+    service = get_container().metrics_service()
     return service.get_module_stats()
 
 
@@ -155,7 +156,7 @@ async def get_metrics_history(
     Returns:
         List of historical metric entries
     """
-    service = get_metrics_service()
+    service = get_container().metrics_service()
     return service.get_history(limit=limit, module=module)
 
 
@@ -166,7 +167,7 @@ async def get_active_metrics():
 
     Returns list of agents currently being tracked.
     """
-    service = get_metrics_service()
+    service = get_container().metrics_service()
     return service.get_active_metrics()
 
 
@@ -182,7 +183,7 @@ async def export_metrics_report():
         Path to the exported file
     """
     try:
-        service = get_metrics_service()
+        service = get_container().metrics_service()
         filepath = service.export_report()
         return ExportResponse(success=True, filepath=filepath)
     except Exception as e:
@@ -196,7 +197,7 @@ async def reset_metrics():
 
     Clears all active, historical, and aggregated metrics.
     """
-    service = get_metrics_service()
+    service = get_container().metrics_service()
     service.reset()
     return {"success": True, "message": "All metrics have been reset"}
 
@@ -248,7 +249,7 @@ async def websocket_metrics_stream(websocket: WebSocket):
     _websocket_connections.add(websocket)
 
     # Register callback for metrics updates
-    service = get_metrics_service()
+    service = get_container().metrics_service()
     service.add_async_callback(broadcast_metrics)
 
     # Send initial summary

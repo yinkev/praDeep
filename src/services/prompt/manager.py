@@ -5,6 +5,7 @@ Supports multi-language, caching, and language fallbacks.
 """
 
 from pathlib import Path
+import os
 from typing import Any
 
 import yaml
@@ -84,6 +85,21 @@ class PromptManager:
         fallback_chain = self.LANGUAGE_FALLBACKS.get(lang_code, ["en"])
 
         for lang in fallback_chain:
+            overlay_root = os.getenv("PRADEEP_PROMPTS_OVERLAY_DIR")
+            if overlay_root:
+                overlay_dir = Path(overlay_root).expanduser()
+                # Overlay format: <overlay>/<module>/<lang>/[<subdir>/]<agent>.yaml
+                overlay_prompts_dir = overlay_dir / module_name
+                overlay_prompt_file = self._resolve_prompt_path(
+                    overlay_prompts_dir, lang, agent_name, subdirectory
+                )
+                if overlay_prompt_file and overlay_prompt_file.exists():
+                    try:
+                        with open(overlay_prompt_file, encoding="utf-8") as f:
+                            return yaml.safe_load(f) or {}
+                    except Exception as e:
+                        print(f"Warning: Failed to load {overlay_prompt_file}: {e}")
+
             prompt_file = self._resolve_prompt_path(prompts_dir, lang, agent_name, subdirectory)
             if prompt_file and prompt_file.exists():
                 try:
@@ -197,10 +213,9 @@ _prompt_manager: PromptManager | None = None
 
 def get_prompt_manager() -> PromptManager:
     """Get the global PromptManager instance."""
-    global _prompt_manager
-    if _prompt_manager is None:
-        _prompt_manager = PromptManager()
-    return _prompt_manager
+    from src.di import get_container
+
+    return get_container().prompt_manager()
 
 
 __all__ = ["PromptManager", "get_prompt_manager"]

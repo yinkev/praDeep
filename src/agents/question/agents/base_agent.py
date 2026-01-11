@@ -23,6 +23,8 @@ project_root = Path(__file__).parent.parent.parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 from src.logging import get_logger
+from src.logging import estimate_tokens
+from src.di import Container, get_container
 from src.services.config import get_agent_params
 
 # Module logger
@@ -86,12 +88,17 @@ class BaseAgent(ABC):
         kb_name: str | None = None,
         token_stats_callback: Callable | None = None,
         language: str = "en",
+        *,
+        container: Container | None = None,
+        metrics_service: Any | None = None,
     ):
         self.agent_name = agent_name
         self.max_iterations = max_iterations
         self.kb_name = kb_name
         self.token_stats_callback = token_stats_callback
         self.language = language
+        self.container = container or get_container()
+        self.metrics_service = metrics_service or self.container.metrics_service()
 
         # Load agent parameters from unified config (agents.yaml)
         self._agent_params = get_agent_params("question")
@@ -152,6 +159,83 @@ class BaseAgent(ABC):
         """Receive message from other Agent."""
         self.inbox.append(message)
         _logger.debug(f"[{self.agent_name}] Received message: {message}")
+
+    async def _create_chat_completion(
+        self,
+        *,
+        stage: str,
+        system_prompt: str,
+        user_prompt: str,
+        temperature: float,
+        max_tokens: int,
+        response_format: dict[str, Any] | None = None,
+        timeout: float | None = None,
+    ):
+        """Call chat.completions.create with centralized metrics tracking."""
+        metrics = self.metrics_service.start_tracking(
+            agent_name=self.agent_name, module_name="question"
+        )
+        try:
+            metrics.metadata.update(
+                {
+                    "stage": stage,
+                    "model": self.model,
+                    "temperature": temperature,
+                    "max_tokens": max_tokens,
+                    "timeout": timeout,
+                }
+            )
+            metrics.add_api_call()
+        except Exception:
+            pass
+
+        kwargs: dict[str, Any] = {
+            "model": self.model,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+        }
+        if response_format:
+            kwargs["response_format"] = response_format
+        if timeout is not None:
+            kwargs["timeout"] = timeout
+
+        response = None
+        success = True
+        try:
+            response = await self.client.chat.completions.create(**kwargs)
+            return response
+        except Exception as e:
+            success = False
+            try:
+                metrics.add_error()
+                metrics.metadata.update({"error_type": type(e).__name__, "error_message": str(e)})
+            except Exception:
+                pass
+            raise
+        finally:
+            try:
+                prompt_tokens = 0
+                completion_tokens = 0
+                if response is not None and hasattr(response, "usage") and response.usage:
+                    prompt_tokens = int(getattr(response.usage, "prompt_tokens", 0) or 0)
+                    completion_tokens = int(getattr(response.usage, "completion_tokens", 0) or 0)
+                else:
+                    prompt_tokens = estimate_tokens((system_prompt or "") + "\n" + (user_prompt or ""))
+                    # Best-effort completion estimate from first choice content
+                    if response is not None and getattr(response, "choices", None):
+                        content = response.choices[0].message.content or ""
+                        completion_tokens = estimate_tokens(content)
+                metrics.add_tokens(prompt=prompt_tokens, completion=completion_tokens, model=self.model)
+            except Exception:
+                pass
+            try:
+                self.metrics_service.end_tracking(metrics, success=success)
+            except Exception:
+                pass
 
     def format_history(self) -> str:
         """Format history"""
@@ -309,12 +393,10 @@ Output JSON format:
 5. History can be referenced, but if it's a new round, must re-execute key steps
 """
 
-        response = await self.client.chat.completions.create(
-            model=self.model,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
+        response = await self._create_chat_completion(
+            stage="think",
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
             temperature=self._agent_params["temperature"],
             max_tokens=self._agent_params["max_tokens"],
             response_format={"type": "json_object"},

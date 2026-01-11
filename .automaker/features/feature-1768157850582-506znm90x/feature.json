@@ -1,0 +1,26 @@
+{
+  "category": "enhancement",
+  "description": "When starting a new chat session, display conversation starters based on available knowledge bases and recent solve/research outputs. Show example queries like 'Summarize findings from [recent research]' or 'Quiz me on [KB topic]' with one-click insertion.\n\n**Rationale:** Empty chat sessions miss the opportunity to bridge users into multi-turn conversations leveraging their existing context. Smart suggestions reduce cognitive load, demonstrate chat capabilities with RAG/web augmentation, and increase feature discoverability.",
+  "title": "Smart Suggestions in Empty Chat Sessions",
+  "status": "verified",
+  "id": "feature-1768157850582-506znm90x",
+  "descriptionHistory": [
+    {
+      "description": "When starting a new chat session, display conversation starters based on available knowledge bases and recent solve/research outputs. Show example queries like 'Summarize findings from [recent research]' or 'Quiz me on [KB topic]' with one-click insertion.\n\n**Rationale:** Empty chat sessions miss the opportunity to bridge users into multi-turn conversations leveraging their existing context. Smart suggestions reduce cognitive load, demonstrate chat capabilities with RAG/web augmentation, and increase feature discoverability.",
+      "timestamp": "2026-01-11T18:57:30.583Z",
+      "source": "initial"
+    }
+  ],
+  "skipTests": false,
+  "model": "codex-gpt-5.2",
+  "thinkingLevel": "none",
+  "reasoningEffort": "medium",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "priority": 2,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "startedAt": "2026-01-11T18:58:35.553Z",
+  "updatedAt": "2026-01-11T19:04:02.045Z"
+}

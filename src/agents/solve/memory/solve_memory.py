@@ -217,6 +217,12 @@ class SolveMemory:
         self.metadata["total_tool_calls"] = sum(len(c.tool_calls) for c in chains)
         self.updated_at = _now()
 
+    def recompute_metadata(self):
+        self.metadata["total_steps"] = len(self.solve_chains)
+        self.metadata["completed_steps"] = sum(1 for c in self.solve_chains if c.status == "done")
+        self.metadata["total_tool_calls"] = sum(len(c.tool_calls) for c in self.solve_chains)
+        self.updated_at = _now()
+
     def get_step(self, step_id: str) -> Optional[SolveChainStep]:
         return next((step for step in self.solve_chains if step.step_id == step_id), None)
 

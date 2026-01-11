@@ -3,10 +3,21 @@
   "category": "Core",
   "title": "Prompt Template Version Management",
   "description": "Implement version control for prompt templates with A/B testing capabilities, performance tracking per version, and rollback functionality. Enables prompt engineering experimentation.",
-  "status": "backlog",
+  "status": "verified",
   "priority": 2,
   "complexity": "moderate",
   "dependencies": [],
   "createdAt": "2026-01-11T17:24:12.294Z",
-  "updatedAt": "2026-01-11T17:24:12.294Z"
+  "updatedAt": "2026-01-11T19:00:23.230Z",
+  "skipTests": false,
+  "model": "codex-gpt-5.2",
+  "thinkingLevel": "none",
+  "reasoningEffort": "medium",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "descriptionHistory": [],
+  "startedAt": "2026-01-11T18:56:10.919Z"
 }

@@ -1,0 +1,26 @@
+{
+  "category": "enhancement",
+  "description": "Replace empty user output directories with cards showing quick actions: 'Run Your First Solve', 'Generate Practice Questions', 'Start a Research Project'. Each card shows expected output format (markdown, images, citations) and estimated completion time.\n\n**Rationale:** The data/user/ persistence model organizes outputs by module and timestamp, but empty states offer no guidance on which workflows to try first. Quick action cards drive engagement and help users understand the relationship between actions and persisted artifacts.",
+  "title": "Empty Output Folder with Quick Action Cards",
+  "status": "verified",
+  "id": "feature-1768157858364-87wlvzitt",
+  "descriptionHistory": [
+    {
+      "description": "Replace empty user output directories with cards showing quick actions: 'Run Your First Solve', 'Generate Practice Questions', 'Start a Research Project'. Each card shows expected output format (markdown, images, citations) and estimated completion time.\n\n**Rationale:** The data/user/ persistence model organizes outputs by module and timestamp, but empty states offer no guidance on which workflows to try first. Quick action cards drive engagement and help users understand the relationship between actions and persisted artifacts.",
+      "timestamp": "2026-01-11T18:57:38.365Z",
+      "source": "initial"
+    }
+  ],
+  "skipTests": false,
+  "model": "codex-gpt-5.2",
+  "thinkingLevel": "none",
+  "reasoningEffort": "medium",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "priority": 2,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "startedAt": "2026-01-11T18:58:41.903Z",
+  "updatedAt": "2026-01-11T19:01:58.473Z"
+}

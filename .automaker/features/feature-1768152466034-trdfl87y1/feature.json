@@ -2,7 +2,7 @@
   "category": "ui",
   "description": "AI-powered study planner that analyzes user goals, available time, and learning patterns to generate personalized study schedules. Integrates with the guided learning agent to allocate time for different topics and automatically adjusts based on progress and performance.\n\n**Rationale:** Students need structured study plans to manage their learning effectively. This addresses time management challenges and helps users stay consistent with their learning goals, a common pain point in self-directed learning platforms.",
   "title": "Smart Study Schedule Generator",
-  "status": "in_progress",
+  "status": "verified",
   "id": "feature-1768152466034-trdfl87y1",
   "descriptionHistory": [
     {
@@ -22,7 +22,7 @@
   "requirePlanApproval": false,
   "workMode": "current",
   "startedAt": "2026-01-11T18:39:14.577Z",
-  "updatedAt": "2026-01-11T18:39:14.718Z",
+  "updatedAt": "2026-01-11T18:44:56.211Z",
   "planSpec": {
     "status": "approved",
     "version": 1,

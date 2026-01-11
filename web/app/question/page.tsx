@@ -28,7 +28,7 @@ import "katex/dist/katex.min.css";
 import { apiUrl } from "@/lib/api";
 import { processLatexContent } from "@/lib/latex";
 import AddToNotebookModal from "@/components/AddToNotebookModal";
-import { QuestionDashboard } from "@/components/question";
+import { QuestionDashboard } from "@/components/question/QuestionDashboard";
 import { useQuestionReducer } from "@/hooks/useQuestionReducer";
 
 export default function QuestionPage() {

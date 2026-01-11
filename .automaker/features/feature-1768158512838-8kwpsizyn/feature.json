@@ -1,0 +1,26 @@
+{
+  "category": "chore",
+  "description": "Set up Storybook for the Next.js frontend with pre-recorded WebSocket message sequences from real agent runs. Allow developers to test UI components against different agent states, errors, and streaming patterns without running the backend.\n\n**Rationale:** Frontend development currently requires a running backend and triggering actual agent workflows to test UI states. Storybook with mocked agent responses would enable rapid UI iteration and visual regression testing independently of backend availability.",
+  "title": "Frontend Component Storybook with Mock Agent Responses",
+  "status": "verified",
+  "id": "feature-1768158512838-8kwpsizyn",
+  "descriptionHistory": [
+    {
+      "description": "Set up Storybook for the Next.js frontend with pre-recorded WebSocket message sequences from real agent runs. Allow developers to test UI components against different agent states, errors, and streaming patterns without running the backend.\n\n**Rationale:** Frontend development currently requires a running backend and triggering actual agent workflows to test UI states. Storybook with mocked agent responses would enable rapid UI iteration and visual regression testing independently of backend availability.",
+      "timestamp": "2026-01-11T19:08:32.838Z",
+      "source": "initial"
+    }
+  ],
+  "skipTests": false,
+  "model": "codex-gpt-5.2",
+  "thinkingLevel": "none",
+  "reasoningEffort": "medium",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "priority": 1,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "startedAt": "2026-01-11T19:13:05.200Z",
+  "updatedAt": "2026-01-11T19:15:53.097Z"
+}

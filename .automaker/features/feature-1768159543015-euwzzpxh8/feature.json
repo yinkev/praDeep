@@ -1,0 +1,26 @@
+{
+  "category": "enhancement",
+  "description": "After fetching provider configurations from /api/v1/llm-providers and /api/v1/embedding-providers, cache results in localStorage with a TTL (e.g., 5 minutes). On subsequent page loads, render immediately from cache and revalidate in background, updating only if changed.\n\n**Rationale:** Provider configs are fetched on every settings page load and agent initialization but change infrequently. Caching eliminates 2-4 API roundtrips (100-300ms total) on each page transition, making agent startup feel instant. Background revalidation ensures users see updates within minutes.",
+  "title": "Cache LLM Provider and Embedding Provider Configs in LocalStorage",
+  "status": "verified",
+  "id": "feature-1768159543015-euwzzpxh8",
+  "descriptionHistory": [
+    {
+      "description": "After fetching provider configurations from /api/v1/llm-providers and /api/v1/embedding-providers, cache results in localStorage with a TTL (e.g., 5 minutes). On subsequent page loads, render immediately from cache and revalidate in background, updating only if changed.\n\n**Rationale:** Provider configs are fetched on every settings page load and agent initialization but change infrequently. Caching eliminates 2-4 API roundtrips (100-300ms total) on each page transition, making agent startup feel instant. Background revalidation ensures users see updates within minutes.",
+      "timestamp": "2026-01-11T19:25:43.015Z",
+      "source": "initial"
+    }
+  ],
+  "skipTests": false,
+  "model": "codex-gpt-5.2",
+  "thinkingLevel": "none",
+  "reasoningEffort": "medium",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "priority": 1,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "startedAt": "2026-01-11T19:29:55.637Z",
+  "updatedAt": "2026-01-11T19:37:11.037Z"
+}

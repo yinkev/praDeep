@@ -17,10 +17,10 @@ if str(_project_root) not in sys.path:
     sys.path.insert(0, str(_project_root))
 
 from src.logging import LLMStats, get_logger
+from src.di import Container, get_container
 from src.services.config import get_agent_params, load_config_with_main
 from src.services.llm import complete as llm_complete
 from src.services.llm import get_llm_config
-from src.services.prompt import get_prompt_manager
 from src.tools.rag_tool import rag_search
 from src.tools.web_search import web_search
 
@@ -104,13 +104,21 @@ def save_tool_call(call_id: str, tool_type: str, data: dict[str, Any]) -> str:
 
 
 class EditAgent:
-    def __init__(self, language: str = "en"):
+    def __init__(
+        self,
+        language: str = "en",
+        *,
+        container: Container | None = None,
+        prompt_manager: Any | None = None,
+    ):
         # Load agent parameters from unified config (agents.yaml)
         self._agent_params = get_agent_params("co_writer")
         self.language = language
+        self.container = container or get_container()
+        self.prompt_manager = prompt_manager or self.container.prompt_manager()
 
         # Load prompts using unified PromptManager
-        self._prompts = get_prompt_manager().load_prompts(
+        self._prompts = self.prompt_manager.load_prompts(
             module_name="co_writer",
             agent_name="edit_agent",
             language=language,

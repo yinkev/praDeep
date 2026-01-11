@@ -35,6 +35,21 @@ interface KnowledgeBase {
   is_default?: boolean
 }
 
+interface RecentHistoryEntry {
+  id: string
+  timestamp: number
+  type: string
+  title: string
+  summary?: string
+  content?: any
+}
+
+interface ConversationStarter {
+  id: string
+  title: string
+  prompt: string
+}
+
 export default function HomePage() {
   const { chatState, setChatState, sendChatMessage, clearChatHistory, newChatSession, uiSettings } =
     useGlobal()
@@ -42,6 +57,7 @@ export default function HomePage() {
 
   const [inputMessage, setInputMessage] = useState('')
   const [kbs, setKbs] = useState<KnowledgeBase[]>([])
+  const [conversationStarters, setConversationStarters] = useState<ConversationStarter[]>([])
   const chatEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -63,6 +79,93 @@ export default function HomePage() {
       .catch(err => console.error('Failed to fetch KBs:', err))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // Fetch recent activity for conversation starters
+  useEffect(() => {
+    const buildStarters = (
+      knowledgeBases: KnowledgeBase[],
+      researchEntries: RecentHistoryEntry[],
+      solveEntries: RecentHistoryEntry[]
+    ): ConversationStarter[] => {
+      const starters: ConversationStarter[] = []
+
+      const latestResearch = researchEntries[0]
+      if (latestResearch?.title) {
+        starters.push({
+          id: `research-summarize-${latestResearch.id}`,
+          title: t('Summarize recent research'),
+          prompt: `Summarize findings from my recent research on "${latestResearch.title}".`,
+        })
+        starters.push({
+          id: `research-quiz-${latestResearch.id}`,
+          title: t('Quiz me on recent research'),
+          prompt: `Quiz me on the key points from my recent research on "${latestResearch.title}".`,
+        })
+      }
+
+      const latestSolve = solveEntries[0]
+      if (latestSolve?.title) {
+        starters.push({
+          id: `solve-explain-${latestSolve.id}`,
+          title: t('Review my recent solve'),
+          prompt: `Explain the solution approach and key steps for my recent problem: "${latestSolve.title}".`,
+        })
+      }
+
+      const sortedKbs = [...knowledgeBases].sort((a, b) => {
+        if (a.is_default && !b.is_default) return -1
+        if (!a.is_default && b.is_default) return 1
+        return a.name.localeCompare(b.name)
+      })
+
+      for (const kb of sortedKbs.slice(0, 3)) {
+        starters.push({
+          id: `kb-quiz-${kb.name}`,
+          title: t('Quiz me on a KB topic'),
+          prompt: `Quiz me on ${kb.name}.`,
+        })
+      }
+
+      if (starters.length === 0) {
+        starters.push(
+          {
+            id: 'generic-1',
+            title: t('Ask for help'),
+            prompt: 'Help me get started—what can you do in this app?',
+          },
+          {
+            id: 'generic-2',
+            title: t('Make a plan'),
+            prompt: 'Make me a short study plan for today.',
+          }
+        )
+      }
+
+      // Keep the UI tight.
+      return starters.slice(0, 6)
+    }
+
+    const fetchStarters = async () => {
+      try {
+        const [researchRes, solveRes] = await Promise.all([
+          fetch(apiUrl('/api/v1/dashboard/recent?limit=5&type=research')),
+          fetch(apiUrl('/api/v1/dashboard/recent?limit=5&type=solve')),
+        ])
+
+        const researchEntries = (await researchRes.json()) as RecentHistoryEntry[]
+        const solveEntries = (await solveRes.json()) as RecentHistoryEntry[]
+
+        setConversationStarters(buildStarters(kbs, researchEntries || [], solveEntries || []))
+      } catch (err) {
+        // If backend isn't running, still show KB-based or generic starters.
+        setConversationStarters(buildStarters(kbs, [], []))
+      }
+    }
+
+    fetchStarters()
+    // We want starters to update when KBs arrive or language changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [kbs, uiSettings.language])
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -233,6 +336,39 @@ export default function HomePage() {
               </button>
             </div>
           </div>
+
+          {/* Conversation Starters */}
+          {conversationStarters.length > 0 && (
+            <div className="w-full max-w-3xl mx-auto mb-10" data-testid="conversation-starters">
+              <div className="flex items-center justify-center gap-2 mb-3">
+                <Sparkles className="w-4 h-4 text-slate-400" />
+                <h3 className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-center">
+                  {t('Conversation Starters')}
+                </h3>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {conversationStarters.map(starter => (
+                  <button
+                    key={starter.id}
+                    type="button"
+                    data-testid={`conversation-starter-${starter.id}`}
+                    onClick={() => {
+                      setInputMessage(starter.prompt)
+                      inputRef.current?.focus()
+                    }}
+                    className="text-left p-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:shadow-md hover:border-slate-300 dark:hover:border-slate-600 transition-all"
+                  >
+                    <div className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-1">
+                      {starter.title}
+                    </div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400">
+                      {starter.prompt}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Quick Actions Grid */}
           <div className="w-full max-w-3xl mx-auto">

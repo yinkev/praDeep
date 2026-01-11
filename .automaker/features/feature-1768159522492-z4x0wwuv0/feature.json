@@ -1,0 +1,26 @@
+{
+  "category": "enhancement",
+  "description": "After initial app load, prefetch knowledge base list metadata and stats in the background using Next.js's prefetch or a low-priority fetch. Store in React Context or state manager to instantly populate KB selection dropdowns when users navigate to solve/research agents.\n\n**Rationale:** KB selection is required for most agent workflows, but users often wait 200-500ms for the dropdown to load after opening solve/research pages. Prefetching this lightweight metadata (typically <10KB) during idle time eliminates perceived latency when starting workflows.",
+  "title": "Prefetch Critical Knowledge Base Metadata on App Load",
+  "status": "verified",
+  "id": "feature-1768159522492-z4x0wwuv0",
+  "descriptionHistory": [
+    {
+      "description": "After initial app load, prefetch knowledge base list metadata and stats in the background using Next.js's prefetch or a low-priority fetch. Store in React Context or state manager to instantly populate KB selection dropdowns when users navigate to solve/research agents.\n\n**Rationale:** KB selection is required for most agent workflows, but users often wait 200-500ms for the dropdown to load after opening solve/research pages. Prefetching this lightweight metadata (typically <10KB) during idle time eliminates perceived latency when starting workflows.",
+      "timestamp": "2026-01-11T19:25:22.493Z",
+      "source": "initial"
+    }
+  ],
+  "skipTests": false,
+  "model": "codex-gpt-5.2",
+  "thinkingLevel": "none",
+  "reasoningEffort": "medium",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "priority": 1,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "startedAt": "2026-01-11T19:27:30.337Z",
+  "updatedAt": "2026-01-11T19:37:06.529Z"
+}

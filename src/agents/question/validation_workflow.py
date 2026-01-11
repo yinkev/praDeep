@@ -19,8 +19,8 @@ project_root = Path(__file__).parent.parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 from src.logging import get_logger
+from src.di import Container, get_container
 from src.services.config import get_agent_params, load_config_with_main
-from src.services.prompt import get_prompt_manager
 from src.tools.rag_tool import rag_search
 
 # Module logger
@@ -38,6 +38,10 @@ class QuestionValidationWorkflow:
         kb_name: str | None = None,
         token_stats_callback: Callable | None = None,
         language: str = "en",
+        *,
+        container: Container | None = None,
+        prompt_manager: Any | None = None,
+        metrics_service: Any | None = None,
     ):
         """
         Initialize validation workflow.
@@ -67,9 +71,12 @@ class QuestionValidationWorkflow:
         self.kb_name = kb_name
         self.token_stats_callback = token_stats_callback
         self.language = language
+        self.container = container or get_container()
+        self.prompt_manager = prompt_manager or self.container.prompt_manager()
+        self.metrics_service = metrics_service or self.container.metrics_service()
 
         # Load prompts using unified PromptManager
-        self._prompts = get_prompt_manager().load_prompts(
+        self._prompts = self.prompt_manager.load_prompts(
             module_name="question",
             agent_name="validation_workflow",
             language=language,

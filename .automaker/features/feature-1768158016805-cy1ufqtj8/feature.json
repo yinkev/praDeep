@@ -1,0 +1,26 @@
+{
+  "category": "refactor",
+  "description": "Create a centralized DI container to manage service lifecycle and dependencies across agents, tools, and services. Replace direct instantiation with constructor injection to decouple components and enable easier testing with mock implementations.\n\n**Rationale:** Current architecture has tight coupling between agents and services (LLM, embeddings, RAG) with direct instantiation scattered throughout. DI would enable better testability, reduce circular dependencies, and make it easier to swap implementations (e.g., testing with mock LLM providers).",
+  "title": "Implement Dependency Injection Container",
+  "status": "verified",
+  "id": "feature-1768158016805-cy1ufqtj8",
+  "descriptionHistory": [
+    {
+      "description": "Create a centralized DI container to manage service lifecycle and dependencies across agents, tools, and services. Replace direct instantiation with constructor injection to decouple components and enable easier testing with mock implementations.\n\n**Rationale:** Current architecture has tight coupling between agents and services (LLM, embeddings, RAG) with direct instantiation scattered throughout. DI would enable better testability, reduce circular dependencies, and make it easier to swap implementations (e.g., testing with mock LLM providers).",
+      "timestamp": "2026-01-11T19:00:16.806Z",
+      "source": "initial"
+    }
+  ],
+  "skipTests": false,
+  "model": "codex-gpt-5.2",
+  "thinkingLevel": "none",
+  "reasoningEffort": "high",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "priority": 1,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "startedAt": "2026-01-11T19:02:02.238Z",
+  "updatedAt": "2026-01-11T19:14:11.948Z"
+}

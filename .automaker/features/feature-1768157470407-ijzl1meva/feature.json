@@ -1,0 +1,26 @@
+{
+  "category": "ui",
+  "description": "Add a simplification toggle that re-explains any solve step or research finding using analogies, simpler vocabulary, and concrete examples. Adjustable complexity levels (elementary, high school, undergraduate, expert).\n\n**Rationale:** Complex explanations can overwhelm learners. Adaptive explanation complexity meets users at their current understanding level, reducing cognitive load and improving comprehension across skill levels.",
+  "title": "Explain Like I'm Five (ELI5) Mode",
+  "status": "verified",
+  "id": "feature-1768157470407-ijzl1meva",
+  "descriptionHistory": [
+    {
+      "description": "Add a simplification toggle that re-explains any solve step or research finding using analogies, simpler vocabulary, and concrete examples. Adjustable complexity levels (elementary, high school, undergraduate, expert).\n\n**Rationale:** Complex explanations can overwhelm learners. Adaptive explanation complexity meets users at their current understanding level, reducing cognitive load and improving comprehension across skill levels.",
+      "timestamp": "2026-01-11T18:51:10.408Z",
+      "source": "initial"
+    }
+  ],
+  "skipTests": false,
+  "model": "codex-gpt-5.2",
+  "thinkingLevel": "none",
+  "reasoningEffort": "high",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "priority": 2,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "startedAt": "2026-01-11T18:52:26.850Z",
+  "updatedAt": "2026-01-11T18:56:43.882Z"
+}

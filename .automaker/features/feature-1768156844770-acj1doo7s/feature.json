@@ -2,7 +2,7 @@
   "category": "ui",
   "description": "Use LLM to automatically analyze completed solve/research outputs and suggest tags, categories, and folder structures. Batch-apply organization rules to historical notebooks with one click.\n\n**Rationale:** Users accumulate numerous notebooks over time, making retrieval difficult. Manual tagging is tedious and inconsistent. AI-powered auto-organization maintains searchable structure without ongoing manual curation.",
   "title": "Automatic Notebook Organization and Tagging",
-  "status": "backlog",
+  "status": "verified",
   "id": "feature-1768156844770-acj1doo7s",
   "descriptionHistory": [
     {
@@ -10,5 +10,17 @@
       "timestamp": "2026-01-11T18:40:44.770Z",
       "source": "initial"
     }
-  ]
+  ],
+  "skipTests": false,
+  "model": "codex-gpt-5.2",
+  "thinkingLevel": "none",
+  "reasoningEffort": "medium",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "priority": 2,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "startedAt": "2026-01-11T18:45:46.297Z",
+  "updatedAt": "2026-01-11T18:50:18.991Z"
 }

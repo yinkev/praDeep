@@ -1,0 +1,26 @@
+{
+  "category": "chore",
+  "description": "Build a CLI tool that loads persisted agent state (InvestigateMemory, SolveMemory, etc.) from timestamped output folders and re-runs specific steps. Include options to override prompts, temperature, or tool calls for debugging.\n\n**Rationale:** Currently, testing agent changes requires running full workflows from scratch, wasting time and LLM tokens. Replay capabilities would let developers quickly iterate on specific agent logic without re-executing expensive earlier steps.",
+  "title": "Agent Execution Replay from Saved State",
+  "status": "verified",
+  "id": "feature-1768158551496-38jnbeoez",
+  "descriptionHistory": [
+    {
+      "description": "Build a CLI tool that loads persisted agent state (InvestigateMemory, SolveMemory, etc.) from timestamped output folders and re-runs specific steps. Include options to override prompts, temperature, or tool calls for debugging.\n\n**Rationale:** Currently, testing agent changes requires running full workflows from scratch, wasting time and LLM tokens. Replay capabilities would let developers quickly iterate on specific agent logic without re-executing expensive earlier steps.",
+      "timestamp": "2026-01-11T19:09:11.496Z",
+      "source": "initial"
+    }
+  ],
+  "skipTests": false,
+  "model": "codex-gpt-5.2",
+  "thinkingLevel": "none",
+  "reasoningEffort": "medium",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "priority": 1,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "startedAt": "2026-01-11T19:14:21.708Z",
+  "updatedAt": "2026-01-11T19:20:34.379Z"
+}

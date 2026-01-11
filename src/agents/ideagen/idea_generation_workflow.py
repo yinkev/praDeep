@@ -17,7 +17,7 @@ if str(_project_root) not in sys.path:
     sys.path.insert(0, str(_project_root))
 
 from src.agents.base_agent import BaseAgent
-from src.services.prompt import get_prompt_manager
+from src.di import Container
 
 
 class IdeaGenerationWorkflow(BaseAgent):
@@ -31,6 +31,10 @@ class IdeaGenerationWorkflow(BaseAgent):
         progress_callback: Callable[[str, Any], None | Awaitable[None]] | None = None,
         output_dir: Path | None = None,
         language: str = "en",
+        *,
+        container: Container | None = None,
+        prompt_manager: Any | None = None,
+        metrics_service: Any | None = None,
     ):
         """
         Initialize workflow
@@ -50,10 +54,13 @@ class IdeaGenerationWorkflow(BaseAgent):
             base_url=base_url,
             model=model,
             language=language,
+            container=container,
+            prompt_manager=prompt_manager,
+            metrics_service=metrics_service,
         )
         self.progress_callback = progress_callback
         self.output_dir = output_dir
-        self._prompts = get_prompt_manager().load_prompts(
+        self._prompts = self.prompt_manager.load_prompts(
             module_name="ideagen",
             agent_name="idea_generation",
             language=language,

@@ -1,11 +1,22 @@
 [
+  "API",
   "Agent Enhancement",
+  "Authentication",
+  "Collaboration",
   "Core",
+  "Database",
   "Knowledge Base",
+  "Learning Features",
   "Maintenance",
+  "Operations",
   "PR Review",
   "Performance",
+  "Security",
+  "UI",
   "Uncategorized",
+  "chore",
   "enhancement",
+  "feature",
+  "refactor",
   "ui"
 ]

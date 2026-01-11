@@ -461,15 +461,20 @@ def get_metrics_service(
     Returns:
         MetricsService instance
     """
-    global _metrics_service
-    if _metrics_service is None:
-        _metrics_service = MetricsService(enabled=enabled, save_dir=save_dir, history_limit=history_limit)
-    return _metrics_service
+    from src.di import get_container
+
+    return get_container().metrics_service(enabled=enabled, save_dir=save_dir, history_limit=history_limit)
 
 
 def reset_metrics_service():
     """Reset the singleton metrics service."""
+    from src.di import get_container
+
+    container = get_container()
+    try:
+        container.metrics_service().reset()
+    except Exception:
+        pass
+    container.clear("metrics_service")
     global _metrics_service
-    if _metrics_service is not None:
-        _metrics_service.reset()
     _metrics_service = None

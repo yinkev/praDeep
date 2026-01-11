@@ -1,0 +1,26 @@
+{
+  "category": "chore",
+  "description": "- Two-layer config (`main.yaml` + `agents.yaml`) plus `.env` plus runtime JSON files - The precedence rules and override behavior aren't documented",
+  "title": "3. Configuration System",
+  "status": "verified",
+  "id": "feature-1768157948592-nd00wmq1r",
+  "descriptionHistory": [
+    {
+      "description": "- Two-layer config (`main.yaml` + `agents.yaml`) plus `.env` plus runtime JSON files - The precedence rules and override behavior aren't documented",
+      "timestamp": "2026-01-11T18:59:08.592Z",
+      "source": "initial"
+    }
+  ],
+  "skipTests": false,
+  "model": "codex-gpt-5.2",
+  "thinkingLevel": "none",
+  "reasoningEffort": "high",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "priority": 2,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "startedAt": "2026-01-11T19:02:23.006Z",
+  "updatedAt": "2026-01-11T19:07:18.740Z"
+}

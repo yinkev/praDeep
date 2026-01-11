@@ -3,10 +3,21 @@
   "category": "Authentication",
   "title": "JWT-based User Authentication",
   "description": "Implement JWT-based authentication system with user registration, login, logout, and session management. Supports password hashing with bcrypt and token refresh mechanisms.",
-  "status": "backlog",
+  "status": "verified",
   "priority": 1,
   "complexity": "moderate",
   "dependencies": [],
   "createdAt": "2026-01-11T17:24:12.289Z",
-  "updatedAt": "2026-01-11T17:24:12.289Z"
+  "updatedAt": "2026-01-11T19:20:31.992Z",
+  "skipTests": false,
+  "model": "codex-gpt-5.2",
+  "thinkingLevel": "none",
+  "reasoningEffort": "high",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "descriptionHistory": [],
+  "startedAt": "2026-01-11T19:16:54.226Z"
 }

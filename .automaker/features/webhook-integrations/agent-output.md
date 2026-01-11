@@ -1,0 +1,110 @@
+
+🔧 Tool: Bash
+Input: {
+  "command": "/bin/zsh -lc '~/.codex/superpowers/.codex/superpowers-codex bootstrap'"
+}
+
+🔧 Tool: Bash
+Input: {
+  "command": "/bin/zsh -lc '~/.codex/superpowers/.codex/superpowers-codex use-skill superpowers:brainstorming'"
+}
+
+🔧 Tool: Bash
+Input: {
+  "command": "/bin/zsh -lc ls"
+}
+
+🔧 Tool: Bash
+Input: {
+  "command": "/bin/zsh -lc 'find . -maxdepth 2 -name AGENTS.md -print'"
+}
+
+🔧 Tool: Bash
+Input: {
+  "command": "/bin/zsh -lc 'rg -n \"playwright\" -S . | head'"
+}
+
+🔧 Tool: Bash
+Input: {
+  "command": "/bin/zsh -lc 'ls -la'"
+}
+
+🔧 Tool: Bash
+Input: {
+  "command": "/bin/zsh -lc 'find . -maxdepth 3 -name package.json -o -name pnpm-lock.yaml -o -name yarn.lock -o -name requirements.txt -o -name pyproject.toml -o -name go.mod -o -name Gemfile -o -name Cargo.toml -print'"
+}
+
+🔧 Tool: Bash
+Input: {
+  "command": "/bin/zsh -lc 'find src -maxdepth 3 -type f -name \"*.py\" | head -n 50'"
+}
+
+🔧 Tool: Bash
+Input: {
+  "command": "/bin/zsh -lc 'ls src'"
+}
+
+🔧 Tool: Bash
+Input: {
+  "command": "/bin/zsh -lc 'rg -n \"workflow\" src | head'"
+}
+
+🔧 Tool: Bash
+Input: {
+  "command": "/bin/zsh -lc 'rg -n \"knowledge\" src | head'"
+}
+
+🔧 Tool: Bash
+Input: {
+  "command": "/bin/zsh -lc 'rg -n \"session\" src | head'"
+}
+
+🔧 Tool: Bash
+Input: {
+  "command": "/bin/zsh -lc \"ls src/api && sed -n '1,200p' src/api/README.md\""
+}
+
+🔧 Tool: Bash
+Input: {
+  "command": "/bin/zsh -lc \"find src/storage -maxdepth 2 -type f -print && sed -n '1,200p' src/storage/__init__.py\""
+}
+
+🔧 Tool: Bash
+Input: {
+  "command": "/bin/zsh -lc \"sed -n '1,240p' src/di/container.py\""
+}
+
+🔧 Tool: Bash
+Input: {
+  "command": "/bin/zsh -lc 'rg -n \"data/user\" -S src | head -n 50'"
+}
+
+🔧 Tool: Bash
+Input: {
+  "command": "/bin/zsh -lc \"sed -n '1,260p' src/services/setup/init.py\""
+}
+
+🔧 Tool: Bash
+Input: {
+  "command": "/bin/zsh -lc 'rg -n \"httpx\" -S requirements.txt pyproject.toml src | head -n 50'"
+}
+
+🔧 Tool: Bash
+Input: {
+  "command": "/bin/zsh -lc \"sed -n '1,220p' src/api/main.py\""
+}
+
+🔧 Tool: Bash
+Input: {
+  "command": "/bin/zsh -lc \"sed -n '1,260p' src/api/routers/solve.py\""
+}
+
+🔧 Tool: Bash
+Input: {
+  "command": "/bin/zsh -lc \"sed -n '260,520p' src/api/routers/solve.py\""
+}
+
+🔧 Tool: Bash
+Input: {
+  "command": "/bin/zsh -lc \"sed -n '1,260p' src/api/routers/knowledge.py\""
+}

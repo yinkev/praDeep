@@ -1,0 +1,26 @@
+{
+  "category": "ui",
+  "description": "After solving a problem, automatically generate 2-3 related follow-up questions of varying difficulty to deepen understanding. Uses the solve history and knowledge base to identify conceptual gaps and suggest progressive practice.\n\n**Rationale:** Students often don't know what to ask next. This feature creates a natural learning progression, keeping users engaged and helping them build mastery through strategically sequenced practice.",
+  "title": "Smart Question Follow-up Suggestion Engine",
+  "status": "verified",
+  "id": "feature-1768157461740-ey3byl0oq",
+  "descriptionHistory": [
+    {
+      "description": "After solving a problem, automatically generate 2-3 related follow-up questions of varying difficulty to deepen understanding. Uses the solve history and knowledge base to identify conceptual gaps and suggest progressive practice.\n\n**Rationale:** Students often don't know what to ask next. This feature creates a natural learning progression, keeping users engaged and helping them build mastery through strategically sequenced practice.",
+      "timestamp": "2026-01-11T18:51:01.740Z",
+      "source": "initial"
+    }
+  ],
+  "skipTests": false,
+  "model": "codex-gpt-5.2",
+  "thinkingLevel": "none",
+  "reasoningEffort": "medium",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "priority": 2,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "startedAt": "2026-01-11T18:52:21.767Z",
+  "updatedAt": "2026-01-11T18:57:26.443Z"
+}

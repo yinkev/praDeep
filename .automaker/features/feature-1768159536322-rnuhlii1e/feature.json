@@ -1,0 +1,26 @@
+{
+  "category": "enhancement",
+  "description": "Replace standard img tags with next/image for all agent output images (diagrams, charts, extracted KB images). Configure automatic WebP/AVIF conversion, responsive srcsets, and blur-up placeholders. Lazy load images below the fold with loading='lazy' priority.\n\n**Rationale:** Solve and research outputs often contain 5-15 images from /api/outputs. Without optimization, images are served as-is (often large PNGs), causing layout shifts and slow loads. Next.js Image reduces bandwidth by 50-70% and provides instant placeholder feedback, improving perceived performance.",
+  "title": "Optimize Image Loading with Next.js Image Component and Blur Placeholders",
+  "status": "verified",
+  "id": "feature-1768159536322-rnuhlii1e",
+  "descriptionHistory": [
+    {
+      "description": "Replace standard img tags with next/image for all agent output images (diagrams, charts, extracted KB images). Configure automatic WebP/AVIF conversion, responsive srcsets, and blur-up placeholders. Lazy load images below the fold with loading='lazy' priority.\n\n**Rationale:** Solve and research outputs often contain 5-15 images from /api/outputs. Without optimization, images are served as-is (often large PNGs), causing layout shifts and slow loads. Next.js Image reduces bandwidth by 50-70% and provides instant placeholder feedback, improving perceived performance.",
+      "timestamp": "2026-01-11T19:25:36.322Z",
+      "source": "initial"
+    }
+  ],
+  "skipTests": false,
+  "model": "codex-gpt-5.2",
+  "thinkingLevel": "none",
+  "reasoningEffort": "medium",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "priority": 1,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "startedAt": "2026-01-11T19:28:49.547Z",
+  "updatedAt": "2026-01-11T19:36:37.342Z"
+}

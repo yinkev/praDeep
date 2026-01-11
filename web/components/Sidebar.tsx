@@ -7,6 +7,8 @@ import { usePathname } from 'next/navigation'
 import {
   Home,
   History,
+  Sparkles,
+  BarChart3,
   BookOpen,
   PenTool,
   Calculator,
@@ -42,6 +44,8 @@ export default function Sidebar() {
       items: [
         { name: t('Home'), href: '/', icon: Home },
         { name: t('History'), href: '/history', icon: History },
+        { name: t('Analytics'), href: '/analytics', icon: BarChart3 },
+        { name: t('Workflow Insights'), href: '/workflow', icon: Sparkles },
         { name: t('Knowledge Bases'), href: '/knowledge', icon: BookOpen },
         { name: t('Notebooks'), href: '/notebook', icon: Book },
       ],
@@ -59,6 +63,7 @@ export default function Sidebar() {
       items: [
         { name: t('IdeaGen'), href: '/ideagen', icon: Lightbulb },
         { name: t('Deep Research'), href: '/research', icon: Microscope },
+        { name: t('Paper Recommendations'), href: '/recommendation', icon: BookOpen },
         { name: t('Co-Writer'), href: '/co_writer', icon: Edit3 },
       ],
     },

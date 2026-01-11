@@ -108,8 +108,8 @@ async def set_active_provider(name_payload: Dict[str, str]):
 async def test_connection(request: TestConnectionRequest):
     """Test connection to an embedding provider."""
     try:
-        from src.services.embedding import reset_embedding_client
         from src.services.embedding.config import EmbeddingConfig
+        from src.di import Container
 
         base_url = request.base_url.rstrip("/")
 
@@ -124,12 +124,7 @@ async def test_connection(request: TestConnectionRequest):
             base_url=base_url,
             dim=request.dimensions,
         )
-
-        reset_embedding_client()
-
-        from src.services.embedding.client import EmbeddingClient
-
-        test_client = EmbeddingClient(config=test_config)
+        test_client = Container().embedding_client(config=test_config)
 
         embeddings = await test_client.embed(["Hello, testing embedding service"])
 
@@ -139,8 +134,6 @@ async def test_connection(request: TestConnectionRequest):
                 "message": "Connection succeeded but received empty embeddings",
             }
 
-        reset_embedding_client()
-
         return {
             "success": True,
             "message": "Connection successful",
@@ -149,10 +142,6 @@ async def test_connection(request: TestConnectionRequest):
         }
 
     except Exception as e:
-        from src.services.embedding import reset_embedding_client
-
-        reset_embedding_client()
-
         return {"success": False, "message": f"Connection failed: {str(e)}"}
 
 

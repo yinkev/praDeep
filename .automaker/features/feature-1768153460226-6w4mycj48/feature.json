@@ -2,7 +2,7 @@
   "category": "ui",
   "description": "- Users must: create KB → upload files → wait for indexing → manually refresh → verify content - **Pain point**: No batch operations, manual verification required - **Time sink**: Repeated uploads for related materials",
   "title": "1. Multi-Step Knowledge Base Setup",
-  "status": "backlog",
+  "status": "verified",
   "id": "feature-1768153460226-6w4mycj48",
   "descriptionHistory": [
     {
@@ -10,5 +10,17 @@
       "timestamp": "2026-01-11T17:44:20.227Z",
       "source": "initial"
     }
-  ]
+  ],
+  "skipTests": false,
+  "model": "codex-gpt-5.2",
+  "thinkingLevel": "none",
+  "reasoningEffort": "medium",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "priority": 2,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "startedAt": "2026-01-11T18:44:46.830Z",
+  "updatedAt": "2026-01-11T18:49:05.511Z"
 }

@@ -30,6 +30,7 @@ export default defineConfig({
               { text: 'Getting Started', link: '/getting-started/' },
               { text: 'Configuration', link: '/configuration/' },
               { text: 'Guides', link: '/guides/' },
+              { text: 'Workflow', link: '/workflow/' },
               { text: 'API Reference', link: '/api/' }
             ]
           },
@@ -114,6 +115,23 @@ export default defineConfig({
                 { text: 'Quick Start', link: '/guide/getting-started' },
                 { text: 'Configuration', link: '/guide/configuration' },
                 { text: 'Troubleshooting', link: '/guide/troubleshooting' }
+              ]
+            }
+          ],
+          '/workflow/': [
+            {
+              text: 'Workflow',
+              items: [
+                { text: 'Overview', link: '/workflow/' },
+                { text: 'Agents', link: '/workflow/agents' },
+                { text: 'Agent Workflows', link: '/workflow/agent-workflows/' },
+                { text: 'Solve', link: '/workflow/agent-workflows/solve' },
+                { text: 'Research', link: '/workflow/agent-workflows/research' },
+                { text: 'Question Generation', link: '/workflow/agent-workflows/question-generation' },
+                { text: 'Guide', link: '/workflow/agent-workflows/guide' },
+                { text: 'Co-Writer', link: '/workflow/agent-workflows/co-writer' },
+                { text: 'IdeaGen', link: '/workflow/agent-workflows/ideagen' },
+                { text: 'Chat', link: '/workflow/agent-workflows/chat' }
               ]
             }
           ]

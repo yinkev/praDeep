@@ -1,0 +1,26 @@
+{
+  "category": "enhancement",
+  "description": "Implement virtual scrolling for components displaying long solve outputs, research reports, and real-time log streams using react-window or react-virtuoso. Render only visible items plus a small buffer, dynamically mounting/unmounting DOM nodes as users scroll.\n\n**Rationale:** Research and solve agents can produce outputs with hundreds of log entries or dozens of markdown sections. Rendering all items simultaneously creates thousands of DOM nodes, causing layout thrashing and scroll jank. Virtualization maintains O(1) rendering complexity regardless of output length.",
+  "title": "Virtualize Long Agent Output Streams and Log Lists",
+  "status": "verified",
+  "id": "feature-1768159521734-c77ik1a78",
+  "descriptionHistory": [
+    {
+      "description": "Implement virtual scrolling for components displaying long solve outputs, research reports, and real-time log streams using react-window or react-virtuoso. Render only visible items plus a small buffer, dynamically mounting/unmounting DOM nodes as users scroll.\n\n**Rationale:** Research and solve agents can produce outputs with hundreds of log entries or dozens of markdown sections. Rendering all items simultaneously creates thousands of DOM nodes, causing layout thrashing and scroll jank. Virtualization maintains O(1) rendering complexity regardless of output length.",
+      "timestamp": "2026-01-11T19:25:21.734Z",
+      "source": "initial"
+    }
+  ],
+  "skipTests": false,
+  "model": "codex-gpt-5.2",
+  "thinkingLevel": "none",
+  "reasoningEffort": "medium",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "priority": 1,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "startedAt": "2026-01-11T19:26:51.813Z",
+  "updatedAt": "2026-01-11T19:29:05.323Z"
+}

@@ -1,0 +1,26 @@
+{
+  "category": "refactor",
+  "description": "Reorganize codebase into domain modules (Solving, Research, Learning, ContentGeneration) with explicit public APIs and internal implementation details. Enforce module boundaries using Python package visibility and create dependency rules that prevent cross-domain coupling.\n\n**Rationale:** Current flat 'src/agents/', 'src/services/', 'src/tools/' structure allows unrestricted imports leading to tangled dependencies. Domain boundaries would improve code organization, enable independent module evolution, facilitate team ownership, and make the system easier to understand.",
+  "title": "Implement Domain-Driven Design Module Boundaries",
+  "status": "verified",
+  "id": "feature-1768158035512-a3e3zbt5f",
+  "descriptionHistory": [
+    {
+      "description": "Reorganize codebase into domain modules (Solving, Research, Learning, ContentGeneration) with explicit public APIs and internal implementation details. Enforce module boundaries using Python package visibility and create dependency rules that prevent cross-domain coupling.\n\n**Rationale:** Current flat 'src/agents/', 'src/services/', 'src/tools/' structure allows unrestricted imports leading to tangled dependencies. Domain boundaries would improve code organization, enable independent module evolution, facilitate team ownership, and make the system easier to understand.",
+      "timestamp": "2026-01-11T19:00:35.512Z",
+      "source": "initial"
+    }
+  ],
+  "skipTests": false,
+  "model": "codex-gpt-5.2",
+  "thinkingLevel": "none",
+  "reasoningEffort": "medium",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "priority": 1,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "startedAt": "2026-01-11T19:10:00.007Z",
+  "updatedAt": "2026-01-11T19:11:57.915Z"
+}

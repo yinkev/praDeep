@@ -1,0 +1,26 @@
+{
+  "category": "feature",
+  "description": "- **Agent Usage per User:** - Solve agent invocations - Research pipeline runs - Question generation sessions - Guided learning sessions - Chat interactions - Co-writer usage - IdeaGen executions - **Session Depth:** - Average actions per session - Time spent per module - Multi-turn conversation lengths - Follow-up question rate - **Knowledge Base Engagement:** - KB creation rate - Documents uploaded per KB - KB query frequency - RAG retrieval success rate - Average KB size and utilization",
+  "title": "3. Core Engagement Metrics",
+  "status": "verified",
+  "id": "feature-1768159531584-eowxwzijy",
+  "descriptionHistory": [
+    {
+      "description": "- **Agent Usage per User:** - Solve agent invocations - Research pipeline runs - Question generation sessions - Guided learning sessions - Chat interactions - Co-writer usage - IdeaGen executions - **Session Depth:** - Average actions per session - Time spent per module - Multi-turn conversation lengths - Follow-up question rate - **Knowledge Base Engagement:** - KB creation rate - Documents uploaded per KB - KB query frequency - RAG retrieval success rate - Average KB size and utilization",
+      "timestamp": "2026-01-11T19:25:31.586Z",
+      "source": "initial"
+    }
+  ],
+  "skipTests": false,
+  "model": "codex-gpt-5.2",
+  "thinkingLevel": "none",
+  "reasoningEffort": "medium",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "priority": 1,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "startedAt": "2026-01-11T19:28:48.630Z",
+  "updatedAt": "2026-01-11T19:38:57.738Z"
+}

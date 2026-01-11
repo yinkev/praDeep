@@ -95,6 +95,8 @@ Browser (Next.js, `web/`) ── REST + WebSocket ──> FastAPI (`src/api/`)
 
 **Orchestrator:** `MainSolver` runs **Analysis Loop → Solve Loop → Response/Formatting**, persisting task state into a timestamped folder.
 
+**Memory & persistence:** See `docs/architecture/memory-systems.md` for where `InvestigateMemory`, `SolveMemory`, `CitationMemory`, and user memory live on disk.
+
 #### Analysis Loop
 | Agent | Function |
 |-------|----------|

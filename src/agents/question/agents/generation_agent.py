@@ -14,8 +14,8 @@ project_root = Path(__file__).parent.parent.parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 from src.logging import get_logger
+from src.di import Container
 from src.services.config import load_config_with_main
-from src.services.prompt import get_prompt_manager
 from src.tools.rag_tool import rag_search
 
 from .base_agent import Action, BaseAgent, Message, Observation
@@ -27,11 +27,24 @@ _logger = get_logger("QuestionGenerationAgent")
 class QuestionGenerationAgent(BaseAgent):
     """Question generation agent"""
 
-    def __init__(self, language: str = "en", **kwargs):
-        super().__init__(agent_name="QuestionGenerationAgent", language=language, **kwargs)
+    def __init__(
+        self,
+        language: str = "en",
+        *,
+        container: Container | None = None,
+        prompt_manager: Any | None = None,
+        **kwargs,
+    ):
+        super().__init__(
+            agent_name="QuestionGenerationAgent",
+            language=language,
+            container=container,
+            **kwargs,
+        )
+        self.prompt_manager = prompt_manager or self.container.prompt_manager()
 
         # Load prompts using unified PromptManager
-        self._prompts = get_prompt_manager().load_prompts(
+        self._prompts = self.prompt_manager.load_prompts(
             module_name="question",
             agent_name="generation_agent",
             language=language,
@@ -180,12 +193,10 @@ class QuestionGenerationAgent(BaseAgent):
                 knowledge=knowledge_str,
             )
 
-        response = await self.client.chat.completions.create(
-            model=self.model,
-            messages=[
-                {"role": "system", "content": "You are a professional question designer"},
-                {"role": "user", "content": prompt},
-            ],
+        response = await self._create_chat_completion(
+            stage="generate_question",
+            system_prompt="You are a professional question designer",
+            user_prompt=prompt,
             temperature=self._agent_params["temperature"],
             max_tokens=self._agent_params["max_tokens"],
             response_format={"type": "json_object"},
@@ -287,16 +298,14 @@ class QuestionGenerationAgent(BaseAgent):
         )
 
         try:
-            response = await self.client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": "You are a professional question designer"},
-                    {"role": "user", "content": prompt},
-                ],
+            response = await self._create_chat_completion(
+                stage="refine_question",
+                system_prompt="You are a professional question designer",
+                user_prompt=prompt,
                 temperature=self._agent_params["temperature"],
                 max_tokens=self._agent_params["max_tokens"],
                 response_format={"type": "json_object"},
-                timeout=180.0,  # Add timeout
+                timeout=180.0,
             )
         except Exception as e:
             error_msg = f"[refine_question] LLM API call failed: {type(e).__name__}: {e}"

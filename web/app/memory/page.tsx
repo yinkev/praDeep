@@ -265,6 +265,85 @@ export default function MemoryPage() {
 
       {/* Content */}
       <div className="flex-1 min-h-0 overflow-y-auto space-y-4 pr-1">
+        {/* Memory Systems Section */}
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+          <button
+            onClick={() => toggleSection('systems')}
+            className="w-full px-5 py-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                <Brain className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+              </div>
+              <div className="text-left">
+                <h2 className="font-semibold text-slate-900 dark:text-slate-100">
+                  Memory Systems
+                </h2>
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  Where state is persisted on disk
+                </p>
+              </div>
+            </div>
+            {activeSection === 'systems' ? (
+              <ChevronUp className="w-5 h-5 text-slate-400" />
+            ) : (
+              <ChevronDown className="w-5 h-5 text-slate-400" />
+            )}
+          </button>
+
+          {activeSection === 'systems' && (
+            <div className="px-5 pb-5 border-t border-slate-100 dark:border-slate-700">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
+                <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+                  <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                    Persistent user memory (this page)
+                  </h3>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                    Stored in{' '}
+                    <code className="px-1 py-0.5 rounded bg-slate-200/60 dark:bg-slate-600/60">
+                      data/user/memory/*.json
+                    </code>{' '}
+                    and managed via{' '}
+                    <code className="px-1 py-0.5 rounded bg-slate-200/60 dark:bg-slate-600/60">
+                      /api/v1/memory/*
+                    </code>
+                    .
+                  </p>
+                </div>
+
+                <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+                  <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                    Solve agent run memory (per run)
+                  </h3>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                    Stored per solve run in{' '}
+                    <code className="px-1 py-0.5 rounded bg-slate-200/60 dark:bg-slate-600/60">
+                      data/user/solve/solve_YYYYMMDD_HHMMSS/
+                    </code>{' '}
+                    including{' '}
+                    <code className="px-1 py-0.5 rounded bg-slate-200/60 dark:bg-slate-600/60">
+                      investigate_memory.json
+                    </code>
+                    ,{' '}
+                    <code className="px-1 py-0.5 rounded bg-slate-200/60 dark:bg-slate-600/60">
+                      solve_chain.json
+                    </code>
+                    , and{' '}
+                    <code className="px-1 py-0.5 rounded bg-slate-200/60 dark:bg-slate-600/60">
+                      citation_memory.json
+                    </code>
+                    .
+                  </p>
+                </div>
+              </div>
+
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-3">
+                Docs: <code>docs/architecture/memory-systems.md</code>
+              </p>
+            </div>
+          )}
+        </div>
+
         {/* Preferences Section */}
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
           <button

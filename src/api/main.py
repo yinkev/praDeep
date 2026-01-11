@@ -5,8 +5,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
+from src.api.middleware import RateLimitMiddleware
 from src.api.routers import (
     agent_config,
+    analytics,
     chat,
     co_writer,
     dashboard,
@@ -16,7 +18,10 @@ from src.api.routers import (
     knowledge,
     llm_provider,
     notebook,
+    playground,
     question,
+    rate_limit,
+    recommendation,
     research,
     settings,
     solve,
@@ -51,6 +56,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Add rate limiting middleware
+app.add_middleware(RateLimitMiddleware)
+
 # Mount user directory as static root for generated artifacts
 # This allows frontend to access generated artifacts (images, PDFs, etc.)
 # URL: /api/outputs/solve/solve_xxx/artifacts/image.png
@@ -75,6 +83,7 @@ app.include_router(solve.router, prefix="/api/v1", tags=["solve"])
 app.include_router(chat.router, prefix="/api/v1", tags=["chat"])
 app.include_router(question.router, prefix="/api/v1/question", tags=["question"])
 app.include_router(research.router, prefix="/api/v1/research", tags=["research"])
+app.include_router(recommendation.router, prefix="/api/v1/recommendation", tags=["recommendation"])
 app.include_router(knowledge.router, prefix="/api/v1/knowledge", tags=["knowledge"])
 app.include_router(dashboard.router, prefix="/api/v1/dashboard", tags=["dashboard"])
 app.include_router(co_writer.router, prefix="/api/v1/co_writer", tags=["co_writer"])
@@ -83,9 +92,12 @@ app.include_router(guide.router, prefix="/api/v1/guide", tags=["guide"])
 app.include_router(ideagen.router, prefix="/api/v1/ideagen", tags=["ideagen"])
 app.include_router(settings.router, prefix="/api/v1/settings", tags=["settings"])
 app.include_router(system.router, prefix="/api/v1/system", tags=["system"])
+app.include_router(playground.router, prefix="/api/v1/playground", tags=["playground"])
 app.include_router(llm_provider.router, prefix="/api/v1/config/llm", tags=["config"])
 app.include_router(embedding_provider.router, prefix="/api/v1/config/embedding", tags=["config"])
 app.include_router(agent_config.router, prefix="/api/v1/config", tags=["config"])
+app.include_router(analytics.router, prefix="/api/v1/analytics", tags=["analytics"])
+app.include_router(rate_limit.router, prefix="/api/v1/rate-limit", tags=["rate-limit"])
 
 
 @app.get("/")

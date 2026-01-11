@@ -7,6 +7,11 @@ description: Our development workflow and processes
 
 How we develop and maintain praDeep (praDeep).
 
+## System Workflows
+
+- Agent architecture: `/workflow/agents`
+- Agent workflow diagrams: `/workflow/agent-workflows/`
+
 ## Development Principles
 
 1. **No fallbacks** - Always use the most updated models/tools

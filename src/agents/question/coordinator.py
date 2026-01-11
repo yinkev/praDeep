@@ -22,7 +22,8 @@ from .validation_workflow import QuestionValidationWorkflow
 project_root = Path(__file__).parent.parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-from src.logging import Logger, get_logger
+from src.logging import Logger, estimate_tokens, get_logger
+from src.di import Container, get_container
 from src.services.config import load_config_with_main
 from src.tools.rag_tool import rag_search
 
@@ -92,6 +93,9 @@ class AgentCoordinator:
         max_rounds: int = 10,
         kb_name: str | None = None,
         output_dir: str | None = None,
+        *,
+        container: Container | None = None,
+        metrics_service: Any | None = None,
     ):
         """
         Initialize the coordinator.
@@ -109,6 +113,9 @@ class AgentCoordinator:
             "logging", {}
         ).get("log_dir")
         self.logger: Logger = get_logger("QuestionGen", log_dir=log_dir)
+
+        self.container = container or get_container()
+        self.metrics_service = metrics_service or self.container.metrics_service()
 
         # Override max_rounds from config if available
         question_cfg = self.config.get("question", {})
@@ -134,6 +141,8 @@ class AgentCoordinator:
             max_iterations=max_gen_iterations,
             kb_name=kb_name,
             token_stats_callback=self.update_token_stats,
+            container=self.container,
+            metrics_service=self.metrics_service,
         )
 
         # Instantiate validation workflow (fixed pipeline)
@@ -142,6 +151,8 @@ class AgentCoordinator:
             base_url=base_url,
             kb_name=kb_name,
             token_stats_callback=self.update_token_stats,
+            container=self.container,
+            metrics_service=self.metrics_service,
         )
 
         # Message queue
@@ -281,6 +292,19 @@ class AgentCoordinator:
         """Utility wrapper around the generation agent's LLM client."""
         client = self.question_agent.client
         model = self.question_agent.model
+        metrics = self.metrics_service.start_tracking(agent_name="Coordinator", module_name="question")
+        try:
+            metrics.metadata.update(
+                {
+                    "stage": stage or "coordinator_call",
+                    "model": model,
+                    "temperature": 0.2,
+                    "streaming": False,
+                }
+            )
+            metrics.add_api_call()
+        except Exception:
+            pass
 
         kwargs = {
             "model": model,
@@ -304,16 +328,34 @@ class AgentCoordinator:
         try:
             response = await client.chat.completions.create(**kwargs)
         except Exception as e:
+            try:
+                metrics.add_error()
+                metrics.metadata.update({"error_type": type(e).__name__, "error_message": str(e)})
+            except Exception:
+                pass
             self.logger.error(
                 f"[{stage or 'coordinator'}] LLM API call failed: {type(e).__name__}: {e}"
             )
             self.logger.error(f"Request kwargs: {kwargs}")
+            try:
+                self.metrics_service.end_tracking(metrics, success=False)
+            except Exception:
+                pass
             raise RuntimeError(f"LLM call failed in stage '{stage}': {e}") from e
 
         # Extract response content with validation
         if not response or not response.choices:
             error_msg = f"[{stage or 'coordinator'}] LLM returned empty response or no choices"
             self.logger.error(error_msg)
+            try:
+                metrics.add_error()
+                metrics.metadata.update({"error_type": "EmptyResponse", "error_message": error_msg})
+            except Exception:
+                pass
+            try:
+                self.metrics_service.end_tracking(metrics, success=False)
+            except Exception:
+                pass
             raise ValueError(error_msg)
 
         response_content = response.choices[0].message.content
@@ -324,6 +366,15 @@ class AgentCoordinator:
                 f"[{stage or 'coordinator'}] LLM returned None content. Response: {response}"
             )
             self.logger.error(error_msg)
+            try:
+                metrics.add_error()
+                metrics.metadata.update({"error_type": "NoneContent", "error_message": error_msg})
+            except Exception:
+                pass
+            try:
+                self.metrics_service.end_tracking(metrics, success=False)
+            except Exception:
+                pass
             raise ValueError(error_msg)
 
         if not response_content.strip():
@@ -331,6 +382,15 @@ class AgentCoordinator:
                 f"[{stage or 'coordinator'}] LLM returned empty string. Response object: {response}"
             )
             self.logger.error(error_msg)
+            try:
+                metrics.add_error()
+                metrics.metadata.update({"error_type": "EmptyContent", "error_message": error_msg})
+            except Exception:
+                pass
+            try:
+                self.metrics_service.end_tracking(metrics, success=False)
+            except Exception:
+                pass
             raise ValueError(error_msg)
 
         # Log successful response
@@ -350,6 +410,17 @@ class AgentCoordinator:
             self._update_token_stats(
                 input_tokens=input_tokens, output_tokens=output_tokens, model=model
             )
+            try:
+                metrics.add_tokens(prompt=int(input_tokens or 0), completion=int(output_tokens or 0), model=model)
+            except Exception:
+                pass
+        else:
+            try:
+                prompt_tokens = estimate_tokens((system_prompt or "") + "\n" + (user_prompt or ""))
+                completion_tokens = estimate_tokens(response_content or "")
+                metrics.add_tokens(prompt=prompt_tokens, completion=completion_tokens, model=model)
+            except Exception:
+                pass
 
         # Log LLM call with detailed information
         self.logger.log_llm_call(
@@ -364,6 +435,11 @@ class AgentCoordinator:
             cost=cost,
             level="DEBUG",
         )
+
+        try:
+            self.metrics_service.end_tracking(metrics, success=True)
+        except Exception:
+            pass
 
         return response_content
 

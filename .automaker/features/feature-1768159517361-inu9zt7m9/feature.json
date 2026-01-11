@@ -1,0 +1,26 @@
+{
+  "category": "enhancement",
+  "description": "Defer WebSocket handler initialization until the specific agent workflow is activated. Create a WebSocketManager that dynamically imports and instantiates connection handlers (solve-ws-handler, research-ws-handler, etc.) on-demand rather than bundling all handlers upfront in api.ts.\n\n**Rationale:** WebSocket handlers for different agents have unique message parsing logic and state management. Since only one agent typically runs at a time, lazy-loading these handlers can reduce the main bundle by 15-20KB and eliminate unnecessary event listener registration, improving memory footprint.",
+  "title": "Lazy Load WebSocket Connection Handlers Per Agent Type",
+  "status": "verified",
+  "id": "feature-1768159517361-inu9zt7m9",
+  "descriptionHistory": [
+    {
+      "description": "Defer WebSocket handler initialization until the specific agent workflow is activated. Create a WebSocketManager that dynamically imports and instantiates connection handlers (solve-ws-handler, research-ws-handler, etc.) on-demand rather than bundling all handlers upfront in api.ts.\n\n**Rationale:** WebSocket handlers for different agents have unique message parsing logic and state management. Since only one agent typically runs at a time, lazy-loading these handlers can reduce the main bundle by 15-20KB and eliminate unnecessary event listener registration, improving memory footprint.",
+      "timestamp": "2026-01-11T19:25:17.361Z",
+      "source": "initial"
+    }
+  ],
+  "skipTests": false,
+  "model": "codex-gpt-5.2",
+  "thinkingLevel": "none",
+  "reasoningEffort": "medium",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "priority": 1,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "startedAt": "2026-01-11T19:27:31.780Z",
+  "updatedAt": "2026-01-11T19:30:19.886Z"
+}

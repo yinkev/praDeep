@@ -1,0 +1,26 @@
+{
+  "category": "enhancement",
+  "description": "Split the Next.js app into separate bundles per agent route (solve, research, question, guide, co-writer, chat, ideagen). Each module has distinct UI components and dependencies that are rarely used together. Use dynamic imports with next/dynamic to load agent-specific components only when their routes are accessed.\n\n**Rationale:** With 7+ distinct agent workflows, users typically interact with one or two at a time. Route-based splitting can reduce initial bundle size by 60-70%, improving first contentful paint and time-to-interactive, especially for users on slower connections accessing the landing page or a single agent.",
+  "title": "Implement Route-Based Code Splitting for Agent Modules",
+  "status": "verified",
+  "id": "feature-1768159515366-us9lguwxf",
+  "descriptionHistory": [
+    {
+      "description": "Split the Next.js app into separate bundles per agent route (solve, research, question, guide, co-writer, chat, ideagen). Each module has distinct UI components and dependencies that are rarely used together. Use dynamic imports with next/dynamic to load agent-specific components only when their routes are accessed.\n\n**Rationale:** With 7+ distinct agent workflows, users typically interact with one or two at a time. Route-based splitting can reduce initial bundle size by 60-70%, improving first contentful paint and time-to-interactive, especially for users on slower connections accessing the landing page or a single agent.",
+      "timestamp": "2026-01-11T19:25:15.366Z",
+      "source": "initial"
+    }
+  ],
+  "skipTests": false,
+  "model": "codex-gpt-5.2",
+  "thinkingLevel": "none",
+  "reasoningEffort": "medium",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "priority": 1,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "startedAt": "2026-01-11T19:26:59.446Z",
+  "updatedAt": "2026-01-11T19:29:16.198Z"
+}

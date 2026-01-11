@@ -17,9 +17,9 @@ from src.agents.paper_recommender import PaperRecommendationWorkflow
 from src.api.utils.history import ActivityType, history_manager
 from src.api.utils.task_id_manager import TaskIDManager
 from src.logging import get_logger
+from src.di import get_container
 from src.services.config import load_config_with_main
 from src.services.llm import get_llm_config
-from src.services.paper_recommendation import get_paper_recommendation_service
 
 router = APIRouter()
 
@@ -118,6 +118,7 @@ async def get_recommendations(request: RecommendationRequest) -> dict[str, Any]:
             api_key=api_key,
             base_url=base_url,
             config=load_config(),
+            container=get_container(),
         )
 
         # Run recommendations
@@ -161,6 +162,7 @@ async def analyze_paper(request: PaperAnalysisRequest) -> dict[str, Any]:
             api_key=llm_config.api_key,
             base_url=llm_config.base_url,
             config=load_config(),
+            container=get_container(),
         )
 
         result = await workflow.analyze_paper(
@@ -179,7 +181,7 @@ async def analyze_paper(request: PaperAnalysisRequest) -> dict[str, Any]:
 async def record_interaction(request: PaperInteractionRequest) -> dict[str, str]:
     """Record user interaction with a paper (read or save)."""
     try:
-        service = get_paper_recommendation_service()
+        service = get_container().paper_recommendation_service()
 
         if request.interaction_type == "read":
             service.record_paper_read(request.paper_id)
@@ -204,7 +206,7 @@ async def record_interaction(request: PaperInteractionRequest) -> dict[str, str]
 async def get_user_history() -> dict[str, Any]:
     """Get user's reading history and preferences."""
     try:
-        service = get_paper_recommendation_service()
+        service = get_container().paper_recommendation_service()
         history = service.get_user_history()
         return history.to_dict()
 
@@ -217,7 +219,7 @@ async def get_user_history() -> dict[str, Any]:
 async def update_preferences(request: PreferencesRequest) -> dict[str, str]:
     """Update user's preferred research topics."""
     try:
-        service = get_paper_recommendation_service()
+        service = get_container().paper_recommendation_service()
         service.update_preferred_topics(request.topics)
         return {"status": "updated", "topics_count": len(request.topics)}
 
@@ -238,7 +240,7 @@ async def search_papers(
     Useful for fast lookups and autocomplete.
     """
     try:
-        service = get_paper_recommendation_service()
+        service = get_container().paper_recommendation_service()
 
         papers = []
         if source in ["all", "semantic_scholar"]:

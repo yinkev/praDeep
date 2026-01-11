@@ -3,10 +3,21 @@
   "category": "API",
   "title": "Interactive API Documentation",
   "description": "Generate comprehensive OpenAPI/Swagger documentation with interactive testing interface, code examples in multiple languages, and WebSocket documentation. Auto-generated from FastAPI schema.",
-  "status": "backlog",
+  "status": "verified",
   "priority": 2,
   "complexity": "simple",
   "dependencies": [],
   "createdAt": "2026-01-11T17:24:12.301Z",
-  "updatedAt": "2026-01-11T17:24:12.301Z"
+  "updatedAt": "2026-01-11T19:05:30.686Z",
+  "skipTests": false,
+  "model": "codex-gpt-5.2",
+  "thinkingLevel": "none",
+  "reasoningEffort": "medium",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "descriptionHistory": [],
+  "startedAt": "2026-01-11T19:02:00.721Z"
 }

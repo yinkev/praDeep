@@ -3,12 +3,23 @@
   "category": "Collaboration",
   "title": "Real-time Collaborative Notebooks",
   "description": "Enable multiple users to simultaneously edit notebooks with operational transformation or CRDT-based conflict resolution. Shows live cursors and real-time updates via WebSocket.",
-  "status": "backlog",
-  "priority": 2,
+  "status": "verified",
+  "priority": 1,
   "complexity": "complex",
   "dependencies": [
     "user-authentication"
   ],
   "createdAt": "2026-01-11T17:24:12.294Z",
-  "updatedAt": "2026-01-11T17:24:12.294Z"
+  "updatedAt": "2026-01-11T19:40:56.053Z",
+  "skipTests": false,
+  "model": "codex-gpt-5.2",
+  "thinkingLevel": "none",
+  "reasoningEffort": "medium",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "descriptionHistory": [],
+  "startedAt": "2026-01-11T19:39:17.214Z"
 }

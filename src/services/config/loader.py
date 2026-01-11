@@ -9,6 +9,7 @@ Provides YAML configuration loading, path resolution, and language parsing.
 """
 
 from pathlib import Path
+import os
 from typing import Any
 
 import yaml
@@ -176,6 +177,30 @@ def get_agent_params(module_name: str) -> dict:
         "max_tokens": 4096,
     }
 
+    def _env_override() -> dict[str, Any]:
+        module_key = module_name.upper()
+        temperature_raw = os.getenv(f"PRADEEP_{module_key}_TEMPERATURE") or os.getenv(
+            "PRADEEP_TEMPERATURE"
+        )
+        max_tokens_raw = os.getenv(f"PRADEEP_{module_key}_MAX_TOKENS") or os.getenv(
+            "PRADEEP_MAX_TOKENS"
+        )
+
+        override: dict[str, Any] = {}
+        if temperature_raw is not None and temperature_raw != "":
+            try:
+                override["temperature"] = float(temperature_raw)
+            except ValueError:
+                print(
+                    f"⚠️ Invalid temperature env override: {temperature_raw!r} (ignoring)"
+                )
+        if max_tokens_raw is not None and max_tokens_raw != "":
+            try:
+                override["max_tokens"] = int(max_tokens_raw)
+            except ValueError:
+                print(f"⚠️ Invalid max_tokens env override: {max_tokens_raw!r} (ignoring)")
+        return override
+
     # Try to load from agents.yaml
     try:
         config_path = PROJECT_ROOT / "config" / "agents.yaml"
@@ -186,14 +211,18 @@ def get_agent_params(module_name: str) -> dict:
 
             if module_name in agents_config:
                 module_config = agents_config[module_name]
-                return {
+                params = {
                     "temperature": module_config.get("temperature", defaults["temperature"]),
                     "max_tokens": module_config.get("max_tokens", defaults["max_tokens"]),
                 }
+                params.update(_env_override())
+                return params
     except Exception as e:
         print(f"⚠️ Failed to load agents.yaml: {e}, using defaults")
 
-    return defaults
+    params = defaults.copy()
+    params.update(_env_override())
+    return params
 
 
 __all__ = [

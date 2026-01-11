@@ -13,7 +13,6 @@ import {
   Trophy,
   ArrowUp,
   ArrowDown,
-  Minus,
   Loader2,
   RefreshCw,
   Calculator,
@@ -88,34 +87,34 @@ const TYPE_CONFIG: Record<
   string,
   {
     icon: React.ComponentType<{ className?: string }>
-    color: string
     bgColor: string
     textColor: string
+    barColor: string
   }
 > = {
   solve: {
     icon: Calculator,
-    color: 'blue',
     bgColor: 'bg-blue-100 dark:bg-blue-900/30',
     textColor: 'text-blue-600 dark:text-blue-400',
+    barColor: 'bg-blue-500',
   },
   question: {
     icon: FileText,
-    color: 'purple',
     bgColor: 'bg-purple-100 dark:bg-purple-900/30',
     textColor: 'text-purple-600 dark:text-purple-400',
+    barColor: 'bg-purple-500',
   },
   research: {
     icon: Microscope,
-    color: 'emerald',
     bgColor: 'bg-emerald-100 dark:bg-emerald-900/30',
     textColor: 'text-emerald-600 dark:text-emerald-400',
+    barColor: 'bg-emerald-500',
   },
   chat: {
     icon: MessageCircle,
-    color: 'amber',
     bgColor: 'bg-amber-100 dark:bg-amber-900/30',
     textColor: 'text-amber-600 dark:text-amber-400',
+    barColor: 'bg-amber-500',
   },
 }
 
@@ -162,18 +161,18 @@ function ScoreGauge({ score, label, color }: { score: number; label: string; col
 function ProgressBar({
   value,
   maxValue,
-  color,
+  className,
 }: {
   value: number
   maxValue: number
-  color: string
+  className: string
 }) {
   const percentage = maxValue > 0 ? (value / maxValue) * 100 : 0
 
   return (
     <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2">
       <div
-        className={`h-2 rounded-full ${color}`}
+        className={`h-2 rounded-full ${className}`}
         style={{ width: `${Math.min(percentage, 100)}%`, transition: 'width 0.3s ease-in-out' }}
       />
     </div>
@@ -443,7 +442,7 @@ export default function AnalyticsPage() {
                           <ProgressBar
                             value={count}
                             maxValue={total}
-                            color={`bg-${config.color}-500`}
+                            className={config.barColor}
                           />
                         </div>
                       </div>

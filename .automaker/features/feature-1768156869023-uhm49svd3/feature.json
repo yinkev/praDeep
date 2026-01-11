@@ -2,7 +2,7 @@
   "category": "ui",
   "description": "When new documents are uploaded to KB, automatically queue embedding generation in background during idle system time. Frontload indexing cost so first query is instant instead of triggering on-demand processing.\n\n**Rationale:** First RAG query after KB update incurs indexing latency while embeddings generate. Users wait unnecessarily when this could happen proactively. Pre-warming eliminates first-query delay through predictive processing.",
   "title": "Background Pre-warming of Knowledge Base Embeddings",
-  "status": "backlog",
+  "status": "verified",
   "id": "feature-1768156869023-uhm49svd3",
   "descriptionHistory": [
     {
@@ -10,5 +10,17 @@
       "timestamp": "2026-01-11T18:41:09.024Z",
       "source": "initial"
     }
-  ]
+  ],
+  "skipTests": false,
+  "model": "codex-gpt-5.2",
+  "thinkingLevel": "none",
+  "reasoningEffort": "medium",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "priority": 2,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "startedAt": "2026-01-11T18:47:37.247Z",
+  "updatedAt": "2026-01-11T18:51:14.503Z"
 }

@@ -1,0 +1,26 @@
+{
+  "category": "refactor",
+  "description": "Replace YAML-based configuration loading with Pydantic models that provide compile-time type checking, validation, and documentation. Create a hierarchical ConfigSchema that validates all settings at startup and provides clear error messages for misconfigurations.\n\n**Rationale:** Current YAML configuration (main.yaml, agents.yaml) lacks validation, leading to runtime errors from typos or missing keys. Pydantic validation would catch configuration errors early, provide IDE autocomplete, and serve as living documentation of all config options.",
+  "title": "Implement Structured Configuration Validation with Pydantic",
+  "status": "verified",
+  "id": "feature-1768158033680-ib5qeintm",
+  "descriptionHistory": [
+    {
+      "description": "Replace YAML-based configuration loading with Pydantic models that provide compile-time type checking, validation, and documentation. Create a hierarchical ConfigSchema that validates all settings at startup and provides clear error messages for misconfigurations.\n\n**Rationale:** Current YAML configuration (main.yaml, agents.yaml) lacks validation, leading to runtime errors from typos or missing keys. Pydantic validation would catch configuration errors early, provide IDE autocomplete, and serve as living documentation of all config options.",
+      "timestamp": "2026-01-11T19:00:33.681Z",
+      "source": "initial"
+    }
+  ],
+  "skipTests": false,
+  "model": "codex-gpt-5.2",
+  "thinkingLevel": "none",
+  "reasoningEffort": "medium",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "priority": 1,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "startedAt": "2026-01-11T19:09:58.591Z",
+  "updatedAt": "2026-01-11T19:12:04.268Z"
+}

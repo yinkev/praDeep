@@ -1,0 +1,26 @@
+{
+  "category": "chore",
+  "description": "Implement file watcher for YAML prompt files that automatically reloads prompts when changed, bypassing the current cache. Add a debug endpoint to force prompt reload. This eliminates the need to restart the backend during prompt iteration.\n\n**Rationale:** Developers currently must restart the FastAPI server to test prompt changes, adding 10-30 seconds per iteration. With agents heavily relying on YAML prompts, this creates a major friction point during agent development and tuning.",
+  "title": "Hot-Reload Agent Prompt Changes Without Restart",
+  "status": "verified",
+  "id": "feature-1768158550802-hyn7ztuix",
+  "descriptionHistory": [
+    {
+      "description": "Implement file watcher for YAML prompt files that automatically reloads prompts when changed, bypassing the current cache. Add a debug endpoint to force prompt reload. This eliminates the need to restart the backend during prompt iteration.\n\n**Rationale:** Developers currently must restart the FastAPI server to test prompt changes, adding 10-30 seconds per iteration. With agents heavily relying on YAML prompts, this creates a major friction point during agent development and tuning.",
+      "timestamp": "2026-01-11T19:09:10.804Z",
+      "source": "initial"
+    }
+  ],
+  "skipTests": false,
+  "model": "codex-gpt-5.2",
+  "thinkingLevel": "none",
+  "reasoningEffort": "medium",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "priority": 1,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "startedAt": "2026-01-11T19:13:06.274Z",
+  "updatedAt": "2026-01-11T19:15:23.111Z"
+}

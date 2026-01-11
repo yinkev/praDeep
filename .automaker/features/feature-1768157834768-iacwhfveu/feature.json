@@ -1,0 +1,26 @@
+{
+  "category": "enhancement",
+  "description": "Replace the empty knowledge base list with an interactive walkthrough showing drag-and-drop upload zones, supported file formats (PDF, DOCX, etc.), and a 'Try Sample KB' button that loads a pre-configured demo knowledge base. Include visual examples of how uploaded documents become searchable context for agents.\n\n**Rationale:** New users face a cold-start problem with no knowledge bases - they don't understand what to upload or how KBs power the RAG system. An interactive empty state with sample data reduces time-to-value and demonstrates the platform's core capability immediately.",
+  "title": "Interactive Empty State for Knowledge Bases",
+  "status": "verified",
+  "id": "feature-1768157834768-iacwhfveu",
+  "descriptionHistory": [
+    {
+      "description": "Replace the empty knowledge base list with an interactive walkthrough showing drag-and-drop upload zones, supported file formats (PDF, DOCX, etc.), and a 'Try Sample KB' button that loads a pre-configured demo knowledge base. Include visual examples of how uploaded documents become searchable context for agents.\n\n**Rationale:** New users face a cold-start problem with no knowledge bases - they don't understand what to upload or how KBs power the RAG system. An interactive empty state with sample data reduces time-to-value and demonstrates the platform's core capability immediately.",
+      "timestamp": "2026-01-11T18:57:14.769Z",
+      "source": "initial"
+    }
+  ],
+  "skipTests": false,
+  "model": "codex-gpt-5.2",
+  "thinkingLevel": "none",
+  "reasoningEffort": "high",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "priority": 2,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "startedAt": "2026-01-11T18:58:24.370Z",
+  "updatedAt": "2026-01-11T19:01:48.107Z"
+}

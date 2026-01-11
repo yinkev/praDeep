@@ -1,0 +1,26 @@
+{
+  "category": "feature",
+  "description": "- **Solve agent runs** - Volume, success rate, average duration - **Research pipeline usage** - Topics researched, depth of exploration - **Question generation** - Custom vs mimic mode usage, questions generated - **Guide sessions** - Sessions created, completion rate, interaction depth - **Co-writer actions** - Edits, narrations, TTS generation - **Chat sessions** - Length, turns, RAG augmentation rate - **IdeaGen usage** - Ideas generated, notebook integration",
+  "title": "Agent Usage",
+  "status": "verified",
+  "id": "feature-1768158317880-p2re5qe1n",
+  "descriptionHistory": [
+    {
+      "description": "- **Solve agent runs** - Volume, success rate, average duration - **Research pipeline usage** - Topics researched, depth of exploration - **Question generation** - Custom vs mimic mode usage, questions generated - **Guide sessions** - Sessions created, completion rate, interaction depth - **Co-writer actions** - Edits, narrations, TTS generation - **Chat sessions** - Length, turns, RAG augmentation rate - **IdeaGen usage** - Ideas generated, notebook integration",
+      "timestamp": "2026-01-11T19:05:17.881Z",
+      "source": "initial"
+    }
+  ],
+  "skipTests": false,
+  "model": "codex-gpt-5.2",
+  "thinkingLevel": "none",
+  "reasoningEffort": "high",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "priority": 1,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "startedAt": "2026-01-11T19:10:01.224Z",
+  "updatedAt": "2026-01-11T19:17:47.138Z"
+}

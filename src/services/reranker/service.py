@@ -135,18 +135,18 @@ def get_reranker_service(
     Returns:
         RerankerService instance or None if initialization fails
     """
+    from src.di import get_container
+
+    service = get_container().reranker_service(config)
     global _service
-    if _service is None:
-        try:
-            _service = RerankerService(config)
-        except Exception as exc:
-            logger = get_logger("RerankerService")
-            logger.warning(f"Reranker unavailable: {exc}")
-            return None
-    return _service
+    _service = service
+    return service
 
 
 def reset_reranker_service() -> None:
     """Reset the singleton reranker service."""
+    from src.di import get_container
+
+    get_container().clear("reranker_service")
     global _service
     _service = None

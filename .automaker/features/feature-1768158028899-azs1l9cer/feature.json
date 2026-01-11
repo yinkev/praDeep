@@ -1,0 +1,26 @@
+{
+  "category": "refactor",
+  "description": "Wrap all external service calls (LLM APIs, embedding services, web search, arXiv) with circuit breaker logic that tracks failure rates and automatically fails fast when services are degraded. Include exponential backoff and health check recovery.\n\n**Rationale:** Current retry logic is scattered across services with inconsistent timeout handling. Circuit breakers would prevent cascading failures, reduce wasted resources on failing calls, improve system resilience, and provide better failure visibility through metrics.",
+  "title": "Implement Circuit Breaker Pattern for External Service Calls",
+  "status": "verified",
+  "id": "feature-1768158028899-azs1l9cer",
+  "descriptionHistory": [
+    {
+      "description": "Wrap all external service calls (LLM APIs, embedding services, web search, arXiv) with circuit breaker logic that tracks failure rates and automatically fails fast when services are degraded. Include exponential backoff and health check recovery.\n\n**Rationale:** Current retry logic is scattered across services with inconsistent timeout handling. Circuit breakers would prevent cascading failures, reduce wasted resources on failing calls, improve system resilience, and provide better failure visibility through metrics.",
+      "timestamp": "2026-01-11T19:00:28.900Z",
+      "source": "initial"
+    }
+  ],
+  "skipTests": false,
+  "model": "codex-gpt-5.2",
+  "thinkingLevel": "none",
+  "reasoningEffort": "medium",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "priority": 1,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "startedAt": "2026-01-11T19:05:47.389Z",
+  "updatedAt": "2026-01-11T19:07:10.462Z"
+}

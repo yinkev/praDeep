@@ -1,0 +1,26 @@
+{
+  "category": "chore",
+  "description": "Refactor backend to lazy-load agent modules and heavy dependencies (LightRAG, transformers) only when first used. Add parallel initialization for independent services. Measure and display startup time breakdown.\n\n**Rationale:** Backend startup time impacts developer iteration speed, especially during frequent restarts while debugging. Current synchronous loading of all agents and ML dependencies likely adds unnecessary seconds to every restart cycle.",
+  "title": "Parallel Backend Module Loading with Lazy Imports",
+  "status": "verified",
+  "id": "feature-1768158564068-bljt0fcla",
+  "descriptionHistory": [
+    {
+      "description": "Refactor backend to lazy-load agent modules and heavy dependencies (LightRAG, transformers) only when first used. Add parallel initialization for independent services. Measure and display startup time breakdown.\n\n**Rationale:** Backend startup time impacts developer iteration speed, especially during frequent restarts while debugging. Current synchronous loading of all agents and ML dependencies likely adds unnecessary seconds to every restart cycle.",
+      "timestamp": "2026-01-11T19:09:24.069Z",
+      "source": "initial"
+    }
+  ],
+  "skipTests": false,
+  "model": "codex-gpt-5.2",
+  "thinkingLevel": "none",
+  "reasoningEffort": "medium",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "priority": 1,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "startedAt": "2026-01-11T19:14:22.292Z",
+  "updatedAt": "2026-01-11T19:18:45.577Z"
+}

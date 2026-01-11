@@ -193,67 +193,53 @@ Persistent JSON memory recording the entire Solve Loop process.
 **Structure**:
 ```python
 {
+    "version": "solve_chain_v1",
+    "task_id": "solve_YYYYMMDD_HHMMSS",
     "user_question": "What is linear convolution?",
-    "plan": {
-        "blocks": [
-            {
-                "block_id": "b001",
-                "goal": "Understand the definition of linear convolution",
-                "steps": [
-                    {
-                        "step_id": "s001",
-                        "plan": "Quote definition and explain",
-                        "status": "completed",  # pending/in_progress/completed
-                        "content": "Linear convolution is...",
-                        "citations": ["[rag-1]", "[code-1]"],
-                        "tool_logs": [...]
-                    }
-                ]
-            }
-        ]
-    },
-    "progress": {
-        "status": "completed",  # not_started/in_progress/completed
-        "current_block": "b001",
-        "current_step": "s001",
-        "completed_blocks": ["b001"],
-        "completed_steps": ["s001", "s002"]
-    },
-    "metadata": {
-        "total_blocks": 3,
-        "total_steps": 8,
-        "completed_steps": 8
-    }
+    "solve_chains": [
+        {
+            "step_id": "s001",
+            "step_target": "Quote definition and explain",
+            "available_cite": ["[rag-1]"],
+            "tool_calls": [
+                {
+                    "call_id": "tc_xxxxxxxx",
+                    "tool_type": "rag_hybrid",
+                    "query": "Linear convolution definition",
+                    "cite_id": "[rag-1]",
+                    "status": "success"
+                }
+            ],
+            "step_response": "Linear convolution is...",
+            "used_citations": ["[rag-1]"],
+            "status": "done"
+        }
+    ],
+    "metadata": {"total_steps": 1, "completed_steps": 1, "total_tool_calls": 1}
 }
 ```
 
-**Storage Location**: `{output_dir}/solve_memory.json`
+**Storage Location**: `{output_dir}/solve_chain.json` (legacy `{output_dir}/solve_memory.json` is auto-migrated)
 
 ## Citation Management
 
-### CitationManager
+### CitationMemory
 
-Global singleton managing numbering and formatting of all citations.
+Persistent JSON store for citations shared across Analysis Loop + Solve Loop.
 
-**Features**:
-- Auto-assign citation numbers ([rag-1], [web-1], ...)
-- Deduplication: same content gets one number
-- Reset support (per task)
+**Storage Location**: `{output_dir}/citation_memory.json`
 
 **Usage**:
 ```python
-from solve_loop.citation_manager import CitationManager
+from solve_agents.memory import CitationMemory
 
-manager = CitationManager()
-manager.reset()  # Reset numbering
-
-# Add citation
-cite_id = manager.add_citation("Citation content", source="k001")
-# Returns: "[rag-1]"
-
-# Get all citations
-citations = manager.get_all_citations()
-# Returns: [{'id': '[rag-1]', 'content': '...', 'source': 'k001'}]
+memory = CitationMemory.load_or_create(output_dir)
+cite_id = memory.add_citation(
+    tool_type="rag_hybrid",
+    query="Linear convolution definition",
+    content="Linear convolution is ...",
+)
+memory.save()
 ```
 
 ## Configuration
@@ -449,7 +435,8 @@ Integrate all steps, generate final answer, format 5 citations
 ### View Memory Files
 
 ```bash
-cat output/solve_memory.json | jq .
+cat output/solve_chain.json | jq .
+cat output/citation_memory.json | jq .
 ```
 
 ### Monitor Execution
@@ -468,20 +455,19 @@ Logs display detailed information for each step:
 
 ```python
 metadata = solve_memory.metadata
-print(f"Total blocks: {metadata['total_blocks']}")
 print(f"Total steps: {metadata['total_steps']}")
 print(f"Completed: {metadata['completed_steps']}")
+print(f"Total tool calls: {metadata['total_tool_calls']}")
 ```
 
 ### View Citations
 
 ```python
-from solve_loop.citation_manager import CitationManager
+from solve_agents.memory import CitationMemory
 
-manager = CitationManager()
-citations = manager.get_all_citations()
-for cite in citations:
-    print(f"{cite['id']}: {cite['content'][:50]}...")
+memory = CitationMemory.load_or_create(output_dir)
+for cite in memory.get_all_citations():
+    print(f"{cite.cite_id}: {cite.content[:50]}...")
 ```
 
 ## Common Questions
@@ -513,16 +499,11 @@ agents:
 
 **Q: How to view Check Agent feedback?**
 
-Check logs for `[Check]` section or inspect `tool_logs` in `solve_memory.json`.
+Check logs for `[Check]` section or inspect `tool_calls` + `status` fields in `solve_chain.json`.
 
-**Q: How to manually reset CitationManager?**
+**Q: How to reset citations for a run?**
 
-```python
-from solve_loop.citation_manager import CitationManager
-
-manager = CitationManager()
-manager.reset()
-```
+Each solve run has its own `{output_dir}`. To reset, start a new run (new output directory), or delete `{output_dir}/citation_memory.json` before resuming.
 
 ---
 

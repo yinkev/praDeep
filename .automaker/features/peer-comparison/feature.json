@@ -3,13 +3,24 @@
   "category": "Learning Features",
   "title": "Anonymous Peer Performance Comparison",
   "description": "Enable users to compare their learning metrics with anonymized peer cohorts studying similar topics. Shows percentile rankings and improvement suggestions without revealing identities.",
-  "status": "backlog",
-  "priority": 3,
+  "status": "verified",
+  "priority": 1,
   "complexity": "moderate",
   "dependencies": [
     "learning-analytics",
     "user-authentication"
   ],
   "createdAt": "2026-01-11T17:24:12.299Z",
-  "updatedAt": "2026-01-11T17:24:12.299Z"
+  "updatedAt": "2026-01-11T19:26:28.872Z",
+  "skipTests": false,
+  "model": "codex-gpt-5.2",
+  "thinkingLevel": "none",
+  "reasoningEffort": "medium",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "descriptionHistory": [],
+  "startedAt": "2026-01-11T19:23:04.528Z"
 }

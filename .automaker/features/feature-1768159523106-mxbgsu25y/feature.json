@@ -1,0 +1,26 @@
+{
+  "category": "enhancement",
+  "description": "Buffer incoming WebSocket log messages in a queue and flush to React state in batches (every 100ms or 50 messages) instead of updating on every message. Use requestAnimationFrame to synchronize updates with browser repaint cycles, reducing layout recalculations.\n\n**Rationale:** During intensive agent runs, WebSocket can emit 10-50 log messages per second, each triggering a React re-render. This causes rendering to block the main thread. Batching reduces render calls by 80-90% while maintaining perceived real-time updates, keeping UI responsive during heavy agent activity.",
+  "title": "Debounce WebSocket Log Message Rendering with Batch Updates",
+  "status": "verified",
+  "id": "feature-1768159523106-mxbgsu25y",
+  "descriptionHistory": [
+    {
+      "description": "Buffer incoming WebSocket log messages in a queue and flush to React state in batches (every 100ms or 50 messages) instead of updating on every message. Use requestAnimationFrame to synchronize updates with browser repaint cycles, reducing layout recalculations.\n\n**Rationale:** During intensive agent runs, WebSocket can emit 10-50 log messages per second, each triggering a React re-render. This causes rendering to block the main thread. Batching reduces render calls by 80-90% while maintaining perceived real-time updates, keeping UI responsive during heavy agent activity.",
+      "timestamp": "2026-01-11T19:25:23.107Z",
+      "source": "initial"
+    }
+  ],
+  "skipTests": false,
+  "model": "codex-gpt-5.2",
+  "thinkingLevel": "none",
+  "reasoningEffort": "medium",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "priority": 1,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "startedAt": "2026-01-11T19:27:29.597Z",
+  "updatedAt": "2026-01-11T19:36:03.570Z"
+}

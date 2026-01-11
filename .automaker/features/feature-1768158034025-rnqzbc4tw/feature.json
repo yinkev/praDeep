@@ -1,0 +1,26 @@
+{
+  "category": "refactor",
+  "description": "Extract common agent pipeline patterns (planning → execution → reporting) into a PipelineBuilder that allows declarative composition of stages with dependency declaration, parallel execution support, and automatic checkpoint/resume functionality.\n\n**Rationale:** Research and Solve agents share similar multi-stage patterns but implement them separately. A pipeline abstraction would reduce code duplication, enable easier workflow modifications, provide consistent error handling, and support features like partial execution resume.",
+  "title": "Create Modular Pipeline Builder with Composable Stages",
+  "status": "verified",
+  "id": "feature-1768158034025-rnqzbc4tw",
+  "descriptionHistory": [
+    {
+      "description": "Extract common agent pipeline patterns (planning → execution → reporting) into a PipelineBuilder that allows declarative composition of stages with dependency declaration, parallel execution support, and automatic checkpoint/resume functionality.\n\n**Rationale:** Research and Solve agents share similar multi-stage patterns but implement them separately. A pipeline abstraction would reduce code duplication, enable easier workflow modifications, provide consistent error handling, and support features like partial execution resume.",
+      "timestamp": "2026-01-11T19:00:34.026Z",
+      "source": "initial"
+    }
+  ],
+  "skipTests": false,
+  "model": "codex-gpt-5.2",
+  "thinkingLevel": "none",
+  "reasoningEffort": "medium",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "priority": 1,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "startedAt": "2026-01-11T19:09:59.207Z",
+  "updatedAt": "2026-01-11T19:12:27.641Z"
+}

@@ -35,6 +35,7 @@ class Paper:
     similarity_score: float = 0.0
     citation_score: float = 0.0
     recency_score: float = 0.0
+    user_preference_score: float = 0.0
     combined_score: float = 0.0
     recommendation_reason: str = ""
 
@@ -56,6 +57,7 @@ class Paper:
             "similarity_score": round(self.similarity_score, 4),
             "citation_score": round(self.citation_score, 4),
             "recency_score": round(self.recency_score, 4),
+            "user_preference_score": round(self.user_preference_score, 4),
             "combined_score": round(self.combined_score, 4),
             "recommendation_reason": self.recommendation_reason,
         }

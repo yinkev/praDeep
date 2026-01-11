@@ -5,9 +5,9 @@ relevantTo: [database]
 importance: 0.7
 relatedFiles: []
 usageStats:
-  loaded: 5
-  referenced: 1
-  successfulFeatures: 1
+  loaded: 23
+  referenced: 18
+  successfulFeatures: 18
 ---
 # database
 

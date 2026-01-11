@@ -15,8 +15,10 @@ import {
   Loader2,
   X,
   RefreshCw,
+  History,
 } from 'lucide-react'
 import { apiUrl, wsUrl } from '@/lib/api'
+import VersionsModal from '@/components/knowledge/VersionsModal'
 
 interface KnowledgeBase {
   name: string
@@ -57,6 +59,8 @@ export default function KnowledgePage() {
   const [dragActive, setDragActive] = useState(false)
   const [reindexingKb, setReindexingKb] = useState<string | null>(null)
   const [progressMap, setProgressMap] = useState<Record<string, ProgressInfo>>({})
+  const [versionsModalOpen, setVersionsModalOpen] = useState(false)
+  const [versionsKb, setVersionsKb] = useState<string>('')
   // Use ref only for WebSocket connections (no need for state as it's not used in render)
   const wsConnectionsRef = useRef<Record<string, WebSocket>>({})
   const kbsNamesRef = useRef<string[]>([])
@@ -639,6 +643,16 @@ export default function KnowledgePage() {
                 </div>
                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
+                    onClick={() => {
+                      setVersionsKb(kb.name)
+                      setVersionsModalOpen(true)
+                    }}
+                    className="p-2 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg text-slate-500 dark:text-slate-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
+                    title="Version History"
+                  >
+                    <History className="w-4 h-4" />
+                  </button>
+                  <button
                     onClick={() => handleReindex(kb.name)}
                     disabled={reindexingKb === kb.name}
                     className="p-2 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors disabled:opacity-50"
@@ -988,6 +1002,14 @@ export default function KnowledgePage() {
           </div>
         </div>
       )}
+
+      {/* Versions Modal */}
+      <VersionsModal
+        isOpen={versionsModalOpen}
+        onClose={() => setVersionsModalOpen(false)}
+        kbName={versionsKb}
+        onVersionChange={() => fetchKnowledgeBases()}
+      />
     </div>
   )
 }

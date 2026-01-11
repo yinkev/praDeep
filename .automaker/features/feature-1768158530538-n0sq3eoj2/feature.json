@@ -1,0 +1,26 @@
+{
+  "category": "chore",
+  "description": "Create a dev-only web UI that visualizes agent execution graphs, allows setting breakpoints in agent loops, inspecting memory state, and manually triggering specific agents with custom inputs. Integrate with existing WebSocket streaming.\n\n**Rationale:** Multi-agent workflows like Solve and Research have complex state transitions that are hard to trace through logs alone. A visual debugger would dramatically reduce time spent diagnosing agent behavior issues and memory corruption.",
+  "title": "Interactive Agent Debugger with Step-Through UI",
+  "status": "verified",
+  "id": "feature-1768158530538-n0sq3eoj2",
+  "descriptionHistory": [
+    {
+      "description": "Create a dev-only web UI that visualizes agent execution graphs, allows setting breakpoints in agent loops, inspecting memory state, and manually triggering specific agents with custom inputs. Integrate with existing WebSocket streaming.\n\n**Rationale:** Multi-agent workflows like Solve and Research have complex state transitions that are hard to trace through logs alone. A visual debugger would dramatically reduce time spent diagnosing agent behavior issues and memory corruption.",
+      "timestamp": "2026-01-11T19:08:50.539Z",
+      "source": "initial"
+    }
+  ],
+  "skipTests": false,
+  "model": "codex-gpt-5.2",
+  "thinkingLevel": "none",
+  "reasoningEffort": "medium",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "priority": 1,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "startedAt": "2026-01-11T19:13:05.778Z",
+  "updatedAt": "2026-01-11T19:17:24.304Z"
+}

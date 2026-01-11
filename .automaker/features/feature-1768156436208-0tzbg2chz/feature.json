@@ -11,7 +11,7 @@
   "planningMode": "skip",
   "requirePlanApproval": false,
   "titleGenerating": false,
-  "status": "in_progress",
+  "status": "verified",
   "dependencies": [],
   "id": "feature-1768156436208-0tzbg2chz",
   "descriptionHistory": [
@@ -22,7 +22,7 @@
     }
   ],
   "startedAt": "2026-01-11T18:33:56.339Z",
-  "updatedAt": "2026-01-11T18:33:56.397Z",
+  "updatedAt": "2026-01-11T18:45:11.708Z",
   "reasoningEffort": "medium",
   "textFilePaths": [],
   "workMode": "current"

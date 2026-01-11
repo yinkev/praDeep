@@ -1,0 +1,26 @@
+{
+  "category": "refactor",
+  "description": "Create a unified StateManager abstraction to handle agent state persistence across all workflows. Consolidate the fragmented memory classes (InvestigateMemory, SolveMemory, CitationMemory) into a consistent state management pattern with transactional semantics.\n\n**Rationale:** Each agent currently implements its own state/memory management pattern, leading to inconsistent persistence logic and difficulty debugging state-related issues. A unified layer would improve maintainability and enable features like state rollback or replay.",
+  "title": "Extract Agent State Management into Dedicated Layer",
+  "status": "verified",
+  "id": "feature-1768158017127-29ycz8s4j",
+  "descriptionHistory": [
+    {
+      "description": "Create a unified StateManager abstraction to handle agent state persistence across all workflows. Consolidate the fragmented memory classes (InvestigateMemory, SolveMemory, CitationMemory) into a consistent state management pattern with transactional semantics.\n\n**Rationale:** Each agent currently implements its own state/memory management pattern, leading to inconsistent persistence logic and difficulty debugging state-related issues. A unified layer would improve maintainability and enable features like state rollback or replay.",
+      "timestamp": "2026-01-11T19:00:17.128Z",
+      "source": "initial"
+    }
+  ],
+  "skipTests": false,
+  "model": "codex-gpt-5.2",
+  "thinkingLevel": "none",
+  "reasoningEffort": "high",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "priority": 1,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "startedAt": "2026-01-11T19:05:44.606Z",
+  "updatedAt": "2026-01-11T19:08:08.741Z"
+}

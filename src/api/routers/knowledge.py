@@ -30,6 +30,13 @@ from src.knowledge.add_documents import DocumentAdder
 from src.knowledge.initializer import KnowledgeBaseInitializer
 from src.knowledge.manager import KnowledgeBaseManager
 from src.knowledge.progress_tracker import ProgressStage, ProgressTracker
+from src.knowledge.document_tracker import DocumentTracker
+from src.knowledge.version_manager import VersionManager, VersionType
+from src.knowledge.prerequisite_graph import (
+    build_concept_hierarchy_graph,
+    extract_subgraph,
+    match_focus_nodes,
+)
 
 _project_root = Path(__file__).parent.parent.parent.parent
 sys.path.insert(0, str(_project_root))
@@ -70,6 +77,24 @@ class RefreshOptions(BaseModel):
     no_backup: bool = False
     skip_extract: bool = False
     batch_size: int = 20
+
+
+class PrerequisiteGraphNode(BaseModel):
+    id: str
+    label: str
+
+
+class PrerequisiteGraphEdge(BaseModel):
+    source: str
+    target: str
+
+
+class PrerequisiteGraphResponse(BaseModel):
+    kb_name: str
+    query: str
+    focus_node_ids: list[str]
+    nodes: list[PrerequisiteGraphNode]
+    edges: list[PrerequisiteGraphEdge]
 
 
 async def run_initialization_task(initializer: KnowledgeBaseInitializer):
@@ -380,6 +405,54 @@ async def list_knowledge_bases():
         error_msg = f"Error listing knowledge bases: {e}"
         logger.error(f"{error_msg}\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"Failed to list knowledge bases: {e!s}")
+
+
+@router.get("/prerequisite-graph", response_model=PrerequisiteGraphResponse)
+async def get_prerequisite_graph(
+    kb_name: str,
+    query: str = "",
+    max_nodes: int = 120,
+    ancestor_depth: int = 3,
+    descendant_depth: int = 2,
+):
+    """
+    Build and return a prerequisite-style concept graph from extracted KB content.
+
+    Graph heuristic:
+    - Treat `content_list/*.json` outline levels (`text_level`) as concepts.
+    - Add edges from parent heading -> child heading (prerequisite -> dependent).
+    """
+    manager = get_kb_manager()
+    try:
+        kb_dir = manager.get_knowledge_base_path(kb_name)
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+    content_list_dir = kb_dir / "content_list"
+    all_nodes, all_edges = build_concept_hierarchy_graph(content_list_dir)
+
+    focus_node_ids = match_focus_nodes(all_nodes, query)
+    if focus_node_ids:
+        nodes, edges = extract_subgraph(
+            all_nodes,
+            all_edges,
+            focus_node_ids,
+            ancestor_depth=max(0, ancestor_depth),
+            descendant_depth=max(0, descendant_depth),
+            max_nodes=max(10, max_nodes),
+        )
+    else:
+        nodes = sorted(all_nodes, key=lambda n: (n.label.lower(), n.node_id))[: max(10, max_nodes)]
+        selected_ids = {n.node_id for n in nodes}
+        edges = [e for e in all_edges if e.source in selected_ids and e.target in selected_ids]
+
+    return PrerequisiteGraphResponse(
+        kb_name=kb_name,
+        query=query,
+        focus_node_ids=focus_node_ids,
+        nodes=[PrerequisiteGraphNode(id=n.node_id, label=n.label) for n in nodes],
+        edges=[PrerequisiteGraphEdge(source=e.source, target=e.target) for e in edges],
+    )
 
 
 @router.get("/{kb_name}")
@@ -744,3 +817,329 @@ async def websocket_progress(websocket: WebSocket, kb_name: str):
             await websocket.close()
         except:
             pass
+
+
+# =============================================================================
+# Version Management Endpoints
+# =============================================================================
+
+
+class CreateVersionRequest(BaseModel):
+    """Request body for creating a version snapshot"""
+    description: str = ""
+    created_by: str = "user"
+
+
+class RollbackRequest(BaseModel):
+    """Request body for rollback operation"""
+    backup_current: bool = True
+
+
+class CompareVersionsRequest(BaseModel):
+    """Request body for version comparison"""
+    version_1: str
+    version_2: str
+
+
+@router.post("/{kb_name}/versions")
+async def create_version_snapshot(kb_name: str, request: CreateVersionRequest = None):
+    """
+    Create a new version snapshot of the knowledge base.
+
+    This creates a complete snapshot of the current KB state including:
+    - RAG storage (entities, relations, chunks)
+    - Document tracking metadata
+    - KB metadata
+    """
+    try:
+        manager = get_kb_manager()
+        kb_path = manager.get_knowledge_base_path(kb_name)
+
+        version_manager = VersionManager(kb_path)
+
+        description = request.description if request else ""
+        created_by = request.created_by if request else "user"
+
+        logger.info(f"Creating version snapshot for KB '{kb_name}'")
+
+        version_info = version_manager.create_snapshot(
+            description=description,
+            created_by=created_by,
+            version_type=VersionType.MANUAL,
+        )
+
+        return {
+            "message": "Version snapshot created successfully",
+            "version": version_info.to_dict(),
+        }
+    except ValueError:
+        raise HTTPException(status_code=404, detail=f"Knowledge base '{kb_name}' not found")
+    except Exception as e:
+        logger.error(f"Failed to create version snapshot for KB '{kb_name}': {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{kb_name}/versions")
+async def list_versions(kb_name: str):
+    """
+    List all available versions for a knowledge base.
+
+    Returns a list of all snapshots, sorted by creation time (newest first).
+    """
+    try:
+        manager = get_kb_manager()
+        kb_path = manager.get_knowledge_base_path(kb_name)
+
+        version_manager = VersionManager(kb_path)
+        versions = version_manager.list_versions()
+
+        return {
+            "kb_name": kb_name,
+            "version_count": len(versions),
+            "versions": [v.to_dict() for v in versions],
+        }
+    except ValueError:
+        raise HTTPException(status_code=404, detail=f"Knowledge base '{kb_name}' not found")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{kb_name}/versions/{version_id}")
+async def get_version_details(kb_name: str, version_id: str):
+    """
+    Get detailed information for a specific version.
+    """
+    try:
+        manager = get_kb_manager()
+        kb_path = manager.get_knowledge_base_path(kb_name)
+
+        version_manager = VersionManager(kb_path)
+        version_info = version_manager.get_version(version_id)
+
+        if version_info is None:
+            raise HTTPException(status_code=404, detail=f"Version '{version_id}' not found")
+
+        return {
+            "kb_name": kb_name,
+            "version": version_info.to_dict(),
+        }
+    except ValueError:
+        raise HTTPException(status_code=404, detail=f"Knowledge base '{kb_name}' not found")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+async def run_rollback_task(
+    kb_name: str,
+    base_dir: str,
+    version_id: str,
+    backup_current: bool,
+):
+    """Background task for rolling back to a previous version"""
+    task_manager = TaskIDManager.get_instance()
+    task_id = task_manager.generate_task_id("kb_rollback", f"{kb_name}_{version_id}")
+
+    kb_path = Path(base_dir) / kb_name
+    progress_tracker = ProgressTracker(kb_name, Path(base_dir))
+    progress_tracker.task_id = task_id
+
+    try:
+        logger.info(f"[{task_id}] Starting rollback for KB '{kb_name}' to version '{version_id}'")
+
+        progress_tracker.update(
+            ProgressStage.INITIALIZING,
+            f"Preparing rollback to version {version_id}...",
+            current=0,
+            total=3,
+        )
+
+        version_manager = VersionManager(kb_path)
+
+        if backup_current:
+            progress_tracker.update(
+                ProgressStage.INITIALIZING,
+                "Creating backup of current state...",
+                current=1,
+                total=3,
+            )
+
+        progress_tracker.update(
+            ProgressStage.PROCESSING_DOCUMENTS,
+            "Restoring version data...",
+            current=2,
+            total=3,
+        )
+
+        success = version_manager.rollback_to_version(
+            version_id=version_id,
+            backup_current=backup_current,
+        )
+
+        if success:
+            progress_tracker.update(
+                ProgressStage.COMPLETED,
+                f"Rollback to version {version_id} completed!",
+                current=3,
+                total=3,
+            )
+            logger.info(f"[{task_id}] KB '{kb_name}' rolled back to version '{version_id}'")
+            task_manager.update_task_status(task_id, "completed")
+        else:
+            error_msg = f"Rollback failed for version {version_id}"
+            progress_tracker.update(
+                ProgressStage.ERROR,
+                error_msg,
+                error=error_msg,
+            )
+            task_manager.update_task_status(task_id, "error", error=error_msg)
+
+    except Exception as e:
+        error_msg = f"Rollback failed: {e}"
+        logger.error(f"[{task_id}] {error_msg}")
+
+        task_manager.update_task_status(task_id, "error", error=error_msg)
+
+        progress_tracker.update(
+            ProgressStage.ERROR,
+            error_msg,
+            error=error_msg,
+        )
+
+
+@router.post("/{kb_name}/versions/{version_id}/rollback")
+async def rollback_to_version(
+    kb_name: str,
+    version_id: str,
+    background_tasks: BackgroundTasks,
+    request: RollbackRequest = None,
+):
+    """
+    Rollback knowledge base to a previous version.
+
+    This restores the KB to the state captured in the specified version snapshot.
+    By default, creates a backup of the current state before rollback.
+    """
+    try:
+        manager = get_kb_manager()
+        kb_path = manager.get_knowledge_base_path(kb_name)
+
+        # Verify version exists
+        version_manager = VersionManager(kb_path)
+        version_info = version_manager.get_version(version_id)
+
+        if version_info is None:
+            raise HTTPException(status_code=404, detail=f"Version '{version_id}' not found")
+
+        backup_current = request.backup_current if request else True
+
+        logger.info(f"Starting rollback for KB '{kb_name}' to version '{version_id}' (backup={backup_current})")
+
+        background_tasks.add_task(
+            run_rollback_task,
+            kb_name=kb_name,
+            base_dir=str(_kb_base_dir),
+            version_id=version_id,
+            backup_current=backup_current,
+        )
+
+        return {
+            "message": f"Rollback to version '{version_id}' started. Processing in background.",
+            "kb_name": kb_name,
+            "version_id": version_id,
+            "backup_current": backup_current,
+        }
+    except ValueError:
+        raise HTTPException(status_code=404, detail=f"Knowledge base '{kb_name}' not found")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to start rollback for KB '{kb_name}': {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/{kb_name}/versions/compare")
+async def compare_versions(kb_name: str, request: CompareVersionsRequest):
+    """
+    Compare two versions and show document changes.
+
+    Returns the differences between two version snapshots including:
+    - Documents added in version 2
+    - Documents deleted in version 2
+    - Documents modified between versions
+    - Documents unchanged
+    """
+    try:
+        manager = get_kb_manager()
+        kb_path = manager.get_knowledge_base_path(kb_name)
+
+        version_manager = VersionManager(kb_path)
+
+        # Verify both versions exist
+        v1_info = version_manager.get_version(request.version_1)
+        v2_info = version_manager.get_version(request.version_2)
+
+        if v1_info is None:
+            raise HTTPException(status_code=404, detail=f"Version '{request.version_1}' not found")
+        if v2_info is None:
+            raise HTTPException(status_code=404, detail=f"Version '{request.version_2}' not found")
+
+        comparison = version_manager.compare_versions(
+            version_id_1=request.version_1,
+            version_id_2=request.version_2,
+        )
+
+        if comparison is None:
+            raise HTTPException(status_code=500, detail="Failed to compare versions")
+
+        return {
+            "kb_name": kb_name,
+            "comparison": comparison.to_dict(),
+            "version_1_info": v1_info.to_dict(),
+            "version_2_info": v2_info.to_dict(),
+        }
+    except ValueError:
+        raise HTTPException(status_code=404, detail=f"Knowledge base '{kb_name}' not found")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/{kb_name}/versions/{version_id}")
+async def delete_version(kb_name: str, version_id: str):
+    """
+    Delete a version snapshot.
+
+    Permanently removes the specified version snapshot from the knowledge base.
+    """
+    try:
+        manager = get_kb_manager()
+        kb_path = manager.get_knowledge_base_path(kb_name)
+
+        version_manager = VersionManager(kb_path)
+
+        # Verify version exists
+        version_info = version_manager.get_version(version_id)
+        if version_info is None:
+            raise HTTPException(status_code=404, detail=f"Version '{version_id}' not found")
+
+        success = version_manager.delete_version(version_id)
+
+        if not success:
+            raise HTTPException(status_code=500, detail="Failed to delete version")
+
+        logger.info(f"Version '{version_id}' deleted from KB '{kb_name}'")
+
+        return {
+            "message": f"Version '{version_id}' deleted successfully",
+            "kb_name": kb_name,
+            "version_id": version_id,
+        }
+    except ValueError:
+        raise HTTPException(status_code=404, detail=f"Knowledge base '{kb_name}' not found")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

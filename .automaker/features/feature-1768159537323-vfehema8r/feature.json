@@ -1,0 +1,26 @@
+{
+  "category": "enhancement",
+  "description": "Configure ISR for VitePress documentation pages served through Next.js (if integrated) or static sections like help/about. Set revalidation intervals (e.g., 3600s) to serve cached pages instantly while regenerating in the background when content changes.\n\n**Rationale:** Documentation and help pages are frequently accessed but rarely change. Serving them as pre-rendered static HTML eliminates server processing time, reducing TTFB from 200-400ms to <50ms. ISR ensures updates propagate without sacrificing performance.",
+  "title": "Implement Incremental Static Regeneration for Documentation Pages",
+  "status": "verified",
+  "id": "feature-1768159537323-vfehema8r",
+  "descriptionHistory": [
+    {
+      "description": "Configure ISR for VitePress documentation pages served through Next.js (if integrated) or static sections like help/about. Set revalidation intervals (e.g., 3600s) to serve cached pages instantly while regenerating in the background when content changes.\n\n**Rationale:** Documentation and help pages are frequently accessed but rarely change. Serving them as pre-rendered static HTML eliminates server processing time, reducing TTFB from 200-400ms to <50ms. ISR ensures updates propagate without sacrificing performance.",
+      "timestamp": "2026-01-11T19:25:37.323Z",
+      "source": "initial"
+    }
+  ],
+  "skipTests": false,
+  "model": "codex-gpt-5.2",
+  "thinkingLevel": "none",
+  "reasoningEffort": "medium",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "priority": 1,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "startedAt": "2026-01-11T19:29:55.048Z",
+  "updatedAt": "2026-01-11T19:40:13.741Z"
+}

@@ -1,5 +1,63 @@
 system:
   language: en
+
+# Rate Limiting Configuration
+rate_limiting:
+  enabled: true
+  backend: memory # "memory" or "redis"
+  redis_url: redis://localhost:6379/0
+  default_plan: free
+  include_headers: true
+  log_violations: true
+  plans:
+    free:
+      requests_per_minute: 10
+      requests_per_hour: 100
+      requests_per_day: 500
+      burst_size: 5
+      concurrent_connections: 1
+    basic:
+      requests_per_minute: 30
+      requests_per_hour: 500
+      requests_per_day: 5000
+      burst_size: 10
+      concurrent_connections: 3
+    pro:
+      requests_per_minute: 100
+      requests_per_hour: 2000
+      requests_per_day: 20000
+      burst_size: 20
+      concurrent_connections: 10
+    unlimited:
+      requests_per_minute: 1000
+      requests_per_hour: 100000
+      requests_per_day: 1000000
+      burst_size: 100
+      concurrent_connections: 50
+  endpoints:
+    /api/v1/solve:
+      limit_multiplier: 0.5
+      min_plan: basic
+    /api/v1/chat:
+      limit_multiplier: 0.5
+    /api/v1/research:
+      limit_multiplier: 0.3
+      min_plan: basic
+    /api/v1/question:
+      limit_multiplier: 0.5
+    /api/v1/knowledge/upload:
+      limit_multiplier: 0.2
+    /api/v1/settings:
+      limit_multiplier: 2.0
+    /api/v1/dashboard:
+      limit_multiplier: 2.0
+    /api/v1/analytics:
+      limit_multiplier: 2.0
+    /api/v1/system:
+      exempt: true
+    /health:
+      exempt: true
+
 paths:
   user_data_dir: ./data/user
   knowledge_bases_dir: ./data/knowledge_bases
@@ -17,8 +75,8 @@ tools:
   run_code:
     workspace: ./data/user/run_code_workspace
     allowed_roots:
-    - ./data/user
-    - ./src/tools
+      - ./data/user
+      - ./src/tools
   web_search:
     enabled: true
   query_item:
@@ -40,8 +98,8 @@ tts:
 question:
   max_rounds: 10
   rag_query_count: 3
-  max_parallel_questions: 1
-  rag_mode: naive
+  max_parallel_questions: 3
+  rag_mode: hybrid
   agents:
     question_generation:
       max_iterations: 5
@@ -49,16 +107,29 @@ question:
     question_validation:
       strict_mode: true
 solve:
-  max_solve_correction_iterations: 3
+  max_solve_correction_iterations: 5
   enable_citations: true
   save_intermediate_results: true
   agents:
     investigate_agent:
       max_actions_per_round: 1
-      max_iterations: 3
+      max_iterations: 5
     precision_answer_agent:
       enabled: true
 research:
+  default_preset: auto
+
+# Shared, cross-process cache for per-run agent memory JSON (optional).
+# Keeps JSON-on-disk as the source of truth; this is a best-effort accelerator.
+agent_memory_shared_storage:
+  enabled: true
+  backend: shared_memory # shared_memory | redis | disabled
+  store_dir: ./data/.shared_agent_memory
+  max_bytes: 268435456 # 256 MiB
+  high_watermark: 0.9
+  low_watermark: 0.7
+  redis_url: redis://localhost:6379/0
+  redis_key_prefix: pradeep:agentmem:
   planning:
     rephrase:
       enabled: true

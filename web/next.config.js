@@ -11,6 +11,8 @@ const nextConfig = {
 
   // Turbopack configuration (Next.js 16+ uses Turbopack by default for dev)
   turbopack: {
+    // Ensure Turbopack resolves from the Next.js app root (avoids lockfile-root inference).
+    root: __dirname,
     resolveAlias: {
       // Fix for mermaid's cytoscape dependency - use CJS version
       cytoscape: "cytoscape/dist/cytoscape.cjs.js",
@@ -27,6 +29,20 @@ const nextConfig = {
         "node_modules/cytoscape/dist/cytoscape.cjs.js",
       ),
     };
+
+    // Encourage better tree-shaking for our UI/component modules.
+    config.optimization = {
+      ...config.optimization,
+      usedExports: true,
+      sideEffects: true,
+    };
+
+    config.module.rules.push({
+      test: /\.[jt]sx?$/,
+      include: [path.resolve(__dirname, "components")],
+      sideEffects: false,
+    });
+
     return config;
   },
 };

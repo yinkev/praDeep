@@ -26,6 +26,8 @@ urllib3>=2.2.1
 # Async support
 # ============================================
 nest_asyncio>=1.5.8
+celery>=5.4.0
+redis>=5.0.0
 
 # ============================================
 # Web framework and server
@@ -51,7 +53,7 @@ arxiv>=2.0.0
 # Scientific computing (optional, for code execution)
 # ============================================
 # Uncomment if users need these for code execution feature
-# numpy>=1.24.0
+numpy>=1.24.0
 # matplotlib>=3.7.0
 # scipy>=1.11.0
 # pandas>=2.0.0

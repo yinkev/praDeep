@@ -2,7 +2,7 @@
   "category": "ui",
   "description": "- Each solve run requires: question input → KB selection → tool selection → settings configuration - **Pain point**: No saved preferences or templates for similar problem types - **Time sink**: Re-configuring same settings for similar questions",
   "title": "2. Solve Agent Configuration Overhead",
-  "status": "backlog",
+  "status": "verified",
   "id": "feature-1768153466156-iy0makc87",
   "descriptionHistory": [
     {
@@ -10,5 +10,17 @@
       "timestamp": "2026-01-11T17:44:26.157Z",
       "source": "initial"
     }
-  ]
+  ],
+  "skipTests": false,
+  "model": "codex-gpt-5.2",
+  "thinkingLevel": "none",
+  "reasoningEffort": "medium",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "priority": 2,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "startedAt": "2026-01-11T18:44:56.813Z",
+  "updatedAt": "2026-01-11T18:50:38.989Z"
 }

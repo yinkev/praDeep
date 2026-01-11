@@ -1,0 +1,26 @@
+{
+  "category": "enhancement",
+  "description": "Wrap markdown rendering components (used for solve outputs, research reports, notebook displays) in React.memo. Cache parsed markdown AST using useMemo keyed on content hash. Since outputs are immersive and re-render frequently during streaming, memoization prevents redundant parsing of static sections.\n\n**Rationale:** Markdown parsing is CPU-intensive, especially for long solve outputs with citations and code blocks. During WebSocket streaming updates, unchanged sections re-render unnecessarily. Memoization can reduce rendering time by 40-60% for complex documents, maintaining 60fps during live updates.",
+  "title": "Memoize Markdown Rendering with React.memo and useMemo",
+  "status": "verified",
+  "id": "feature-1768159518473-2ev1uw9rv",
+  "descriptionHistory": [
+    {
+      "description": "Wrap markdown rendering components (used for solve outputs, research reports, notebook displays) in React.memo. Cache parsed markdown AST using useMemo keyed on content hash. Since outputs are immersive and re-render frequently during streaming, memoization prevents redundant parsing of static sections.\n\n**Rationale:** Markdown parsing is CPU-intensive, especially for long solve outputs with citations and code blocks. During WebSocket streaming updates, unchanged sections re-render unnecessarily. Memoization can reduce rendering time by 40-60% for complex documents, maintaining 60fps during live updates.",
+      "timestamp": "2026-01-11T19:25:18.473Z",
+      "source": "initial"
+    }
+  ],
+  "skipTests": false,
+  "model": "codex-gpt-5.2",
+  "thinkingLevel": "none",
+  "reasoningEffort": "medium",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "priority": 1,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "startedAt": "2026-01-11T19:27:32.430Z",
+  "updatedAt": "2026-01-11T19:36:04.810Z"
+}

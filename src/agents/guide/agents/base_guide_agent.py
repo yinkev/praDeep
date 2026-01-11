@@ -16,10 +16,10 @@ if str(_project_root) not in sys.path:
     sys.path.insert(0, str(_project_root))
 
 from src.logging import LLMStats, get_logger
+from src.di import Container, get_container
 from src.services.config import get_agent_params, load_config_with_main
 from src.services.llm import complete as llm_complete
 from src.services.llm import get_token_limit_kwargs
-from src.services.prompt import get_prompt_manager
 
 
 class BaseGuideAgent(ABC):
@@ -35,6 +35,9 @@ class BaseGuideAgent(ABC):
         agent_name: str,
         language: str = "zh",
         binding: str = "openai",
+        *,
+        container: Container | None = None,
+        prompt_manager: Any | None = None,
     ):
         """
         Initialize base Agent.
@@ -51,6 +54,8 @@ class BaseGuideAgent(ABC):
         self.agent_name = agent_name
         self.language = language
         self.binding = binding
+        self.container = container or get_container()
+        self.prompt_manager = prompt_manager or self.container.prompt_manager()
 
         # Load agent parameters from unified config (agents.yaml)
         self._agent_params = get_agent_params("guide")
@@ -67,7 +72,7 @@ class BaseGuideAgent(ABC):
             self.logger = get_logger(f"Guide.{agent_name}")
 
         # Load prompts using unified PromptManager
-        self.prompts = get_prompt_manager().load_prompts(
+        self.prompts = self.prompt_manager.load_prompts(
             module_name="guide",
             agent_name=self.agent_name,
             language=self.language,

@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -280,24 +281,30 @@ class CodeExecutionEnvironment:
     def __init__(self, workspace: WorkspaceManager):
         self.workspace = workspace
 
-    def run_python(
+    def _run_file(
         self,
+        cmd: list[str],
         code: str,
+        filename: str,
         timeout: int,
         assets_dir: Path | None,
+        stdin: str | None = None,
+        env_overrides: dict[str, str] | None = None,
     ) -> tuple[str, str, int, float]:
         env = os.environ.copy()
         env["PYTHONIOENCODING"] = "utf-8"
+        if env_overrides:
+            env.update(env_overrides)
 
         with self.workspace.create_temp_dir() as temp_dir:
-            code_file = temp_dir / "code.py"
+            code_file = temp_dir / filename
             code_file.write_text(code, encoding="utf-8")
 
             work_dir = assets_dir if assets_dir else temp_dir
             start_time = time.time()
 
             result = subprocess.run(
-                [sys.executable, str(code_file)],
+                [*cmd, str(code_file)],
                 check=False,
                 capture_output=True,
                 text=True,
@@ -306,10 +313,55 @@ class CodeExecutionEnvironment:
                 timeout=timeout,
                 cwd=str(work_dir),
                 env=env,
+                input=stdin,
             )
 
             elapsed_ms = (time.time() - start_time) * 1000
             return result.stdout, result.stderr, result.returncode, elapsed_ms
+
+    def run_python(
+        self,
+        code: str,
+        timeout: int,
+        assets_dir: Path | None,
+    ) -> tuple[str, str, int, float]:
+        return self._run_file([sys.executable], code, "code.py", timeout, assets_dir)
+
+    def run_javascript(
+        self,
+        code: str,
+        timeout: int,
+        assets_dir: Path | None,
+        stdin: str | None = None,
+    ) -> tuple[str, str, int, float]:
+        node = shutil.which("node")
+        if not node:
+            raise CodeExecutionError("JavaScript execution requires `node`, but it was not found")
+        return self._run_file([node], code, "code.js", timeout, assets_dir, stdin=stdin)
+
+    def run_r(
+        self,
+        code: str,
+        timeout: int,
+        assets_dir: Path | None,
+        stdin: str | None = None,
+    ) -> tuple[str, str, int, float]:
+        rscript = shutil.which("Rscript")
+        if not rscript:
+            raise CodeExecutionError("R execution requires `Rscript`, but it was not found")
+        return self._run_file([rscript], code, "code.R", timeout, assets_dir, stdin=stdin)
+
+    def run_julia(
+        self,
+        code: str,
+        timeout: int,
+        assets_dir: Path | None,
+        stdin: str | None = None,
+    ) -> tuple[str, str, int, float]:
+        julia = shutil.which("julia")
+        if not julia:
+            raise CodeExecutionError("Julia execution requires `julia`, but it was not found")
+        return self._run_file([julia], code, "code.jl", timeout, assets_dir, stdin=stdin)
 
 
 WORKSPACE_MANAGER = WorkspaceManager()
@@ -323,21 +375,38 @@ async def run_code(
     timeout: int = 10,
     assets_dir: str | None = None,
     allowed_imports: list[str] | None = None,
+    stdin: str | None = None,
 ) -> dict[str, Any]:
     """
     Execute code in isolated environment, return result structure consistent with previous version.
     """
-    if language.lower() != "python":
-        raise ValueError(f"Unsupported language: {language}, currently only Python is supported")
+    lang = (language or "").strip().lower()
+    if lang == "js":
+        lang = "javascript"
+
+    supported = {"python", "javascript", "r", "julia"}
+    if lang not in supported:
+        raise ValueError(
+            f"Unsupported language: {language}. Supported languages: {', '.join(sorted(supported))}"
+        )
 
     WORKSPACE_MANAGER.ensure_initialized()
-    ImportGuard.validate(code, allowed_imports)
+    if lang == "python":
+        ImportGuard.validate(code, allowed_imports)
 
     assets_path = WORKSPACE_MANAGER.resolve_assets_dir(assets_dir)
     loop = asyncio.get_running_loop()
 
     def _execute():
-        return EXECUTION_ENV.run_python(code, timeout, assets_path)
+        if lang == "python":
+            return EXECUTION_ENV.run_python(code, timeout, assets_path)
+        if lang == "javascript":
+            return EXECUTION_ENV.run_javascript(code, timeout, assets_path, stdin=stdin)
+        if lang == "r":
+            return EXECUTION_ENV.run_r(code, timeout, assets_path, stdin=stdin)
+        if lang == "julia":
+            return EXECUTION_ENV.run_julia(code, timeout, assets_path, stdin=stdin)
+        raise ValueError(f"Unsupported language: {lang}")  # pragma: no cover
 
     try:
         stdout, stderr, exit_code, elapsed_ms = await loop.run_in_executor(None, _execute)
@@ -353,10 +422,10 @@ async def run_code(
         }
 
         OPERATION_LOGGER.log(
-            "execute_python",
+            "execute_code",
             {
                 "status": "success",
-                "language": language,
+                "language": lang,
                 "timeout": timeout,
                 "assets_dir": str(assets_path) if assets_path else None,
                 "exit_code": exit_code,
@@ -376,10 +445,10 @@ async def run_code(
         logger.warning(f"Code execution timeout after {timeout}s: {timeout_exc}")
 
         OPERATION_LOGGER.log(
-            "execute_python",
+            "execute_code",
             {
                 "status": "timeout",
-                "language": language,
+                "language": lang,
                 "timeout": timeout,
                 "assets_dir": str(assets_path) if assets_path else None,
             },
@@ -408,10 +477,10 @@ async def run_code(
         logger.error(f"Code execution error: {exc}", exc_info=True)
 
         OPERATION_LOGGER.log(
-            "execute_python",
+            "execute_code",
             {
                 "status": "error",
-                "language": language,
+                "language": lang,
                 "timeout": timeout,
                 "assets_dir": str(assets_path) if assets_path else None,
                 "error": stderr_message,
@@ -433,12 +502,13 @@ def run_code_sync(
     code: str,
     timeout: int = 10,
     assets_dir: str | None = None,
+    stdin: str | None = None,
 ) -> dict[str, Any]:
     """
     Synchronous version of code execution (for non-async environments)
     """
 
-    return asyncio.run(run_code(language, code, timeout, assets_dir))
+    return asyncio.run(run_code(language, code, timeout, assets_dir, stdin=stdin))
 
 
 if __name__ == "__main__":

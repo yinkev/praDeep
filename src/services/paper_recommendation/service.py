@@ -243,14 +243,19 @@ class PaperRecommendationService:
         # Combine scores
         for paper in candidates:
             if recommendation_type == "semantic":
-                paper.combined_score = paper.similarity_score
+                paper.combined_score = paper.similarity_score + (
+                    self.weights["user_preference"] * paper.user_preference_score
+                )
             elif recommendation_type == "citation":
-                paper.combined_score = paper.citation_score
+                paper.combined_score = paper.citation_score + (
+                    self.weights["user_preference"] * paper.user_preference_score
+                )
             else:  # hybrid
                 paper.combined_score = (
                     self.weights["semantic"] * paper.similarity_score
                     + self.weights["citation"] * paper.citation_score
                     + self.weights["recency"] * paper.recency_score
+                    + self.weights["user_preference"] * paper.user_preference_score
                 )
 
         return candidates
@@ -309,7 +314,7 @@ class PaperRecommendationService:
         if not history.preferred_topics and not history.read_papers:
             # No history, neutral scores
             for paper in candidates:
-                paper.combined_score += 0  # No preference boost
+                paper.user_preference_score = 0.0
             return
 
         # Match against preferred topics
@@ -319,7 +324,10 @@ class PaperRecommendationService:
                 paper_fields = set(f.lower() for f in paper.fields_of_study)
                 topic_overlap = len(topic_set & paper_fields)
                 if topic_overlap > 0:
-                    paper.combined_score += self.weights["user_preference"] * (topic_overlap / len(topic_set))
+                    paper.user_preference_score = max(
+                        paper.user_preference_score,
+                        topic_overlap / max(1, len(topic_set)),
+                    )
 
     def _cosine_similarity(self, vec1: np.ndarray, vec2: np.ndarray) -> float:
         """Compute cosine similarity between two vectors."""
@@ -427,16 +435,12 @@ def get_paper_recommendation_service(
     openalex_email: Optional[str] = None,
 ) -> PaperRecommendationService:
     """Get or create the singleton paper recommendation service."""
-    global _service
-    if _service is None:
-        # Try to get API key from environment
-        if semantic_scholar_api_key is None:
-            semantic_scholar_api_key = os.getenv("SEMANTIC_SCHOLAR_API_KEY")
-        if openalex_email is None:
-            openalex_email = os.getenv("OPENALEX_EMAIL")
+    from src.di import get_container
 
-        _service = PaperRecommendationService(
-            semantic_scholar_api_key=semantic_scholar_api_key,
-            openalex_email=openalex_email,
-        )
-    return _service
+    service = get_container().paper_recommendation_service(
+        semantic_scholar_api_key=semantic_scholar_api_key,
+        openalex_email=openalex_email,
+    )
+    global _service
+    _service = service
+    return service

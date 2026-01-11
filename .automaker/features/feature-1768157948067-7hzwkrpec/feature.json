@@ -1,0 +1,26 @@
+{
+  "category": "chore",
+  "description": "- The system has 7+ different agent workflows (solve, research, question gen, guide, co-writer, ideagen, chat) - Each has complex orchestration patterns that would benefit from sequence diagrams and flow documentation",
+  "title": "1. Agent Workflow Documentation",
+  "status": "verified",
+  "id": "feature-1768157948067-7hzwkrpec",
+  "descriptionHistory": [
+    {
+      "description": "- The system has 7+ different agent workflows (solve, research, question gen, guide, co-writer, ideagen, chat) - Each has complex orchestration patterns that would benefit from sequence diagrams and flow documentation",
+      "timestamp": "2026-01-11T18:59:08.068Z",
+      "source": "initial"
+    }
+  ],
+  "skipTests": false,
+  "model": "codex-gpt-5.2",
+  "thinkingLevel": "none",
+  "reasoningEffort": "high",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "priority": 2,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "startedAt": "2026-01-11T18:59:34.237Z",
+  "updatedAt": "2026-01-11T19:05:18.341Z"
+}

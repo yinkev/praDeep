@@ -1,0 +1,26 @@
+{
+  "category": "enhancement",
+  "description": "When a user first accesses the Solve module with no history, show an interactive overlay tutorial that walks through entering a sample question, explains the analysis and solve loops, and demonstrates how citations appear. Include skip and 'Show me later' options with progress tracking.\n\n**Rationale:** The Solve agent's dual-loop architecture (Analysis Loop + Solve Loop) is complex. Without guidance, users may not understand what questions to ask or how the system uses knowledge bases and tools to generate answers. A tutorial reduces confusion and improves initial engagement.",
+  "title": "Guided First-Run Tutorial for Solve Agent",
+  "status": "verified",
+  "id": "feature-1768157836599-ozqp3jkhn",
+  "descriptionHistory": [
+    {
+      "description": "When a user first accesses the Solve module with no history, show an interactive overlay tutorial that walks through entering a sample question, explains the analysis and solve loops, and demonstrates how citations appear. Include skip and 'Show me later' options with progress tracking.\n\n**Rationale:** The Solve agent's dual-loop architecture (Analysis Loop + Solve Loop) is complex. Without guidance, users may not understand what questions to ask or how the system uses knowledge bases and tools to generate answers. A tutorial reduces confusion and improves initial engagement.",
+      "timestamp": "2026-01-11T18:57:16.600Z",
+      "source": "initial"
+    }
+  ],
+  "skipTests": false,
+  "model": "codex-gpt-5.2",
+  "thinkingLevel": "none",
+  "reasoningEffort": "medium",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "priority": 2,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "startedAt": "2026-01-11T18:58:30.120Z",
+  "updatedAt": "2026-01-11T19:01:24.678Z"
+}

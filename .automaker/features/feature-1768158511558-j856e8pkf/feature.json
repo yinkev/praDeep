@@ -1,0 +1,26 @@
+{
+  "category": "chore",
+  "description": "Build CLI tool that generates realistic test scenarios (questions, research topics, documents) and expected outputs for each agent type. Include fixtures for knowledge base state, memory snapshots, and tool responses to enable fast unit testing.\n\n**Rationale:** Testing agents currently requires manual setup of knowledge bases and crafting realistic inputs. Automated test data generation would enable comprehensive regression testing and faster CI pipelines, reducing agent breakage during refactoring.",
+  "title": "Smart Test Data Generator for Agent Workflows",
+  "status": "verified",
+  "id": "feature-1768158511558-j856e8pkf",
+  "descriptionHistory": [
+    {
+      "description": "Build CLI tool that generates realistic test scenarios (questions, research topics, documents) and expected outputs for each agent type. Include fixtures for knowledge base state, memory snapshots, and tool responses to enable fast unit testing.\n\n**Rationale:** Testing agents currently requires manual setup of knowledge bases and crafting realistic inputs. Automated test data generation would enable comprehensive regression testing and faster CI pipelines, reducing agent breakage during refactoring.",
+      "timestamp": "2026-01-11T19:08:31.559Z",
+      "source": "initial"
+    }
+  ],
+  "skipTests": false,
+  "model": "codex-gpt-5.2",
+  "thinkingLevel": "none",
+  "reasoningEffort": "medium",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "priority": 1,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "startedAt": "2026-01-11T19:13:04.692Z",
+  "updatedAt": "2026-01-11T19:15:15.391Z"
+}

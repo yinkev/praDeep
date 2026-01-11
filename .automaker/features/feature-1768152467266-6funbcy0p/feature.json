@@ -2,7 +2,7 @@
   "category": "ui",
   "description": "Curated repository of practice problems across subjects with AI-driven selection that adapts to user skill level. Tracks performance metrics and automatically suggests problems at the optimal difficulty level to maintain engagement and learning efficiency.\n\n**Rationale:** Learners need abundant practice opportunities beyond generated questions. A problem bank with smart selection helps users find appropriate challenges without overwhelming beginners or boring advanced users.",
   "title": "Practice Problem Bank with Adaptive Selection",
-  "status": "in_progress",
+  "status": "verified",
   "id": "feature-1768152467266-6funbcy0p",
   "descriptionHistory": [
     {
@@ -23,5 +23,5 @@
   "requirePlanApproval": false,
   "workMode": "current",
   "startedAt": "2026-01-11T18:39:27.547Z",
-  "updatedAt": "2026-01-11T18:39:27.687Z"
+  "updatedAt": "2026-01-11T18:42:18.882Z"
 }

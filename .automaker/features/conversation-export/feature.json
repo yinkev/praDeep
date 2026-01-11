@@ -4,12 +4,21 @@
   "title": "Multi-format Conversation Export",
   "description": "Enable users to export agent conversations and results in multiple formats (PDF, Markdown, JSON, HTML) with preserved formatting, citations, and diagrams. Includes batch export for multiple sessions.",
   "status": "backlog",
-  "priority": 1,
+  "priority": 3,
   "complexity": "simple",
   "dependencies": [],
   "createdAt": "2026-01-11T17:24:12.288Z",
   "updatedAt": "2026-01-11T17:29:19.870Z",
   "branchName": "main",
   "descriptionHistory": [],
-  "startedAt": "2026-01-11T17:28:59.526Z"
+  "startedAt": "2026-01-11T17:28:59.526Z",
+  "skipTests": false,
+  "model": "opus",
+  "thinkingLevel": "none",
+  "reasoningEffort": "none",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "custom"
 }

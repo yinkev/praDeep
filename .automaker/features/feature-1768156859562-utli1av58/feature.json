@@ -2,7 +2,7 @@
   "category": "ui",
   "description": "Configurable retention policies that automatically archive or delete old solve runs, research outputs, and logs from data/user based on age, size, or usage patterns. Optional cloud backup before deletion.\n\n**Rationale:** data/user grows indefinitely with every session, consuming disk space. Users must manually identify and delete old files. Automated cleanup maintains storage hygiene without repetitive file management.",
   "title": "Automated Cleanup of Stale Outputs and Logs",
-  "status": "backlog",
+  "status": "verified",
   "id": "feature-1768156859562-utli1av58",
   "descriptionHistory": [
     {
@@ -10,5 +10,17 @@
       "timestamp": "2026-01-11T18:40:59.563Z",
       "source": "initial"
     }
-  ]
+  ],
+  "skipTests": false,
+  "model": "codex-gpt-5.2",
+  "thinkingLevel": "none",
+  "reasoningEffort": "medium",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "priority": 2,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "startedAt": "2026-01-11T18:45:52.030Z",
+  "updatedAt": "2026-01-11T18:48:38.369Z"
 }

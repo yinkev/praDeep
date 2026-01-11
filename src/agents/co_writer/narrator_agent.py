@@ -23,10 +23,10 @@ if str(_project_root) not in sys.path:
     sys.path.insert(0, str(_project_root))
 
 from src.logging import get_logger
+from src.di import Container, get_container
 from src.services.config import get_agent_params, load_config_with_main
 from src.services.llm import complete as llm_complete
 from src.services.llm import get_llm_config
-from src.services.prompt import get_prompt_manager
 from src.services.tts import get_tts_config
 
 # Initialize logger with config
@@ -60,13 +60,21 @@ def ensure_dirs():
 class NarratorAgent:
     """Note Narration Agent - Generate narration script and convert to audio"""
 
-    def __init__(self, language: str = "en"):
+    def __init__(
+        self,
+        language: str = "en",
+        *,
+        container: Container | None = None,
+        prompt_manager: Any | None = None,
+    ):
         # Load agent parameters from unified config (agents.yaml)
         self._agent_params = get_agent_params("narrator")
         self.language = language
+        self.container = container or get_container()
+        self.prompt_manager = prompt_manager or self.container.prompt_manager()
 
         # Load prompts using unified PromptManager
-        self._prompts = get_prompt_manager().load_prompts(
+        self._prompts = self.prompt_manager.load_prompts(
             module_name="co_writer",
             agent_name="narrator_agent",
             language=language,

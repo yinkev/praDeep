@@ -475,11 +475,13 @@ data/
     ├── co-writer/                # Interactive IdeaGen documents and audio files
     ├── notebook/                 # Notebook records and metadata
     ├── guide/                    # Guided learning sessions
+    ├── memory/                   # Cross-session user memory (JSON)
     ├── logs/                     # System logs
     └── run_code_workspace/       # Code execution workspace
 ```
 
 Results are automatically saved during all activities. Directories are created automatically as needed.
+For details on agent-run vs user memory persistence, see `docs/architecture/memory-systems.md`.
 
 ## 📦 Core Modules
 

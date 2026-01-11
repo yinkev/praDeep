@@ -1,0 +1,26 @@
+{
+  "category": "ui",
+  "description": "Automatically builds and displays a prerequisite concept graph from knowledge base content. Shows what topics depend on others, and highlights gaps in user's current understanding based on their question history.\n\n**Rationale:** Students often struggle because they're missing prerequisite knowledge. A visual dependency graph helps users understand learning sequences and identify foundational gaps they need to address first.",
+  "title": "Interactive Concept Prerequisite Graph",
+  "status": "verified",
+  "id": "feature-1768157482037-4dcxlvzvh",
+  "descriptionHistory": [
+    {
+      "description": "Automatically builds and displays a prerequisite concept graph from knowledge base content. Shows what topics depend on others, and highlights gaps in user's current understanding based on their question history.\n\n**Rationale:** Students often struggle because they're missing prerequisite knowledge. A visual dependency graph helps users understand learning sequences and identify foundational gaps they need to address first.",
+      "timestamp": "2026-01-11T18:51:22.037Z",
+      "source": "initial"
+    }
+  ],
+  "skipTests": false,
+  "model": "codex-gpt-5.2",
+  "thinkingLevel": "none",
+  "reasoningEffort": "high",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "priority": 2,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "startedAt": "2026-01-11T18:52:37.950Z",
+  "updatedAt": "2026-01-11T19:00:23.088Z"
+}

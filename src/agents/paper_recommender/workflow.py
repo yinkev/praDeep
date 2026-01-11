@@ -12,11 +12,11 @@ import asyncio
 from typing import Any, Callable, Optional
 
 from src.logging import get_logger
+from src.di import Container, get_container
 from src.services.paper_recommendation import (
     Paper,
     PaperRecommendationService,
     RecommendationResult,
-    get_paper_recommendation_service,
 )
 
 from .recommender_agent import PaperRecommenderAgent
@@ -41,11 +41,15 @@ class PaperRecommendationWorkflow:
         language: str = "en",
         config: Optional[dict[str, Any]] = None,
         progress_callback: Optional[Callable[[dict[str, Any]], None]] = None,
+        *,
+        container: Container | None = None,
+        service: PaperRecommendationService | None = None,
     ):
         self.logger = get_logger("PaperRecommendationWorkflow")
 
         # Initialize recommendation service
-        self.service = get_paper_recommendation_service()
+        self.container = container or get_container()
+        self.service = service or self.container.paper_recommendation_service()
 
         # Initialize agent for explanations
         self.agent = PaperRecommenderAgent(

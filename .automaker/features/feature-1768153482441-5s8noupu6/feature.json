@@ -2,7 +2,7 @@
   "category": "ui",
   "description": "Key Workflow Inefficiencies Identified",
   "title": "Key Workflow Inefficiencies Identified",
-  "status": "backlog",
+  "status": "verified",
   "id": "feature-1768153482441-5s8noupu6",
   "descriptionHistory": [
     {
@@ -10,5 +10,17 @@
       "timestamp": "2026-01-11T17:44:42.441Z",
       "source": "initial"
     }
-  ]
+  ],
+  "skipTests": false,
+  "model": "codex-gpt-5.2",
+  "thinkingLevel": "none",
+  "reasoningEffort": "medium",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "priority": 2,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "startedAt": "2026-01-11T18:45:17.147Z",
+  "updatedAt": "2026-01-11T18:53:44.825Z"
 }

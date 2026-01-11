@@ -3,7 +3,7 @@
   "category": "Knowledge Base",
   "title": "Advanced Knowledge Base Search Filters",
   "description": "Add sophisticated filtering options for RAG searches including date ranges, document types, entity filters, relation filters, and semantic similarity thresholds. Provides faceted search interface.",
-  "status": "verified",
+  "status": "completed",
   "priority": 2,
   "complexity": "moderate",
   "dependencies": [],
