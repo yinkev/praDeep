@@ -27,10 +27,10 @@ from pydantic import BaseModel
 from src.api.utils.progress_broadcaster import ProgressBroadcaster
 from src.api.utils.task_id_manager import TaskIDManager
 from src.knowledge.add_documents import DocumentAdder
+from src.knowledge.document_tracker import DocumentTracker
 from src.knowledge.initializer import KnowledgeBaseInitializer
 from src.knowledge.manager import KnowledgeBaseManager
 from src.knowledge.progress_tracker import ProgressStage, ProgressTracker
-from src.knowledge.document_tracker import DocumentTracker
 from src.knowledge.version_manager import VersionManager, VersionType
 
 _project_root = Path(__file__).parent.parent.parent.parent
@@ -197,12 +197,13 @@ async def run_refresh_task(
             if not options.no_backup:
                 # Create backup
                 from datetime import datetime as dt
+
                 backup_name = f"rag_storage_backup_{dt.now().strftime('%Y%m%d_%H%M%S')}"
                 backup_dir = kb_path / backup_name
                 logger.info(f"[{task_id}] Creating backup: {backup_name}")
                 progress_tracker.update(
                     ProgressStage.INITIALIZING,
-                    f"Creating backup of RAG storage...",
+                    "Creating backup of RAG storage...",
                     current=0,
                     total=0,
                 )
@@ -487,7 +488,9 @@ async def refresh_knowledge_base(
         if options is None:
             options = RefreshOptions()
 
-        logger.info(f"Starting refresh for KB '{kb_name}' (full={options.full}, no_backup={options.no_backup})")
+        logger.info(
+            f"Starting refresh for KB '{kb_name}' (full={options.full}, no_backup={options.no_backup})"
+        )
 
         background_tasks.add_task(
             run_refresh_task,
@@ -769,10 +772,7 @@ async def get_document_status(kb_name: str):
         documents = tracker.get_all_tracked_documents()
 
         # Convert to serializable format
-        result = {
-            name: info.to_dict()
-            for name, info in documents.items()
-        }
+        result = {name: info.to_dict() for name, info in documents.items()}
 
         return {
             "kb_name": kb_name,
@@ -823,17 +823,20 @@ async def get_document_changes(kb_name: str):
 
 class CreateVersionRequest(BaseModel):
     """Request body for creating a version snapshot"""
+
     description: str = ""
     created_by: str = "user"
 
 
 class RollbackRequest(BaseModel):
     """Request body for rollback operation"""
+
     backup_current: bool = True
 
 
 class CompareVersionsRequest(BaseModel):
     """Request body for version comparison"""
+
     version_1: str
     version_2: str
 
@@ -877,7 +880,7 @@ async def create_version_snapshot(kb_name: str, request: CreateVersionRequest = 
         )
 
         return {
-            "message": f"Version snapshot created successfully",
+            "message": "Version snapshot created successfully",
             "version": version_info.to_dict(),
         }
     except ValueError:
@@ -1073,7 +1076,9 @@ async def rollback_to_version(
 
         backup_current = request.backup_current if request else True
 
-        logger.info(f"Starting rollback for KB '{kb_name}' to version '{version_id}' (backup={backup_current})")
+        logger.info(
+            f"Starting rollback for KB '{kb_name}' to version '{version_id}' (backup={backup_current})"
+        )
 
         background_tasks.add_task(
             run_rollback_task,

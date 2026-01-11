@@ -41,9 +41,9 @@ from src.logging import LightRAGLogContext, get_logger
 logger = get_logger("KnowledgeInit")
 
 # Import numbered items extraction functionality
+from src.knowledge.document_tracker import DocumentStatus, DocumentTracker
 from src.knowledge.extract_numbered_items import process_content_list
 from src.knowledge.progress_tracker import ProgressStage, ProgressTracker
-from src.knowledge.document_tracker import DocumentTracker, DocumentStatus
 
 
 class KnowledgeBaseInitializer:
@@ -315,6 +315,7 @@ class KnowledgeBaseInitializer:
             """
             try:
                 import numpy as np
+
                 embeddings = await embedding_client.embed(texts)
                 # Convert to numpy array - LightRAG requires .size attribute
                 return np.array(embeddings)
@@ -459,7 +460,9 @@ class KnowledgeBaseInitializer:
         # Debug: list what's in doc_dir
         try:
             doc_dir_contents = list(doc_dir.iterdir())
-            logger.info(f"    _find_mineru_output_dir: {doc_dir.name} contains: {[p.name for p in doc_dir_contents]}")
+            logger.info(
+                f"    _find_mineru_output_dir: {doc_dir.name} contains: {[p.name for p in doc_dir_contents]}"
+            )
         except Exception as e:
             logger.error(f"    _find_mineru_output_dir: Failed to list {doc_dir}: {e}")
 
@@ -575,7 +578,9 @@ class KnowledgeBaseInitializer:
                             logger.debug(f"    Image already exists: {img_file.name}")
 
                 if image_count > 0:
-                    logger.info(f"  ✓ Moved {image_count} images from {doc_dir.name}/{output_dir.name}/images/")
+                    logger.info(
+                        f"  ✓ Moved {image_count} images from {doc_dir.name}/{output_dir.name}/images/"
+                    )
                 else:
                     logger.info(f"    No new images to move from {doc_dir.name}")
             else:

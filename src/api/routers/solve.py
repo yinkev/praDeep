@@ -261,7 +261,9 @@ async def websocket_solve(websocket: WebSocket):
                     memory.record_interaction(module="solve", topic=kb_name, success=True)
                     memory.record_question(
                         question=question,
-                        answer=result.get("final_answer", "")[:500] if result.get("final_answer") else None
+                        answer=result.get("final_answer", "")[:500]
+                        if result.get("final_answer")
+                        else None,
                     )
                     memory.record_topic(topic=kb_name, category="knowledge_base")
                 except Exception as mem_err:

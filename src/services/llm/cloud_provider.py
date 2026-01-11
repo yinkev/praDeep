@@ -514,13 +514,15 @@ async def _openai_complete_with_vision(
         if img.get("type") == "image":
             mime_type = img.get("mimeType", "image/png")
             data = img.get("data", "")
-            user_content.append({
-                "type": "image_url",
-                "image_url": {
-                    "url": f"data:{mime_type};base64,{data}",
-                    "detail": kwargs.get("image_detail", "auto")
+            user_content.append(
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:{mime_type};base64,{data}",
+                        "detail": kwargs.get("image_detail", "auto"),
+                    },
                 }
-            })
+            )
 
     # Add text prompt
     if prompt:
@@ -587,14 +589,16 @@ async def _anthropic_complete_with_vision(
         if img.get("type") == "image":
             mime_type = img.get("mimeType", "image/png")
             data = img.get("data", "")
-            user_content.append({
-                "type": "image",
-                "source": {
-                    "type": "base64",
-                    "media_type": mime_type,
-                    "data": data,
+            user_content.append(
+                {
+                    "type": "image",
+                    "source": {
+                        "type": "base64",
+                        "media_type": mime_type,
+                        "data": data,
+                    },
                 }
-            })
+            )
 
     # Add text prompt
     if prompt:

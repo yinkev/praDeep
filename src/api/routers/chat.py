@@ -269,7 +269,9 @@ async def websocket_chat(websocket: WebSocket):
 
                 # Record interaction in memory system
                 try:
-                    memory_manager.record_interaction(module="chat", topic=kb_name if kb_name else None)
+                    memory_manager.record_interaction(
+                        module="chat", topic=kb_name if kb_name else None
+                    )
                     memory_manager.record_question(question=message, answer=full_response[:500])
                     if kb_name:
                         memory_manager.record_topic(topic=kb_name, category="knowledge_base")

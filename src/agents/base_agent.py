@@ -561,7 +561,12 @@ class BaseAgent(ABC):
                 stage=stage_label,
                 system_prompt=system_prompt,
                 user_prompt=f"{user_prompt} [with {len(images)} image(s)]",
-                metadata={"model": model, "temperature": temperature, "max_tokens": max_tokens, "vision": True},
+                metadata={
+                    "model": model,
+                    "temperature": temperature,
+                    "max_tokens": max_tokens,
+                    "vision": True,
+                },
             )
 
         # Call LLM via factory with vision support

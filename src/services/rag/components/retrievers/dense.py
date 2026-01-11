@@ -96,9 +96,7 @@ class DenseRetriever(BaseComponent):
 
                 reranker = get_reranker_service()
                 if reranker:
-                    passages = [
-                        self._build_rerank_passage(item) for _, item in candidates
-                    ]
+                    passages = [self._build_rerank_passage(item) for _, item in candidates]
                     rerank_results = await reranker.rerank(query, passages)
                     reranked_results = []
                     for rerank_result in rerank_results[: self.top_k]:
@@ -106,9 +104,7 @@ class DenseRetriever(BaseComponent):
                         reranked_results.append((rerank_result.score, item))
                     used_reranker = True
             except Exception as exc:
-                self.logger.warning(
-                    f"Reranker unavailable, using similarity order: {exc}"
-                )
+                self.logger.warning(f"Reranker unavailable, using similarity order: {exc}")
 
         if reranked_results is None:
             reranked_results = candidates[: self.top_k]
