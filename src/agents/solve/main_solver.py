@@ -244,13 +244,17 @@ class MainSolver:
         self.precision_answer_agent = None
         self.logger.info("  Solve Loop agents (lazy init)")
 
-    async def solve(self, question: str, verbose: bool = True) -> dict[str, Any]:
+    async def solve(
+        self, question: str, verbose: bool = True, media: list[dict[str, Any]] | None = None
+    ) -> dict[str, Any]:
         """
         Main solving process - Dual-Loop Architecture
 
         Args:
             question: User question
             verbose: Whether to print detailed info
+            media: Optional list of media items (images/videos) for multimodal input
+                   Format: [{"type": "image", "data": base64_string, "mimeType": "image/png"}]
 
         Returns:
             dict: Solving result
@@ -271,7 +275,7 @@ class MainSolver:
 
         try:
             # Execute dual-loop pipeline
-            result = await self._run_dual_loop_pipeline(question, output_dir)
+            result = await self._run_dual_loop_pipeline(question, output_dir, media=media)
 
             # Add metadata
             result["metadata"] = {
@@ -316,11 +320,18 @@ class MainSolver:
             if hasattr(self, "logger"):
                 self.logger.shutdown()
 
-    async def _run_dual_loop_pipeline(self, question: str, output_dir: str) -> dict[str, Any]:
+    async def _run_dual_loop_pipeline(
+        self, question: str, output_dir: str, media: list[dict[str, Any]] | None = None
+    ) -> dict[str, Any]:
         """
         Dual-Loop Pipeline:
         1) Analysis Loop: Investigate → Note
         2) Solve Loop: Plan → Manager → Solve → Check → Format
+
+        Args:
+            question: User question
+            output_dir: Output directory path
+            media: Optional list of media items for multimodal input
         """
 
         self.logger.info("Pipeline: Analysis Loop → Solve Loop")
@@ -356,6 +367,7 @@ class MainSolver:
                     kb_name=self.kb_name,
                     output_dir=output_dir,
                     verbose=False,
+                    media=media,  # Pass media for multimodal support
                 )
 
             knowledge_ids: list[str] = investigate_result.get("knowledge_item_ids", [])

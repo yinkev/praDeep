@@ -64,6 +64,9 @@ web/.next/
 out/
 web/out/
 
+# TypeScript build info
+*.tsbuildinfo
+
 # Frontend build artifacts
 dist/
 web/dist/

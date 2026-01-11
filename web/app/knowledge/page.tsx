@@ -15,7 +15,9 @@ import {
   Loader2,
   X,
   RefreshCw,
+  History,
 } from 'lucide-react'
+import VersionsModal from '@/components/knowledge/VersionsModal'
 import { apiUrl, wsUrl } from '@/lib/api'
 
 interface KnowledgeBase {
@@ -44,6 +46,29 @@ interface ProgressInfo {
   error?: string
 }
 
+function getProgressHint(progress: ProgressInfo): string | null {
+  const stage = progress.stage
+  const fileName = progress.file_name?.toLowerCase() || ''
+  const message = progress.message?.toLowerCase() || ''
+
+  const looksLikePdf = fileName.endsWith('.pdf')
+  const looksLikeMinerU = message.includes('mineru')
+
+  if (stage === 'processing_file' && (looksLikePdf || looksLikeMinerU)) {
+    return 'Large PDFs can look “stuck” here while MinerU parses a single file. The % reflects file-level progress, not within-file parsing.'
+  }
+
+  if (stage === 'processing_file') {
+    return 'This step can take a while for large files. The % reflects file-level progress.'
+  }
+
+  if (stage === 'processing_documents') {
+    return 'Preparing documents for parsing and indexing. For large PDFs this can take several minutes.'
+  }
+
+  return null
+}
+
 export default function KnowledgePage() {
   const [kbs, setKbs] = useState<KnowledgeBase[]>([])
   const [loading, setLoading] = useState(true)
@@ -57,6 +82,8 @@ export default function KnowledgePage() {
   const [dragActive, setDragActive] = useState(false)
   const [reindexingKb, setReindexingKb] = useState<string | null>(null)
   const [progressMap, setProgressMap] = useState<Record<string, ProgressInfo>>({})
+  const [versionsModalOpen, setVersionsModalOpen] = useState(false)
+  const [versionsKb, setVersionsKb] = useState<string>('')
   // Use ref only for WebSocket connections (no need for state as it's not used in render)
   const wsConnectionsRef = useRef<Record<string, WebSocket>>({})
   const kbsNamesRef = useRef<string[]>([])
@@ -639,6 +666,16 @@ export default function KnowledgePage() {
                 </div>
                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
+                    onClick={() => {
+                      setVersionsKb(kb.name)
+                      setVersionsModalOpen(true)
+                    }}
+                    className="p-2 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg text-slate-500 dark:text-slate-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
+                    title="Version History"
+                  >
+                    <History className="w-4 h-4" />
+                  </button>
+                  <button
                     onClick={() => handleReindex(kb.name)}
                     disabled={reindexingKb === kb.name}
                     className="p-2 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors disabled:opacity-50"
@@ -713,7 +750,7 @@ export default function KnowledgePage() {
                           const stageLabels: Record<string, string> = {
                             initializing: 'Initializing',
                             processing_documents: 'Processing',
-                            processing_file: 'Processing File',
+                            processing_file: 'Parsing & Indexing',
                             extracting_items: 'Extracting Items',
                           }
                           const stageLabel = stageLabels[progress.stage] || progress.stage
@@ -766,6 +803,7 @@ export default function KnowledgePage() {
                   {(() => {
                     const progress = progressMap[kb.name]
                     if (progress && progress.message) {
+                      const hint = getProgressHint(progress)
                       return (
                         <div className="mt-2 space-y-1">
                           <div className="text-[10px] text-slate-600 dark:text-slate-400 font-medium flex items-center justify-between">
@@ -786,6 +824,11 @@ export default function KnowledgePage() {
                               </button>
                             )}
                           </div>
+                          {hint && (
+                            <div className="text-[10px] text-slate-500 dark:text-slate-500/90">
+                              {hint}
+                            </div>
+                          )}
                           {progress.file_name && (
                             <div className="text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-1">
                               <FileText className="w-3 h-3" />
@@ -900,6 +943,10 @@ export default function KnowledgePage() {
                     <span className="text-xs text-slate-400 dark:text-slate-500">
                       Supports PDF, TXT, MD
                     </span>
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                      Large PDFs may take several minutes to parse (MinerU). You can leave this
+                      page; processing continues in the background.
+                    </span>
                   </label>
                 </div>
               </div>
@@ -964,6 +1011,10 @@ export default function KnowledgePage() {
                     {files && files.length > 0
                       ? `${files.length} files selected`
                       : 'Click to browse files'}
+                  </span>
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                    Tip: Large PDFs may take several minutes to parse (MinerU). Progress updates
+                    appear on the KB card.
                   </span>
                 </label>
               </div>

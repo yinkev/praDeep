@@ -24,10 +24,18 @@ interface LogEntry {
   level?: string;
 }
 
+interface MediaItem {
+  type: "image" | "video";
+  data: string; // base64 encoded data
+  mimeType: string;
+  name?: string;
+}
+
 interface ChatMessage {
   role: "user" | "assistant";
   content: string;
   outputDir?: string;
+  media?: MediaItem[];
 }
 
 // Agent Status
@@ -238,7 +246,7 @@ interface GlobalContextType {
   // Solver
   solverState: SolverState;
   setSolverState: React.Dispatch<React.SetStateAction<SolverState>>;
-  startSolver: (question: string, kb: string) => void;
+  startSolver: (question: string, kb: string, media?: MediaItem[]) => void;
   stopSolver: () => void;
 
   // Question
@@ -431,14 +439,14 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
   });
   const solverWs = useRef<WebSocket | null>(null);
 
-  const startSolver = (question: string, kb: string) => {
+  const startSolver = (question: string, kb: string, media?: MediaItem[]) => {
     if (solverWs.current) solverWs.current.close();
 
     setSolverState((prev) => ({
       ...prev,
       isSolving: true,
       logs: [],
-      messages: [...prev.messages, { role: "user", content: question }],
+      messages: [...prev.messages, { role: "user", content: question, media }],
       question,
       selectedKb: kb,
       agentStatus: {
@@ -468,7 +476,19 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
     solverWs.current = ws;
 
     ws.onopen = () => {
-      ws.send(JSON.stringify({ question, kb_name: kb }));
+      // Include media in the WebSocket message if present
+      const payload: {
+        question: string;
+        kb_name: string;
+        media?: MediaItem[];
+      } = {
+        question,
+        kb_name: kb,
+      };
+      if (media && media.length > 0) {
+        payload.media = media;
+      }
+      ws.send(JSON.stringify(payload));
       addSolverLog({ type: "system", content: "Initializing connection..." });
     };
 
@@ -1718,3 +1738,6 @@ export const useGlobal = () => {
   if (!context) throw new Error("useGlobal must be used within GlobalProvider");
   return context;
 };
+
+// Export types for use in other components
+export type { MediaItem, ChatMessage };
