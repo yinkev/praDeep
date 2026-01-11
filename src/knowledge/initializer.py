@@ -41,6 +41,7 @@ from src.logging import LightRAGLogContext, get_logger
 logger = get_logger("KnowledgeInit")
 
 # Import numbered items extraction functionality
+from src.knowledge.document_tracker import DocumentStatus, DocumentTracker
 from src.knowledge.extract_numbered_items import process_content_list
 from src.knowledge.progress_tracker import ProgressStage, ProgressTracker
 
@@ -70,6 +71,16 @@ class KnowledgeBaseInitializer:
         self.base_url = base_url
         self.embedding_cfg = get_embedding_config()
         self.progress_tracker = progress_tracker or ProgressTracker(kb_name, self.base_dir)
+
+        # Document tracker will be initialized after directory structure is created
+        self._document_tracker = None
+
+    @property
+    def document_tracker(self) -> DocumentTracker:
+        """Lazy initialize document tracker after KB directory exists"""
+        if self._document_tracker is None and self.kb_dir.exists():
+            self._document_tracker = DocumentTracker(self.kb_dir)
+        return self._document_tracker
 
     def _register_to_config(self):
         """Register KB to kb_config.json."""
@@ -304,6 +315,7 @@ class KnowledgeBaseInitializer:
             """
             try:
                 import numpy as np
+
                 embeddings = await embedding_client.embed(texts)
                 # Convert to numpy array - LightRAG requires .size attribute
                 return np.array(embeddings)
@@ -332,27 +344,70 @@ class KnowledgeBaseInitializer:
         # Process each document using RAGAnything's process_document_complete
         for idx, doc_file in enumerate(doc_files, 1):
             logger.info(f"\nProcessing: {doc_file.name}")
+
+            is_pdf = doc_file.suffix.lower() == ".pdf"
+            file_message = (
+                "Parsing PDF with MinerU (this can take several minutes)..."
+                if is_pdf
+                else "Parsing document & building index..."
+            )
+
             self.progress_tracker.update(
                 ProgressStage.PROCESSING_FILE,
-                f"Processing: {doc_file.name}",
+                file_message,
                 current=idx,
                 total=len(doc_files),
                 file_name=doc_file.name,
             )
 
+            # Track document as processing
+            if self.document_tracker:
+                self.document_tracker.track_document(
+                    doc_file,
+                    status=DocumentStatus.PROCESSING,
+                )
+
+            async def _heartbeat():
+                # Keep the timestamp fresh during long MinerU/embedding runs so the UI doesn't look stuck.
+                while True:
+                    await asyncio.sleep(15)
+                    self.progress_tracker.update(
+                        ProgressStage.PROCESSING_FILE,
+                        file_message,
+                        current=idx,
+                        total=len(doc_files),
+                        file_name=doc_file.name,
+                    )
+
             try:
                 # Use RAGAnything's process_document_complete method
                 # This method handles document parsing, content extraction, and insertion
                 logger.info("  → Starting document processing...")
-                await asyncio.wait_for(
-                    rag.process_document_complete(
-                        file_path=str(doc_file),
-                        output_dir=str(self.content_list_dir),
-                        parse_method="auto",
-                    ),
-                    timeout=600.0,  # 10 minute timeout
-                )
+                heartbeat_task = asyncio.create_task(_heartbeat())
+                try:
+                    await asyncio.wait_for(
+                        rag.process_document_complete(
+                            file_path=str(doc_file),
+                            output_dir=str(self.content_list_dir),
+                            parse_method="auto",
+                        ),
+                        timeout=600.0,  # 10 minute timeout
+                    )
+                finally:
+                    heartbeat_task.cancel()
+                    try:
+                        await heartbeat_task
+                    except asyncio.CancelledError:
+                        pass
                 logger.info(f"  ✓ Successfully processed: {doc_file.name}")
+
+                # Track document with hash after successful processing
+                if self.document_tracker:
+                    self.document_tracker.track_document(
+                        doc_file,
+                        status=DocumentStatus.INDEXED,
+                    )
+                    logger.info(f"  ✓ Document hash tracked: {doc_file.name}")
 
                 # Content list should be automatically saved in output_dir
                 doc_name = doc_file.stem
@@ -363,7 +418,18 @@ class KnowledgeBaseInitializer:
             except asyncio.TimeoutError:
                 error_msg = "Processing timeout (>10 minutes)"
                 logger.error(f"  ✗ Timeout processing {doc_file.name}")
-                logger.error("  Possible causes: Large PDF, slow embedding API, network issues")
+                logger.error(
+                    "  Possible causes: Large PDF (MinerU parsing), slow embedding API, network issues"
+                )
+
+                # Track error status
+                if self.document_tracker:
+                    self.document_tracker.track_document(
+                        doc_file,
+                        status=DocumentStatus.ERROR,
+                        error_message=error_msg,
+                    )
+
                 self.progress_tracker.update(
                     ProgressStage.ERROR,
                     f"Timeout processing: {doc_file.name}",
@@ -378,6 +444,15 @@ class KnowledgeBaseInitializer:
                 import traceback
 
                 logger.error(traceback.format_exc())
+
+                # Track error status
+                if self.document_tracker:
+                    self.document_tracker.track_document(
+                        doc_file,
+                        status=DocumentStatus.ERROR,
+                        error_message=error_msg,
+                    )
+
                 self.progress_tracker.update(
                     ProgressStage.ERROR,
                     f"Failed to process file: {doc_file.name}",
@@ -415,7 +490,9 @@ class KnowledgeBaseInitializer:
         # Debug: list what's in doc_dir
         try:
             doc_dir_contents = list(doc_dir.iterdir())
-            logger.info(f"    _find_mineru_output_dir: {doc_dir.name} contains: {[p.name for p in doc_dir_contents]}")
+            logger.info(
+                f"    _find_mineru_output_dir: {doc_dir.name} contains: {[p.name for p in doc_dir_contents]}"
+            )
         except Exception as e:
             logger.error(f"    _find_mineru_output_dir: Failed to list {doc_dir}: {e}")
 
@@ -531,7 +608,9 @@ class KnowledgeBaseInitializer:
                             logger.debug(f"    Image already exists: {img_file.name}")
 
                 if image_count > 0:
-                    logger.info(f"  ✓ Moved {image_count} images from {doc_dir.name}/{output_dir.name}/images/")
+                    logger.info(
+                        f"  ✓ Moved {image_count} images from {doc_dir.name}/{output_dir.name}/images/"
+                    )
                 else:
                     logger.info(f"    No new images to move from {doc_dir.name}")
             else:

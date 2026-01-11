@@ -29,6 +29,7 @@ from src.logging import LLMStats, get_logger
 from src.logging import estimate_tokens
 from src.services.config import get_agent_params
 from src.services.llm import complete as llm_complete
+from src.services.llm import complete_with_vision as llm_complete_with_vision
 from src.services.llm import get_llm_config, get_token_limit_kwargs
 from src.services.llm import stream as llm_stream
 from src.di import Container, get_container
@@ -582,6 +583,112 @@ class BaseAgent(ABC):
                 self.metrics_service.end_tracking(metrics, success=success)
             except Exception:
                 pass
+
+    async def call_llm_with_vision(
+        self,
+        user_prompt: str,
+        images: list[dict[str, str]],
+        system_prompt: str,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        model: str | None = None,
+        verbose: bool = True,
+        stage: str | None = None,
+    ) -> str:
+        """
+        Unified interface for calling vision-capable LLM (non-streaming).
+
+        Uses the LLM factory to route calls to the appropriate provider
+        for vision/multimodal inputs.
+
+        Args:
+            user_prompt: User prompt (text question about the images)
+            images: List of image dicts with format:
+                    [{"type": "image", "data": base64_string, "mimeType": "image/png"}]
+            system_prompt: System prompt
+            temperature: Temperature parameter (optional, uses config by default)
+            max_tokens: Maximum tokens (optional, uses config by default)
+            model: Model name (optional, uses config by default - should be vision-capable)
+            verbose: Whether to print raw LLM output (default True)
+            stage: Stage marker for logging and tracking
+
+        Returns:
+            LLM response text
+        """
+        model = model or self.get_model()
+        temperature = temperature if temperature is not None else self.get_temperature()
+        max_tokens = max_tokens if max_tokens is not None else self.get_max_tokens()
+
+        # Record call start time
+        start_time = time.time()
+
+        # Build kwargs for LLM factory
+        kwargs = {
+            "temperature": temperature,
+        }
+
+        # Handle token limit for newer OpenAI models
+        if max_tokens:
+            kwargs.update(get_token_limit_kwargs(model, max_tokens))
+
+        # Log input
+        stage_label = stage or self.agent_name
+        if hasattr(self.logger, "log_llm_input"):
+            self.logger.log_llm_input(
+                agent_name=self.agent_name,
+                stage=stage_label,
+                system_prompt=system_prompt,
+                user_prompt=f"{user_prompt} [with {len(images)} image(s)]",
+                metadata={
+                    "model": model,
+                    "temperature": temperature,
+                    "max_tokens": max_tokens,
+                    "vision": True,
+                },
+            )
+
+        # Call LLM via factory with vision support
+        response = None
+        try:
+            response = await llm_complete_with_vision(
+                prompt=user_prompt,
+                images=images,
+                system_prompt=system_prompt,
+                model=model,
+                api_key=self.api_key,
+                base_url=self.base_url,
+                **kwargs,
+            )
+        except Exception as e:
+            self.logger.error(f"LLM vision call failed: {e}")
+            raise
+
+        # Calculate duration
+        call_duration = time.time() - start_time
+
+        # Track token usage (note: images are not tracked in token count)
+        self._track_tokens(
+            model=model,
+            system_prompt=system_prompt,
+            user_prompt=f"{user_prompt} [with {len(images)} image(s)]",
+            response=response,
+            stage=stage_label,
+        )
+
+        # Log output
+        if hasattr(self.logger, "log_llm_output"):
+            self.logger.log_llm_output(
+                agent_name=self.agent_name,
+                stage=stage_label,
+                response=response,
+                metadata={"length": len(response), "duration": call_duration, "vision": True},
+            )
+
+        # Verbose output
+        if verbose:
+            self.logger.debug(f"LLM vision response: model={model}, duration={call_duration:.2f}s")
+
+        return response
 
     # -------------------------------------------------------------------------
     # Prompt Helpers

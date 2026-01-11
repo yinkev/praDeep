@@ -129,7 +129,7 @@ agent_memory_shared_storage:
   high_watermark: 0.9
   low_watermark: 0.7
   redis_url: redis://localhost:6379/0
-  redis_key_prefix: pradeep:agentmem:
+  redis_key_prefix: "pradeep:agentmem:"
   planning:
     rephrase:
       enabled: true

@@ -9,6 +9,7 @@ from src.api.middleware import RateLimitMiddleware
 from src.api.routers import (
     agent_config,
     analytics,
+    cache,
     chat,
     co_writer,
     dashboard,
@@ -17,6 +18,8 @@ from src.api.routers import (
     ideagen,
     knowledge,
     llm_provider,
+    memory,
+    metrics,
     notebook,
     playground,
     question,
@@ -98,6 +101,9 @@ app.include_router(embedding_provider.router, prefix="/api/v1/config/embedding",
 app.include_router(agent_config.router, prefix="/api/v1/config", tags=["config"])
 app.include_router(analytics.router, prefix="/api/v1/analytics", tags=["analytics"])
 app.include_router(rate_limit.router, prefix="/api/v1/rate-limit", tags=["rate-limit"])
+app.include_router(cache.router, prefix="/api/v1/cache", tags=["cache"])
+app.include_router(memory.router, prefix="/api/v1/memory", tags=["memory"])
+app.include_router(metrics.router, prefix="/api/v1/metrics", tags=["metrics"])
 
 
 @app.get("/")

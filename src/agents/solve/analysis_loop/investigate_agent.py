@@ -51,6 +51,7 @@ class InvestigateAgent(BaseAgent):
         kb_name: str = "ai_textbook",
         output_dir: str | None = None,
         verbose: bool = True,
+        media: list[dict[str, Any]] | None = None,
     ) -> dict[str, Any]:
         """
         Process investigation flow (supports multiple tools per round)
@@ -62,6 +63,8 @@ class InvestigateAgent(BaseAgent):
             kb_name: Knowledge base name
             output_dir: Output directory
             verbose: Whether to print detailed info
+            media: Optional list of media items (images/videos) for multimodal input
+                   Format: [{"type": "image", "data": base64_string, "mimeType": "image/png"}]
 
         Returns:
             dict: Investigation result
@@ -84,13 +87,26 @@ class InvestigateAgent(BaseAgent):
         system_prompt = self._build_system_prompt()
         user_prompt = self._build_user_prompt(context)
 
-        # 3. Call LLM
-        response = await self.call_llm(
-            user_prompt=user_prompt,
-            system_prompt=system_prompt,
-            verbose=verbose,
-            response_format={"type": "json_object"},
-        )
+        # 3. Call LLM (use vision if images are provided)
+        images = [m for m in (media or []) if m.get("type") == "image"]
+
+        if images and memory.current_iteration == 0:
+            # Use vision LLM on first iteration if images are provided
+            # Add context about the images to the prompt
+            user_prompt = f"{user_prompt}\n\nNote: The user has provided {len(images)} image(s) related to their question. Please analyze the image content to understand the problem better."
+            response = await self.call_llm_with_vision(
+                user_prompt=user_prompt,
+                images=images,
+                system_prompt=system_prompt,
+                verbose=verbose,
+            )
+        else:
+            response = await self.call_llm(
+                user_prompt=user_prompt,
+                system_prompt=system_prompt,
+                verbose=verbose,
+                response_format={"type": "json_object"},
+            )
 
         # 4. Parse output (JSON)
         parsed_result = extract_json_from_text(response)

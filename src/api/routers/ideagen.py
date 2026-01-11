@@ -120,6 +120,7 @@ async def websocket_ideagen(websocket: WebSocket):
         record_ids = data.get("record_ids")
         direct_records = data.get("records")
         user_thoughts = data.get("user_thoughts", "")
+        project_goal = data.get("project_goal", "")
 
         logger.info(
             f"Received request: notebook_id={notebook_id}, record_ids={record_ids}, direct_records_count={len(direct_records) if direct_records else 0}"
@@ -149,12 +150,16 @@ async def websocket_ideagen(websocket: WebSocket):
         # Get LLM configuration
         llm_config = get_llm_config()
 
-        # Get records
+        # Get records and notebook context
         records = []
+        notebook_context = None
 
         if direct_records and isinstance(direct_records, list):
             records = direct_records
             logger.info(f"Using {len(records)} direct records")
+            # For cross-notebook mode, use project_goal if provided
+            if project_goal:
+                notebook_context = {"project_goal": project_goal}
         elif notebook_id:
             nb_manager = NotebookManager()
             notebook = nb_manager.get_notebook(notebook_id)
@@ -169,6 +174,14 @@ async def websocket_ideagen(websocket: WebSocket):
             if record_ids:
                 records = [r for r in records if r.get("id") in record_ids]
             logger.info(f"Loaded {len(records)} records from notebook")
+
+            # Build notebook context from metadata
+            notebook_context = {
+                "name": notebook.get("name", ""),
+                "description": notebook.get("description", ""),
+            }
+            if project_goal:
+                notebook_context["project_goal"] = project_goal
 
         # Check if we have either records or user_thoughts
         if not records and not user_thoughts:
@@ -200,7 +213,7 @@ async def websocket_ideagen(websocket: WebSocket):
             )
 
             knowledge_points = await organizer.process(
-                records, user_thoughts if user_thoughts else None
+                records, user_thoughts if user_thoughts else None, notebook_context
             )
             logger.info(f"Extracted {len(knowledge_points)} knowledge points")
         else:

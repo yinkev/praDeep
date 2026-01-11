@@ -27,10 +27,10 @@ from pydantic import BaseModel
 from src.api.utils.progress_broadcaster import ProgressBroadcaster
 from src.api.utils.task_id_manager import TaskIDManager
 from src.knowledge.add_documents import DocumentAdder
+from src.knowledge.document_tracker import DocumentTracker
 from src.knowledge.initializer import KnowledgeBaseInitializer
 from src.knowledge.manager import KnowledgeBaseManager
 from src.knowledge.progress_tracker import ProgressStage, ProgressTracker
-from src.knowledge.document_tracker import DocumentTracker
 from src.knowledge.version_manager import VersionManager, VersionType
 from src.knowledge.prerequisite_graph import (
     build_concept_hierarchy_graph,
@@ -220,12 +220,13 @@ async def run_refresh_task(
             if not options.no_backup:
                 # Create backup
                 from datetime import datetime as dt
+
                 backup_name = f"rag_storage_backup_{dt.now().strftime('%Y%m%d_%H%M%S')}"
                 backup_dir = kb_path / backup_name
                 logger.info(f"[{task_id}] Creating backup: {backup_name}")
                 progress_tracker.update(
                     ProgressStage.INITIALIZING,
-                    f"Creating backup of RAG storage...",
+                    "Creating backup of RAG storage...",
                     current=0,
                     total=0,
                 )
@@ -558,7 +559,9 @@ async def refresh_knowledge_base(
         if options is None:
             options = RefreshOptions()
 
-        logger.info(f"Starting refresh for KB '{kb_name}' (full={options.full}, no_backup={options.no_backup})")
+        logger.info(
+            f"Starting refresh for KB '{kb_name}' (full={options.full}, no_backup={options.no_backup})"
+        )
 
         background_tasks.add_task(
             run_refresh_task,
@@ -819,6 +822,71 @@ async def websocket_progress(websocket: WebSocket, kb_name: str):
             pass
 
 
+@router.get("/{kb_name}/documents")
+async def get_document_status(kb_name: str):
+    """
+    Get document tracking status for a knowledge base.
+
+    Returns information about all tracked documents including:
+    - Document hashes for change detection
+    - Processing status (new, indexed, modified, error)
+    - File sizes and timestamps
+
+    This endpoint supports the incremental indexing feature by exposing
+    which documents have been indexed and their content hashes.
+    """
+    try:
+        manager = get_kb_manager()
+        kb_path = manager.get_knowledge_base_path(kb_name)
+
+        tracker = DocumentTracker(kb_path)
+        documents = tracker.get_all_tracked_documents()
+
+        # Convert to serializable format
+        result = {name: info.to_dict() for name, info in documents.items()}
+
+        return {
+            "kb_name": kb_name,
+            "document_count": len(result),
+            "documents": result,
+        }
+    except ValueError:
+        raise HTTPException(status_code=404, detail=f"Knowledge base '{kb_name}' not found")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{kb_name}/documents/changes")
+async def get_document_changes(kb_name: str):
+    """
+    Detect document changes for incremental indexing.
+
+    Returns a summary of what incremental processing would do:
+    - new_files: Files added but not yet indexed
+    - modified_files: Files with changed content (hash mismatch)
+    - deleted_files: Files removed from disk but still in index
+    - unchanged_files: Files with matching content hashes
+
+    This endpoint allows users to preview what documents would be
+    processed during an incremental update without actually running it.
+    """
+    try:
+        manager = get_kb_manager()
+        kb_path = manager.get_knowledge_base_path(kb_name)
+
+        tracker = DocumentTracker(kb_path)
+        summary = tracker.get_incremental_summary()
+
+        return {
+            "kb_name": kb_name,
+            **summary,
+        }
+    except ValueError:
+        raise HTTPException(status_code=404, detail=f"Knowledge base '{kb_name}' not found")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # =============================================================================
 # Version Management Endpoints
 # =============================================================================
@@ -850,6 +918,17 @@ async def create_version_snapshot(kb_name: str, request: CreateVersionRequest = 
     - RAG storage (entities, relations, chunks)
     - Document tracking metadata
     - KB metadata
+
+    Args:
+        kb_name: Name of the knowledge base
+        request: Optional request body with description and created_by
+
+    Returns:
+        dict containing version info for the created snapshot
+
+    Raises:
+        HTTPException 404: If the knowledge base does not exist
+        HTTPException 500: If snapshot creation fails
     """
     try:
         manager = get_kb_manager()
@@ -885,6 +964,15 @@ async def list_versions(kb_name: str):
     List all available versions for a knowledge base.
 
     Returns a list of all snapshots, sorted by creation time (newest first).
+
+    Args:
+        kb_name: Name of the knowledge base
+
+    Returns:
+        dict containing list of version info objects
+
+    Raises:
+        HTTPException 404: If the knowledge base does not exist
     """
     try:
         manager = get_kb_manager()
@@ -908,6 +996,16 @@ async def list_versions(kb_name: str):
 async def get_version_details(kb_name: str, version_id: str):
     """
     Get detailed information for a specific version.
+
+    Args:
+        kb_name: Name of the knowledge base
+        version_id: ID of the version to retrieve
+
+    Returns:
+        dict containing version info
+
+    Raises:
+        HTTPException 404: If KB or version not found
     """
     try:
         manager = get_kb_manager()
@@ -984,7 +1082,7 @@ async def run_rollback_task(
                 current=3,
                 total=3,
             )
-            logger.info(f"[{task_id}] KB '{kb_name}' rolled back to version '{version_id}'")
+            logger.success(f"[{task_id}] KB '{kb_name}' rolled back to version '{version_id}'")
             task_manager.update_task_status(task_id, "completed")
         else:
             error_msg = f"Rollback failed for version {version_id}"
@@ -1020,6 +1118,18 @@ async def rollback_to_version(
 
     This restores the KB to the state captured in the specified version snapshot.
     By default, creates a backup of the current state before rollback.
+
+    Args:
+        kb_name: Name of the knowledge base
+        version_id: ID of the version to rollback to
+        request: Optional request body with backup_current flag
+
+    Returns:
+        dict with rollback status message
+
+    Raises:
+        HTTPException 404: If KB or version not found
+        HTTPException 500: If rollback fails to start
     """
     try:
         manager = get_kb_manager()
@@ -1034,7 +1144,9 @@ async def rollback_to_version(
 
         backup_current = request.backup_current if request else True
 
-        logger.info(f"Starting rollback for KB '{kb_name}' to version '{version_id}' (backup={backup_current})")
+        logger.info(
+            f"Starting rollback for KB '{kb_name}' to version '{version_id}' (backup={backup_current})"
+        )
 
         background_tasks.add_task(
             run_rollback_task,
@@ -1069,6 +1181,16 @@ async def compare_versions(kb_name: str, request: CompareVersionsRequest):
     - Documents deleted in version 2
     - Documents modified between versions
     - Documents unchanged
+
+    Args:
+        kb_name: Name of the knowledge base
+        request: Request body with version_1 and version_2 IDs
+
+    Returns:
+        dict with comparison results
+
+    Raises:
+        HTTPException 404: If KB or versions not found
     """
     try:
         manager = get_kb_manager()
@@ -1113,6 +1235,17 @@ async def delete_version(kb_name: str, version_id: str):
     Delete a version snapshot.
 
     Permanently removes the specified version snapshot from the knowledge base.
+
+    Args:
+        kb_name: Name of the knowledge base
+        version_id: ID of the version to delete
+
+    Returns:
+        dict with deletion status
+
+    Raises:
+        HTTPException 404: If KB or version not found
+        HTTPException 500: If deletion fails
     """
     try:
         manager = get_kb_manager()

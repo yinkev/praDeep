@@ -14,6 +14,7 @@ import {
   getStoredTheme,
   type Theme,
 } from "@/lib/theme";
+import type { RagChatSourceItem, RagFilters } from "@/types/rag";
 
 // --- Types ---
 interface LogEntry {
@@ -23,10 +24,18 @@ interface LogEntry {
   level?: string;
 }
 
+interface MediaItem {
+  type: "image" | "video";
+  data: string; // base64 encoded data
+  mimeType: string;
+  name?: string;
+}
+
 interface ChatMessage {
   role: "user" | "assistant";
   content: string;
   outputDir?: string;
+  media?: MediaItem[];
 }
 
 // Agent Status
@@ -211,7 +220,7 @@ interface IdeaGenState {
 
 // Chat Types
 interface ChatSource {
-  rag?: Array<{ kb_name: string; content: string }>;
+  rag?: RagChatSourceItem[];
   web?: Array<{ url: string; title?: string; snippet?: string }>;
 }
 
@@ -228,6 +237,7 @@ interface ChatState {
   isLoading: boolean;
   selectedKb: string;
   enableRag: boolean;
+  ragFilters: RagFilters | null;
   enableWebSearch: boolean;
   currentStage: string | null;
 }
@@ -236,7 +246,7 @@ interface GlobalContextType {
   // Solver
   solverState: SolverState;
   setSolverState: React.Dispatch<React.SetStateAction<SolverState>>;
-  startSolver: (question: string, kb: string) => void;
+  startSolver: (question: string, kb: string, media?: MediaItem[]) => void;
   stopSolver: () => void;
 
   // Question
@@ -429,14 +439,14 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
   });
   const solverWs = useRef<WebSocket | null>(null);
 
-  const startSolver = (question: string, kb: string) => {
+  const startSolver = (question: string, kb: string, media?: MediaItem[]) => {
     if (solverWs.current) solverWs.current.close();
 
     setSolverState((prev) => ({
       ...prev,
       isSolving: true,
       logs: [],
-      messages: [...prev.messages, { role: "user", content: question }],
+      messages: [...prev.messages, { role: "user", content: question, media }],
       question,
       selectedKb: kb,
       agentStatus: {
@@ -466,7 +476,19 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
     solverWs.current = ws;
 
     ws.onopen = () => {
-      ws.send(JSON.stringify({ question, kb_name: kb }));
+      // Include media in the WebSocket message if present
+      const payload: {
+        question: string;
+        kb_name: string;
+        media?: MediaItem[];
+      } = {
+        question,
+        kb_name: kb,
+      };
+      if (media && media.length > 0) {
+        payload.media = media;
+      }
+      ws.send(JSON.stringify(payload));
       addSolverLog({ type: "system", content: "Initializing connection..." });
     };
 
@@ -1446,6 +1468,7 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
     isLoading: false,
     selectedKb: "",
     enableRag: false,
+    ragFilters: null,
     enableWebSearch: false,
     currentStage: null,
   });
@@ -1489,6 +1512,7 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
           history,
           kb_name: chatState.selectedKb,
           enable_rag: chatState.enableRag,
+          rag_filters: chatState.enableRag ? chatState.ragFilters : null,
           enable_web_search: chatState.enableWebSearch,
         }),
       );
@@ -1647,6 +1671,10 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
 
       // Restore session settings
       const settings = session.settings || {};
+      const ragFiltersFromSession =
+        settings.rag_filters && typeof settings.rag_filters === "object"
+          ? (settings.rag_filters as RagFilters)
+          : null;
 
       // Update ref with loaded session ID for continued conversation
       sessionIdRef.current = session.session_id;
@@ -1657,6 +1685,7 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
         messages,
         selectedKb: settings.kb_name || prev.selectedKb,
         enableRag: settings.enable_rag ?? prev.enableRag,
+        ragFilters: ragFiltersFromSession ?? prev.ragFilters,
         enableWebSearch: settings.enable_web_search ?? prev.enableWebSearch,
         isLoading: false,
         currentStage: null,
@@ -1709,3 +1738,6 @@ export const useGlobal = () => {
   if (!context) throw new Error("useGlobal must be used within GlobalProvider");
   return context;
 };
+
+// Export types for use in other components
+export type { MediaItem, ChatMessage };

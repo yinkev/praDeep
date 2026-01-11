@@ -79,8 +79,7 @@ class RerankerService:
 
             self.logger.warning(f"Reranker failed, using original order: {exc}")
             return [
-                RerankResult(index=i, score=0.0, passage=passages[i])
-                for i in range(len(passages))
+                RerankResult(index=i, score=0.0, passage=passages[i]) for i in range(len(passages))
             ]
 
         if len(response.scores) != len(passages):
@@ -89,8 +88,7 @@ class RerankerService:
                 "using original order"
             )
             return [
-                RerankResult(index=i, score=0.0, passage=passages[i])
-                for i in range(len(passages))
+                RerankResult(index=i, score=0.0, passage=passages[i]) for i in range(len(passages))
             ]
 
         results = [
