@@ -470,29 +470,59 @@ class DocumentAdder:
                 status=DocumentStatus.PROCESSING,
             )
 
+            is_pdf = doc_file.suffix.lower() == ".pdf"
+            file_message = (
+                "Parsing PDF with MinerU (this can take several minutes)..."
+                if is_pdf
+                else "Parsing document & building index..."
+            )
+
             # Update progress
             if self.progress_tracker:
                 from src.knowledge.progress_tracker import ProgressStage
 
                 self.progress_tracker.update(
                     ProgressStage.PROCESSING_FILE,
-                    f"Processing ({status_label}): {doc_file.name}",
+                    file_message,
                     current=idx,
                     total=total_files,
                     file_name=doc_file.name,
                 )
 
+                async def _heartbeat():
+                    # Keep the timestamp fresh during long MinerU/embedding runs so the UI doesn't look stuck.
+                    while True:
+                        await asyncio.sleep(15)
+                        self.progress_tracker.update(
+                            ProgressStage.PROCESSING_FILE,
+                            file_message,
+                            current=idx,
+                            total=total_files,
+                            file_name=doc_file.name,
+                        )
+
             try:
                 # Use RAGAnything's process_document_complete method with timeout
                 logger.info("  → Starting document processing...")
-                await asyncio.wait_for(
-                    rag.process_document_complete(
-                        file_path=str(doc_file),
-                        output_dir=str(self.content_list_dir),
-                        parse_method="auto",
-                    ),
-                    timeout=600.0,  # 10 minute timeout
-                )
+                heartbeat_task = None
+                if self.progress_tracker:
+                    heartbeat_task = asyncio.create_task(_heartbeat())
+                try:
+                    await asyncio.wait_for(
+                        rag.process_document_complete(
+                            file_path=str(doc_file),
+                            output_dir=str(self.content_list_dir),
+                            parse_method="auto",
+                        ),
+                        timeout=600.0,  # 10 minute timeout
+                    )
+                finally:
+                    if heartbeat_task:
+                        heartbeat_task.cancel()
+                        try:
+                            await heartbeat_task
+                        except asyncio.CancelledError:
+                            pass
                 logger.info(f"  ✓ Successfully processed: {doc_file.name}")
                 processed_files.append(doc_file)
 
@@ -511,7 +541,9 @@ class DocumentAdder:
 
             except asyncio.TimeoutError:
                 logger.error(f"  ✗ Processing timeout for {doc_file.name} (>10 minutes)")
-                logger.error("  Possible causes: Large PDF, slow embedding API, network issues")
+                logger.error(
+                    "  Possible causes: Large PDF (MinerU parsing), slow embedding API, network issues"
+                )
 
                 # Track error status
                 self.document_tracker.track_document(
