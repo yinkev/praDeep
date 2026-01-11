@@ -149,9 +149,9 @@ agent_memory_shared_storage:
     enable_paper_search: true
     enable_web_search: true
     enable_run_code: true
-    tool_timeout: 60
+    tool_timeout: 120
     tool_max_retries: 2
-    paper_search_years_limit: 3
+    paper_search_years_limit: 100
   reporting:
     min_section_length: 800
     enable_citation_list: true

@@ -3,14 +3,14 @@
   "category": "Knowledge Base",
   "title": "Collaborative Document Annotation",
   "description": "Enable users to highlight, annotate, and tag documents in knowledge base with threaded comments. Annotations are searchable and can be shared with team members.",
-  "status": "in_progress",
+  "status": "verified",
   "priority": 1,
   "complexity": "moderate",
   "dependencies": [
     "user-authentication"
   ],
   "createdAt": "2026-01-11T17:24:12.303Z",
-  "updatedAt": "2026-01-11T19:39:08.161Z",
+  "updatedAt": "2026-01-11T19:43:35.637Z",
   "skipTests": false,
   "model": "codex-gpt-5.2",
   "thinkingLevel": "none",

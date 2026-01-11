@@ -2,7 +2,7 @@
   "category": "enhancement",
   "description": "Refactor web/components to eliminate barrel exports (index.ts files that re-export everything). Use direct imports (import Button from '@/components/ui/button') instead of wildcard imports. Configure webpack/turbopack to tree-shake unused UI components across agent modules.\n\n**Rationale:** Barrel exports prevent tree-shaking because bundlers can't determine which components are actually used. With 7+ agent UIs sharing a component library, eliminating barrels can reduce bundle size by 25-40KB by removing unused variants of buttons, modals, forms, etc. that specific agents never render.",
   "title": "Tree-Shake Unused Agent Components with Barrel Export Elimination",
-  "status": "in_progress",
+  "status": "verified",
   "id": "feature-1768159544456-1okr3dy3c",
   "descriptionHistory": [
     {
@@ -22,5 +22,5 @@
   "requirePlanApproval": false,
   "workMode": "current",
   "startedAt": "2026-01-11T19:35:21.356Z",
-  "updatedAt": "2026-01-11T19:35:21.645Z"
+  "updatedAt": "2026-01-11T19:42:07.130Z"
 }

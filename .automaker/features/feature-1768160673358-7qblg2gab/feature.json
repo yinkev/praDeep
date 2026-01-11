@@ -1,0 +1,29 @@
+{
+  "category": "Uncategorized",
+  "description": "An agent that is a learning specialist that will analyze all the telemetry to profile the user at a world class level. Psychoanalysis. ",
+  "title": "Implement AI learning profiler with psychoanalytic telemetry analysis",
+  "images": [],
+  "imagePaths": [],
+  "textFilePaths": [],
+  "skipTests": false,
+  "model": "codex-gpt-5.2",
+  "thinkingLevel": "none",
+  "reasoningEffort": "high",
+  "priority": 1,
+  "planningMode": "full",
+  "requirePlanApproval": false,
+  "dependencies": [],
+  "workMode": "current",
+  "titleGenerating": false,
+  "status": "verified",
+  "id": "feature-1768160673358-7qblg2gab",
+  "descriptionHistory": [
+    {
+      "description": "An agent that is a learning specialist that will analyze all the telemetry to profile the user at a world class level. Psychoanalysis. ",
+      "timestamp": "2026-01-11T19:44:33.538Z",
+      "source": "initial"
+    }
+  ],
+  "startedAt": "2026-01-11T19:44:33.708Z",
+  "updatedAt": "2026-01-11T19:47:28.576Z"
+}

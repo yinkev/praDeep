@@ -448,3 +448,8 @@ Input: {
     }
   ]
 }
+
+🔧 Tool: Bash
+Input: {
+  "command": "/bin/zsh -lc 'npx playwright test --config playwright.barrel-exports-temp.config.ts'"
+}
