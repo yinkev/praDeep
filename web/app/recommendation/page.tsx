@@ -1,11 +1,11 @@
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useRef } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
   Search,
   BookOpen,
   ExternalLink,
-  Loader2,
   Filter,
   Calendar,
   Star,
@@ -15,10 +15,21 @@ import {
   ChevronUp,
   Sparkles,
   RefreshCw,
+  SlidersHorizontal,
+  X,
+  TrendingUp,
 } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import { useGlobal } from '@/context/GlobalContext'
 import { apiUrl, wsUrl } from '@/lib/api'
+import PageWrapper, { PageHeader } from '@/components/ui/PageWrapper'
+import { Card, CardBody, CardFooter } from '@/components/ui/Card'
+import Button, { IconButton } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
+
+// ============================================================================
+// Types
+// ============================================================================
 
 interface Paper {
   paper_id: string
@@ -49,6 +60,113 @@ interface RecommendationResult {
   explanation?: string
   related_topics?: string
 }
+
+// ============================================================================
+// Animation Variants
+// ============================================================================
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.08,
+      delayChildren: 0.1,
+    },
+  },
+}
+
+const cardVariants = {
+  hidden: {
+    opacity: 0,
+    y: 20,
+    scale: 0.95,
+  },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: {
+      type: 'spring' as const,
+      stiffness: 300,
+      damping: 24,
+    },
+  },
+}
+
+const filterPanelVariants = {
+  hidden: {
+    opacity: 0,
+    height: 0,
+    marginTop: 0,
+  },
+  visible: {
+    opacity: 1,
+    height: 'auto',
+    marginTop: 16,
+    transition: {
+      type: 'spring' as const,
+      stiffness: 300,
+      damping: 30,
+    },
+  },
+}
+
+const progressVariants = {
+  initial: { opacity: 0, y: -10 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -10 },
+}
+
+const insightsPanelVariants = {
+  hidden: { opacity: 0, x: 20 },
+  visible: {
+    opacity: 1,
+    x: 0,
+    transition: {
+      type: 'spring' as const,
+      stiffness: 300,
+      damping: 25,
+    },
+  },
+}
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+const getSourceBadgeStyle = (source: string) => {
+  switch (source) {
+    case 'arxiv':
+      return 'bg-red-100/80 text-red-700 dark:bg-red-900/40 dark:text-red-300 border-red-200/50 dark:border-red-700/50'
+    case 'semantic_scholar':
+      return 'bg-blue-100/80 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 border-blue-200/50 dark:border-blue-700/50'
+    case 'openalex':
+      return 'bg-emerald-100/80 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 border-emerald-200/50 dark:border-emerald-700/50'
+    default:
+      return 'bg-slate-100/80 text-slate-700 dark:bg-slate-800/40 dark:text-slate-300 border-slate-200/50 dark:border-slate-700/50'
+  }
+}
+
+const formatAuthors = (authors: string[], max: number = 3) => {
+  if (authors.length <= max) return authors.join(', ')
+  return `${authors.slice(0, max).join(', ')} et al.`
+}
+
+const getSourceLabel = (source: string) => {
+  switch (source) {
+    case 'semantic_scholar':
+      return 'Semantic Scholar'
+    case 'openalex':
+      return 'OpenAlex'
+    default:
+      return 'arXiv'
+  }
+}
+
+// ============================================================================
+// Main Component
+// ============================================================================
 
 export default function RecommendationPage() {
   const { uiSettings } = useGlobal()
@@ -203,387 +321,528 @@ export default function RecommendationPage() {
     }
   }
 
-  const getSourceBadgeColor = (source: string) => {
-    switch (source) {
-      case 'arxiv':
-        return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-      case 'semantic_scholar':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
-      case 'openalex':
-        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-      default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'
-    }
-  }
-
-  const formatAuthors = (authors: string[], max: number = 3) => {
-    if (authors.length <= max) return authors.join(', ')
-    return `${authors.slice(0, max).join(', ')} et al.`
-  }
-
   return (
-    <div className="h-screen flex flex-col p-4 animate-fade-in">
-      {/* Header */}
-      <div className="mb-4">
-        <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-          <BookOpen className="w-7 h-7 text-indigo-600 dark:text-indigo-400" />
-          Paper Recommendations
-        </h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-          ML-based paper recommendations using citation networks, semantic similarity, and your
-          reading history
-        </p>
-      </div>
+    <PageWrapper maxWidth="2xl" showPattern>
+      {/* Page Header */}
+      <PageHeader
+        title="Paper Recommendations"
+        description="ML-based paper recommendations using citation networks, semantic similarity, and your reading history"
+        icon={<BookOpen className="w-5 h-5" />}
+      />
 
-      {/* Search Bar */}
-      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-4 mb-4">
-        <div className="flex gap-3">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-            <input
-              type="text"
-              value={query}
-              onChange={e => setQuery(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && searchPapers()}
-              placeholder="Enter research topic, keywords, or paper title..."
-              className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-            />
-          </div>
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className={`px-4 py-3 rounded-xl border transition-all ${
-              showFilters
-                ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-700 text-indigo-700 dark:text-indigo-400'
-                : 'bg-slate-50 dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-600'
-            }`}
-          >
-            <Filter className="w-5 h-5" />
-          </button>
-          <button
-            onClick={searchPapers}
-            disabled={isLoading || !query.trim()}
-            className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                Searching...
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-5 h-5" />
-                Find Papers
-              </>
-            )}
-          </button>
-        </div>
-
-        {/* Filters */}
-        {showFilters && (
-          <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700 grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div>
-              <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
-                Recommendation Type
-              </label>
-              <select
-                value={recommendationType}
-                onChange={e => setRecommendationType(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm"
-              >
-                <option value="hybrid">Hybrid (Recommended)</option>
-                <option value="semantic">Semantic Similarity</option>
-                <option value="citation">Citation-based</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
-                Year Range
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="number"
-                  placeholder="From"
-                  value={yearStart || ''}
-                  onChange={e =>
-                    setYearStart(e.target.value ? parseInt(e.target.value) : undefined)
-                  }
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm"
-                />
-                <input
-                  type="number"
-                  placeholder="To"
-                  value={yearEnd || ''}
-                  onChange={e => setYearEnd(e.target.value ? parseInt(e.target.value) : undefined)}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
-                Max Results
-              </label>
-              <input
-                type="number"
-                min={1}
-                max={50}
-                value={maxResults}
-                onChange={e => setMaxResults(parseInt(e.target.value) || 10)}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm"
+      {/* Search Section */}
+      <Card variant="glass" className="mb-6" hoverEffect={false}>
+        <CardBody className="p-6">
+          <div className="flex gap-3">
+            {/* Search Input */}
+            <div className="flex-1">
+              <Input
+                value={query}
+                onChange={e => setQuery(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && searchPapers()}
+                placeholder="Enter research topic, keywords, or paper title..."
+                leftIcon={<Search className="w-5 h-5" />}
+                size="lg"
               />
             </div>
-            <div className="flex flex-col gap-2">
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={generateExplanation}
-                  onChange={e => setGenerateExplanation(e.target.checked)}
-                  className="rounded"
-                />
-                <span className="text-slate-700 dark:text-slate-300">AI Explanation</span>
-              </label>
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={suggestTopics}
-                  onChange={e => setSuggestTopics(e.target.checked)}
-                  className="rounded"
-                />
-                <span className="text-slate-700 dark:text-slate-300">Suggest Topics</span>
-              </label>
-            </div>
+
+            {/* Filter Toggle */}
+            <IconButton
+              variant={showFilters ? 'primary' : 'secondary'}
+              size="lg"
+              icon={<SlidersHorizontal className="w-5 h-5" />}
+              aria-label="Toggle filters"
+              onClick={() => setShowFilters(!showFilters)}
+            />
+
+            {/* Search Button */}
+            <Button
+              variant="primary"
+              size="lg"
+              onClick={searchPapers}
+              loading={isLoading}
+              iconLeft={!isLoading ? <Sparkles className="w-5 h-5" /> : undefined}
+            >
+              {isLoading ? 'Searching...' : 'Find Papers'}
+            </Button>
           </div>
+
+          {/* Filters Panel */}
+          <AnimatePresence>
+            {showFilters && (
+              <motion.div
+                variants={filterPanelVariants}
+                initial="hidden"
+                animate="visible"
+                exit="hidden"
+                className="overflow-hidden"
+              >
+                <div className="pt-4 border-t border-[#E8E2D080] dark:border-slate-700/50">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {/* Recommendation Type */}
+                    <div>
+                      <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-2">
+                        Recommendation Type
+                      </label>
+                      <select
+                        value={recommendationType}
+                        onChange={e => setRecommendationType(e.target.value)}
+                        className="w-full px-4 py-2.5 bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:border-teal-400/60 focus:ring-2 focus:ring-teal-400/20 outline-none transition-all duration-200"
+                      >
+                        <option value="hybrid">Hybrid (Recommended)</option>
+                        <option value="semantic">Semantic Similarity</option>
+                        <option value="citation">Citation-based</option>
+                      </select>
+                    </div>
+
+                    {/* Year Range */}
+                    <div>
+                      <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-2">
+                        Year Range
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="number"
+                          placeholder="From"
+                          value={yearStart || ''}
+                          onChange={e =>
+                            setYearStart(e.target.value ? parseInt(e.target.value) : undefined)
+                          }
+                          className="w-full px-3 py-2.5 bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:border-teal-400/60 focus:ring-2 focus:ring-teal-400/20 outline-none transition-all duration-200"
+                        />
+                        <input
+                          type="number"
+                          placeholder="To"
+                          value={yearEnd || ''}
+                          onChange={e =>
+                            setYearEnd(e.target.value ? parseInt(e.target.value) : undefined)
+                          }
+                          className="w-full px-3 py-2.5 bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:border-teal-400/60 focus:ring-2 focus:ring-teal-400/20 outline-none transition-all duration-200"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Max Results */}
+                    <div>
+                      <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-2">
+                        Max Results
+                      </label>
+                      <input
+                        type="number"
+                        min={1}
+                        max={50}
+                        value={maxResults}
+                        onChange={e => setMaxResults(parseInt(e.target.value) || 10)}
+                        className="w-full px-3 py-2.5 bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:border-teal-400/60 focus:ring-2 focus:ring-teal-400/20 outline-none transition-all duration-200"
+                      />
+                    </div>
+
+                    {/* Options */}
+                    <div className="flex flex-col gap-3 pt-1">
+                      <label className="flex items-center gap-3 cursor-pointer group">
+                        <div className="relative">
+                          <input
+                            type="checkbox"
+                            checked={generateExplanation}
+                            onChange={e => setGenerateExplanation(e.target.checked)}
+                            className="sr-only peer"
+                          />
+                          <div className="w-5 h-5 rounded-lg border-2 border-slate-300 dark:border-slate-600 peer-checked:border-teal-500 peer-checked:bg-teal-500 transition-all duration-200 flex items-center justify-center">
+                            <motion.svg
+                              className="w-3 h-3 text-white"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                              strokeWidth={3}
+                              initial={{ pathLength: 0, opacity: 0 }}
+                              animate={{
+                                pathLength: generateExplanation ? 1 : 0,
+                                opacity: generateExplanation ? 1 : 0,
+                              }}
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M5 13l4 4L19 7"
+                              />
+                            </motion.svg>
+                          </div>
+                        </div>
+                        <span className="text-sm text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-slate-100 transition-colors">
+                          AI Explanation
+                        </span>
+                      </label>
+                      <label className="flex items-center gap-3 cursor-pointer group">
+                        <div className="relative">
+                          <input
+                            type="checkbox"
+                            checked={suggestTopics}
+                            onChange={e => setSuggestTopics(e.target.checked)}
+                            className="sr-only peer"
+                          />
+                          <div className="w-5 h-5 rounded-lg border-2 border-slate-300 dark:border-slate-600 peer-checked:border-teal-500 peer-checked:bg-teal-500 transition-all duration-200 flex items-center justify-center">
+                            <motion.svg
+                              className="w-3 h-3 text-white"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                              strokeWidth={3}
+                              initial={{ pathLength: 0, opacity: 0 }}
+                              animate={{
+                                pathLength: suggestTopics ? 1 : 0,
+                                opacity: suggestTopics ? 1 : 0,
+                              }}
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M5 13l4 4L19 7"
+                              />
+                            </motion.svg>
+                          </div>
+                        </div>
+                        <span className="text-sm text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-slate-100 transition-colors">
+                          Suggest Topics
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </CardBody>
+      </Card>
+
+      {/* Progress Indicator */}
+      <AnimatePresence>
+        {progress && (
+          <motion.div
+            variants={progressVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            className="mb-6"
+          >
+            <Card variant="glass" hoverEffect={false}>
+              <CardBody className="py-4 flex items-center gap-3">
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                >
+                  <RefreshCw className="w-5 h-5 text-teal-500" />
+                </motion.div>
+                <span className="text-sm text-teal-700 dark:text-teal-300 font-medium">
+                  {progress}
+                </span>
+              </CardBody>
+            </Card>
+          </motion.div>
         )}
-      </div>
+      </AnimatePresence>
 
-      {/* Progress indicator */}
-      {progress && (
-        <div className="bg-indigo-50 dark:bg-indigo-900/30 rounded-xl p-3 mb-4 flex items-center gap-3">
-          <RefreshCw className="w-5 h-5 text-indigo-600 dark:text-indigo-400 animate-spin" />
-          <span className="text-sm text-indigo-700 dark:text-indigo-300">{progress}</span>
-        </div>
-      )}
+      {/* Error Message */}
+      <AnimatePresence>
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="mb-6"
+          >
+            <Card
+              variant="solid"
+              hoverEffect={false}
+              className="border-red-200 dark:border-red-800/50 bg-red-50/80 dark:bg-red-900/20"
+            >
+              <CardBody className="py-4 flex items-center gap-3">
+                <X className="w-5 h-5 text-red-500" />
+                <span className="text-sm text-red-700 dark:text-red-300">{error}</span>
+              </CardBody>
+            </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* Error message */}
-      {error && (
-        <div className="bg-red-50 dark:bg-red-900/30 rounded-xl p-4 mb-4 text-red-700 dark:text-red-300">
-          {error}
-        </div>
-      )}
-
-      {/* Results */}
-      <div className="flex-1 overflow-hidden flex gap-4">
-        {/* Papers list */}
-        <div className="flex-1 overflow-y-auto">
+      {/* Results Section */}
+      <div className="flex gap-6">
+        {/* Papers Grid */}
+        <div className="flex-1 min-w-0">
           {result && result.papers.length > 0 ? (
-            <div className="space-y-4">
-              {/* Stats bar */}
-              <div className="flex items-center justify-between text-sm text-slate-500 dark:text-slate-400 px-2">
-                <span>
+            <>
+              {/* Stats Bar */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="flex items-center justify-between text-sm text-slate-500 dark:text-slate-400 mb-4 px-1"
+              >
+                <span className="flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4" />
                   Found {result.papers.length} of {result.total_candidates} candidates
                 </span>
                 <span>Processed in {result.processing_time_ms.toFixed(0)}ms</span>
-              </div>
+              </motion.div>
 
-              {/* Paper cards */}
-              {result.papers.map((paper, index) => (
-                <div
-                  key={paper.paper_id}
-                  className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden hover:shadow-md transition-shadow"
-                >
-                  <div className="p-4">
-                    {/* Header */}
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                            #{index + 1}
-                          </span>
-                          <span
-                            className={`px-2 py-0.5 rounded text-xs font-medium ${getSourceBadgeColor(
-                              paper.source
-                            )}`}
+              {/* Paper Cards */}
+              <motion.div
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+                className="grid gap-4"
+              >
+                {result.papers.map((paper, index) => (
+                  <motion.div key={paper.paper_id} variants={cardVariants}>
+                    <Card variant="glass" hoverEffect>
+                      <CardBody className="p-5">
+                        {/* Header */}
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1 min-w-0">
+                            {/* Badges Row */}
+                            <div className="flex items-center gap-2 mb-2 flex-wrap">
+                              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gradient-to-br from-teal-400 to-teal-500 text-white text-xs font-bold shadow-sm">
+                                {index + 1}
+                              </span>
+                              <span
+                                className={`px-2.5 py-1 rounded-lg text-xs font-medium border backdrop-blur-sm ${getSourceBadgeStyle(paper.source)}`}
+                              >
+                                {getSourceLabel(paper.source)}
+                              </span>
+                              <span className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
+                                <Calendar className="w-3.5 h-3.5" />
+                                {paper.year}
+                              </span>
+                              {paper.citation_count !== undefined &&
+                                paper.citation_count !== null && (
+                                  <span className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
+                                    <Quote className="w-3.5 h-3.5" />
+                                    {paper.citation_count} citations
+                                  </span>
+                                )}
+                            </div>
+
+                            {/* Title */}
+                            <h3 className="font-semibold text-slate-800 dark:text-slate-100 leading-snug line-clamp-2">
+                              {paper.title}
+                            </h3>
+
+                            {/* Authors */}
+                            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                              {formatAuthors(paper.authors)}
+                            </p>
+                          </div>
+
+                          {/* Score Badge */}
+                          <div className="flex-shrink-0 text-center">
+                            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-teal-400/20 to-cyan-400/20 dark:from-teal-500/30 dark:to-cyan-500/30 border border-teal-200/50 dark:border-teal-600/50 flex flex-col items-center justify-center">
+                              <div className="text-lg font-bold text-teal-600 dark:text-teal-400">
+                                {(paper.combined_score * 100).toFixed(0)}%
+                              </div>
+                              <div className="text-[10px] text-teal-500/80 dark:text-teal-400/80 uppercase tracking-wide">
+                                Match
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Recommendation Reason */}
+                        <div className="mt-4 px-4 py-3 bg-gradient-to-r from-teal-50/80 to-cyan-50/80 dark:from-teal-900/20 dark:to-cyan-900/20 rounded-xl border border-teal-100/50 dark:border-teal-800/30">
+                          <p className="text-sm text-teal-800 dark:text-teal-200">
+                            {paper.recommendation_reason}
+                          </p>
+                        </div>
+
+                        {/* Expandable Abstract */}
+                        <div className="mt-4">
+                          <button
+                            onClick={() => togglePaperExpand(paper.paper_id)}
+                            className="flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
                           >
-                            {paper.source === 'semantic_scholar'
-                              ? 'Semantic Scholar'
-                              : paper.source === 'openalex'
-                                ? 'OpenAlex'
-                                : 'arXiv'}
-                          </span>
-                          <span className="text-xs text-slate-400 flex items-center gap-1">
-                            <Calendar className="w-3 h-3" />
-                            {paper.year}
-                          </span>
-                          {paper.citation_count !== undefined && paper.citation_count !== null && (
-                            <span className="text-xs text-slate-400 flex items-center gap-1">
-                              <Quote className="w-3 h-3" />
-                              {paper.citation_count} citations
-                            </span>
-                          )}
+                            {expandedPapers.has(paper.paper_id) ? (
+                              <>
+                                <ChevronUp className="w-4 h-4" />
+                                Hide abstract
+                              </>
+                            ) : (
+                              <>
+                                <ChevronDown className="w-4 h-4" />
+                                Show abstract
+                              </>
+                            )}
+                          </button>
+
+                          <AnimatePresence>
+                            {expandedPapers.has(paper.paper_id) && (
+                              <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: 'auto', opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                transition={{ duration: 0.2 }}
+                                className="overflow-hidden"
+                              >
+                                <p className="mt-3 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                                  {paper.abstract || 'No abstract available.'}
+                                </p>
+
+                                {/* Score Breakdown */}
+                                <div className="mt-4 pt-4 border-t border-[#E8E2D080] dark:border-slate-700/50">
+                                  <div className="grid grid-cols-3 gap-4">
+                                    <div className="text-center">
+                                      <div className="text-xs text-slate-400 mb-1">Semantic</div>
+                                      <div className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                        {(paper.similarity_score * 100).toFixed(1)}%
+                                      </div>
+                                    </div>
+                                    <div className="text-center">
+                                      <div className="text-xs text-slate-400 mb-1">Citation</div>
+                                      <div className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                        {(paper.citation_score * 100).toFixed(1)}%
+                                      </div>
+                                    </div>
+                                    <div className="text-center">
+                                      <div className="text-xs text-slate-400 mb-1">Recency</div>
+                                      <div className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                        {(paper.recency_score * 100).toFixed(1)}%
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
                         </div>
-                        <h3 className="font-semibold text-slate-800 dark:text-slate-100 leading-snug">
-                          {paper.title}
-                        </h3>
-                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                          {formatAuthors(paper.authors)}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="text-center">
-                          <div className="text-lg font-bold text-indigo-600 dark:text-indigo-400">
-                            {(paper.combined_score * 100).toFixed(0)}%
+                      </CardBody>
+
+                      <CardFooter className="px-5 py-3 flex items-center gap-4">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          iconLeft={<ExternalLink className="w-4 h-4" />}
+                          onClick={() => window.open(paper.url, '_blank')}
+                        >
+                          View Paper
+                        </Button>
+
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          iconLeft={
+                            savedPapers.has(paper.paper_id) ? (
+                              <Star className="w-4 h-4 fill-current text-amber-500" />
+                            ) : (
+                              <BookmarkPlus className="w-4 h-4" />
+                            )
+                          }
+                          onClick={() => savePaper(paper)}
+                          disabled={savedPapers.has(paper.paper_id)}
+                          className={
+                            savedPapers.has(paper.paper_id)
+                              ? 'text-amber-600 dark:text-amber-400'
+                              : ''
+                          }
+                        >
+                          {savedPapers.has(paper.paper_id) ? 'Saved' : 'Save'}
+                        </Button>
+
+                        {/* Fields of Study */}
+                        {paper.fields_of_study && paper.fields_of_study.length > 0 && (
+                          <div className="flex-1 flex flex-wrap gap-1.5 justify-end">
+                            {paper.fields_of_study.slice(0, 3).map((field, i) => (
+                              <span
+                                key={i}
+                                className="px-2 py-0.5 bg-slate-100/80 dark:bg-slate-800/60 rounded-lg text-xs text-slate-500 dark:text-slate-400 border border-slate-200/50 dark:border-slate-700/50"
+                              >
+                                {field}
+                              </span>
+                            ))}
                           </div>
-                          <div className="text-xs text-slate-400">Match</div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Recommendation reason */}
-                    <div className="mt-3 px-3 py-2 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg text-sm text-indigo-700 dark:text-indigo-300">
-                      {paper.recommendation_reason}
-                    </div>
-
-                    {/* Expandable abstract */}
-                    <div className="mt-3">
-                      <button
-                        onClick={() => togglePaperExpand(paper.paper_id)}
-                        className="flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
-                      >
-                        {expandedPapers.has(paper.paper_id) ? (
-                          <>
-                            <ChevronUp className="w-4 h-4" /> Hide abstract
-                          </>
-                        ) : (
-                          <>
-                            <ChevronDown className="w-4 h-4" /> Show abstract
-                          </>
                         )}
-                      </button>
-                      {expandedPapers.has(paper.paper_id) && (
-                        <p className="mt-2 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-                          {paper.abstract || 'No abstract available.'}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Actions */}
-                    <div className="mt-4 flex items-center gap-3">
-                      <a
-                        href={paper.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1 text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300"
-                      >
-                        <ExternalLink className="w-4 h-4" /> View Paper
-                      </a>
-                      <button
-                        onClick={() => savePaper(paper)}
-                        disabled={savedPapers.has(paper.paper_id)}
-                        className={`flex items-center gap-1 text-sm ${
-                          savedPapers.has(paper.paper_id)
-                            ? 'text-green-600 dark:text-green-400'
-                            : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
-                        }`}
-                      >
-                        {savedPapers.has(paper.paper_id) ? (
-                          <>
-                            <Star className="w-4 h-4 fill-current" /> Saved
-                          </>
-                        ) : (
-                          <>
-                            <BookmarkPlus className="w-4 h-4" /> Save
-                          </>
-                        )}
-                      </button>
-                      {paper.fields_of_study && paper.fields_of_study.length > 0 && (
-                        <div className="flex-1 flex flex-wrap gap-1 justify-end">
-                          {paper.fields_of_study.slice(0, 3).map((field, i) => (
-                            <span
-                              key={i}
-                              className="px-2 py-0.5 bg-slate-100 dark:bg-slate-700 rounded text-xs text-slate-500 dark:text-slate-400"
-                            >
-                              {field}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Score breakdown */}
-                    {expandedPapers.has(paper.paper_id) && (
-                      <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
-                        <div className="grid grid-cols-3 gap-4 text-center">
-                          <div>
-                            <div className="text-xs text-slate-400 mb-1">Semantic</div>
-                            <div className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                              {(paper.similarity_score * 100).toFixed(1)}%
-                            </div>
-                          </div>
-                          <div>
-                            <div className="text-xs text-slate-400 mb-1">Citation</div>
-                            <div className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                              {(paper.citation_score * 100).toFixed(1)}%
-                            </div>
-                          </div>
-                          <div>
-                            <div className="text-xs text-slate-400 mb-1">Recency</div>
-                            <div className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                              {(paper.recency_score * 100).toFixed(1)}%
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
+                      </CardFooter>
+                    </Card>
+                  </motion.div>
+                ))}
+              </motion.div>
+            </>
           ) : result && result.papers.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-slate-400">
-              <BookOpen className="w-16 h-16 mb-4 opacity-50" />
-              <p>No papers found. Try a different search query.</p>
-            </div>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="flex flex-col items-center justify-center py-20"
+            >
+              <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 flex items-center justify-center mb-6">
+                <BookOpen className="w-10 h-10 text-slate-400 dark:text-slate-500" />
+              </div>
+              <h3 className="text-lg font-medium text-slate-700 dark:text-slate-300 mb-2">
+                No papers found
+              </h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                Try a different search query or adjust your filters.
+              </p>
+            </motion.div>
           ) : !isLoading ? (
-            <div className="flex flex-col items-center justify-center h-full text-slate-400">
-              <Search className="w-16 h-16 mb-4 opacity-50" />
-              <p>Enter a research topic to find relevant papers</p>
-            </div>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="flex flex-col items-center justify-center py-20"
+            >
+              <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-teal-100 to-cyan-100 dark:from-teal-900/30 dark:to-cyan-900/30 flex items-center justify-center mb-6">
+                <Search className="w-10 h-10 text-teal-500 dark:text-teal-400" />
+              </div>
+              <h3 className="text-lg font-medium text-slate-700 dark:text-slate-300 mb-2">
+                Ready to discover papers
+              </h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                Enter a research topic to find relevant papers
+              </p>
+            </motion.div>
           ) : null}
         </div>
 
-        {/* Explanation panel */}
-        {result && (result.explanation || result.related_topics) && (
-          <div className="w-96 flex-shrink-0 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden flex flex-col">
-            <div className="p-4 border-b border-slate-200 dark:border-slate-700 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30">
-              <h3 className="font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                AI Insights
-              </h3>
-            </div>
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {result.explanation && (
-                <div>
-                  <h4 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">
-                    Why these papers?
-                  </h4>
-                  <div className="prose prose-sm dark:prose-invert max-w-none">
-                    <ReactMarkdown>{result.explanation}</ReactMarkdown>
-                  </div>
+        {/* AI Insights Panel */}
+        <AnimatePresence>
+          {result && (result.explanation || result.related_topics) && (
+            <motion.div
+              variants={insightsPanelVariants}
+              initial="hidden"
+              animate="visible"
+              exit="hidden"
+              className="w-96 flex-shrink-0"
+            >
+              <Card variant="glass" hoverEffect={false} className="sticky top-4">
+                <div className="px-5 py-4 border-b border-[#E8E2D080] dark:border-slate-700/50 bg-gradient-to-r from-teal-50/50 to-cyan-50/50 dark:from-teal-900/20 dark:to-cyan-900/20">
+                  <h3 className="font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-teal-500" />
+                    AI Insights
+                  </h3>
                 </div>
-              )}
-              {result.related_topics && (
-                <div>
-                  <h4 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">
-                    Related Topics to Explore
-                  </h4>
-                  <div className="prose prose-sm dark:prose-invert max-w-none">
-                    <ReactMarkdown>{result.related_topics}</ReactMarkdown>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+
+                <CardBody className="space-y-5 max-h-[calc(100vh-16rem)] overflow-y-auto">
+                  {result.explanation && (
+                    <div>
+                      <h4 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-3">
+                        Why these papers?
+                      </h4>
+                      <div className="prose prose-sm dark:prose-invert max-w-none prose-p:text-slate-600 dark:prose-p:text-slate-300 prose-headings:text-slate-800 dark:prose-headings:text-slate-200">
+                        <ReactMarkdown>{result.explanation}</ReactMarkdown>
+                      </div>
+                    </div>
+                  )}
+
+                  {result.related_topics && (
+                    <div>
+                      <h4 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-3">
+                        Related Topics to Explore
+                      </h4>
+                      <div className="prose prose-sm dark:prose-invert max-w-none prose-p:text-slate-600 dark:prose-p:text-slate-300">
+                        <ReactMarkdown>{result.related_topics}</ReactMarkdown>
+                      </div>
+                    </div>
+                  )}
+                </CardBody>
+              </Card>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
-    </div>
+    </PageWrapper>
   )
 }

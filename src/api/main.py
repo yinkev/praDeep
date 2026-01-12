@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from src.api.middleware import RateLimitMiddleware
+# from src.api.middleware import RateLimitMiddleware  # Temporarily disabled
 from src.api.routers import (
     agent_config,
     analytics,
@@ -23,7 +23,7 @@ from src.api.routers import (
     notebook,
     playground,
     question,
-    rate_limit,
+    # rate_limit,  # Temporarily disabled
     recommendation,
     research,
     settings,
@@ -59,8 +59,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Add rate limiting middleware
-app.add_middleware(RateLimitMiddleware)
+# Add rate limiting middleware - Temporarily disabled
+# app.add_middleware(RateLimitMiddleware)
 
 # Mount user directory as static root for generated artifacts
 # This allows frontend to access generated artifacts (images, PDFs, etc.)
@@ -100,7 +100,7 @@ app.include_router(llm_provider.router, prefix="/api/v1/config/llm", tags=["conf
 app.include_router(embedding_provider.router, prefix="/api/v1/config/embedding", tags=["config"])
 app.include_router(agent_config.router, prefix="/api/v1/config", tags=["config"])
 app.include_router(analytics.router, prefix="/api/v1/analytics", tags=["analytics"])
-app.include_router(rate_limit.router, prefix="/api/v1/rate-limit", tags=["rate-limit"])
+# app.include_router(rate_limit.router, prefix="/api/v1/rate-limit", tags=["rate-limit"])  # Temporarily disabled
 app.include_router(cache.router, prefix="/api/v1/cache", tags=["cache"])
 app.include_router(memory.router, prefix="/api/v1/memory", tags=["memory"])
 app.include_router(metrics.router, prefix="/api/v1/metrics", tags=["metrics"])
