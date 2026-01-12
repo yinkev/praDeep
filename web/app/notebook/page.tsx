@@ -81,54 +81,72 @@ const fadeInUp: Variants = {
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] },
+    transition: {
+      duration: 0.5,
+      ease: [0.22, 1, 0.36, 1],
+      opacity: { duration: 0.4 },
+    },
   },
   exit: {
     opacity: 0,
     y: -10,
-    transition: { duration: 0.2 },
+    transition: { duration: 0.25, ease: [0.4, 0, 1, 1] },
   },
 }
 
 const slideInLeft: Variants = {
-  hidden: { opacity: 0, x: -20 },
+  hidden: { opacity: 0, x: -30 },
   visible: {
     opacity: 1,
     x: 0,
-    transition: { duration: 0.3, ease: 'easeOut' },
+    transition: {
+      duration: 0.45,
+      ease: [0.22, 1, 0.36, 1],
+      opacity: { duration: 0.35 },
+    },
   },
   exit: {
     opacity: 0,
-    x: -20,
-    transition: { duration: 0.2 },
+    x: -25,
+    transition: { duration: 0.25, ease: [0.4, 0, 1, 1] },
   },
 }
 
 const slideInRight: Variants = {
-  hidden: { opacity: 0, x: 20 },
+  hidden: { opacity: 0, x: 30 },
   visible: {
     opacity: 1,
     x: 0,
-    transition: { duration: 0.3, ease: 'easeOut' },
+    transition: {
+      duration: 0.45,
+      ease: [0.22, 1, 0.36, 1],
+      opacity: { duration: 0.35 },
+    },
   },
   exit: {
     opacity: 0,
-    x: 20,
-    transition: { duration: 0.2 },
+    x: 25,
+    transition: { duration: 0.25, ease: [0.4, 0, 1, 1] },
   },
 }
 
 const scaleIn: Variants = {
-  hidden: { opacity: 0, scale: 0.95 },
+  hidden: { opacity: 0, scale: 0.92 },
   visible: {
     opacity: 1,
     scale: 1,
-    transition: { type: 'spring' as const, stiffness: 300, damping: 25 },
+    transition: {
+      type: 'spring' as const,
+      stiffness: 400,
+      damping: 30,
+      mass: 0.8,
+      opacity: { duration: 0.25 },
+    },
   },
   exit: {
     opacity: 0,
     scale: 0.95,
-    transition: { duration: 0.15 },
+    transition: { duration: 0.2, ease: [0.4, 0, 1, 1] },
   },
 }
 
@@ -137,17 +155,37 @@ const staggerContainer: Variants = {
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.05,
-      delayChildren: 0.1,
+      staggerChildren: 0.04,
+      delayChildren: 0.08,
+      when: 'beforeChildren',
+    },
+  },
+  exit: {
+    opacity: 0,
+    transition: {
+      staggerChildren: 0.02,
+      staggerDirection: -1,
+      when: 'afterChildren',
     },
   },
 }
 
 const listItem: Variants = {
-  hidden: { opacity: 0, x: -10 },
+  hidden: { opacity: 0, x: -12, scale: 0.97 },
   visible: {
     opacity: 1,
     x: 0,
+    scale: 1,
+    transition: {
+      duration: 0.35,
+      ease: [0.22, 1, 0.36, 1],
+      opacity: { duration: 0.3 },
+    },
+  },
+  exit: {
+    opacity: 0,
+    x: -8,
+    scale: 0.98,
     transition: { duration: 0.2 },
   },
 }
@@ -252,90 +290,128 @@ interface NotebookCardProps {
 
 function NotebookCard({ notebook, isSelected, onClick, onEdit, onDelete }: NotebookCardProps) {
   return (
-    <motion.div variants={listItem} layout>
-      <Card
-        variant="glass"
-        padding="none"
-        interactive
-        role="button"
-        tabIndex={0}
-        aria-label={`Open notebook: ${notebook.name}`}
-        aria-pressed={isSelected}
-        onKeyDown={e => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault()
-            onClick()
-          }
-        }}
-        className={`group cursor-pointer transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/25 dark:focus-visible:ring-blue-400/25 ${
-          isSelected
-            ? 'ring-2 ring-blue-500/35 dark:ring-blue-400/35 shadow-lg shadow-blue-500/10'
-            : ''
-        }`}
-        onClick={onClick}
+    <motion.div
+      variants={listItem}
+      layout
+      layoutId={`notebook-${notebook.id}`}
+      transition={{ layout: { duration: 0.3, ease: [0.22, 1, 0.36, 1] } }}
+    >
+      <motion.div
+        whileHover={{ scale: 1.015, y: -1 }}
+        whileTap={{ scale: 0.99 }}
+        transition={{ type: 'spring', stiffness: 400, damping: 30 }}
       >
-        <CardBody className="py-3 px-4">
-          <div className="flex items-start gap-3">
-            <motion.div
-              className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-md"
-              style={{
-                background: `linear-gradient(135deg, ${notebook.color}20, ${notebook.color}40)`,
-                color: notebook.color,
-              }}
-              whileHover={{ scale: 1.05, rotate: 3 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <BookOpen className="w-5 h-5" />
-            </motion.div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between mb-1">
-                <h3 className="font-semibold text-zinc-900 dark:text-zinc-50 truncate text-sm">
-                  {notebook.name}
-                </h3>
-                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <motion.button
-                    onClick={e => {
-                      e.stopPropagation()
-                      onEdit()
-                    }}
-                    className="p-1.5 rounded-lg hover:bg-zinc-100/80 dark:hover:bg-white/5 transition-colors"
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
+        <Card
+          variant="glass"
+          padding="none"
+          interactive
+          role="button"
+          tabIndex={0}
+          aria-label={`Open notebook: ${notebook.name}`}
+          aria-pressed={isSelected}
+          onKeyDown={e => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              onClick()
+            }
+          }}
+          className={`group cursor-pointer transition-all duration-300 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-blue-400/40 dark:focus-visible:ring-offset-zinc-950 ${
+            isSelected
+              ? 'ring-2 ring-blue-500/50 dark:ring-blue-400/50 shadow-xl shadow-blue-500/15 dark:shadow-blue-400/10'
+              : 'hover:shadow-lg hover:shadow-black/5 dark:hover:shadow-black/20'
+          }`}
+          onClick={onClick}
+        >
+          <CardBody className="py-3 px-4">
+            <div className="flex items-start gap-3">
+              <motion.div
+                className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-md relative overflow-hidden"
+                style={{
+                  background: `linear-gradient(135deg, ${notebook.color}20, ${notebook.color}40)`,
+                  color: notebook.color,
+                }}
+                whileHover={{ scale: 1.08, rotate: 5 }}
+                whileTap={{ scale: 0.92, rotate: -2 }}
+                transition={{ type: 'spring', stiffness: 500, damping: 25 }}
+              >
+                <motion.div
+                  className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent"
+                  initial={{ opacity: 0 }}
+                  whileHover={{ opacity: 1 }}
+                  transition={{ duration: 0.3 }}
+                />
+                <BookOpen className="w-5 h-5 relative z-10" />
+              </motion.div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between mb-1">
+                  <motion.h3
+                    className="font-semibold text-zinc-900 dark:text-zinc-50 truncate text-sm"
+                    initial={false}
+                    animate={{ color: isSelected ? notebook.color : undefined }}
+                    transition={{ duration: 0.3 }}
                   >
-                    <Edit3 className="w-3 h-3 text-zinc-500 dark:text-zinc-400" />
-                  </motion.button>
-                  <motion.button
-                    onClick={e => {
-                      e.stopPropagation()
-                      onDelete()
-                    }}
-                    className="p-1.5 rounded-lg hover:bg-red-100/50 dark:hover:bg-red-900/30 transition-colors"
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
+                    {notebook.name}
+                  </motion.h3>
+                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                    <motion.button
+                      onClick={e => {
+                        e.stopPropagation()
+                        onEdit()
+                      }}
+                      className="p-1.5 rounded-lg hover:bg-zinc-100/80 dark:hover:bg-white/10 transition-all duration-200"
+                      whileHover={{ scale: 1.15, rotate: 5 }}
+                      whileTap={{ scale: 0.88 }}
+                      aria-label="Edit notebook"
+                    >
+                      <Edit3 className="w-3 h-3 text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors" />
+                    </motion.button>
+                    <motion.button
+                      onClick={e => {
+                        e.stopPropagation()
+                        onDelete()
+                      }}
+                      className="p-1.5 rounded-lg hover:bg-red-100/60 dark:hover:bg-red-900/40 transition-all duration-200"
+                      whileHover={{ scale: 1.15, rotate: -5 }}
+                      whileTap={{ scale: 0.88 }}
+                      aria-label="Delete notebook"
+                    >
+                      <Trash2 className="w-3 h-3 text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 transition-colors" />
+                    </motion.button>
+                  </div>
+                </div>
+                {notebook.description && (
+                  <motion.p
+                    className="text-xs text-zinc-500 dark:text-zinc-400 truncate mb-2"
+                    initial={{ opacity: 0.8 }}
+                    whileHover={{ opacity: 1 }}
+                    transition={{ duration: 0.2 }}
                   >
-                    <Trash2 className="w-3 h-3 text-red-500 dark:text-red-400" />
-                  </motion.button>
+                    {notebook.description}
+                  </motion.p>
+                )}
+                <div className="flex items-center gap-3 text-[10px] text-zinc-400 dark:text-zinc-500">
+                  <motion.span
+                    className="flex items-center gap-1"
+                    whileHover={{ scale: 1.05 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <FileText className="w-3 h-3" />
+                    {notebook.record_count} records
+                  </motion.span>
+                  <motion.span
+                    className="flex items-center gap-1"
+                    whileHover={{ scale: 1.05 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <Clock className="w-3 h-3" />
+                    {new Date(notebook.updated_at * 1000).toLocaleDateString()}
+                  </motion.span>
                 </div>
               </div>
-              {notebook.description && (
-                <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate mb-2">
-                  {notebook.description}
-                </p>
-              )}
-              <div className="flex items-center gap-3 text-[10px] text-zinc-400 dark:text-zinc-500">
-                <span className="flex items-center gap-1">
-                  <FileText className="w-3 h-3" />
-                  {notebook.record_count} records
-                </span>
-                <span className="flex items-center gap-1">
-                  <Clock className="w-3 h-3" />
-                  {new Date(notebook.updated_at * 1000).toLocaleDateString()}
-                </span>
-              </div>
             </div>
-          </div>
-        </CardBody>
-      </Card>
+          </CardBody>
+        </Card>
+      </motion.div>
     </motion.div>
   )
 }
@@ -355,76 +431,119 @@ function RecordCard({ record, isSelected, onClick, onDelete }: RecordCardProps) 
   const styles = getRecordStyles(record.type)
 
   return (
-    <motion.div variants={listItem} layout>
-      <Card
-        variant="glass"
-        padding="none"
-        interactive
-        role="button"
-        tabIndex={0}
-        aria-label={`Open record: ${record.title}`}
-        aria-pressed={isSelected}
-        onKeyDown={e => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault()
-            onClick()
-          }
-        }}
-        className={`cursor-pointer transition-all duration-200 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/25 dark:focus-visible:ring-blue-400/25 ${
-          isSelected
-            ? 'ring-2 ring-blue-500/35 dark:ring-blue-400/35 shadow-lg shadow-blue-500/10'
-            : ''
-        }`}
-        onClick={onClick}
+    <motion.div
+      variants={listItem}
+      layout
+      layoutId={`record-${record.id}`}
+      transition={{ layout: { duration: 0.3, ease: [0.22, 1, 0.36, 1] } }}
+    >
+      <motion.div
+        whileHover={{ scale: 1.012, y: -1 }}
+        whileTap={{ scale: 0.99 }}
+        transition={{ type: 'spring', stiffness: 450, damping: 32 }}
       >
-        <CardBody className="py-3 px-4">
-          <div className="flex items-start gap-3">
-            <motion.div
-              className={`p-2 rounded-xl ${styles.bg} ${styles.text} border ${styles.border}`}
-              whileHover={{ scale: 1.05 }}
-            >
-              {getRecordIcon(record.type)}
-            </motion.div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <span
-                  className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${styles.bg} ${styles.text}`}
+        <Card
+          variant="glass"
+          padding="none"
+          interactive
+          role="button"
+          tabIndex={0}
+          aria-label={`Open record: ${record.title}`}
+          aria-pressed={isSelected}
+          onKeyDown={e => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              onClick()
+            }
+          }}
+          className={`cursor-pointer transition-all duration-300 ease-out group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-blue-400/40 dark:focus-visible:ring-offset-zinc-950 ${
+            isSelected
+              ? 'ring-2 ring-blue-500/50 dark:ring-blue-400/50 shadow-xl shadow-blue-500/15 dark:shadow-blue-400/10'
+              : 'hover:shadow-lg hover:shadow-black/5 dark:hover:shadow-black/20'
+          }`}
+          onClick={onClick}
+        >
+          <CardBody className="py-3 px-4">
+            <div className="flex items-start gap-3">
+              <motion.div
+                className={`p-2 rounded-xl ${styles.bg} ${styles.text} border ${styles.border} relative overflow-hidden`}
+                whileHover={{ scale: 1.08, rotate: 3 }}
+                whileTap={{ scale: 0.92 }}
+                transition={{ type: 'spring', stiffness: 500, damping: 25 }}
+              >
+                <motion.div
+                  className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent"
+                  initial={{ opacity: 0 }}
+                  whileHover={{ opacity: 1 }}
+                  transition={{ duration: 0.25 }}
+                />
+                <div className="relative z-10">{getRecordIcon(record.type)}</div>
+              </motion.div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <motion.span
+                    className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${styles.bg} ${styles.text}`}
+                    whileHover={{ scale: 1.05 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    {getRecordLabel(record.type)}
+                  </motion.span>
+                  {record.kb_name && (
+                    <motion.span
+                      className="text-[10px] text-zinc-400 dark:text-zinc-500 flex items-center gap-0.5"
+                      whileHover={{ scale: 1.05, opacity: 1 }}
+                      initial={{ opacity: 0.7 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <Database className="w-3 h-3" />
+                      {record.kb_name}
+                    </motion.span>
+                  )}
+                </div>
+                <motion.h4
+                  className="text-sm font-medium text-zinc-900 dark:text-zinc-50 line-clamp-1 mb-1"
+                  initial={false}
+                  whileHover={{ x: 2 }}
+                  transition={{ duration: 0.2 }}
                 >
-                  {getRecordLabel(record.type)}
-                </span>
-                {record.kb_name && (
-                  <span className="text-[10px] text-zinc-400 dark:text-zinc-500 flex items-center gap-0.5">
-                    <Database className="w-3 h-3" />
-                    {record.kb_name}
-                  </span>
-                )}
-              </div>
-              <h4 className="text-sm font-medium text-zinc-900 dark:text-zinc-50 line-clamp-1 mb-1">
-                {record.title}
-              </h4>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 line-clamp-2">
-                {record.user_query}
-              </p>
-              <div className="flex items-center justify-between mt-2">
-                <span className="text-[10px] text-zinc-400 dark:text-zinc-500">
-                  {new Date(record.created_at * 1000).toLocaleString()}
-                </span>
-                <motion.button
-                  onClick={e => {
-                    e.stopPropagation()
-                    onDelete()
-                  }}
-                  className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-red-100/50 dark:hover:bg-red-900/30 transition-all"
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
+                  {record.title}
+                </motion.h4>
+                <motion.p
+                  className="text-xs text-zinc-500 dark:text-zinc-400 line-clamp-2"
+                  initial={{ opacity: 0.85 }}
+                  whileHover={{ opacity: 1 }}
+                  transition={{ duration: 0.2 }}
                 >
-                  <Trash2 className="w-3 h-3 text-red-500 dark:text-red-400" />
-                </motion.button>
+                  {record.user_query}
+                </motion.p>
+                <div className="flex items-center justify-between mt-2">
+                  <motion.span
+                    className="text-[10px] text-zinc-400 dark:text-zinc-500"
+                    whileHover={{ scale: 1.02, opacity: 1 }}
+                    initial={{ opacity: 0.8 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    {new Date(record.created_at * 1000).toLocaleString()}
+                  </motion.span>
+                  <motion.button
+                    onClick={e => {
+                      e.stopPropagation()
+                      onDelete()
+                    }}
+                    className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-red-100/60 dark:hover:bg-red-900/40 transition-all duration-250"
+                    initial={{ scale: 0.9 }}
+                    whileHover={{ scale: 1.15, rotate: -5 }}
+                    whileTap={{ scale: 0.88 }}
+                    aria-label="Delete record"
+                  >
+                    <Trash2 className="w-3 h-3 text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 transition-colors" />
+                  </motion.button>
+                </div>
               </div>
             </div>
-          </div>
-        </CardBody>
-      </Card>
+          </CardBody>
+        </Card>
+      </motion.div>
     </motion.div>
   )
 }
@@ -440,22 +559,66 @@ interface ColorPickerProps {
 
 function ColorPicker({ value, onChange }: ColorPickerProps) {
   return (
-    <div className="flex gap-2 flex-wrap">
-      {COLORS.map(color => (
+    <motion.div
+      className="flex gap-2.5 flex-wrap"
+      initial="hidden"
+      animate="visible"
+      variants={staggerContainer}
+    >
+      {COLORS.map((color, index) => (
         <motion.button
           key={color}
           onClick={() => onChange(color)}
-          className={`w-8 h-8 rounded-xl transition-all ${
+          className={`w-9 h-9 rounded-xl relative overflow-hidden transition-all duration-300 ${
             value === color
-              ? 'ring-2 ring-blue-500/60 ring-offset-2 ring-offset-white dark:ring-blue-400/60 dark:ring-offset-zinc-950 scale-110'
-              : 'hover:scale-105'
+              ? 'ring-2 ring-blue-500/70 ring-offset-2 ring-offset-white dark:ring-blue-400/70 dark:ring-offset-zinc-950 shadow-lg'
+              : 'ring-1 ring-black/10 dark:ring-white/10 shadow-sm'
           }`}
-          style={{ backgroundColor: color }}
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-        />
+          style={{
+            backgroundColor: color,
+          }}
+          whileHover={{ scale: 1.12, rotate: 2 }}
+          whileTap={{ scale: 0.92, rotate: -2 }}
+          transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+          variants={{
+            hidden: { opacity: 0, scale: 0.8, rotate: -10 },
+            visible: {
+              opacity: 1,
+              scale: 1,
+              rotate: 0,
+              transition: {
+                delay: index * 0.03,
+                type: 'spring',
+                stiffness: 400,
+                damping: 25,
+              },
+            },
+          }}
+          aria-label={`Select color ${color}`}
+          aria-pressed={value === color}
+        >
+          <motion.div
+            className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent"
+            initial={{ opacity: 0 }}
+            whileHover={{ opacity: 1 }}
+            transition={{ duration: 0.25 }}
+          />
+          <AnimatePresence>
+            {value === color && (
+              <motion.div
+                className="absolute inset-0 flex items-center justify-center"
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0, opacity: 0 }}
+                transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+              >
+                <Check className="w-4 h-4 text-white drop-shadow-md" strokeWidth={3} />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.button>
       ))}
-    </div>
+    </motion.div>
   )
 }
 
@@ -479,15 +642,67 @@ function EmptyState({ icon, title, description, action }: EmptyStateProps) {
       className="flex flex-col items-center justify-center h-full text-center p-8"
     >
       <motion.div
-        className="w-16 h-16 rounded-2xl bg-zinc-100/80 dark:bg-white/5 flex items-center justify-center mb-4 text-zinc-300 dark:text-zinc-600"
-        animate={{ y: [0, -5, 0] }}
-        transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+        className="w-20 h-20 rounded-2xl bg-gradient-to-br from-zinc-100/90 to-zinc-50/60 dark:from-white/8 dark:to-white/3 flex items-center justify-center mb-5 text-zinc-300 dark:text-zinc-600 relative overflow-hidden shadow-sm"
+        animate={{
+          y: [0, -8, 0],
+          rotate: [0, 2, 0, -2, 0],
+        }}
+        transition={{
+          duration: 4,
+          repeat: Infinity,
+          ease: 'easeInOut',
+        }}
       >
-        {icon}
+        <motion.div
+          className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent"
+          animate={{
+            opacity: [0.3, 0.6, 0.3],
+          }}
+          transition={{
+            duration: 3,
+            repeat: Infinity,
+            ease: 'easeInOut',
+          }}
+        />
+        <motion.div
+          className="relative z-10"
+          animate={{
+            scale: [1, 1.05, 1],
+          }}
+          transition={{
+            duration: 2.5,
+            repeat: Infinity,
+            ease: 'easeInOut',
+          }}
+        >
+          {icon}
+        </motion.div>
       </motion.div>
-      <h3 className="text-lg font-semibold text-zinc-800 dark:text-zinc-200 mb-1">{title}</h3>
-      <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-4 max-w-xs">{description}</p>
-      {action}
+      <motion.h3
+        className="text-lg font-semibold text-zinc-800 dark:text-zinc-200 mb-2"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2, duration: 0.4 }}
+      >
+        {title}
+      </motion.h3>
+      <motion.p
+        className="text-sm text-zinc-500 dark:text-zinc-400 mb-6 max-w-xs leading-relaxed"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3, duration: 0.4 }}
+      >
+        {description}
+      </motion.p>
+      {action && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.4, duration: 0.3 }}
+        >
+          {action}
+        </motion.div>
+      )}
     </motion.div>
   )
 }
@@ -883,13 +1098,19 @@ export default function NotebookPage() {
                     >
                       <motion.button
                         onClick={() => setLeftCollapsed(false)}
-                        className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/60 bg-white/60 text-zinc-700 shadow-sm backdrop-blur-md hover:bg-white/75 dark:border-white/10 dark:bg-white/5 dark:text-zinc-200 dark:hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/25"
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.97 }}
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/60 bg-white/60 text-zinc-700 shadow-sm backdrop-blur-md hover:bg-white/75 hover:border-white/80 dark:border-white/10 dark:bg-white/5 dark:text-zinc-200 dark:hover:bg-white/10 dark:hover:border-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 focus-visible:ring-offset-2 transition-all duration-250"
+                        whileHover={{ scale: 1.08, x: 2 }}
+                        whileTap={{ scale: 0.95 }}
+                        transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                         aria-label="Expand notebooks panel"
                         aria-expanded={!leftCollapsed}
                       >
-                        <ChevronRight className="w-4 h-4" />
+                        <motion.div
+                          animate={{ x: [0, 2, 0] }}
+                          transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </motion.div>
                       </motion.button>
                     </Card>
                   </motion.div>
@@ -955,9 +1176,21 @@ export default function NotebookPage() {
 
                       <CardBody padding="none" className="flex-1 min-h-0 overflow-y-auto p-3">
                         {loading ? (
-                          <div className="flex items-center justify-center h-32">
-                            <Spinner size="md" label="Loading notebooks..." />
-                          </div>
+                          <motion.div
+                            className="flex flex-col items-center justify-center h-32 gap-3"
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ duration: 0.3 }}
+                          >
+                            <Spinner size="md" />
+                            <motion.p
+                              className="text-xs text-zinc-500 dark:text-zinc-400"
+                              animate={{ opacity: [0.5, 1, 0.5] }}
+                              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                            >
+                              Loading notebooks...
+                            </motion.p>
+                          </motion.div>
                         ) : filteredNotebooks.length === 0 ? (
                           <EmptyState
                             icon={<FolderOpen className="w-8 h-8" />}
@@ -1026,13 +1259,19 @@ export default function NotebookPage() {
                     >
                       <motion.button
                         onClick={() => setMiddleCollapsed(false)}
-                        className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/60 bg-white/60 text-zinc-700 shadow-sm backdrop-blur-md hover:bg-white/75 dark:border-white/10 dark:bg-white/5 dark:text-zinc-200 dark:hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/25"
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.97 }}
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/60 bg-white/60 text-zinc-700 shadow-sm backdrop-blur-md hover:bg-white/75 hover:border-white/80 dark:border-white/10 dark:bg-white/5 dark:text-zinc-200 dark:hover:bg-white/10 dark:hover:border-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 focus-visible:ring-offset-2 transition-all duration-250"
+                        whileHover={{ scale: 1.08, x: 2 }}
+                        whileTap={{ scale: 0.95 }}
+                        transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                         aria-label="Expand records panel"
                         aria-expanded={!middleCollapsed}
                       >
-                        <ChevronRight className="w-4 h-4" />
+                        <motion.div
+                          animate={{ x: [0, 2, 0] }}
+                          transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </motion.div>
                       </motion.button>
                     </Card>
                   </motion.div>
@@ -1168,13 +1407,19 @@ export default function NotebookPage() {
                     >
                       <motion.button
                         onClick={() => setRightCollapsed(false)}
-                        className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/60 bg-white/60 text-zinc-700 shadow-sm backdrop-blur-md hover:bg-white/75 dark:border-white/10 dark:bg-white/5 dark:text-zinc-200 dark:hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/25"
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.97 }}
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/60 bg-white/60 text-zinc-700 shadow-sm backdrop-blur-md hover:bg-white/75 hover:border-white/80 dark:border-white/10 dark:bg-white/5 dark:text-zinc-200 dark:hover:bg-white/10 dark:hover:border-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 focus-visible:ring-offset-2 transition-all duration-250"
+                        whileHover={{ scale: 1.08, x: -2 }}
+                        whileTap={{ scale: 0.95 }}
+                        transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                         aria-label="Expand detail panel"
                         aria-expanded={!rightCollapsed}
                       >
-                        <ChevronLeft className="w-4 h-4" />
+                        <motion.div
+                          animate={{ x: [0, -2, 0] }}
+                          transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                        </motion.div>
                       </motion.button>
                     </Card>
                   </motion.div>
@@ -1479,16 +1724,52 @@ export default function NotebookPage() {
           <ModalBody>
             <div className="text-center">
               <motion.div
-                className="w-12 h-12 bg-red-100 dark:bg-red-900/40 rounded-2xl flex items-center justify-center mx-auto mb-4"
-                animate={{ scale: [1, 1.05, 1] }}
-                transition={{ duration: 1.5, repeat: Infinity }}
+                className="w-16 h-16 bg-gradient-to-br from-red-100 to-red-50 dark:from-red-900/50 dark:to-red-900/30 rounded-2xl flex items-center justify-center mx-auto mb-5 relative overflow-hidden shadow-lg shadow-red-500/20"
+                initial={{ scale: 0, rotate: -180 }}
+                animate={{
+                  scale: 1,
+                  rotate: 0,
+                }}
+                transition={{
+                  type: 'spring',
+                  stiffness: 300,
+                  damping: 20,
+                }}
               >
-                <Trash2 className="w-6 h-6 text-red-600 dark:text-red-400" />
+                <motion.div
+                  className="absolute inset-0 bg-gradient-to-br from-red-500/10 to-transparent"
+                  animate={{
+                    opacity: [0.3, 0.6, 0.3],
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: 'easeInOut',
+                  }}
+                />
+                <motion.div
+                  animate={{
+                    scale: [1, 1.1, 1],
+                    rotate: [0, 5, 0, -5, 0],
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: 'easeInOut',
+                  }}
+                >
+                  <Trash2 className="w-7 h-7 text-red-600 dark:text-red-400 relative z-10" />
+                </motion.div>
               </motion.div>
-              <p className="text-sm text-zinc-600 dark:text-zinc-400">
+              <motion.p
+                className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed px-2"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2, duration: 0.3 }}
+              >
                 This action cannot be undone. All records in this notebook will be permanently
                 deleted.
-              </p>
+              </motion.p>
             </div>
           </ModalBody>
           <ModalFooter className="justify-center">
@@ -1564,67 +1845,128 @@ export default function NotebookPage() {
                   </div>
 
                   {loadingImport ? (
-                    <div className="flex items-center justify-center py-8">
-                      <Spinner size="md" label="Loading records..." />
-                    </div>
+                    <motion.div
+                      className="flex flex-col items-center justify-center py-10 gap-3"
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <Spinner size="md" />
+                      <motion.p
+                        className="text-xs text-zinc-500 dark:text-zinc-400"
+                        animate={{ opacity: [0.5, 1, 0.5] }}
+                        transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                      >
+                        Loading records...
+                      </motion.p>
+                    </motion.div>
                   ) : importSourceRecords.length === 0 ? (
-                    <div className="py-8 text-center text-zinc-400 dark:text-zinc-500">
+                    <motion.div
+                      className="py-10 text-center text-zinc-400 dark:text-zinc-500"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3 }}
+                    >
                       No records in this notebook
-                    </div>
+                    </motion.div>
                   ) : (
-                    <div className="space-y-2 max-h-64 overflow-y-auto">
-                      {importSourceRecords.map(record => (
+                    <motion.div
+                      className="space-y-2 max-h-64 overflow-y-auto"
+                      initial="hidden"
+                      animate="visible"
+                      variants={staggerContainer}
+                    >
+                      {importSourceRecords.map((record, index) => (
                         <motion.div
                           key={record.id}
                           onClick={() => toggleImportRecord(record.id)}
                           className={`
-                          p-3 rounded-xl cursor-pointer transition-all border
+                          p-3 rounded-xl cursor-pointer transition-all duration-300 border shadow-sm
                           ${
                             selectedImportRecords.has(record.id)
-                              ? 'bg-blue-50/60 dark:bg-blue-950/20 border-blue-500/30 dark:border-blue-400/30'
-                              : 'bg-white/60 dark:bg-white/5 border-zinc-200/70 dark:border-white/10 hover:border-blue-300/60 dark:hover:border-blue-400/40'
+                              ? 'bg-blue-50/70 dark:bg-blue-950/25 border-blue-500/40 dark:border-blue-400/40 shadow-blue-500/10'
+                              : 'bg-white/70 dark:bg-white/5 border-zinc-200/70 dark:border-white/10 hover:border-blue-300/70 dark:hover:border-blue-400/50 hover:shadow-md'
                           }
                         `}
-                          whileHover={{ scale: 1.01 }}
+                          whileHover={{ scale: 1.015, y: -1 }}
                           whileTap={{ scale: 0.99 }}
+                          transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                          variants={{
+                            hidden: { opacity: 0, x: -10 },
+                            visible: {
+                              opacity: 1,
+                              x: 0,
+                              transition: {
+                                delay: index * 0.03,
+                                duration: 0.3,
+                              },
+                            },
+                          }}
                         >
                           <div className="flex items-center gap-3">
                             <motion.div
                               className={`
-                              w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all
+                              w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all duration-250
                               ${
                                 selectedImportRecords.has(record.id)
-                                  ? 'bg-blue-600 border-blue-600 text-white'
-                                  : 'border-zinc-300 dark:border-zinc-600'
+                                  ? 'bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-500/30'
+                                  : 'border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800'
                               }
                             `}
                               animate={{
-                                scale: selectedImportRecords.has(record.id) ? [1, 1.1, 1] : 1,
+                                scale: selectedImportRecords.has(record.id) ? [1, 1.15, 1] : 1,
+                                rotate: selectedImportRecords.has(record.id) ? [0, 5, 0] : 0,
                               }}
+                              transition={{ duration: 0.3, type: 'spring', stiffness: 500 }}
                             >
-                              {selectedImportRecords.has(record.id) && (
-                                <Check className="w-3 h-3" />
-                              )}
+                              <AnimatePresence mode="wait">
+                                {selectedImportRecords.has(record.id) && (
+                                  <motion.div
+                                    initial={{ scale: 0, rotate: -90 }}
+                                    animate={{ scale: 1, rotate: 0 }}
+                                    exit={{ scale: 0, rotate: 90 }}
+                                    transition={{ type: 'spring', stiffness: 500, damping: 25 }}
+                                  >
+                                    <Check className="w-3 h-3" strokeWidth={3} />
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
                             </motion.div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
-                                <span
+                                <motion.span
                                   className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded ${getRecordStyles(record.type).bg} ${getRecordStyles(record.type).text}`}
+                                  whileHover={{ scale: 1.05 }}
+                                  transition={{ duration: 0.2 }}
                                 >
                                   {record.type}
-                                </span>
-                                <span className="text-sm font-medium text-zinc-900 dark:text-zinc-50 truncate">
+                                </motion.span>
+                                <motion.span
+                                  className="text-sm font-medium text-zinc-900 dark:text-zinc-50 truncate"
+                                  initial={false}
+                                  animate={{
+                                    color: selectedImportRecords.has(record.id)
+                                      ? 'rgb(37, 99, 235)'
+                                      : undefined,
+                                  }}
+                                  transition={{ duration: 0.3 }}
+                                >
                                   {record.title}
-                                </span>
+                                </motion.span>
                               </div>
-                              <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate mt-1">
+                              <motion.p
+                                className="text-xs text-zinc-500 dark:text-zinc-400 truncate mt-1"
+                                initial={{ opacity: 0.8 }}
+                                whileHover={{ opacity: 1 }}
+                                transition={{ duration: 0.2 }}
+                              >
                                 {record.user_query}
-                              </p>
+                              </motion.p>
                             </div>
                           </div>
                         </motion.div>
                       ))}
-                    </div>
+                    </motion.div>
                   )}
                 </div>
               )}

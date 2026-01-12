@@ -66,33 +66,75 @@ const sizeStyles = {
 // Animation Variants
 // ============================================================================
 
+/**
+ * Premium backdrop animation - Linear-style fade with perfect timing
+ */
 const backdropVariants = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1 },
-  exit: { opacity: 0 },
-} satisfies Variants
-
-const modalVariants = {
   hidden: {
     opacity: 0,
-    scale: 0.95,
   },
   visible: {
     opacity: 1,
-    scale: 1,
     transition: {
       duration: 0.2,
-      ease: [0.16, 1, 0.3, 1] as const, // out-expo
+      ease: [0.25, 0.1, 0.25, 1.0] as const, // ease-in-out-cubic
     },
   },
   exit: {
     opacity: 0,
-    scale: 0.95,
     transition: {
       duration: 0.15,
-      ease: [0.16, 1, 0.3, 1] as const, // out-expo
+      ease: [0.4, 0.0, 1, 1] as const, // ease-in
     },
   },
+} satisfies Variants
+
+/**
+ * Premium modal animation - scale + fade with spring physics
+ * Matches Linear's modal feel: smooth entry, crisp exit
+ */
+const modalVariants = {
+  hidden: {
+    opacity: 0,
+    scale: 0.95,
+    y: 8, // Subtle upward drift on entry
+  },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    y: 0,
+    transition: {
+      type: 'spring',
+      damping: 25,
+      stiffness: 300,
+      mass: 0.8,
+      opacity: { duration: 0.2 },
+    },
+  },
+  exit: {
+    opacity: 0,
+    scale: 0.96,
+    y: 4,
+    transition: {
+      duration: 0.15,
+      ease: [0.4, 0.0, 1, 1] as const, // ease-in
+    },
+  },
+} satisfies Variants
+
+/**
+ * Reduced motion variants - instant for accessibility
+ */
+const reducedMotionBackdropVariants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { duration: 0.001 } },
+  exit: { opacity: 0, transition: { duration: 0.001 } },
+} satisfies Variants
+
+const reducedMotionModalVariants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { duration: 0.001 } },
+  exit: { opacity: 0, transition: { duration: 0.001 } },
 } satisfies Variants
 
 // ============================================================================
@@ -166,12 +208,28 @@ function ModalBase({
   const titleId = useId()
   const reduceMotion = useReducedMotion()
   const panelRef = useRef<HTMLDivElement>(null)
+  const backdropRef = useRef<HTMLDivElement>(null)
   const previouslyFocusedRef = useRef<HTMLElement | null>(null)
 
-  // Handle click outside modal
+  /**
+   * Handle backdrop click with subtle scale feedback
+   * Creates a micro-interaction that feels responsive before close
+   */
   const handleBackdropClick = (e: ReactMouseEvent<HTMLDivElement>) => {
-    if (e.target === e.currentTarget) {
-      onClose()
+    if (e.target === e.currentTarget && panelRef.current) {
+      // Subtle scale pulse feedback on backdrop click
+      if (!reduceMotion) {
+        panelRef.current.animate(
+          [{ transform: 'scale(1)' }, { transform: 'scale(0.98)' }, { transform: 'scale(1)' }],
+          {
+            duration: 200,
+            easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+          }
+        )
+      }
+
+      // Delay close slightly for feedback visibility
+      setTimeout(() => onClose(), 50)
     }
   }
 
@@ -241,30 +299,29 @@ function ModalBase({
     }
   }, [isOpen, onClose])
 
-  const resolvedModalVariants: Variants = reduceMotion
-    ? {
-        hidden: { opacity: 0 },
-        visible: { opacity: 1, transition: { duration: 0.12 } },
-        exit: { opacity: 0, transition: { duration: 0.1 } },
-      }
-    : modalVariants
+  const resolvedBackdropVariants = reduceMotion ? reducedMotionBackdropVariants : backdropVariants
+  const resolvedModalVariants = reduceMotion ? reducedMotionModalVariants : modalVariants
 
   return (
     <AnimatePresence mode="wait">
       {isOpen && (
         <div className="fixed inset-0 z-50 grid place-items-center p-4">
-          {/* Backdrop */}
+          {/* Premium Backdrop - fades in before modal */}
           <motion.div
-            className={cn('absolute inset-0 backdrop-blur-sm', 'bg-black/40 dark:bg-black/60')}
-            variants={backdropVariants}
+            ref={backdropRef}
+            className={cn(
+              'absolute inset-0 backdrop-blur-sm',
+              'bg-black/40 dark:bg-black/60',
+              'cursor-default'
+            )}
+            variants={resolvedBackdropVariants}
             initial="hidden"
             animate="visible"
             exit="exit"
-            transition={{ duration: reduceMotion ? 0.12 : 0.2 }}
             onClick={handleBackdropClick}
           />
 
-          {/* Modal Panel */}
+          {/* Premium Modal Panel - enters with spring physics */}
           <motion.div
             ref={panelRef}
             tabIndex={-1}
@@ -287,7 +344,7 @@ function ModalBase({
               )}
             >
               {showCloseButton && (
-                <button
+                <motion.button
                   type="button"
                   onClick={onClose}
                   className={cn(
@@ -299,13 +356,19 @@ function ModalBase({
                     'focus-visible:outline-none focus-visible:ring-2',
                     'focus-visible:ring-primary/20 focus-visible:ring-offset-2',
                     'focus-visible:ring-offset-surface-elevated',
-                    'active:scale-95',
-                    'transition-all duration-150 ease-out'
+                    'transition-colors duration-150 ease-out'
                   )}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  transition={{
+                    type: 'spring',
+                    stiffness: 400,
+                    damping: 25,
+                  }}
                   aria-label="Close modal"
                 >
                   <X className="h-4 w-4" />
-                </button>
+                </motion.button>
               )}
 
               {title && (

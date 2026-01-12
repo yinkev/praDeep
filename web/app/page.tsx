@@ -76,32 +76,33 @@ const containerVariants = {
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.06,
-      delayChildren: 0.1,
+      staggerChildren: 0.08,
+      delayChildren: 0.15,
     },
   },
 }
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 16 },
+  hidden: { opacity: 0, y: 20 },
   visible: {
     opacity: 1,
     y: 0,
     transition: {
       type: 'spring' as const,
-      stiffness: 400,
-      damping: 28,
+      stiffness: 350,
+      damping: 30,
+      mass: 0.8,
     },
   },
 }
 
 const fadeInUp = {
-  hidden: { opacity: 0, y: 24 },
+  hidden: { opacity: 0, y: 28 },
   visible: {
     opacity: 1,
     y: 0,
     transition: {
-      duration: 0.5,
+      duration: 0.6,
       ease: [0.16, 1, 0.3, 1] as const,
     },
   },
@@ -111,8 +112,8 @@ const headlineVariants = {
   hidden: {},
   visible: {
     transition: {
-      staggerChildren: 0.12,
-      delayChildren: 0.02,
+      staggerChildren: 0.15,
+      delayChildren: 0.08,
     },
   },
 }
@@ -120,7 +121,7 @@ const headlineVariants = {
 const headlineLineVariants = {
   hidden: {
     opacity: 0,
-    y: 18,
+    y: 24,
     clipPath: 'inset(0 0 100% 0)',
   },
   visible: {
@@ -128,7 +129,7 @@ const headlineLineVariants = {
     y: 0,
     clipPath: 'inset(0 0 0% 0)',
     transition: {
-      duration: 0.7,
+      duration: 0.8,
       ease: [0.16, 1, 0.3, 1] as const,
     },
   },
@@ -561,14 +562,16 @@ export default function HomePage() {
                   <motion.button
                     type="button"
                     onClick={() => scrollToWelcomeSection('hero')}
-                    whileHover={{ y: -1 }}
+                    whileHover={{ y: -1, scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 25 }}
                     aria-current={activeWelcomeSection === 'hero' ? 'page' : undefined}
-                    className="relative shrink-0 rounded-full px-3 py-1.5 text-xs font-medium text-text-secondary hover:text-text-primary dark:text-zinc-200 dark:hover:text-zinc-50"
+                    className="relative shrink-0 rounded-full px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors duration-200 hover:text-text-primary dark:text-zinc-200 dark:hover:text-zinc-50"
                   >
                     {activeWelcomeSection === 'hero' && (
                       <motion.span
                         layoutId="welcomeNavActive"
+                        transition={{ type: 'spring', stiffness: 500, damping: 35 }}
                         className="absolute inset-0 rounded-full bg-surface-elevated/90 shadow-sm dark:bg-zinc-950/60"
                       />
                     )}
@@ -579,14 +582,16 @@ export default function HomePage() {
                     <motion.button
                       type="button"
                       onClick={() => scrollToWelcomeSection('starters')}
-                      whileHover={{ y: -1 }}
+                      whileHover={{ y: -1, scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
+                      transition={{ type: 'spring', stiffness: 400, damping: 25 }}
                       aria-current={activeWelcomeSection === 'starters' ? 'page' : undefined}
-                      className="relative shrink-0 rounded-full px-3 py-1.5 text-xs font-medium text-text-secondary hover:text-text-primary dark:text-zinc-200 dark:hover:text-zinc-50"
+                      className="relative shrink-0 rounded-full px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors duration-200 hover:text-text-primary dark:text-zinc-200 dark:hover:text-zinc-50"
                     >
                       {activeWelcomeSection === 'starters' && (
                         <motion.span
                           layoutId="welcomeNavActive"
+                          transition={{ type: 'spring', stiffness: 500, damping: 35 }}
                           className="absolute inset-0 rounded-full bg-surface-elevated/90 shadow-sm dark:bg-zinc-950/60"
                         />
                       )}
@@ -597,14 +602,16 @@ export default function HomePage() {
                   <motion.button
                     type="button"
                     onClick={() => scrollToWelcomeSection('modules')}
-                    whileHover={{ y: -1 }}
+                    whileHover={{ y: -1, scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 25 }}
                     aria-current={activeWelcomeSection === 'modules' ? 'page' : undefined}
-                    className="relative shrink-0 rounded-full px-3 py-1.5 text-xs font-medium text-text-secondary hover:text-text-primary dark:text-zinc-200 dark:hover:text-zinc-50"
+                    className="relative shrink-0 rounded-full px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors duration-200 hover:text-text-primary dark:text-zinc-200 dark:hover:text-zinc-50"
                   >
                     {activeWelcomeSection === 'modules' && (
                       <motion.span
                         layoutId="welcomeNavActive"
+                        transition={{ type: 'spring', stiffness: 500, damping: 35 }}
                         className="absolute inset-0 rounded-full bg-surface-elevated/90 shadow-sm dark:bg-zinc-950/60"
                       />
                     )}
@@ -782,8 +789,9 @@ export default function HomePage() {
                         <div className="flex items-center gap-2">
                           <motion.button
                             type="button"
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
+                            whileHover={{ scale: 1.04, y: -1 }}
+                            whileTap={{ scale: 0.96 }}
+                            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
                             onClick={() =>
                               setChatState(prev => ({
                                 ...prev,
@@ -793,21 +801,30 @@ export default function HomePage() {
                             aria-pressed={chatState.enableRag}
                             className={`
                             inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium
+                            transition-all duration-300 ease-out will-change-transform
                             ${
                               chatState.enableRag
-                                ? 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-200'
+                                ? 'border-blue-200 bg-blue-50 text-blue-700 shadow-sm shadow-blue-500/20 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-200'
                                 : 'border-border bg-surface-elevated/70 text-text-secondary hover:bg-surface-elevated/90 dark:border-white/10 dark:bg-white/5 dark:text-zinc-200 dark:hover:bg-white/10'
                             }
 	                          `}
                           >
-                            <Database className="h-3.5 w-3.5" />
+                            <motion.div
+                              animate={
+                                chatState.enableRag ? { rotate: 360, scale: [1, 1.1, 1] } : {}
+                              }
+                              transition={{ duration: 0.5, ease: 'easeOut' }}
+                            >
+                              <Database className="h-3.5 w-3.5" />
+                            </motion.div>
                             {t('RAG')}
                           </motion.button>
 
                           <motion.button
                             type="button"
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
+                            whileHover={{ scale: 1.04, y: -1 }}
+                            whileTap={{ scale: 0.96 }}
+                            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
                             onClick={() =>
                               setChatState(prev => ({
                                 ...prev,
@@ -817,14 +834,22 @@ export default function HomePage() {
                             aria-pressed={chatState.enableWebSearch}
                             className={`
                             inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium
+                            transition-all duration-300 ease-out will-change-transform
                             ${
                               chatState.enableWebSearch
-                                ? 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-200'
+                                ? 'border-blue-200 bg-blue-50 text-blue-700 shadow-sm shadow-blue-500/20 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-200'
                                 : 'border-border bg-surface-elevated/70 text-text-secondary hover:bg-surface-elevated/90 dark:border-white/10 dark:bg-white/5 dark:text-zinc-200 dark:hover:bg-white/10'
                             }
 	                          `}
                           >
-                            <Globe className="h-3.5 w-3.5" />
+                            <motion.div
+                              animate={
+                                chatState.enableWebSearch ? { rotate: 360, scale: [1, 1.1, 1] } : {}
+                              }
+                              transition={{ duration: 0.5, ease: 'easeOut' }}
+                            >
+                              <Globe className="h-3.5 w-3.5" />
+                            </motion.div>
                             {t('Web')}
                           </motion.button>
 
@@ -857,47 +882,79 @@ export default function HomePage() {
 
                       <div className="mt-5">
                         <div className="relative">
-                          <input
-                            ref={inputRef}
-                            type="text"
-                            className={`
+                          <motion.div
+                            animate={
+                              isFocused
+                                ? {
+                                    boxShadow:
+                                      '0 0 0 4px rgba(59, 130, 246, 0.12), 0 8px 16px -4px rgba(59, 130, 246, 0.1)',
+                                  }
+                                : { boxShadow: '0 0 0 0px rgba(59, 130, 246, 0)' }
+                            }
+                            transition={{ duration: 0.25, ease: 'easeOut' }}
+                            className="rounded-2xl"
+                          >
+                            <input
+                              ref={inputRef}
+                              type="text"
+                              className={`
 	                            w-full rounded-2xl border px-5 py-4 pr-14 text-base
 	                            bg-surface-elevated/70 backdrop-blur-md
 	                            placeholder:text-text-tertiary text-text-primary
 	                            dark:bg-zinc-950/50 dark:placeholder:text-text-tertiary dark:text-zinc-100
 	                            ${
                                 isFocused
-                                  ? 'border-blue-400/60 ring-4 ring-blue-500/10 dark:border-blue-400/50 dark:ring-blue-500/20'
+                                  ? 'border-blue-400/70 dark:border-blue-400/60'
                                   : 'border-border hover:border-border-hover dark:border-white/10 dark:hover:border-white/20'
                               }
 	                            focus:outline-none
 	                            shadow-glass-sm
+	                            transition-colors duration-250
 	                          `}
-                            aria-label={t('Message')}
-                            placeholder={t('Ask anything...')}
-                            value={inputMessage}
-                            onChange={e => setInputMessage(e.target.value)}
-                            onKeyDown={handleKeyDown}
-                            onFocus={() => setIsFocused(true)}
-                            onBlur={() => setIsFocused(false)}
-                            disabled={chatState.isLoading}
-                            autoComplete="off"
-                          />
+                              aria-label={t('Message')}
+                              placeholder={t('Ask anything...')}
+                              value={inputMessage}
+                              onChange={e => setInputMessage(e.target.value)}
+                              onKeyDown={handleKeyDown}
+                              onFocus={() => setIsFocused(true)}
+                              onBlur={() => setIsFocused(false)}
+                              disabled={chatState.isLoading}
+                              autoComplete="off"
+                            />
+                          </motion.div>
 
                           <motion.button
                             type="button"
-                            whileHover={{ scale: 1.04 }}
-                            whileTap={{ scale: 0.98 }}
+                            whileHover={
+                              inputMessage.trim()
+                                ? { scale: 1.05, rotate: [0, -5, 5, 0] }
+                                : { scale: 1.02 }
+                            }
+                            whileTap={{ scale: 0.95 }}
+                            animate={
+                              inputMessage.trim() && !chatState.isLoading
+                                ? {
+                                    boxShadow: [
+                                      '0 8px 16px -4px rgba(59, 130, 246, 0.3)',
+                                      '0 12px 24px -4px rgba(59, 130, 246, 0.4)',
+                                      '0 8px 16px -4px rgba(59, 130, 246, 0.3)',
+                                    ],
+                                  }
+                                : { boxShadow: '0 0 0 0 rgba(59, 130, 246, 0)' }
+                            }
+                            transition={{
+                              boxShadow: { duration: 2, repeat: Infinity, ease: 'easeInOut' },
+                            }}
                             onClick={handleSend}
                             disabled={chatState.isLoading || !inputMessage.trim()}
                             aria-label={t('Send message')}
                             className={`
 	                            absolute right-2.5 top-1/2 -translate-y-1/2
 	                            flex h-11 w-11 items-center justify-center rounded-xl
-	                            transition-all duration-300 ease-out
+	                            transition-all duration-300 ease-out will-change-transform
 	                            ${
                                 inputMessage.trim()
-                                  ? 'bg-accent-primary text-white shadow-lg shadow-blue-600/20'
+                                  ? 'bg-accent-primary text-white'
                                   : 'bg-surface-elevated/70 text-text-tertiary dark:bg-white/5 dark:text-text-tertiary'
                               }
 	                            disabled:opacity-50 disabled:cursor-not-allowed
@@ -906,7 +963,12 @@ export default function HomePage() {
                             {chatState.isLoading ? (
                               <Loader2 className="h-5 w-5 animate-spin" />
                             ) : (
-                              <Send className="h-5 w-5" />
+                              <motion.div
+                                animate={inputMessage.trim() ? { x: [0, 2, 0] } : {}}
+                                transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+                              >
+                                <Send className="h-5 w-5" />
+                              </motion.div>
                             )}
                           </motion.button>
                         </div>
@@ -917,15 +979,26 @@ export default function HomePage() {
                               <motion.button
                                 key={starter.id}
                                 type="button"
-                                whileHover={{ y: -1 }}
+                                whileHover={{
+                                  y: -2,
+                                  scale: 1.02,
+                                  boxShadow: '0 4px 12px -2px rgba(59, 130, 246, 0.2)',
+                                }}
                                 whileTap={{ scale: 0.98 }}
+                                transition={{ type: 'spring', stiffness: 400, damping: 25 }}
                                 onClick={() => {
                                   setInputMessage(starter.prompt)
                                   inputRef.current?.focus()
                                 }}
-                                className="inline-flex items-center gap-2 rounded-full border border-border bg-surface-elevated/60 px-3 py-1.5 text-xs text-text-secondary shadow-sm backdrop-blur-md hover:bg-surface-elevated/80 dark:border-white/10 dark:bg-white/5 dark:text-zinc-200 dark:hover:bg-white/10"
+                                className="inline-flex items-center gap-2 rounded-full border border-border bg-surface-elevated/60 px-3 py-1.5 text-xs text-text-secondary backdrop-blur-md transition-colors duration-200 hover:bg-surface-elevated/80 hover:text-text-primary will-change-transform dark:border-white/10 dark:bg-white/5 dark:text-zinc-200 dark:hover:bg-white/10 dark:hover:text-zinc-50"
                               >
-                                <span className="text-accent-primary">{starter.icon}</span>
+                                <motion.span
+                                  className="text-accent-primary"
+                                  whileHover={{ rotate: [0, -10, 10, 0] }}
+                                  transition={{ duration: 0.4 }}
+                                >
+                                  {starter.icon}
+                                </motion.span>
                                 <span className="max-w-[220px] truncate">{starter.title}</span>
                               </motion.button>
                             ))}
@@ -969,7 +1042,11 @@ export default function HomePage() {
                       key={starter.id}
                       variants={itemVariants}
                       custom={index}
-                      whileHover={{ y: -2, transition: { duration: 0.3, ease: 'easeOut' } }}
+                      whileHover={{
+                        y: -4,
+                        scale: 1.01,
+                        transition: { type: 'spring', stiffness: 400, damping: 25 },
+                      }}
                       whileTap={{ scale: 0.98 }}
                       type="button"
                       data-testid={`conversation-starter-${starter.id}`}
@@ -977,19 +1054,23 @@ export default function HomePage() {
                         setInputMessage(starter.prompt)
                         focusChat()
                       }}
-                      className="group text-left"
+                      className="group text-left will-change-transform"
                     >
                       <Card
                         variant="glass"
                         padding="md"
-                        className="h-full border-border bg-surface-elevated/40 dark:border-white/10 dark:bg-white/5"
+                        className="h-full border-border bg-surface-elevated/40 transition-all duration-300 ease-out group-hover:border-blue-200/50 group-hover:bg-surface-elevated/60 group-hover:shadow-lg group-hover:shadow-blue-500/10 dark:border-white/10 dark:bg-white/5 dark:group-hover:border-blue-400/30 dark:group-hover:bg-white/8"
                       >
                         <div className="flex items-start gap-3">
-                          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-accent-primary transition-colors duration-300 ease-out group-hover:bg-blue-100 dark:bg-blue-500/15 dark:text-blue-300 dark:group-hover:bg-blue-500/20">
+                          <motion.div
+                            className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-accent-primary transition-all duration-300 ease-out group-hover:bg-blue-100 group-hover:shadow-md group-hover:shadow-blue-500/20 dark:bg-blue-500/15 dark:text-blue-300 dark:group-hover:bg-blue-500/25"
+                            whileHover={{ rotate: [0, -5, 5, 0], scale: 1.1 }}
+                            transition={{ duration: 0.4 }}
+                          >
                             {starter.icon}
-                          </div>
+                          </motion.div>
                           <div className="min-w-0 flex-1">
-                            <div className="text-sm font-semibold text-text-primary dark:text-zinc-50">
+                            <div className="text-sm font-semibold text-text-primary transition-colors duration-200 group-hover:text-accent-primary dark:text-zinc-50 dark:group-hover:text-blue-300">
                               {starter.title}
                             </div>
                             <div className="mt-1 line-clamp-2 text-xs text-text-tertiary dark:text-zinc-400">
@@ -1026,21 +1107,43 @@ export default function HomePage() {
 
               <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
                 {quickActions.map((action, i) => (
-                  <motion.div key={i} variants={itemVariants}>
-                    <Link href={action.href} className="group block">
+                  <motion.div
+                    key={i}
+                    variants={itemVariants}
+                    whileHover={{
+                      y: -4,
+                      scale: 1.01,
+                      transition: { type: 'spring', stiffness: 400, damping: 25 },
+                    }}
+                    className="will-change-transform"
+                  >
+                    <Link href={action.href} className="group block h-full">
                       <Card
                         variant="glass"
                         padding="md"
-                        className="h-full border-border bg-surface-elevated/40 dark:border-white/10 dark:bg-white/5"
+                        className="h-full border-border bg-surface-elevated/40 transition-all duration-300 ease-out group-hover:border-blue-200/50 group-hover:bg-surface-elevated/60 group-hover:shadow-lg group-hover:shadow-blue-500/10 dark:border-white/10 dark:bg-white/5 dark:group-hover:border-blue-400/30 dark:group-hover:bg-white/8"
                       >
                         <div className="flex items-start justify-between gap-4">
-                          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-accent-primary transition-colors duration-300 ease-out group-hover:bg-blue-100 dark:bg-blue-500/15 dark:text-blue-300 dark:group-hover:bg-blue-500/20">
+                          <motion.div
+                            className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-accent-primary transition-all duration-300 ease-out group-hover:bg-blue-100 group-hover:shadow-md group-hover:shadow-blue-500/20 dark:bg-blue-500/15 dark:text-blue-300 dark:group-hover:bg-blue-500/25"
+                            whileHover={{
+                              rotate: [0, -8, 8, 0],
+                              scale: 1.1,
+                            }}
+                            transition={{ duration: 0.5, ease: 'easeOut' }}
+                          >
                             <action.icon className="h-5 w-5" />
-                          </div>
-                          <ArrowRight className="mt-1 h-4 w-4 text-text-tertiary transition-all duration-300 ease-out group-hover:translate-x-1 group-hover:text-accent-primary dark:text-text-tertiary dark:group-hover:text-accent-primary" />
+                          </motion.div>
+                          <motion.div
+                            className="mt-1"
+                            whileHover={{ x: 3, scale: 1.15 }}
+                            transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+                          >
+                            <ArrowRight className="h-4 w-4 text-text-tertiary transition-colors duration-300 ease-out group-hover:text-accent-primary dark:text-text-tertiary dark:group-hover:text-accent-primary" />
+                          </motion.div>
                         </div>
                         <div className="mt-4">
-                          <h3 className="text-sm font-semibold text-text-primary dark:text-zinc-50">
+                          <h3 className="text-sm font-semibold text-text-primary transition-colors duration-200 group-hover:text-accent-primary dark:text-zinc-50 dark:group-hover:text-blue-300">
                             {action.label}
                           </h3>
                           <p className="mt-1 text-xs text-text-secondary dark:text-zinc-300">
@@ -1086,8 +1189,9 @@ export default function HomePage() {
                 {/* Mode Toggles */}
                 <motion.button
                   type="button"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
+                  whileHover={{ scale: 1.04, y: -1 }}
+                  whileTap={{ scale: 0.96 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 25 }}
                   onClick={() =>
                     setChatState(prev => ({
                       ...prev,
@@ -1096,22 +1200,28 @@ export default function HomePage() {
                   }
                   aria-pressed={chatState.enableRag}
                   className={`
-	                    flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all duration-300 ease-out
+	                    flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all duration-300 ease-out will-change-transform
 	                    ${
                         chatState.enableRag
-                          ? 'bg-blue-50 text-accent-primary border-blue-200 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-200'
+                          ? 'bg-blue-50 text-accent-primary border-blue-200 shadow-sm shadow-blue-500/20 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-200'
                           : 'bg-surface-elevated/70 text-text-secondary border-border hover:bg-surface-elevated/90 dark:bg-white/5 dark:text-zinc-200 dark:border-white/10 dark:hover:bg-white/10'
                       }
 	                  `}
                 >
-                  <Database className="h-3.5 w-3.5" />
+                  <motion.div
+                    animate={chatState.enableRag ? { rotate: 360, scale: [1, 1.1, 1] } : {}}
+                    transition={{ duration: 0.5, ease: 'easeOut' }}
+                  >
+                    <Database className="h-3.5 w-3.5" />
+                  </motion.div>
                   {t('RAG')}
                 </motion.button>
 
                 <motion.button
                   type="button"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
+                  whileHover={{ scale: 1.04, y: -1 }}
+                  whileTap={{ scale: 0.96 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 25 }}
                   onClick={() =>
                     setChatState(prev => ({
                       ...prev,
@@ -1120,15 +1230,20 @@ export default function HomePage() {
                   }
                   aria-pressed={chatState.enableWebSearch}
                   className={`
-	                    flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all duration-300 ease-out
+	                    flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all duration-300 ease-out will-change-transform
 	                    ${
                         chatState.enableWebSearch
-                          ? 'bg-blue-50 text-accent-primary border-blue-200 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-200'
+                          ? 'bg-blue-50 text-accent-primary border-blue-200 shadow-sm shadow-blue-500/20 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-200'
                           : 'bg-surface-elevated/70 text-text-secondary border-border hover:bg-surface-elevated/90 dark:bg-white/5 dark:text-zinc-200 dark:border-white/10 dark:hover:bg-white/10'
                       }
 	                  `}
                 >
-                  <Globe className="h-3.5 w-3.5" />
+                  <motion.div
+                    animate={chatState.enableWebSearch ? { rotate: 360, scale: [1, 1.1, 1] } : {}}
+                    transition={{ duration: 0.5, ease: 'easeOut' }}
+                  >
+                    <Globe className="h-3.5 w-3.5" />
+                  </motion.div>
                   {t('Web Search')}
                 </motion.button>
 
@@ -1332,46 +1447,76 @@ export default function HomePage() {
             className="relative border-t border-border bg-surface-elevated/75 px-6 py-4 backdrop-blur-xl dark:border-white/10 dark:bg-zinc-950/60"
           >
             <div className="relative mx-auto max-w-4xl">
-              <input
-                ref={inputRef}
-                type="text"
-                className={`
+              <motion.div
+                animate={
+                  isFocused
+                    ? {
+                        boxShadow:
+                          '0 0 0 4px rgba(59, 130, 246, 0.12), 0 8px 16px -4px rgba(59, 130, 246, 0.1)',
+                      }
+                    : { boxShadow: '0 0 0 0px rgba(59, 130, 246, 0)' }
+                }
+                transition={{ duration: 0.25, ease: 'easeOut' }}
+                className="rounded-2xl"
+              >
+                <input
+                  ref={inputRef}
+                  type="text"
+                  className={`
 	                  w-full rounded-2xl border px-5 py-4 pr-14
 	                  bg-surface-elevated/70 backdrop-blur-md
 	                  placeholder:text-text-tertiary text-text-primary
 	                  dark:bg-zinc-950/50 dark:placeholder:text-text-tertiary dark:text-zinc-100
 	                  ${
                       isFocused
-                        ? 'border-blue-400/60 ring-4 ring-blue-500/10 dark:border-blue-400/50 dark:ring-blue-500/20'
+                        ? 'border-blue-400/70 dark:border-blue-400/60'
                         : 'border-border hover:border-border-hover dark:border-white/10 dark:hover:border-white/20'
                     }
 	                  focus:outline-none
+	                  transition-colors duration-250
 	                `}
-                aria-label={t('Message')}
-                placeholder={t('Type your message...')}
-                value={inputMessage}
-                onChange={e => setInputMessage(e.target.value)}
-                onKeyDown={handleKeyDown}
-                onFocus={() => setIsFocused(true)}
-                onBlur={() => setIsFocused(false)}
-                disabled={chatState.isLoading}
-                autoComplete="off"
-              />
+                  aria-label={t('Message')}
+                  placeholder={t('Type your message...')}
+                  value={inputMessage}
+                  onChange={e => setInputMessage(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  onFocus={() => setIsFocused(true)}
+                  onBlur={() => setIsFocused(false)}
+                  disabled={chatState.isLoading}
+                  autoComplete="off"
+                />
+              </motion.div>
 
               <motion.button
                 type="button"
-                whileHover={{ scale: 1.05 }}
+                whileHover={
+                  inputMessage.trim() ? { scale: 1.05, rotate: [0, -5, 5, 0] } : { scale: 1.02 }
+                }
                 whileTap={{ scale: 0.95 }}
+                animate={
+                  inputMessage.trim() && !chatState.isLoading
+                    ? {
+                        boxShadow: [
+                          '0 8px 16px -4px rgba(59, 130, 246, 0.3)',
+                          '0 12px 24px -4px rgba(59, 130, 246, 0.4)',
+                          '0 8px 16px -4px rgba(59, 130, 246, 0.3)',
+                        ],
+                      }
+                    : { boxShadow: '0 0 0 0 rgba(59, 130, 246, 0)' }
+                }
+                transition={{
+                  boxShadow: { duration: 2, repeat: Infinity, ease: 'easeInOut' },
+                }}
                 onClick={handleSend}
                 disabled={chatState.isLoading || !inputMessage.trim()}
                 aria-label={t('Send message')}
                 className={`
 	                  absolute right-2 top-1/2 -translate-y-1/2
 	                  flex h-10 w-10 items-center justify-center rounded-xl
-	                  transition-all duration-300 ease-out
+	                  transition-all duration-300 ease-out will-change-transform
 	                  ${
                       inputMessage.trim()
-                        ? 'bg-accent-primary text-white shadow-lg shadow-blue-600/20'
+                        ? 'bg-accent-primary text-white'
                         : 'bg-surface-elevated/70 text-text-tertiary dark:bg-white/5 dark:text-text-tertiary'
                     }
 	                  disabled:cursor-not-allowed disabled:opacity-50
@@ -1380,7 +1525,12 @@ export default function HomePage() {
                 {chatState.isLoading ? (
                   <Loader2 className="h-5 w-5 animate-spin" />
                 ) : (
-                  <Send className="h-5 w-5" />
+                  <motion.div
+                    animate={inputMessage.trim() ? { x: [0, 2, 0] } : {}}
+                    transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+                  >
+                    <Send className="h-5 w-5" />
+                  </motion.div>
                 )}
               </motion.button>
             </div>

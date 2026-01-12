@@ -62,7 +62,10 @@ interface BaseInputProps {
 
 export interface InputProps
   extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'>,
-    BaseInputProps {}
+    BaseInputProps {
+  /** Show success state with checkmark */
+  success?: boolean
+}
 
 export interface TextareaProps
   extends Omit<React.TextareaHTMLAttributes<HTMLTextAreaElement>, 'size'>,
@@ -71,6 +74,8 @@ export interface TextareaProps
   minRows?: number
   /** Maximum number of rows (for auto-resize) */
   maxRows?: number
+  /** Show success state with checkmark */
+  success?: boolean
 }
 
 // ============================================================================
@@ -100,16 +105,21 @@ const baseInputStyles = cn(
   'bg-surface-elevated',
   'border border-border',
   'rounded-md',
-  'text-text-primary placeholder:text-text-quaternary',
+  'text-text-primary',
+  'placeholder:text-text-quaternary placeholder:transition-colors placeholder:duration-200',
   'shadow-none',
   'outline-none',
-  'transition-[border-color,box-shadow] duration-200 ease-out'
+  'transition-[border-color,box-shadow,background-color] duration-200 ease-out-expo'
 )
 
 // Clean focus with accent color and subtle ring
-const focusStyles = cn('focus:border-accent-primary', 'focus:ring-2 focus:ring-accent-primary/10')
+const focusStyles = cn(
+  'focus:border-accent-primary',
+  'focus:ring-2 focus:ring-accent-primary/10',
+  'focus:placeholder:text-text-tertiary'
+)
 
-const hoverStyles = cn('hover:border-border-hover')
+const hoverStyles = cn('hover:border-border-strong enabled:hover:bg-surface-secondary')
 
 const errorStyles = cn(
   'border-semantic-error',
@@ -117,7 +127,17 @@ const errorStyles = cn(
   'focus:ring-2 focus:ring-semantic-error/10'
 )
 
-const disabledStyles = cn('disabled:opacity-50', 'disabled:cursor-not-allowed')
+const successStyles = cn(
+  'border-semantic-success',
+  'focus:border-semantic-success',
+  'focus:ring-2 focus:ring-semantic-success/10'
+)
+
+const disabledStyles = cn(
+  'disabled:opacity-50',
+  'disabled:cursor-not-allowed',
+  'disabled:bg-surface-secondary'
+)
 
 // ============================================================================
 // Input Component
@@ -129,6 +149,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
       label,
       floatingLabel = false,
       error,
+      success,
       helperText,
       leftIcon,
       rightIcon,
@@ -176,7 +197,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
 
     const styles = sizeStyles[size]
     const hasLeftIcon = Boolean(leftIcon)
-    const hasRightIcon = Boolean(rightIcon)
+    const showSuccessIcon = success && !error && !disabled
+    const hasRightIcon = Boolean(rightIcon) || showSuccessIcon
 
     const isFloatingActive = isFocused || hasValue
 
@@ -202,9 +224,11 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           {leftIcon && (
             <div
               className={cn(
-                'absolute left-3 top-1/2 z-10 -translate-y-1/2 text-text-tertiary transition-colors duration-200 ease-out',
-                isFocused && 'text-accent-primary',
+                'absolute left-3 top-1/2 z-10 -translate-y-1/2 text-text-tertiary transition-colors duration-200 ease-out-expo',
+                isFocused && !error && !success && 'text-accent-primary',
                 error && 'text-semantic-error',
+                success && !error && 'text-semantic-success',
+                disabled && 'opacity-50',
                 styles.icon
               )}
             >
@@ -217,14 +241,16 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             <label
               htmlFor={inputId}
               className={cn(
-                'pointer-events-none absolute z-10 transition-all duration-150 ease-out',
+                'pointer-events-none absolute z-10 transition-all duration-200 ease-out-expo',
                 hasLeftIcon ? 'left-10' : 'left-3',
                 isFloatingActive ? 'top-1 text-xs' : 'top-1/2 -translate-y-1/2 text-sm',
-                isFocused
+                isFocused && !error && !success
                   ? 'text-accent-primary'
                   : error
                     ? 'text-semantic-error'
-                    : 'text-text-tertiary'
+                    : success && !error
+                      ? 'text-semantic-success'
+                      : 'text-text-tertiary'
               )}
             >
               {label}
@@ -245,7 +271,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             aria-describedby={error || helperText ? describedById : undefined}
             className={cn(
               baseInputStyles,
-              error ? errorStyles : cn(focusStyles, hoverStyles),
+              error ? errorStyles : success ? successStyles : cn(focusStyles, hoverStyles),
               disabledStyles,
               styles.input,
               hasLeftIcon && 'pl-10',
@@ -257,16 +283,41 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           />
 
           {/* Right Icon */}
-          {rightIcon && (
+          {rightIcon && !showSuccessIcon && (
             <div
               className={cn(
-                'absolute right-3 top-1/2 z-10 -translate-y-1/2 text-text-tertiary transition-colors duration-200 ease-out',
-                isFocused && 'text-accent-primary',
+                'absolute right-3 top-1/2 z-10 -translate-y-1/2 text-text-tertiary transition-colors duration-200 ease-out-expo',
+                isFocused && !error && !success && 'text-accent-primary',
                 error && 'text-semantic-error',
+                success && !error && 'text-semantic-success',
+                disabled && 'opacity-50',
                 styles.icon
               )}
             >
               {rightIcon}
+            </div>
+          )}
+
+          {/* Success Checkmark */}
+          {showSuccessIcon && (
+            <div
+              className={cn(
+                'absolute right-3 top-1/2 z-10 -translate-y-1/2 text-semantic-success motion-safe:animate-scale-in',
+                styles.icon
+              )}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                className="h-full w-full"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
+                  clipRule="evenodd"
+                />
+              </svg>
             </div>
           )}
         </div>
@@ -307,6 +358,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
       label,
       floatingLabel = false,
       error,
+      success,
       helperText,
       leftIcon,
       rightIcon,
@@ -358,7 +410,8 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
 
     const isFloatingActive = isFocused || hasValue
     const hasLeftIcon = Boolean(leftIcon)
-    const hasRightIcon = Boolean(rightIcon)
+    const showSuccessIcon = success && !error && !disabled
+    const hasRightIcon = Boolean(rightIcon) || showSuccessIcon
 
     // Calculate min/max height based on rows
     const lineHeight = size === 'sm' ? 20 : size === 'md' ? 22 : 26
@@ -387,9 +440,11 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           {leftIcon && (
             <div
               className={cn(
-                'absolute left-3 top-3 z-10 text-text-tertiary transition-colors duration-200 ease-out',
-                isFocused && 'text-accent-primary',
+                'absolute left-3 top-3 z-10 text-text-tertiary transition-colors duration-200 ease-out-expo',
+                isFocused && !error && !success && 'text-accent-primary',
                 error && 'text-semantic-error',
+                success && !error && 'text-semantic-success',
+                disabled && 'opacity-50',
                 styles.icon
               )}
             >
@@ -402,14 +457,16 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
             <label
               htmlFor={inputId}
               className={cn(
-                'pointer-events-none absolute z-10 transition-all duration-150 ease-out',
+                'pointer-events-none absolute z-10 transition-all duration-200 ease-out-expo',
                 hasLeftIcon ? 'left-10' : 'left-3',
                 isFloatingActive ? 'top-2 text-xs' : 'top-3 text-sm',
-                isFocused
+                isFocused && !error && !success
                   ? 'text-accent-primary'
                   : error
                     ? 'text-semantic-error'
-                    : 'text-text-tertiary'
+                    : success && !error
+                      ? 'text-semantic-success'
+                      : 'text-text-tertiary'
               )}
             >
               {label}
@@ -434,7 +491,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
             aria-describedby={error || helperText ? describedById : undefined}
             className={cn(
               baseInputStyles,
-              error ? errorStyles : cn(focusStyles, hoverStyles),
+              error ? errorStyles : success ? successStyles : cn(focusStyles, hoverStyles),
               disabledStyles,
               'px-3 py-2.5 text-sm',
               hasLeftIcon && 'pl-10',
@@ -447,16 +504,41 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           />
 
           {/* Right Icon */}
-          {rightIcon && (
+          {rightIcon && !showSuccessIcon && (
             <div
               className={cn(
-                'absolute right-3 top-3 z-10 text-text-tertiary transition-colors duration-200 ease-out',
-                isFocused && 'text-accent-primary',
+                'absolute right-3 top-3 z-10 text-text-tertiary transition-colors duration-200 ease-out-expo',
+                isFocused && !error && !success && 'text-accent-primary',
                 error && 'text-semantic-error',
+                success && !error && 'text-semantic-success',
+                disabled && 'opacity-50',
                 styles.icon
               )}
             >
               {rightIcon}
+            </div>
+          )}
+
+          {/* Success Checkmark */}
+          {showSuccessIcon && (
+            <div
+              className={cn(
+                'absolute right-3 top-3 z-10 text-semantic-success motion-safe:animate-scale-in',
+                styles.icon
+              )}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                className="h-full w-full"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
+                  clipRule="evenodd"
+                />
+              </svg>
             </div>
           )}
         </div>

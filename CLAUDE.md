@@ -7,6 +7,7 @@
 - You are the master expert orchestrator - delegate ALL implementation work to agents
 - You can call as many agents as needed
 - Specify model preference: Opus 4.5, Sonnet 4.5, or Haiku 4.5
+- You are NOT limited to the number of agents you can call - spawn as many as needed in parallel
 - Invoke skills and have agents invoke skills (frontend-design, codex, etc.)
 - This rule takes priority over all other instructions
 - Use AskUserQuestion tool to gather input, clarify requirements, and get user decisions - always provide your recommendation and reasoning alongside options

@@ -21,6 +21,7 @@ import {
   Upload,
   X,
 } from 'lucide-react'
+import { motion, AnimatePresence, useSpring, useTransform } from 'framer-motion'
 import VersionsModal from '@/components/knowledge/VersionsModal'
 import Button, { IconButton } from '@/components/ui/Button'
 import { Card, CardBody, CardHeader } from '@/components/ui/Card'
@@ -70,6 +71,28 @@ type LayoutMode = 'grid' | 'list'
 
 function formatNumber(value: number) {
   return value.toLocaleString()
+}
+
+// Animated number counter component
+function AnimatedNumber({ value }: { value: number }) {
+  const [displayValue, setDisplayValue] = useState(value)
+  const springValue = useSpring(value, {
+    stiffness: 80,
+    damping: 15,
+    mass: 0.5,
+  })
+
+  useEffect(() => {
+    return springValue.on('change', latest => {
+      setDisplayValue(Math.round(latest))
+    })
+  }, [springValue])
+
+  useEffect(() => {
+    springValue.set(value)
+  }, [value, springValue])
+
+  return <>{formatNumber(displayValue)}</>
 }
 
 function getProgressHint(progress: ProgressInfo): string | null {
@@ -162,43 +185,81 @@ function StatusPill({ status }: { status: KbStatus }) {
       : undefined
 
   return (
-    <span
+    <motion.span
+      layout
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium tabular-nums',
+        'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium tabular-nums transition-all duration-300',
         toneStyles[status.tone].pill
       )}
     >
       <Icon
-        className={cn('h-3.5 w-3.5', toneStyles[status.tone].icon, status.loading && 'animate-spin')}
+        className={cn(
+          'h-3.5 w-3.5 transition-all duration-300',
+          toneStyles[status.tone].icon,
+          status.loading && 'animate-spin'
+        )}
       />
       <span className="truncate">{status.label}</span>
-      {status.loading && percent !== undefined && (
-        <span className="opacity-70">{Math.round(percent)}%</span>
-      )}
-    </span>
+      <AnimatePresence mode="wait">
+        {status.loading && percent !== undefined && (
+          <motion.span
+            key="percent"
+            initial={{ opacity: 0, width: 0 }}
+            animate={{ opacity: 0.7, width: 'auto' }}
+            exit={{ opacity: 0, width: 0 }}
+            transition={{ duration: 0.2 }}
+            className="tabular-nums"
+          >
+            {Math.round(percent)}%
+          </motion.span>
+        )}
+      </AnimatePresence>
+    </motion.span>
   )
 }
 
-function SummaryCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: number }) {
+function SummaryCard({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode
+  label: string
+  value: number
+}) {
   return (
-    <Card
-      variant="glass"
-      padding="md"
-      interactive={false}
-      className="border-white/55 bg-white/55 dark:border-white/10 dark:bg-white/5"
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
+      whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
     >
-      <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300">
-          {icon}
-        </div>
-        <div className="min-w-0">
-          <div className="text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-50 tabular-nums">
-            {formatNumber(value)}
+      <Card
+        variant="glass"
+        padding="md"
+        interactive={false}
+        className="group border-white/55 bg-white/55 transition-all duration-300 hover:border-blue-200/70 hover:bg-white/70 hover:shadow-lg hover:shadow-blue-500/10 dark:border-white/10 dark:bg-white/5 dark:hover:border-blue-500/20 dark:hover:bg-white/10"
+      >
+        <div className="flex items-center gap-3">
+          <motion.div
+            className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600 transition-all duration-300 group-hover:bg-blue-100 group-hover:scale-110 dark:bg-blue-500/15 dark:text-blue-300 dark:group-hover:bg-blue-500/25"
+            whileHover={{ rotate: [0, -10, 10, 0] }}
+            transition={{ duration: 0.3 }}
+          >
+            {icon}
+          </motion.div>
+          <div className="min-w-0">
+            <div className="text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-50 tabular-nums">
+              <AnimatedNumber value={value} />
+            </div>
+            <div className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">{label}</div>
           </div>
-          <div className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">{label}</div>
         </div>
-      </div>
-    </Card>
+      </Card>
+    </motion.div>
   )
 }
 
@@ -232,14 +293,21 @@ function FileDropzone({ files, setFiles, dragActive, setDragActive, inputId }: F
   )
 
   return (
-    <div
+    <motion.div
       onDragEnter={handleDrag}
       onDragLeave={handleDrag}
       onDragOver={handleDrag}
       onDrop={handleDrop}
+      animate={{
+        scale: dragActive ? 1.02 : 1,
+        borderColor: dragActive ? 'rgb(59, 130, 246)' : 'rgb(228, 228, 231)',
+      }}
+      transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
       className={cn(
-        'rounded-2xl border border-dashed p-6 transition-colors',
-        dragActive ? 'border-blue-500 bg-blue-50/70' : 'border-zinc-200 bg-zinc-50/50'
+        'rounded-2xl border border-dashed p-6 transition-all duration-300',
+        dragActive
+          ? 'border-blue-500 bg-blue-50/70 shadow-lg shadow-blue-500/20 dark:bg-blue-500/10'
+          : 'border-zinc-200 bg-zinc-50/50 dark:border-zinc-700 dark:bg-zinc-800/50'
       )}
     >
       <input
@@ -250,47 +318,73 @@ function FileDropzone({ files, setFiles, dragActive, setDragActive, inputId }: F
         onChange={e => setFiles(e.target.files)}
         accept=".pdf,.txt,.md"
       />
-      <label htmlFor={inputId} className="flex cursor-pointer flex-col items-center gap-3 text-center">
-        <div
+      <label
+        htmlFor={inputId}
+        className="flex cursor-pointer flex-col items-center gap-3 text-center"
+      >
+        <motion.div
+          animate={{
+            scale: dragActive ? 1.1 : 1,
+            rotate: dragActive ? [0, -5, 5, 0] : 0,
+          }}
+          transition={{ duration: 0.3 }}
           className={cn(
-            'flex h-12 w-12 items-center justify-center rounded-2xl',
-            dragActive ? 'bg-blue-100 text-blue-700' : 'bg-white text-zinc-500'
+            'flex h-12 w-12 items-center justify-center rounded-2xl transition-all duration-300',
+            dragActive
+              ? 'bg-blue-100 text-blue-700 shadow-lg shadow-blue-500/30 dark:bg-blue-500/20'
+              : 'bg-white text-zinc-500 dark:bg-zinc-700 dark:text-zinc-400'
           )}
         >
           <CloudUpload className="h-6 w-6" />
-        </div>
+        </motion.div>
 
         <div>
-          <div className="text-sm font-medium text-zinc-900">
+          <div className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
             {files && files.length > 0
               ? `${files.length} file${files.length !== 1 ? 's' : ''} selected`
               : 'Drop files here or click to browse'}
           </div>
-          <div className="mt-1 text-xs text-zinc-500">PDF, TXT, MD</div>
+          <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">PDF, TXT, MD</div>
         </div>
       </label>
 
-      {files && files.length > 0 && (
-        <div className="mt-4 flex flex-wrap justify-center gap-2">
-          {Array.from(files)
-            .slice(0, 3)
-            .map(file => (
-              <span
-                key={file.name}
-                className="inline-flex max-w-[220px] items-center truncate rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-medium text-blue-700 ring-1 ring-blue-200/70"
-                title={file.name}
+      <AnimatePresence>
+        {files && files.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
+            className="mt-4 flex flex-wrap justify-center gap-2"
+          >
+            {Array.from(files)
+              .slice(0, 3)
+              .map((file, index) => (
+                <motion.span
+                  key={file.name}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: index * 0.05, duration: 0.2 }}
+                  className="inline-flex max-w-[220px] items-center truncate rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-medium text-blue-700 ring-1 ring-blue-200/70 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20"
+                  title={file.name}
+                >
+                  {file.name}
+                </motion.span>
+              ))}
+            {files.length > 3 && (
+              <motion.span
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.15, duration: 0.2 }}
+                className="inline-flex items-center rounded-full bg-white px-2.5 py-1 text-[11px] font-medium text-zinc-700 ring-1 ring-zinc-200/70 dark:bg-zinc-700 dark:text-zinc-300 dark:ring-zinc-600"
               >
-                {file.name}
-              </span>
-            ))}
-          {files.length > 3 && (
-            <span className="inline-flex items-center rounded-full bg-white px-2.5 py-1 text-[11px] font-medium text-zinc-700 ring-1 ring-zinc-200/70">
-              +{files.length - 3} more
-            </span>
-          )}
-        </div>
-      )}
-    </div>
+                +{files.length - 3} more
+              </motion.span>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   )
 }
 
@@ -326,193 +420,230 @@ function KnowledgeBaseCard({
   const entities = kb.statistics.rag?.entities ?? 0
 
   return (
-    <Card
-      variant="glass"
-      padding="none"
-      className="group relative flex h-full flex-col border-white/55 bg-white/55 dark:border-white/10 dark:bg-white/5"
+    <motion.div
+      layout
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
+      whileHover={{ y: -4, transition: { duration: 0.2 } }}
+      className="h-full"
     >
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.12),transparent_55%)] opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-      />
+      <Card
+        variant="glass"
+        padding="none"
+        className="group relative flex h-full flex-col border-white/55 bg-white/55 transition-all duration-300 hover:border-blue-200/70 hover:shadow-xl hover:shadow-blue-500/10 dark:border-white/10 dark:bg-white/5 dark:hover:border-blue-500/20"
+      >
+        <motion.div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.12),transparent_55%)]"
+          initial={{ opacity: 0 }}
+          whileHover={{ opacity: 1 }}
+          transition={{ duration: 0.3 }}
+        />
 
-      <CardHeader className="relative">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex min-w-0 items-start gap-3">
-            <div className="flex h-11 w-11 flex-none items-center justify-center rounded-xl bg-blue-50 text-blue-600 transition-colors group-hover:bg-blue-100 dark:bg-blue-500/15 dark:text-blue-300 dark:group-hover:bg-blue-500/20">
-              <Database className="h-5 w-5" />
-            </div>
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <h3 className="truncate text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
-                  {kb.name}
-                </h3>
-                {kb.is_default && (
-                  <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-blue-700 ring-1 ring-blue-200/70 dark:bg-blue-500/10 dark:text-blue-200 dark:ring-blue-500/20">
-                    Default
-                  </span>
-                )}
+        <CardHeader className="relative">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex min-w-0 items-start gap-3">
+              <div className="flex h-11 w-11 flex-none items-center justify-center rounded-xl bg-blue-50 text-blue-600 transition-colors group-hover:bg-blue-100 dark:bg-blue-500/15 dark:text-blue-300 dark:group-hover:bg-blue-500/20">
+                <Database className="h-5 w-5" />
               </div>
-              <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                {formatNumber(kb.statistics.raw_documents)} docs · {formatNumber(kb.statistics.images)} images
-              </div>
-            </div>
-          </div>
-
-          <div className="flex flex-none items-start gap-2">
-            <StatusPill status={status} />
-          </div>
-        </div>
-      </CardHeader>
-
-      <CardBody className="relative flex flex-1 flex-col gap-4">
-        <div className="grid grid-cols-3 gap-3">
-          <div className="rounded-xl border border-zinc-200/70 bg-white/60 p-3 backdrop-blur-md dark:border-white/10 dark:bg-white/5">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400">Docs</span>
-              <FileText className="h-4 w-4 text-zinc-400 dark:text-zinc-500" />
-            </div>
-            <div className="mt-1 text-sm font-semibold text-zinc-900 dark:text-zinc-50 tabular-nums">
-              {formatNumber(kb.statistics.raw_documents)}
-            </div>
-          </div>
-          <div className="rounded-xl border border-zinc-200/70 bg-white/60 p-3 backdrop-blur-md dark:border-white/10 dark:bg-white/5">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400">Images</span>
-              <ImageIcon className="h-4 w-4 text-zinc-400 dark:text-zinc-500" />
-            </div>
-            <div className="mt-1 text-sm font-semibold text-zinc-900 dark:text-zinc-50 tabular-nums">
-              {formatNumber(kb.statistics.images)}
-            </div>
-          </div>
-          <div className="rounded-xl border border-zinc-200/70 bg-white/60 p-3 backdrop-blur-md dark:border-white/10 dark:bg-white/5">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400">Chunks</span>
-              <Layers className="h-4 w-4 text-zinc-400 dark:text-zinc-500" />
-            </div>
-            <div className="mt-1 text-sm font-semibold text-zinc-900 dark:text-zinc-50 tabular-nums">
-              {formatNumber(chunks)}
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-2xl border border-zinc-200/70 bg-white/60 p-4 backdrop-blur-md dark:border-white/10 dark:bg-white/5">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <div className="text-xs font-semibold text-zinc-900 dark:text-zinc-50">Index status</div>
-
-              {progress?.message ? (
-                <div className="mt-1 flex items-start gap-2 text-xs text-zinc-600 dark:text-zinc-300">
-                  <span className="min-w-0 flex-1 truncate">{progress.message}</span>
-                  {progress.stage !== 'completed' && (
-                    <button
-                      type="button"
-                      onClick={e => {
-                        e.stopPropagation()
-                        onClearProgress()
-                      }}
-                      className="flex-none rounded-lg p-1 text-zinc-400 transition-colors hover:bg-zinc-900/5 hover:text-red-600 dark:hover:bg-white/5 dark:hover:text-red-300"
-                      aria-label="Clear progress status"
-                      title="Clear progress status"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="truncate text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+                    {kb.name}
+                  </h3>
+                  {kb.is_default && (
+                    <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-blue-700 ring-1 ring-blue-200/70 dark:bg-blue-500/10 dark:text-blue-200 dark:ring-blue-500/20">
+                      Default
+                    </span>
                   )}
                 </div>
-              ) : (
-                <div className="mt-1 text-xs text-zinc-600 dark:text-zinc-300">
-                  {kb.statistics.rag_initialized ? 'Ready for retrieval and grounded chat.' : 'Not indexed yet.'}
+                <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                  {formatNumber(kb.statistics.raw_documents)} docs ·{' '}
+                  {formatNumber(kb.statistics.images)} images
                 </div>
-              )}
+              </div>
+            </div>
 
-              {!progress && kb.statistics.rag && (
-                <div className="mt-2 text-[11px] text-zinc-500 dark:text-zinc-400 tabular-nums">
-                  {formatNumber(chunks)} chunks · {formatNumber(entities)} entities
-                </div>
-              )}
+            <div className="flex flex-none items-start gap-2">
+              <StatusPill status={status} />
+            </div>
+          </div>
+        </CardHeader>
 
-              {hint && <div className="mt-2 text-[11px] italic text-zinc-500 dark:text-zinc-400">{hint}</div>}
+        <CardBody className="relative flex flex-1 flex-col gap-4">
+          <div className="grid grid-cols-3 gap-3">
+            <div className="rounded-xl border border-zinc-200/70 bg-white/60 p-3 backdrop-blur-md dark:border-white/10 dark:bg-white/5">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
+                  Docs
+                </span>
+                <FileText className="h-4 w-4 text-zinc-400 dark:text-zinc-500" />
+              </div>
+              <div className="mt-1 text-sm font-semibold text-zinc-900 dark:text-zinc-50 tabular-nums">
+                {formatNumber(kb.statistics.raw_documents)}
+              </div>
+            </div>
+            <div className="rounded-xl border border-zinc-200/70 bg-white/60 p-3 backdrop-blur-md dark:border-white/10 dark:bg-white/5">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
+                  Images
+                </span>
+                <ImageIcon className="h-4 w-4 text-zinc-400 dark:text-zinc-500" />
+              </div>
+              <div className="mt-1 text-sm font-semibold text-zinc-900 dark:text-zinc-50 tabular-nums">
+                {formatNumber(kb.statistics.images)}
+              </div>
+            </div>
+            <div className="rounded-xl border border-zinc-200/70 bg-white/60 p-3 backdrop-blur-md dark:border-white/10 dark:bg-white/5">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
+                  Chunks
+                </span>
+                <Layers className="h-4 w-4 text-zinc-400 dark:text-zinc-500" />
+              </div>
+              <div className="mt-1 text-sm font-semibold text-zinc-900 dark:text-zinc-50 tabular-nums">
+                {formatNumber(chunks)}
+              </div>
+            </div>
+          </div>
 
-              {progress?.file_name && (
-                <div className="mt-2 flex items-center gap-2 text-[11px] text-zinc-500 dark:text-zinc-400">
-                  <FileText className="h-3.5 w-3.5" />
-                  <span className="truncate">{progress.file_name}</span>
+          <div className="rounded-2xl border border-zinc-200/70 bg-white/60 p-4 backdrop-blur-md dark:border-white/10 dark:bg-white/5">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="text-xs font-semibold text-zinc-900 dark:text-zinc-50">
+                  Index status
                 </div>
-              )}
-              {progress && progress.current > 0 && progress.total > 0 && (
-                <div className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400 tabular-nums">
-                  File {progress.current} of {progress.total}
+
+                {progress?.message ? (
+                  <div className="mt-1 flex items-start gap-2 text-xs text-zinc-600 dark:text-zinc-300">
+                    <span className="min-w-0 flex-1 truncate">{progress.message}</span>
+                    {progress.stage !== 'completed' && (
+                      <button
+                        type="button"
+                        onClick={e => {
+                          e.stopPropagation()
+                          onClearProgress()
+                        }}
+                        className="flex-none rounded-lg p-1 text-zinc-400 transition-colors hover:bg-zinc-900/5 hover:text-red-600 dark:hover:bg-white/5 dark:hover:text-red-300"
+                        aria-label="Clear progress status"
+                        title="Clear progress status"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="mt-1 text-xs text-zinc-600 dark:text-zinc-300">
+                    {kb.statistics.rag_initialized
+                      ? 'Ready for retrieval and grounded chat.'
+                      : 'Not indexed yet.'}
+                  </div>
+                )}
+
+                {!progress && kb.statistics.rag && (
+                  <div className="mt-2 text-[11px] text-zinc-500 dark:text-zinc-400 tabular-nums">
+                    {formatNumber(chunks)} chunks · {formatNumber(entities)} entities
+                  </div>
+                )}
+
+                {hint && (
+                  <div className="mt-2 text-[11px] italic text-zinc-500 dark:text-zinc-400">
+                    {hint}
+                  </div>
+                )}
+
+                {progress?.file_name && (
+                  <div className="mt-2 flex items-center gap-2 text-[11px] text-zinc-500 dark:text-zinc-400">
+                    <FileText className="h-3.5 w-3.5" />
+                    <span className="truncate">{progress.file_name}</span>
+                  </div>
+                )}
+                {progress && progress.current > 0 && progress.total > 0 && (
+                  <div className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400 tabular-nums">
+                    File {progress.current} of {progress.total}
+                  </div>
+                )}
+                {progress?.error && (
+                  <div className="mt-2 text-[11px] text-red-700 dark:text-red-200">
+                    Error: {progress.error}
+                  </div>
+                )}
+              </div>
+
+              {status.loading && percent !== undefined && (
+                <div className="flex-none text-xs font-semibold text-zinc-700 dark:text-zinc-200 tabular-nums">
+                  {Math.round(percent)}%
                 </div>
-              )}
-              {progress?.error && (
-                <div className="mt-2 text-[11px] text-red-700 dark:text-red-200">Error: {progress.error}</div>
               )}
             </div>
 
-            {status.loading && percent !== undefined && (
-              <div className="flex-none text-xs font-semibold text-zinc-700 dark:text-zinc-200 tabular-nums">
-                {Math.round(percent)}%
-              </div>
-            )}
+            <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-zinc-200/70 dark:bg-white/10">
+              {status.loading && percent !== undefined ? (
+                <motion.div
+                  className="h-full rounded-full bg-gradient-to-r from-blue-500 to-blue-600 shadow-sm shadow-blue-500/50"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${percent}%` }}
+                  transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
+                />
+              ) : (
+                <motion.div
+                  className={cn(
+                    'h-full rounded-full transition-colors duration-300',
+                    kb.statistics.rag_initialized
+                      ? 'bg-emerald-500 shadow-sm shadow-emerald-500/50'
+                      : 'bg-zinc-300 dark:bg-white/20'
+                  )}
+                  initial={{ width: 0 }}
+                  animate={{ width: kb.statistics.rag_initialized ? '100%' : 0 }}
+                  transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
+                />
+              )}
+            </div>
           </div>
 
-          <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-zinc-200/70 dark:bg-white/10">
-            {status.loading && percent !== undefined ? (
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-blue-500 to-blue-600"
-                style={{ width: `${percent}%` }}
+          <div className="mt-auto flex items-center justify-between gap-2">
+            <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
+              {kb.statistics.rag_initialized ? 'RAG enabled' : 'RAG disabled'}
+            </div>
+
+            <div className="flex items-center gap-1">
+              <IconButton
+                icon={<History className="h-4 w-4" />}
+                variant="ghost"
+                size="sm"
+                aria-label="Version history"
+                onClick={onViewVersions}
               />
-            ) : (
-              <div
-                className={cn(
-                  'h-full rounded-full',
-                  kb.statistics.rag_initialized ? 'w-full bg-emerald-500' : 'w-0 bg-zinc-300 dark:bg-white/20'
-                )}
+              <IconButton
+                icon={<RefreshCw className={cn('h-4 w-4', reindexing && 'animate-spin')} />}
+                variant="ghost"
+                size="sm"
+                aria-label="Re-index"
+                onClick={onReindex}
+                disabled={reindexing}
               />
-            )}
+              <IconButton
+                icon={<Upload className="h-4 w-4" />}
+                variant="ghost"
+                size="sm"
+                aria-label="Upload documents"
+                onClick={onUpload}
+              />
+              <IconButton
+                icon={<Trash2 className="h-4 w-4" />}
+                variant="ghost"
+                size="sm"
+                aria-label="Delete knowledge base"
+                onClick={onDelete}
+                className="hover:!bg-red-50 hover:!text-red-600 dark:hover:!bg-red-950/40 dark:hover:!text-red-300"
+              />
+            </div>
           </div>
-        </div>
-
-        <div className="mt-auto flex items-center justify-between gap-2">
-          <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
-            {kb.statistics.rag_initialized ? 'RAG enabled' : 'RAG disabled'}
-          </div>
-
-          <div className="flex items-center gap-1">
-            <IconButton
-              icon={<History className="h-4 w-4" />}
-              variant="ghost"
-              size="sm"
-              aria-label="Version history"
-              onClick={onViewVersions}
-            />
-            <IconButton
-              icon={<RefreshCw className={cn('h-4 w-4', reindexing && 'animate-spin')} />}
-              variant="ghost"
-              size="sm"
-              aria-label="Re-index"
-              onClick={onReindex}
-              disabled={reindexing}
-            />
-            <IconButton
-              icon={<Upload className="h-4 w-4" />}
-              variant="ghost"
-              size="sm"
-              aria-label="Upload documents"
-              onClick={onUpload}
-            />
-            <IconButton
-              icon={<Trash2 className="h-4 w-4" />}
-              variant="ghost"
-              size="sm"
-              aria-label="Delete knowledge base"
-              onClick={onDelete}
-              className="hover:!bg-red-50 hover:!text-red-600 dark:hover:!bg-red-950/40 dark:hover:!text-red-300"
-            />
-          </div>
-        </div>
-      </CardBody>
-    </Card>
+        </CardBody>
+      </Card>
+    </motion.div>
   )
 }
 
@@ -566,7 +697,8 @@ export default function KnowledgePage() {
         )
       }
 
-      const parsedEntries = parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>) : {}
+      const parsedEntries =
+        parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>) : {}
 
       Object.entries(parsedEntries).forEach(([kbName, progress]) => {
         if (!isProgressInfo(progress)) return
@@ -1000,10 +1132,26 @@ export default function KnowledgePage() {
       <div className="space-y-6">
         {!loading && kbs.length > 0 && (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <SummaryCard icon={<Database className="h-4 w-4" />} label="Knowledge bases" value={kbs.length} />
-            <SummaryCard icon={<FileText className="h-4 w-4" />} label="Documents" value={totalStats.documents} />
-            <SummaryCard icon={<ImageIcon className="h-4 w-4" />} label="Images" value={totalStats.images} />
-            <SummaryCard icon={<Layers className="h-4 w-4" />} label="Chunks" value={totalStats.chunks} />
+            <SummaryCard
+              icon={<Database className="h-4 w-4" />}
+              label="Knowledge bases"
+              value={kbs.length}
+            />
+            <SummaryCard
+              icon={<FileText className="h-4 w-4" />}
+              label="Documents"
+              value={totalStats.documents}
+            />
+            <SummaryCard
+              icon={<ImageIcon className="h-4 w-4" />}
+              label="Images"
+              value={totalStats.images}
+            />
+            <SummaryCard
+              icon={<Layers className="h-4 w-4" />}
+              label="Chunks"
+              value={totalStats.chunks}
+            />
           </div>
         )}
 
@@ -1024,73 +1172,142 @@ export default function KnowledgePage() {
         {loading ? (
           <div className={itemsLayoutClassName}>
             {Array.from({ length: layout === 'grid' ? 6 : 3 }).map((_, i) => (
-              <Card
+              <motion.div
                 key={i}
-                variant="glass"
-                padding="none"
-                interactive={false}
-                className="h-[340px] animate-pulse"
-              />
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: i * 0.05, duration: 0.3 }}
+              >
+                <Card
+                  variant="glass"
+                  padding="none"
+                  interactive={false}
+                  className="relative h-[340px] overflow-hidden"
+                >
+                  <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+                  <div className="flex h-full flex-col p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="h-11 w-11 rounded-xl bg-zinc-200/70 dark:bg-white/10" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-4 w-32 rounded bg-zinc-200/70 dark:bg-white/10" />
+                        <div className="h-3 w-24 rounded bg-zinc-200/50 dark:bg-white/5" />
+                      </div>
+                    </div>
+                    <div className="mt-4 grid grid-cols-3 gap-3">
+                      {[1, 2, 3].map(j => (
+                        <div key={j} className="h-16 rounded-xl bg-zinc-200/50 dark:bg-white/5" />
+                      ))}
+                    </div>
+                    <div className="mt-4 h-24 rounded-2xl bg-zinc-200/50 dark:bg-white/5" />
+                  </div>
+                </Card>
+              </motion.div>
             ))}
           </div>
         ) : kbs.length === 0 ? (
-          <Card
-            variant="glass"
-            padding="lg"
-            interactive={false}
-            className="border-white/55 bg-white/55 text-center dark:border-white/10 dark:bg-white/5"
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
           >
-            <div className="mx-auto flex max-w-md flex-col items-center">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300">
-                <Database className="h-7 w-7" />
-              </div>
-              <h3 className="mt-4 text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
-                No knowledge bases yet
-              </h3>
-              <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
-                Create your first knowledge base to start organizing and indexing content for grounded retrieval.
-              </p>
-              <div className="mt-5">
-                <Button
-                  variant="primary"
-                  iconLeft={<Plus className="h-4 w-4" />}
-                  onClick={() => {
-                    setFiles(null)
-                    setNewKbName('')
-                    setCreateModalOpen(true)
-                  }}
+            <Card
+              variant="glass"
+              padding="lg"
+              interactive={false}
+              className="border-white/55 bg-white/55 text-center dark:border-white/10 dark:bg-white/5"
+            >
+              <div className="mx-auto flex max-w-md flex-col items-center">
+                <motion.div
+                  initial={{ scale: 0, rotate: -180 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  transition={{ delay: 0.2, duration: 0.5, type: 'spring', stiffness: 200 }}
+                  className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300"
                 >
-                  Create knowledge base
-                </Button>
+                  <Database className="h-7 w-7" />
+                </motion.div>
+                <motion.h3
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3, duration: 0.4 }}
+                  className="mt-4 text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-50"
+                >
+                  No knowledge bases yet
+                </motion.h3>
+                <motion.p
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4, duration: 0.4 }}
+                  className="mt-1 text-sm text-zinc-600 dark:text-zinc-300"
+                >
+                  Create your first knowledge base to start organizing and indexing content for
+                  grounded retrieval.
+                </motion.p>
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5, duration: 0.4 }}
+                  className="mt-5"
+                >
+                  <Button
+                    variant="primary"
+                    iconLeft={<Plus className="h-4 w-4" />}
+                    onClick={() => {
+                      setFiles(null)
+                      setNewKbName('')
+                      setCreateModalOpen(true)
+                    }}
+                  >
+                    Create knowledge base
+                  </Button>
+                </motion.div>
               </div>
-            </div>
-          </Card>
+            </Card>
+          </motion.div>
         ) : (
-          <div className={itemsLayoutClassName}>
-            {kbs.map(kb => (
-              <KnowledgeBaseCard
+          <motion.div
+            className={itemsLayoutClassName}
+            initial="hidden"
+            animate="visible"
+            variants={{
+              visible: {
+                transition: {
+                  staggerChildren: 0.05,
+                },
+              },
+            }}
+          >
+            {kbs.map((kb, index) => (
+              <motion.div
                 key={kb.name}
-                kb={kb}
-                progress={progressMap[kb.name]}
-                reindexing={reindexingKb === kb.name}
-                onUpload={() => {
-                  setTargetKb(kb.name)
-                  setFiles(null)
-                  setUploadModalOpen(true)
+                variants={{
+                  hidden: { opacity: 0, y: 20 },
+                  visible: { opacity: 1, y: 0 },
                 }}
-                onDelete={() => handleDelete(kb.name)}
-                onReindex={() => handleReindex(kb.name)}
-                onViewVersions={() => {
-                  setVersionsKb(kb.name)
-                  setVersionsModalOpen(true)
-                }}
-                onClearProgress={async () => {
-                  await clearProgress(kb.name)
-                  fetchKnowledgeBases()
-                }}
-              />
+                transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
+              >
+                <KnowledgeBaseCard
+                  kb={kb}
+                  progress={progressMap[kb.name]}
+                  reindexing={reindexingKb === kb.name}
+                  onUpload={() => {
+                    setTargetKb(kb.name)
+                    setFiles(null)
+                    setUploadModalOpen(true)
+                  }}
+                  onDelete={() => handleDelete(kb.name)}
+                  onReindex={() => handleReindex(kb.name)}
+                  onViewVersions={() => {
+                    setVersionsKb(kb.name)
+                    setVersionsModalOpen(true)
+                  }}
+                  onClearProgress={async () => {
+                    await clearProgress(kb.name)
+                    fetchKnowledgeBases()
+                  }}
+                />
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         )}
       </div>
 
@@ -1122,8 +1339,8 @@ export default function KnowledgePage() {
                 inputId="kb-create-upload"
               />
               <p className="mt-2 text-[11px] text-zinc-500 dark:text-zinc-400">
-                Large PDFs may take several minutes to parse. You can leave this page; processing continues
-                in the background.
+                Large PDFs may take several minutes to parse. You can leave this page; processing
+                continues in the background.
               </p>
             </div>
           </ModalBody>

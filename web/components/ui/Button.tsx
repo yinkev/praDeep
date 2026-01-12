@@ -35,29 +35,37 @@ export interface ButtonProps extends Omit<HTMLMotionProps<'button'>, 'children'>
 // ============================================================================
 
 const variantStyles: Record<ButtonVariant, string> = {
-  primary: cn('bg-accent-primary text-white', 'hover:bg-blue-600', 'active:bg-blue-700'),
+  primary: cn(
+    'bg-accent-primary text-white',
+    'hover:bg-blue-600 hover:brightness-105',
+    'active:bg-blue-700 active:brightness-95'
+  ),
 
   secondary: cn(
     'bg-surface-secondary text-foreground',
     'border border-border',
-    'hover:bg-surface-tertiary',
+    'hover:bg-surface-tertiary hover:border-border/80',
     'active:bg-surface-tertiary/80'
   ),
 
   outline: cn(
     'bg-transparent text-foreground',
     'border border-border',
-    'hover:bg-surface-secondary',
+    'hover:bg-surface-secondary hover:border-border/60',
     'active:bg-surface-tertiary'
   ),
 
   ghost: cn(
     'bg-transparent text-foreground',
-    'hover:bg-surface-secondary',
+    'hover:bg-surface-secondary hover:brightness-98',
     'active:bg-surface-tertiary'
   ),
 
-  destructive: cn('bg-semantic-error text-white', 'hover:bg-red-600', 'active:bg-red-700'),
+  destructive: cn(
+    'bg-semantic-error text-white',
+    'hover:bg-red-600 hover:brightness-105',
+    'active:bg-red-700 active:brightness-95'
+  ),
 }
 
 const sizeStyles: Record<ButtonSize, string> = {
@@ -79,27 +87,28 @@ const iconSizeStyles: Record<ButtonSize, string> = {
 }
 
 // ============================================================================
-// Animation Variants - Subtle hover lift with shadow depth
+// Animation Variants - World-class micro-interactions
+// Premium feel: scale on hover, tactile press feedback, smooth shadow lift
 // ============================================================================
 
 const buttonMotionVariants = {
   initial: {
-    y: 0,
+    scale: 1,
   },
   hover: {
-    y: -1,
-    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04)',
+    scale: 1.02,
+    boxShadow:
+      '0 8px 16px rgba(0, 0, 0, 0.1), 0 4px 8px rgba(0, 0, 0, 0.06), 0 2px 4px rgba(0, 0, 0, 0.04)',
     transition: {
-      duration: 0.15,
-      ease: [0.16, 1, 0.3, 1],
+      duration: 0.2,
+      ease: [0.16, 1, 0.3, 1], // out-expo
     },
   },
   tap: {
     scale: 0.98,
-    y: 0,
     transition: {
-      duration: 0.1,
-      ease: [0.16, 1, 0.3, 1],
+      duration: 0.2,
+      ease: [0.16, 1, 0.3, 1], // out-expo
     },
   },
 } satisfies Variants
@@ -138,13 +147,14 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           // Base styles
           'relative isolate inline-flex items-center justify-center whitespace-nowrap overflow-hidden',
           'rounded-md font-medium tracking-tight select-none',
-          // Focus ring with design system accent
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/20',
+          // Focus ring - WCAG 2.1 AA compliant (visible, high contrast)
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary',
           'focus-visible:ring-offset-2 focus-visible:ring-offset-background',
-          // Smooth transitions (colors + shadow)
-          'transition-[background-color,border-color,color,box-shadow,transform,filter] duration-200 ease-out-expo',
-          // Disabled state
-          'disabled:pointer-events-none disabled:opacity-50',
+          // Smooth transitions - 200ms out-expo for all properties
+          'transition-[background-color,border-color,color,box-shadow,transform,filter,opacity] duration-200',
+          '[transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
+          // Disabled state - clear visual feedback
+          'disabled:cursor-not-allowed disabled:opacity-50 disabled:saturate-50',
           // Variant and size
           variantStyles[variant],
           sizeStyles[size],
