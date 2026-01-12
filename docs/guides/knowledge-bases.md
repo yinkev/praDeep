@@ -39,7 +39,7 @@ curl -X POST http://localhost:8783/api/v1/knowledge-bases \
 ### Via Python SDK
 
 ```python
-from deeptutor import praDeep
+from pradeep import praDeep
 
 client = praDeep()
 kb = client.knowledge_bases.create(

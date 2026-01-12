@@ -20,13 +20,13 @@ DATABASE_URL=sqlite:///./data/app.db
 ### PostgreSQL (Recommended for Production)
 
 ```bash
-DATABASE_URL=postgresql://user:password@localhost:5432/deeptutor
+DATABASE_URL=postgresql://user:password@localhost:5432/pradeep
 ```
 
 ### MySQL
 
 ```bash
-DATABASE_URL=mysql://user:password@localhost:3306/deeptutor
+DATABASE_URL=mysql://user:password@localhost:3306/pradeep
 ```
 
 ## Vector Database Options
@@ -58,7 +58,7 @@ Fully managed cloud vector database.
 VECTOR_DB_TYPE=pinecone
 PINECONE_API_KEY=your-api-key
 PINECONE_ENVIRONMENT=us-east-1
-PINECONE_INDEX=deeptutor
+PINECONE_INDEX=pradeep
 ```
 
 ## File Storage
@@ -75,7 +75,7 @@ MAX_FILE_SIZE=100MB
 
 ```bash
 STORAGE_TYPE=s3
-S3_BUCKET=deeptutor-files
+S3_BUCKET=pradeep-files
 S3_REGION=us-east-1
 AWS_ACCESS_KEY_ID=your-key
 AWS_SECRET_ACCESS_KEY=your-secret
@@ -116,7 +116,7 @@ data/
 
 ```bash
 # PostgreSQL
-pg_dump deeptutor > backup.sql
+pg_dump pradeep > backup.sql
 
 # SQLite
 sqlite3 data/app.db ".backup 'backup.db'"
@@ -129,5 +129,5 @@ sqlite3 data/app.db ".backup 'backup.db'"
 cp -r data/chroma data/chroma-backup
 
 # Qdrant
-qdrant-backup create --collection deeptutor
+qdrant-backup create --collection pradeep
 ```

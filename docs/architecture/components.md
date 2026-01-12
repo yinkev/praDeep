@@ -231,3 +231,62 @@ async def web_search(query: str, num_results: int = 5) -> list[dict]:
     """Execute web search and return results."""
     pass
 ```
+
+## UI Component Library (Liquid Cloud)
+
+The frontend uses the Liquid Cloud design system for consistent, modern UI components.
+
+### Core Components
+
+| Component | Description | Usage |
+|-----------|-------------|-------|
+| `LiquidCard` | Glass morphism card with blur effects | Content containers, panels |
+| `FlowButton` | Animated button with ripple effects | Actions, CTAs |
+| `WaveInput` | Text input with animated underline | Forms, search bars |
+| `CloudModal` | Floating modal with backdrop blur | Dialogs, confirmations |
+| `MistLoader` | Animated loading indicator | Loading states |
+
+### Design Tokens
+
+```css
+/* Color tokens */
+--liquid-primary: #6366f1;
+--liquid-surface: rgba(255, 255, 255, 0.8);
+--liquid-glass: rgba(255, 255, 255, 0.25);
+--liquid-blur: 12px;
+
+/* Spacing scale (4px base) */
+--space-1: 4px;
+--space-2: 8px;
+--space-3: 12px;
+--space-4: 16px;
+--space-6: 24px;
+--space-8: 32px;
+
+/* Animation tokens */
+--transition-fast: 150ms ease;
+--transition-normal: 250ms ease;
+--transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
+```
+
+### Theme Configuration
+
+```typescript
+// Liquid Cloud theme setup
+const liquidTheme = {
+  colors: {
+    primary: { light: '#6366f1', dark: '#818cf8' },
+    surface: { light: 'rgba(255,255,255,0.9)', dark: 'rgba(30,30,40,0.9)' },
+    glass: { light: 'rgba(255,255,255,0.25)', dark: 'rgba(0,0,0,0.25)' }
+  },
+  blur: {
+    sm: '4px',
+    md: '12px',
+    lg: '24px'
+  },
+  shadows: {
+    soft: '0 8px 32px rgba(0,0,0,0.08)',
+    glow: '0 0 20px rgba(99,102,241,0.3)'
+  }
+};
+```

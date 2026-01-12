@@ -50,14 +50,14 @@ API_PORT=8783
 SECRET_KEY=your-secret-key-min-32-chars
 
 # Database
-DATABASE_URL=postgresql://user:pass@db:5432/deeptutor
+DATABASE_URL=postgresql://user:pass@db:5432/pradeep
 
 # Redis
 REDIS_URL=redis://redis:6379/0
 
 # Object Storage
 S3_ENDPOINT=https://s3.amazonaws.com
-S3_BUCKET=deeptutor-documents
+S3_BUCKET=pradeep-documents
 AWS_ACCESS_KEY_ID=AKIA...
 AWS_SECRET_ACCESS_KEY=...
 
@@ -96,7 +96,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command: celery -A deeptutor.worker worker -l info
+    command: celery -A pradeep.worker worker -l info
     environment:
       - DATABASE_URL=${DATABASE_URL}
       - REDIS_URL=${REDIS_URL}
@@ -122,9 +122,9 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     environment:
-      - POSTGRES_USER=deeptutor
+      - POSTGRES_USER=pradeep
       - POSTGRES_PASSWORD=${DB_PASSWORD}
-      - POSTGRES_DB=deeptutor
+      - POSTGRES_DB=pradeep
     restart: always
 
   redis:
@@ -177,13 +177,13 @@ upstream frontend {
 
 server {
     listen 80;
-    server_name deeptutor.example.com;
+    server_name pradeep.example.com;
     return 301 https://$server_name$request_uri;
 }
 
 server {
     listen 443 ssl http2;
-    server_name deeptutor.example.com;
+    server_name pradeep.example.com;
 
     ssl_certificate /etc/nginx/certs/fullchain.pem;
     ssl_certificate_key /etc/nginx/certs/privkey.pem;
@@ -211,12 +211,12 @@ server {
 
 ```bash
 # Add praDeep Helm repo
-helm repo add deeptutor https://charts.deeptutor.io
+helm repo add pradeep https://charts.pradeep.io
 helm repo update
 
 # Install
-helm install deeptutor deeptutor/deeptutor \
-  --namespace deeptutor \
+helm install pradeep pradeep/pradeep \
+  --namespace pradeep \
   --create-namespace \
   --values values.yaml
 ```
@@ -230,26 +230,26 @@ replicaCount:
   worker: 2
 
 image:
-  repository: ghcr.io/hkuds/deeptutor
+  repository: ghcr.io/hkuds/pradeep
   tag: latest
 
 ingress:
   enabled: true
   className: nginx
   hosts:
-    - host: deeptutor.example.com
+    - host: pradeep.example.com
       paths:
         - path: /
           pathType: Prefix
   tls:
-    - secretName: deeptutor-tls
+    - secretName: pradeep-tls
       hosts:
-        - deeptutor.example.com
+        - pradeep.example.com
 
 postgresql:
   enabled: true
   auth:
-    database: deeptutor
+    database: pradeep
     postgresPassword: changeme
 
 redis:
@@ -276,7 +276,7 @@ autoscaling:
 env:
   OPENAI_API_KEY:
     secretKeyRef:
-      name: deeptutor-secrets
+      name: pradeep-secrets
       key: openai-api-key
 ```
 
@@ -287,27 +287,27 @@ env:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: deeptutor-api
+  name: pradeep-api
 spec:
   replicas: 3
   selector:
     matchLabels:
-      app: deeptutor-api
+      app: pradeep-api
   template:
     metadata:
       labels:
-        app: deeptutor-api
+        app: pradeep-api
     spec:
       containers:
         - name: api
-          image: ghcr.io/hkuds/deeptutor:latest
+          image: ghcr.io/hkuds/pradeep:latest
           ports:
             - containerPort: 8783
           envFrom:
             - configMapRef:
-                name: deeptutor-config
+                name: pradeep-config
             - secretRef:
-                name: deeptutor-secrets
+                name: pradeep-secrets
           resources:
             limits:
               memory: 4Gi
@@ -338,7 +338,7 @@ praDeep exposes Prometheus metrics at `/metrics`:
 ```yaml
 # prometheus.yml
 scrape_configs:
-  - job_name: 'deeptutor'
+  - job_name: 'pradeep'
     static_configs:
       - targets: ['api:8783']
     metrics_path: /metrics
@@ -368,7 +368,7 @@ Import the praDeep dashboard:
 ```yaml
 # alerts.yaml
 groups:
-  - name: deeptutor
+  - name: pradeep
     rules:
       - alert: HighErrorRate
         expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.1
@@ -419,7 +419,7 @@ filebeat.inputs:
 
 output.elasticsearch:
   hosts: ["elasticsearch:9200"]
-  index: "deeptutor-%{+yyyy.MM.dd}"
+  index: "pradeep-%{+yyyy.MM.dd}"
 ```
 
 ## Backup and Recovery

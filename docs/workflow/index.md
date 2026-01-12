@@ -5,7 +5,7 @@ description: Our development workflow and processes
 
 # Workflow
 
-How we develop and maintain praDeep (praDeep).
+How we develop and maintain praDeep.
 
 ## System Workflows
 

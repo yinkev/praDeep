@@ -1,10 +1,23 @@
 # Roadmap
 
+## ✅ Recently Completed
+
+- ✅ **2026 Frontend Redesign** — Modern UI/UX overhaul with improved navigation and responsiveness
+- ✅ **KB Refresh API** — Knowledge base refresh functionality with improved image extraction
+- ✅ **Qwen3-VL Reranker** — Vision-language model integration for enhanced document reranking
+
 ## ⚡ Current Focus
 
 - 🔄 **More RAG Pipelines** — Expanding retrieval architectures and backends
--  **Database Robustness & Visualization** — Stability improvements and visual insights
+- 🔄 **Database Robustness & Visualization** — Stability improvements and visual insights
 - 🔄 **Bug Fixing** — Addressing reported issues and edge cases
+- 🔄 **Reranker Service** — Building out the reranker service infrastructure
+
+## 🗓️ Upcoming
+
+- 📋 **Multi-modal Embedding Support** — Enhanced support for images and mixed content
+- 📋 **Hybrid Retrieval Optimization** — Fine-tuning dense and sparse retriever combinations
+- 📋 **Docker Deployment Improvements** — Streamlined containerization and configuration
 
 ## 📬 Received Feature Wishlist
 

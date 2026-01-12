@@ -27,7 +27,7 @@ python scripts/start_web.py
 ```
 
 ```bash [Docker]
-docker run -d --name deeptutor \
+docker run -d --name pradeep \
   -p 8001:8001 -p 3782:3782 \
   -e LLM_MODEL=gpt-4o \
   -e LLM_API_KEY=your-key \

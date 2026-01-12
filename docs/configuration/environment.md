@@ -84,7 +84,7 @@ OPENAI_MODEL=gpt-4-turbo
 EMBEDDING_MODEL=text-embedding-3-large
 EMBEDDING_DIMENSION=3072
 
-DATABASE_URL=postgresql://user:pass@localhost/deeptutor
+DATABASE_URL=postgresql://user:pass@localhost/pradeep
 REDIS_URL=redis://localhost:6379
 
 SECRET_KEY=your-production-secret-key

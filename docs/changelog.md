@@ -30,6 +30,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.5.0] - 2026-01-11
+
+### Added
+- Complete frontend redesign with Liquid Cloud design system
+- Pantone 2026 Cloud Dancer color palette
+- Glassmorphism UI throughout
+- New component library (Button, Card, Input, Modal, Toast, etc.)
+- Framer Motion animations and micro-interactions
+- Instrument Sans, DM Sans, JetBrains Mono fonts
+
+### Changed
+- Upgraded to Next.js 16.1, React 19.2.3, Tailwind CSS 4.1.18
+- Renamed from DeepTutor to praDeep
+- Teal accent color scheme
+
+### Fixed
+- Tech debt cleanup across all pages
+- TypeScript strict mode compliance
+- Dark mode consistency
+
+---
+
 ## [0.4.1] - 2025-01-XX
 
 ### Added
@@ -117,12 +139,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Status | Support Until |
 |---------|--------|---------------|
-| 0.4.x | Active | Current |
-| 0.3.x | Maintenance | 2025-06 |
+| 0.5.x | Active | Current |
+| 0.4.x | Maintenance | 2026-06 |
+| 0.3.x | End of Life | 2025-06 |
 | 0.2.x | End of Life | 2025-03 |
 | 0.1.x | End of Life | Ended |
 
 ## Upgrade Guides
+
+### From 0.4.x to 0.5.x
+
+1. Update Node.js to v22+ (required for Next.js 16.1)
+2. Run `npm install` in the `web/` directory to update dependencies
+3. Clear `.next` cache: `rm -rf web/.next`
+4. Rebuild: `npm run build`
 
 ### From 0.3.x to 0.4.x
 

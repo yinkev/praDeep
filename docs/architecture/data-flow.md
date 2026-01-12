@@ -276,6 +276,46 @@ class Message(BaseModel):
 }
 ```
 
+## UI State Management
+
+### Liquid Cloud Component State
+
+The frontend manages UI state using React context with the Liquid Cloud design system:
+
+```typescript
+// Theme state for Liquid Cloud
+interface LiquidState {
+  theme: 'light' | 'dark' | 'system';
+  glassMorphism: boolean;
+  animationsEnabled: boolean;
+  reducedMotion: boolean;
+}
+
+// Component state flow
+User Interaction -> Event Handler -> State Update -> Re-render -> Animation
+```
+
+### Animation Choreography
+
+```
+Page Load
+    |
+    v
++------------------+
+| Skeleton Loader  |  MistLoader with pulse animation
++------------------+
+    |
+    v
++------------------+
+| Content Fade-in  |  Staggered opacity transitions
++------------------+
+    |
+    v
++------------------+
+| Interactive      |  Hover/focus states active
++------------------+
+```
+
 ## Error Handling
 
 ### Retry Policies

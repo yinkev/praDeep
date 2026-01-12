@@ -124,7 +124,7 @@ retrieval:
 LOG_FORMAT=json
 
 # Log destination
-LOG_FILE=/var/log/deeptutor/app.log
+LOG_FILE=/var/log/pradeep/app.log
 
 # Metrics endpoint
 ENABLE_METRICS=true

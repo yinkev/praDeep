@@ -1,4 +1,4 @@
-# praDeep (praDeep) - Live Project Document
+# praDeep - Live Project Document
 
 > **Last Updated:** 2026-01-11 05:30 PST
 > **Status:** Active Development - ANAT506 KB Successfully Created (171 content blocks)
@@ -9,7 +9,7 @@
 
 ## What Is This Project?
 
-**praDeep** (also called **praDeep**) is an AI-powered PDF tutoring system. It lets users upload PDFs (textbooks, lecture notes, papers) and ask questions. The system retrieves relevant content and generates accurate answers with citations.
+**praDeep** is an AI-powered PDF tutoring system. It lets users upload PDFs (textbooks, lecture notes, papers) and ask questions. The system retrieves relevant content and generates accurate answers with citations.
 
 **Owner:** kyin - a medical student who needs high accuracy for medical education content.
 

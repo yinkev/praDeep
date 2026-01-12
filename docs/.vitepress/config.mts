@@ -2,13 +2,27 @@ import { defineConfig } from 'vitepress'
 
 export default defineConfig({
   title: "praDeep",
-  description: "AI-Powered Personalized Learning Assistant",
+  description: "praDeep - AI-Powered Personalized Learning Assistant for Deep Understanding",
 
   // GitHub Pages deployment configuration
   base: '/praDeep/',
 
   head: [
-    ['link', { rel: 'icon', href: '/praDeep/logo.png' }]
+    ['link', { rel: 'icon', href: '/praDeep/logo.png' }],
+    ['style', {}, `
+      :root {
+        --vp-c-brand-1: #006B77;
+        --vp-c-brand-2: #007D8A;
+        --vp-c-brand-3: #008F9D;
+        --vp-c-brand-soft: rgba(0, 107, 119, 0.14);
+      }
+      .dark {
+        --vp-c-brand-1: #00A3B4;
+        --vp-c-brand-2: #00B8CA;
+        --vp-c-brand-3: #00CDE0;
+        --vp-c-brand-soft: rgba(0, 163, 180, 0.16);
+      }
+    `]
   ],
 
   // Ignore localhost link checks (these are example addresses, not accessible during build)

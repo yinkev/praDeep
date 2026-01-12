@@ -3,8 +3,8 @@ layout: home
 
 hero:
   name: "praDeep"
-  text: "Your AI Learning Companion"
-  tagline: Transform any document into an interactive learning experience
+  text: "AI-Powered Deep Learning Platform"
+  tagline: Experience the future of intelligent learning with our Liquid Cloud design system - built on Next.js 16.1, React 19.2, and Tailwind 4.1
   image:
     src: /logo.png
     alt: praDeep
@@ -21,23 +21,23 @@ hero:
 
 features:
   - icon: 🧠
-    title: Smart Problem Solving
-    details: Dual-loop reasoning with step-by-step solutions and precise citations from your documents.
+    title: Adaptive Reasoning Engine
+    details: Advanced dual-loop reasoning with step-by-step solutions, precise document citations, and real-time knowledge synthesis powered by our 2026 AI architecture.
   - icon: 🎯
-    title: Practice Generator
-    details: Generate custom quizzes or mimic real exams from your uploaded materials.
+    title: Intelligent Practice Studio
+    details: Generate adaptive quizzes, exam simulations, and personalized assessments from your materials with our Liquid Cloud-powered practice engine.
   - icon: 🎓
-    title: Guided Learning
-    details: Personalized learning paths with interactive visualizations and adaptive explanations.
+    title: Immersive Learning Paths
+    details: Personalized learning journeys with 3D interactive visualizations, adaptive explanations, and progress tracking through the Liquid Cloud interface.
   - icon: 🔬
-    title: Deep Research
-    details: Systematic topic exploration with web search, paper retrieval, and literature synthesis.
+    title: Research Intelligence Hub
+    details: Systematic topic exploration with integrated web search, paper retrieval, literature synthesis, and citation network analysis.
   - icon: 💡
-    title: Idea Generation
-    details: Brainstorm research ideas with automated concept synthesis and novelty evaluation.
+    title: Creative Ideation Lab
+    details: Brainstorm research ideas with automated concept synthesis, novelty evaluation, and collaborative mind-mapping tools.
   - icon: ✏️
-    title: Co-Writer
-    details: AI-assisted writing with smart editing, auto-annotation, and TTS narration.
+    title: AI Writing Companion
+    details: Intelligent writing assistance with context-aware editing, auto-annotation, multi-format export, and natural TTS narration.
 ---
 
 <style>

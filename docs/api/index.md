@@ -12,7 +12,7 @@ praDeep provides a RESTful API and WebSocket endpoints for integrating with exte
 | Base URL | Description |
 |----------|-------------|
 | `http://localhost:8783/api/v1` | Local development |
-| `https://api.deeptutor.io/v1` | Production |
+| `https://api.pradeep.ai/v1` | Production |
 
 ## Authentication
 
@@ -20,10 +20,10 @@ All API requests require authentication via API key or JWT token.
 
 ```bash
 # Using API key
-curl -H "Authorization: Bearer dt_sk_xxxxx" https://api.deeptutor.io/v1/chat
+curl -H "Authorization: Bearer pd_sk_xxxxx" https://api.pradeep.ai/v1/chat
 
 # Using JWT token
-curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..." https://api.deeptutor.io/v1/chat
+curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..." https://api.pradeep.ai/v1/chat
 ```
 
 ## Documentation
@@ -39,7 +39,7 @@ curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..." https://api.deeptutor.io
 ### Create a Knowledge Base
 
 ```bash
-curl -X POST https://api.deeptutor.io/v1/knowledge-bases \
+curl -X POST https://api.pradeep.ai/v1/knowledge-bases \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"name": "My Documents", "description": "Research papers"}'
@@ -48,7 +48,7 @@ curl -X POST https://api.deeptutor.io/v1/knowledge-bases \
 ### Upload a Document
 
 ```bash
-curl -X POST https://api.deeptutor.io/v1/knowledge-bases/kb_123/documents \
+curl -X POST https://api.pradeep.ai/v1/knowledge-bases/kb_123/documents \
   -H "Authorization: Bearer $API_KEY" \
   -F "file=@paper.pdf"
 ```
@@ -56,7 +56,7 @@ curl -X POST https://api.deeptutor.io/v1/knowledge-bases/kb_123/documents \
 ### Ask a Question
 
 ```bash
-curl -X POST https://api.deeptutor.io/v1/chat/completions \
+curl -X POST https://api.pradeep.ai/v1/chat/completions \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -104,13 +104,13 @@ All errors follow a consistent format:
 ### Python
 
 ```bash
-pip install deeptutor
+pip install pradeep
 ```
 
 ```python
-from deeptutor import praDeep
+from pradeep import praDeep
 
-client = praDeep(api_key="dt_sk_xxxxx")
+client = praDeep(api_key="pd_sk_xxxxx")
 response = client.chat.completions.create(
     knowledge_base_id="kb_123",
     messages=[{"role": "user", "content": "Summarize the paper"}]
@@ -120,13 +120,13 @@ response = client.chat.completions.create(
 ### JavaScript
 
 ```bash
-npm install deeptutor
+npm install pradeep
 ```
 
 ```javascript
-import praDeep from 'deeptutor';
+import praDeep from 'pradeep';
 
-const client = new praDeep({ apiKey: 'dt_sk_xxxxx' });
+const client = new praDeep({ apiKey: 'pd_sk_xxxxx' });
 const response = await client.chat.completions.create({
   knowledgeBaseId: 'kb_123',
   messages: [{ role: 'user', content: 'Summarize the paper' }]

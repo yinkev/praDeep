@@ -8,7 +8,7 @@
 | Backend | http://localhost:8783 |
 | LLM | gemini-3-flash-preview (via CLI Proxy 8317) |
 | Embedding | Qwen3-VL-Embedding-8B (local MPS) |
-| Dimensions | 4096 |
+| Dimensions | 2048 |
 
 ---
 

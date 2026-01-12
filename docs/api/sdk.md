@@ -12,16 +12,16 @@ Official SDKs for integrating praDeep into your applications.
 ### Installation
 
 ```bash
-pip install deeptutor
+pip install pradeep
 ```
 
 ### Quick Start
 
 ```python
-from deeptutor import praDeep
+from pradeep import praDeep
 
 # Initialize client
-client = praDeep(api_key="dt_sk_xxxxx")
+client = praDeep(api_key="pd_sk_xxxxx")
 
 # Create a knowledge base
 kb = client.knowledge_bases.create(
@@ -65,10 +65,10 @@ for chunk in stream:
 
 ```python
 import asyncio
-from deeptutor import AsyncpraDeep
+from pradeep import AsyncpraDeep
 
 async def main():
-    client = AsyncpraDeep(api_key="dt_sk_xxxxx")
+    client = AsyncpraDeep(api_key="pd_sk_xxxxx")
 
     response = await client.chat.completions.create(
         knowledge_base_id="kb_123",
@@ -83,9 +83,9 @@ asyncio.run(main())
 ### Error Handling
 
 ```python
-from deeptutor import praDeep, praDeepError, RateLimitError, AuthenticationError
+from pradeep import praDeep, praDeepError, RateLimitError, AuthenticationError
 
-client = praDeep(api_key="dt_sk_xxxxx")
+client = praDeep(api_key="pd_sk_xxxxx")
 
 try:
     response = client.chat.completions.create(
@@ -103,11 +103,11 @@ except praDeepError as e:
 ### Configuration
 
 ```python
-from deeptutor import praDeep
+from pradeep import praDeep
 
 client = praDeep(
-    api_key="dt_sk_xxxxx",
-    base_url="https://api.deeptutor.io/v1",  # Custom base URL
+    api_key="pd_sk_xxxxx",
+    base_url="https://api.pradeep.ai/v1",  # Custom base URL
     timeout=60.0,  # Request timeout in seconds
     max_retries=3,  # Number of retry attempts
 )
@@ -120,17 +120,17 @@ client = praDeep(
 ### Installation
 
 ```bash
-npm install deeptutor
+npm install pradeep
 # or
-yarn add deeptutor
+yarn add pradeep
 ```
 
 ### Quick Start
 
 ```typescript
-import praDeep from 'deeptutor';
+import praDeep from 'pradeep';
 
-const client = new praDeep({ apiKey: 'dt_sk_xxxxx' });
+const client = new praDeep({ apiKey: 'pd_sk_xxxxx' });
 
 // Create a knowledge base
 const kb = await client.knowledgeBases.create({
@@ -172,9 +172,9 @@ for await (const chunk of stream) {
 ### Browser Usage
 
 ```typescript
-import praDeep from 'deeptutor/browser';
+import praDeep from 'pradeep/browser';
 
-const client = new praDeep({ apiKey: 'dt_sk_xxxxx' });
+const client = new praDeep({ apiKey: 'pd_sk_xxxxx' });
 
 const response = await client.chat.completions.create({
   knowledgeBaseId: 'kb_123',
@@ -189,9 +189,9 @@ import praDeep, {
   praDeepError,
   RateLimitError,
   AuthenticationError
-} from 'deeptutor';
+} from 'pradeep';
 
-const client = new praDeep({ apiKey: 'dt_sk_xxxxx' });
+const client = new praDeep({ apiKey: 'pd_sk_xxxxx' });
 
 try {
   const response = await client.chat.completions.create({
@@ -218,7 +218,7 @@ import type {
   ChatCompletion,
   Message,
   Citation
-} from 'deeptutor';
+} from 'pradeep';
 
 const handleResponse = (response: ChatCompletion) => {
   const message = response.choices[0].message;

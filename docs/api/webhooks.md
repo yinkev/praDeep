@@ -17,7 +17,7 @@ POST /api/v1/webhooks
 
 ```json
 {
-  "url": "https://your-server.com/webhooks/deeptutor",
+  "url": "https://your-server.com/webhooks/pradeep",
   "events": ["document.processed", "document.failed"],
   "secret": "whsec_xxxxx"
 }
@@ -225,11 +225,11 @@ function verifySignature(payload, signature, secret, timestamp) {
 const express = require('express');
 const app = express();
 
-app.post('/webhooks/deeptutor',
+app.post('/webhooks/pradeep',
   express.raw({ type: 'application/json' }),
   (req, res) => {
-    const signature = req.headers['x-deeptutor-signature'];
-    const timestamp = req.headers['x-deeptutor-timestamp'];
+    const signature = req.headers['x-pradeep-signature'];
+    const timestamp = req.headers['x-pradeep-timestamp'];
 
     if (!verifySignature(req.body, signature, WEBHOOK_SECRET, timestamp)) {
       return res.status(401).send('Invalid signature');
@@ -258,7 +258,7 @@ from flask import Flask, request
 
 app = Flask(__name__)
 
-@app.route('/webhooks/deeptutor', methods=['POST'])
+@app.route('/webhooks/pradeep', methods=['POST'])
 def handle_webhook():
     signature = request.headers.get('X-praDeep-Signature')
     timestamp = request.headers.get('X-praDeep-Timestamp')

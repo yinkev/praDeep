@@ -78,7 +78,7 @@ print(f"Model loaded: {model_name}")
 
 ```bash
 python -c "
-from deeptutor.embeddings import LocalEmbedding
+from pradeep.embeddings import LocalEmbedding
 embed = LocalEmbedding('Qwen/Qwen3-VL-Embedding-8B')
 result = embed.encode('Hello world')
 print(f'Embedding dimensions: {len(result)}')

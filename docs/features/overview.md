@@ -1,6 +1,26 @@
 # Features
 
-praDeep provides six specialized modules for AI-powered learning.
+praDeep provides six specialized modules for AI-powered learning, now featuring a completely redesigned interface in our 2026 design refresh.
+
+## 2026 Design Refresh
+
+praDeep has undergone a comprehensive visual and functional redesign:
+
+- **Modern Glass Morphism UI** — Frosted glass effects with subtle transparency and depth
+- **Responsive Component Library** — Adaptive layouts optimized for desktop, tablet, and mobile
+- **Dark/Light Theme System** — System-aware theming with smooth transitions
+- **Streamlined Navigation** — Collapsible sidebar with quick-access module switching
+- **Enhanced Accessibility** — WCAG 2.1 AA compliant with improved keyboard navigation
+
+### New UI Components
+
+| Component | Description |
+|:----------|:------------|
+| **Command Palette** | Quick actions and navigation via keyboard shortcuts (Cmd/Ctrl + K) |
+| **Floating Action Panel** | Context-aware toolbars that follow user focus |
+| **Progress Indicators** | Real-time learning progress with animated visualizations |
+| **Smart Notifications** | Non-intrusive toast system with action buttons |
+| **Markdown Editor** | Rich text editing with live preview and LaTeX support |
 
 <div class="feature-nav">
 
@@ -8,12 +28,12 @@ praDeep provides six specialized modules for AI-powered learning.
 
 | Module | Description | Documentation |
 |:-------|:------------|:--------------|
-| 🧠 **Smart Solver** | Multi-agent problem solving with dual-loop reasoning | [Details →](https://github.com/HKUDS/praDeep#-smart-solver) |
-| 🎯 **Question Generator** | Custom quiz generation & exam style mimicking | [Details →](https://github.com/HKUDS/praDeep#-question-generator) |
-| 🎓 **Guided Learning** | Personalized learning paths with interactive visualization | [Details →](https://github.com/HKUDS/praDeep#-guided-learning) |
-| 🔬 **Deep Research** | Systematic topic exploration with dynamic topic queue | [Details →](https://github.com/HKUDS/praDeep#-deep-research) |
-| 💡 **IdeaGen** | Automated research idea generation with multi-stage filtering | [Details →](https://github.com/HKUDS/praDeep#-automated-ideagen) |
-| ✏️ **Co-Writer** | AI-assisted writing with TTS narration | [Details →](https://github.com/HKUDS/praDeep#-interactive-ideagen-co-writer) |
+| 🧠 **Smart Solver** | Multi-agent problem solving with dual-loop reasoning and step-by-step explanations | [Details →](https://github.com/HKUDS/praDeep#-smart-solver) |
+| 🎯 **Question Generator** | Custom quiz generation with adaptive difficulty and exam style mimicking | [Details →](https://github.com/HKUDS/praDeep#-question-generator) |
+| 🎓 **Guided Learning** | Personalized learning paths with interactive knowledge graphs and progress tracking | [Details →](https://github.com/HKUDS/praDeep#-guided-learning) |
+| 🔬 **Deep Research** | Systematic topic exploration with dynamic topic queue and citation management | [Details →](https://github.com/HKUDS/praDeep#-deep-research) |
+| 💡 **IdeaGen** | Automated research idea generation with multi-stage filtering and novelty scoring | [Details →](https://github.com/HKUDS/praDeep#-automated-ideagen) |
+| ✏️ **Co-Writer** | AI-assisted writing with TTS narration, grammar checking, and style suggestions | [Details →](https://github.com/HKUDS/praDeep#-interactive-ideagen-co-writer) |
 
 ## Architecture
 
@@ -21,10 +41,10 @@ praDeep provides six specialized modules for AI-powered learning.
 
 ### System Layers
 
-- **User Interface** — Bidirectional query-response with structured output
-- **Agent Modules** — Specialized AI agents for each learning task
-- **Tool Integration** — RAG, web search, paper search, code execution
-- **Knowledge Foundation** — Knowledge graph + vector store + memory system
+- **User Interface** — Redesigned bidirectional query-response with structured output and real-time streaming
+- **Agent Modules** — Specialized AI agents for each learning task with improved coordination
+- **Tool Integration** — RAG, web search, paper search, code execution, and new multimodal support
+- **Knowledge Foundation** — Knowledge graph + vector store + memory system with enhanced retrieval
 
 </div>
 
@@ -33,14 +53,14 @@ praDeep provides six specialized modules for AI-powered learning.
 praDeep works with multiple LLM and embedding providers:
 
 ::: details LLM Providers
-- OpenAI (GPT-4o, GPT-4)
-- Anthropic (Claude 3.5)
+- OpenAI (GPT-4o, GPT-4, o1, o3)
+- Anthropic (Claude 3.5, Claude Opus 4)
 - Azure OpenAI
-- DeepSeek
+- DeepSeek (V3, R1)
 - Groq
 - OpenRouter
 - Ollama (local)
-- Google Gemini
+- Google Gemini (2.0 Flash, 2.0 Pro)
 :::
 
 ::: details Embedding Providers
@@ -50,6 +70,7 @@ praDeep works with multiple LLM and embedding providers:
 - Ollama
 - LM Studio
 - HuggingFace
+- Qwen3-VL (multimodal)
 :::
 
 ---

@@ -47,8 +47,10 @@ praDeep implements a sophisticated multi-agent RAG (Retrieval-Augmented Generati
 ### Frontend Layer
 
 - **Web Application**: Next.js 14 with React Server Components
+- **Design System**: Liquid Cloud - glass morphism UI with fluid animations
 - **Real-time Updates**: WebSocket connections for streaming responses
 - **Rich Text Editor**: Markdown support with LaTeX rendering
+- **Theming**: Adaptive light/dark modes with CSS custom properties
 
 ### API Layer
 
@@ -94,6 +96,33 @@ praDeep implements a sophisticated multi-agent RAG (Retrieval-Augmented Generati
 - Embedding batch processing
 - Response caching with semantic similarity
 - Async document ingestion pipeline
+
+## Design System Architecture
+
+### Liquid Cloud
+
+The Liquid Cloud design system provides a cohesive visual language across the application:
+
+```
++------------------+     +-------------------+     +------------------+
+|   Design Tokens  |---->|   Component       |---->|   Application    |
+|   (CSS Vars)     |     |   Library         |     |   UI             |
++------------------+     +-------------------+     +------------------+
+        |                         |                         |
+        v                         v                         v
+   Colors, Spacing          LiquidCard, FlowButton     Pages, Features
+   Typography, Blur         WaveInput, CloudModal      Layouts, Views
+   Shadows, Animations      MistLoader, etc.           User Flows
+```
+
+### Visual Features
+
+| Feature | Implementation | Purpose |
+|---------|----------------|---------|
+| Glass Morphism | `backdrop-filter: blur()` | Modern, layered appearance |
+| Fluid Motion | Framer Motion + CSS | Smooth, responsive animations |
+| Adaptive Theme | CSS custom properties | Seamless light/dark switching |
+| Micro-interactions | Hover/focus states | Enhanced user feedback |
 
 ## Security Architecture
 

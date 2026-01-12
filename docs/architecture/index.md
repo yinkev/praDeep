@@ -45,6 +45,15 @@ Built-in telemetry and logging throughout:
 - Performance metrics and latency tracking
 - Cost monitoring for API calls
 
+### 4. Liquid Cloud Design System
+
+The frontend implements the Liquid Cloud design system, providing:
+- **Fluid Animations**: Smooth transitions with CSS custom properties and Framer Motion
+- **Adaptive Theming**: Dynamic light/dark mode with semantic color tokens
+- **Glass Morphism**: Frosted glass effects with backdrop blur for modern aesthetics
+- **Responsive Grid**: Flexible layouts that adapt seamlessly across devices
+- **Consistent Spacing**: 4px/8px grid system for visual harmony
+
 ## Quick Links
 
 - [Getting Started](../getting-started/index.md) - Setup and installation
