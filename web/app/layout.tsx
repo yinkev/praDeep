@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import Sidebar from '@/components/Sidebar'
@@ -6,6 +6,7 @@ import { GlobalProvider } from '@/context/GlobalContext'
 import ThemeScript from '@/components/ThemeScript'
 import { ToastProvider } from '@/components/ui/Toast'
 import MotionProvider from '@/components/MotionProvider'
+import { APP_DESCRIPTION, APP_NAME, APP_TITLE } from '@/lib/app-meta'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -13,19 +14,16 @@ const inter = Inter({
   variable: '--font-inter',
 })
 
-const appName = 'praDeep'
-const appTitle = `${appName} - Multi-Agent Teaching & Research Copilot`
-const appDescription =
-  'An intelligent multi-agent platform for teaching assistance and research collaboration, powered by advanced AI and knowledge retrieval.'
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL
 
 export const metadata: Metadata = {
-  applicationName: appName,
+  applicationName: APP_NAME,
   title: {
-    default: appTitle,
-    template: `%s · ${appName}`,
+    default: APP_TITLE,
+    template: `%s · ${APP_NAME}`,
   },
-  description: appDescription,
+  description: APP_DESCRIPTION,
+  manifest: '/manifest.json',
   metadataBase: siteUrl ? new URL(siteUrl) : undefined,
   alternates: {
     canonical: '/',
@@ -43,20 +41,26 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: 'website',
-    title: appTitle,
-    description: appDescription,
-    siteName: appName,
+    title: APP_TITLE,
+    description: APP_DESCRIPTION,
+    siteName: APP_NAME,
     url: '/',
   },
   twitter: {
     card: 'summary',
-    title: appTitle,
-    description: appDescription,
+    title: APP_TITLE,
+    description: APP_DESCRIPTION,
   },
   icons: {
     icon: '/logo.png',
     apple: '/logo.png',
   },
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

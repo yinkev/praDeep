@@ -17,6 +17,9 @@ from typing import Any
 import hashlib
 
 
+DEFAULT_USER_ID = "default_user"
+
+
 class UserMemoryManager:
     """
     Manages persistent user memory across all agent interactions.
@@ -26,6 +29,10 @@ class UserMemoryManager:
     - topic_memory.json: Topics discussed and their frequency
     - learning_patterns.json: User learning patterns and interaction history
     - recurring_questions.json: Common question patterns
+
+    Note:
+        This system is currently single-user. Public APIs accept a `user_id` parameter for future
+        extensibility, but it is not used yet.
     """
 
     def __init__(self, base_dir: str | None = None):
@@ -120,12 +127,14 @@ class UserMemoryManager:
 
     # ==================== Preferences Management ====================
 
-    def get_preferences(self) -> dict[str, Any]:
+    def get_preferences(self, user_id: str = DEFAULT_USER_ID) -> dict[str, Any]:
         """Get all user preferences."""
         data = self._load_file(self.preferences_file)
         return data.get("preferences", {})
 
-    def update_preference(self, key: str, value: Any) -> dict[str, Any]:
+    def update_preference(
+        self, key: str, value: Any, user_id: str = DEFAULT_USER_ID
+    ) -> dict[str, Any]:
         """
         Update a single preference.
 
@@ -152,7 +161,9 @@ class UserMemoryManager:
         self._save_file(self.preferences_file, data)
         return data["preferences"]
 
-    def set_preferences(self, preferences: dict[str, Any]) -> dict[str, Any]:
+    def set_preferences(
+        self, preferences: dict[str, Any], user_id: str = DEFAULT_USER_ID
+    ) -> dict[str, Any]:
         """
         Set multiple preferences at once.
 
@@ -177,7 +188,8 @@ class UserMemoryManager:
         topic: str,
         category: str | None = None,
         context: str | None = None,
-        related_topics: list[str] | None = None
+        related_topics: list[str] | None = None,
+        user_id: str = DEFAULT_USER_ID,
     ) -> dict[str, Any]:
         """
         Record interaction with a topic.
@@ -235,7 +247,8 @@ class UserMemoryManager:
         self,
         limit: int = 20,
         category: str | None = None,
-        sort_by: str = "frequency"
+        sort_by: str = "frequency",
+        user_id: str = DEFAULT_USER_ID,
     ) -> list[dict[str, Any]]:
         """
         Get recorded topics.
@@ -271,7 +284,7 @@ class UserMemoryManager:
 
         return topic_list[:limit]
 
-    def get_topic_categories(self) -> dict[str, list[str]]:
+    def get_topic_categories(self, user_id: str = DEFAULT_USER_ID) -> dict[str, list[str]]:
         """Get all topic categories."""
         data = self._load_file(self.topics_file)
         return data.get("categories", {})
@@ -283,7 +296,8 @@ class UserMemoryManager:
         module: str,
         duration_seconds: float | None = None,
         topic: str | None = None,
-        success: bool = True
+        success: bool = True,
+        user_id: str = DEFAULT_USER_ID,
     ):
         """
         Record a user interaction to learn patterns.
@@ -335,11 +349,11 @@ class UserMemoryManager:
 
         self._save_file(self.patterns_file, data)
 
-    def get_learning_patterns(self) -> dict[str, Any]:
+    def get_learning_patterns(self, user_id: str = DEFAULT_USER_ID) -> dict[str, Any]:
         """Get user learning patterns."""
         return self._load_file(self.patterns_file)
 
-    def get_preferred_modules(self) -> list[tuple[str, int]]:
+    def get_preferred_modules(self, user_id: str = DEFAULT_USER_ID) -> list[tuple[str, int]]:
         """Get modules sorted by usage frequency."""
         data = self._load_file(self.patterns_file)
         modules = data.get("preferred_modules", {})
@@ -347,7 +361,9 @@ class UserMemoryManager:
 
     # ==================== Recurring Questions ====================
 
-    def record_question(self, question: str, answer: str | None = None):
+    def record_question(
+        self, question: str, answer: str | None = None, user_id: str = DEFAULT_USER_ID
+    ):
         """
         Record a question to identify recurring patterns.
 
@@ -410,7 +426,9 @@ class UserMemoryManager:
 
         self._save_file(self.questions_file, data)
 
-    def get_recurring_questions(self, min_frequency: int = 2, limit: int = 20) -> list[dict[str, Any]]:
+    def get_recurring_questions(
+        self, min_frequency: int = 2, limit: int = 20, user_id: str = DEFAULT_USER_ID
+    ) -> list[dict[str, Any]]:
         """
         Get recurring questions (asked multiple times).
 
@@ -427,7 +445,7 @@ class UserMemoryManager:
         recurring = [q for q in questions if q.get("frequency", 0) >= min_frequency]
         return recurring[:limit]
 
-    def mark_question_resolved(self, question_hash: str):
+    def mark_question_resolved(self, question_hash: str, user_id: str = DEFAULT_USER_ID):
         """Mark a recurring question as resolved/mastered."""
         data = self._load_file(self.questions_file)
 
@@ -446,7 +464,7 @@ class UserMemoryManager:
 
     # ==================== Memory Summary for Agents ====================
 
-    def get_memory_context(self) -> dict[str, Any]:
+    def get_memory_context(self, user_id: str = DEFAULT_USER_ID) -> dict[str, Any]:
         """
         Get a summarized memory context for agent use.
 
@@ -476,7 +494,7 @@ class UserMemoryManager:
 
     # ==================== Memory Management ====================
 
-    def clear_memory(self, memory_type: str | None = None) -> bool:
+    def clear_memory(self, memory_type: str | None = None, user_id: str = DEFAULT_USER_ID) -> bool:
         """
         Clear memory data.
 
@@ -507,7 +525,7 @@ class UserMemoryManager:
 
         return False
 
-    def export_memory(self) -> dict[str, Any]:
+    def export_memory(self, user_id: str = DEFAULT_USER_ID) -> dict[str, Any]:
         """Export all memory data for backup."""
         return {
             "exported_at": time.time(),
@@ -517,7 +535,7 @@ class UserMemoryManager:
             "questions": self._load_file(self.questions_file)
         }
 
-    def import_memory(self, data: dict[str, Any]) -> bool:
+    def import_memory(self, data: dict[str, Any], user_id: str = DEFAULT_USER_ID) -> bool:
         """
         Import memory data from backup.
 

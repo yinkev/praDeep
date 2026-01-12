@@ -95,3 +95,28 @@ When delegating to Codex agents:
 ## Codex Usage
 
 **Important:** Codex is invoked through the Skills system, NOT through MCP tools. When delegating tasks to Codex, use the Skill tool to invoke the appropriate skill - do not use mcp__codex__codex directly.
+
+## Gemini CLI / CLI Proxy API Usage
+
+### Correct Model Names
+- **Gemini 3 Pro**: `gemini-3-pro-preview` (NOT `gemini-2.5-pro` or `gemini-3.0-pro`)
+- **Gemini 3 Pro Image**: `gemini-3-pro-image-preview`
+- **Gemini 2.5 Flash Image**: `gemini-2.5-flash-image`
+
+### CLI Proxy API (Recommended for Parallel Requests)
+When making parallel requests to Gemini, use CLI Proxy API to avoid rate limits:
+```bash
+curl -s http://localhost:8317/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer sk-proxy" \
+  -d '{
+    "model": "gemini-3-pro-preview",
+    "messages": [{"role": "user", "content": "Your prompt here"}]
+  }'
+```
+
+### Common Mistakes to Avoid
+1. **Wrong model names**: Always use exact model names from settings.json (`~/.gemini/settings.json`)
+2. **Unnecessary timeouts**: Do NOT set `--max-time` or timeout limits on API calls - let them complete naturally
+3. **Rate limiting with Gemini CLI**: Running 10+ parallel `gemini` CLI commands will hit rate limits. Use CLI Proxy API instead for parallel operations
+4. **Listen to user instructions**: When user specifies a model (e.g., "Gemini 3 Pro"), use EXACTLY that model, not a different version

@@ -1,0 +1,58 @@
+{
+  "id": "/",
+  "name": "praDeep",
+  "short_name": "praDeep",
+  "description": "An intelligent multi-agent platform for teaching assistance and research collaboration, powered by advanced AI and knowledge retrieval.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "hsl(0 0% 98%)",
+  "theme_color": "hsl(217 91% 60%)",
+  "categories": ["education", "productivity"],
+  "icons": [
+    { "src": "/icons/icon-192x192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icon-512x512.png", "sizes": "512x512", "type": "image/png" },
+    {
+      "src": "/icons/icon-512x512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "New Chat",
+      "short_name": "Chat",
+      "description": "Start a new chat/question session",
+      "url": "/question",
+      "icons": [{ "src": "/icons/shortcut-chat.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Knowledge Base",
+      "short_name": "Knowledge",
+      "description": "Browse and manage knowledge bases",
+      "url": "/knowledge",
+      "icons": [
+        { "src": "/icons/shortcut-knowledge.png", "sizes": "192x192", "type": "image/png" }
+      ]
+    },
+    {
+      "name": "Research",
+      "short_name": "Research",
+      "description": "Run deep research workflows",
+      "url": "/research",
+      "icons": [
+        { "src": "/icons/shortcut-research.png", "sizes": "192x192", "type": "image/png" }
+      ]
+    },
+    {
+      "name": "Solver",
+      "short_name": "Solver",
+      "description": "Open the smart solver",
+      "url": "/solver",
+      "icons": [{ "src": "/icons/shortcut-solver.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ]
+}
+
