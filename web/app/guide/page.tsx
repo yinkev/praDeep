@@ -372,12 +372,13 @@ function KnowledgePointCard({ point, index, currentIndex, total }: KnowledgePoin
   const isActive = index === currentIndex
   const isCompleted = index < currentIndex
   const isPending = index > currentIndex
+  const isNext = index === currentIndex + 1
 
   const difficultyColors = {
-    easy: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-200/50',
+    easy: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-300/60 shadow-emerald-500/10',
     medium:
-      'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-200/50',
-    hard: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-200/50',
+      'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-300/60 shadow-amber-500/10',
+    hard: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-300/60 shadow-red-500/10',
   }
 
   const difficulty = (point.user_difficulty?.toLowerCase() || 'medium') as
@@ -390,65 +391,132 @@ function KnowledgePointCard({ point, index, currentIndex, total }: KnowledgePoin
     <motion.div
       variants={fadeInUp}
       className={`
-        relative px-4 py-3 rounded-xl
-        transition-all duration-300
+        relative px-4 py-3.5 rounded-xl overflow-hidden
+        transition-all duration-500 cursor-pointer group
         ${
           isActive
-            ? 'bg-teal-50/80 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-700 shadow-lg shadow-teal-500/10'
+            ? 'bg-gradient-to-br from-teal-50 via-teal-50/80 to-teal-100/60 dark:from-teal-900/30 dark:via-teal-900/20 dark:to-teal-800/20 border-2 border-teal-300 dark:border-teal-600 shadow-xl shadow-teal-500/20'
             : isCompleted
-              ? 'bg-slate-50/50 dark:bg-slate-800/30 border border-slate-200/50 dark:border-slate-700/50'
-              : 'bg-white/30 dark:bg-slate-800/20 border border-slate-200/30 dark:border-slate-700/30'
+              ? 'bg-gradient-to-br from-slate-50/90 to-slate-100/40 dark:from-slate-800/40 dark:to-slate-800/20 border border-slate-200/70 dark:border-slate-700/60 shadow-md hover:shadow-lg'
+              : isNext
+                ? 'bg-gradient-to-br from-white via-teal-50/20 to-white dark:from-slate-800/30 dark:via-slate-800/40 dark:to-slate-800/30 border border-teal-200/50 dark:border-teal-700/40 shadow-sm hover:shadow-md hover:border-teal-300/70'
+                : 'bg-white/40 dark:bg-slate-800/20 border border-slate-200/40 dark:border-slate-700/30 hover:border-slate-300/60 dark:hover:border-slate-600/50'
         }
       `}
+      whileHover={{ scale: isActive ? 1.02 : 1.01, y: -2 }}
+      whileTap={{ scale: 0.98 }}
+      layout
     >
-      <div className="flex items-start gap-3">
+      {/* Active state shimmer effect */}
+      {isActive && (
+        <motion.div
+          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
+          animate={{ x: ['-200%', '200%'] }}
+          transition={{ duration: 2.5, repeat: Infinity, ease: 'linear' }}
+        />
+      )}
+
+      {/* Progress indicator line */}
+      {isActive && (
+        <motion.div
+          className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-teal-400 via-teal-500 to-teal-400"
+          initial={{ scaleX: 0 }}
+          animate={{ scaleX: 1 }}
+          transition={{ duration: 0.6, ease: [0.22, 0.61, 0.36, 1] }}
+          style={{ transformOrigin: 'left' }}
+        />
+      )}
+
+      <div className="flex items-start gap-3 relative z-10">
         {/* Step indicator */}
-        <div
+        <motion.div
           className={`
-            flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold
+            flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold
+            shadow-sm transition-all duration-500
             ${
               isCompleted
-                ? 'bg-teal-500 text-white'
+                ? 'bg-gradient-to-br from-teal-400 to-teal-600 text-white shadow-teal-500/30'
                 : isActive
-                  ? 'bg-teal-500 text-white animate-pulse'
-                  : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
+                  ? 'bg-gradient-to-br from-teal-500 to-teal-600 text-white shadow-lg shadow-teal-500/50'
+                  : isNext
+                    ? 'bg-teal-100 dark:bg-teal-900/50 text-teal-600 dark:text-teal-400 border-2 border-teal-300 dark:border-teal-600'
+                    : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
             }
           `}
+          animate={
+            isCompleted
+              ? { scale: [1, 1.2, 1], rotate: [0, 360] }
+              : isActive
+                ? { scale: [1, 1.1, 1] }
+                : {}
+          }
+          transition={
+            isCompleted
+              ? { duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }
+              : isActive
+                ? { duration: 1.5, repeat: Infinity, ease: 'easeInOut' }
+                : {}
+          }
+          whileHover={{ scale: 1.15 }}
         >
-          {isCompleted ? <Check className="w-3 h-3" /> : index + 1}
-        </div>
+          {isCompleted ? (
+            <motion.div
+              initial={{ scale: 0, rotate: -180 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ duration: 0.4, ease: [0.34, 1.56, 0.64, 1] }}
+            >
+              <Check className="w-3.5 h-3.5" />
+            </motion.div>
+          ) : (
+            index + 1
+          )}
+        </motion.div>
 
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <h4
+          <div className="flex items-center gap-2 mb-1.5">
+            <motion.h4
               className={`
-              text-sm font-semibold truncate
-              ${
-                isActive
-                  ? 'text-teal-700 dark:text-teal-300'
-                  : isCompleted
-                    ? 'text-slate-600 dark:text-slate-400'
-                    : 'text-slate-500 dark:text-slate-500'
-              }
-            `}
+                text-sm font-semibold truncate transition-colors duration-300
+                ${
+                  isActive
+                    ? 'text-teal-700 dark:text-teal-300'
+                    : isCompleted
+                      ? 'text-slate-600 dark:text-slate-400'
+                      : isNext
+                        ? 'text-slate-700 dark:text-slate-300'
+                        : 'text-slate-500 dark:text-slate-500'
+                }
+              `}
+              animate={isActive ? { x: [0, 2, 0] } : {}}
+              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
             >
               {point.knowledge_title}
-            </h4>
+            </motion.h4>
             {point.user_difficulty && (
-              <span className={`text-[10px] px-1.5 py-0.5 rounded-full border ${difficultyClass}`}>
+              <motion.span
+                className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${difficultyClass}`}
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 0.2, duration: 0.3, ease: [0.34, 1.56, 0.64, 1] }}
+                whileHover={{ scale: 1.1 }}
+              >
                 {point.user_difficulty}
-              </span>
+              </motion.span>
             )}
           </div>
           <p
             className={`
-            text-xs line-clamp-2
-            ${
-              isActive
-                ? 'text-teal-600/80 dark:text-teal-400/80'
-                : 'text-slate-400 dark:text-slate-500'
-            }
-          `}
+              text-xs line-clamp-2 leading-relaxed transition-colors duration-300
+              ${
+                isActive
+                  ? 'text-teal-600/90 dark:text-teal-400/90'
+                  : isCompleted
+                    ? 'text-slate-500 dark:text-slate-500'
+                    : isNext
+                      ? 'text-slate-600 dark:text-slate-400'
+                      : 'text-slate-400 dark:text-slate-500'
+              }
+            `}
           >
             {point.knowledge_summary}
           </p>
@@ -458,13 +526,38 @@ function KnowledgePointCard({ point, index, currentIndex, total }: KnowledgePoin
         {isActive && (
           <motion.div
             className="flex-shrink-0"
-            animate={{ scale: [1, 1.1, 1] }}
-            transition={{ duration: 1.5, repeat: Infinity }}
+            animate={{
+              scale: [1, 1.2, 1],
+              rotate: [0, 10, -10, 0],
+            }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
           >
-            <Zap className="w-4 h-4 text-teal-500" />
+            <Zap className="w-5 h-5 text-teal-500 drop-shadow-lg" />
+          </motion.div>
+        )}
+        {isCompleted && (
+          <motion.div
+            className="flex-shrink-0 opacity-60 group-hover:opacity-100 transition-opacity"
+            initial={{ scale: 0, rotate: -90 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ delay: 0.1, duration: 0.4, ease: [0.34, 1.56, 0.64, 1] }}
+          >
+            <CheckCircle2 className="w-4 h-4 text-teal-600 dark:text-teal-400" />
           </motion.div>
         )}
       </div>
+
+      {/* Completion celebration particles */}
+      {isCompleted && (
+        <motion.div
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+          initial={{ scale: 0, opacity: 1 }}
+          animate={{ scale: 3, opacity: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          <div className="w-2 h-2 rounded-full bg-teal-400/50" />
+        </motion.div>
+      )}
     </motion.div>
   )
 }
@@ -523,31 +616,93 @@ function Message({ message }: MessageProps) {
       variants={fadeInUp}
       initial="hidden"
       animate="visible"
-      className={`flex gap-3 ${isUser ? 'justify-end' : 'justify-start'}`}
+      className={`flex gap-3 ${isUser ? 'justify-end' : 'justify-start'} group`}
     >
-      <div className={`max-w-[85%] ${isUser ? 'order-2' : 'order-1'}`}>
-        <Card
-          variant={isUser ? 'default' : isLoading ? 'outlined' : 'glass'}
-          interactive={false}
-          className={`
-            ${isUser ? 'rounded-tr-sm' : 'rounded-tl-sm'}
-            ${isLoading ? 'border-amber-300/50 dark:border-amber-600/50 bg-amber-50/30 dark:bg-amber-900/20' : ''}
-            ${isSystem && !isLoading ? 'border-blue-300/50 dark:border-blue-600/50 bg-blue-50/30 dark:bg-blue-900/20' : ''}
-          `}
+      {!isUser && !isLoading && (
+        <motion.div
+          className="flex items-end"
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 0.1, duration: 0.3, ease: [0.34, 1.56, 0.64, 1] }}
         >
-          <CardBody className="py-3 px-4">
-            <div className="prose prose-sm prose-slate dark:prose-invert max-w-none">
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm, remarkMath]}
-                rehypePlugins={[rehypeKatex]}
-                components={markdownComponents}
+          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white shadow-md">
+            <Brain className="w-4 h-4" />
+          </div>
+        </motion.div>
+      )}
+      <div className={`max-w-[85%] ${isUser ? 'order-2' : 'order-1'}`}>
+        <motion.div whileHover={{ scale: 1.01, y: -1 }} transition={{ duration: 0.2 }}>
+          <Card
+            variant={isUser ? 'default' : isLoading ? 'outlined' : 'glass'}
+            interactive={false}
+            className={`
+              ${isUser ? 'rounded-tr-sm bg-gradient-to-br from-teal-500 to-teal-600 text-white shadow-lg shadow-teal-500/30' : 'rounded-tl-sm'}
+              ${isLoading ? 'border-amber-300/50 dark:border-amber-600/50 bg-amber-50/50 dark:bg-amber-900/30 shadow-md shadow-amber-500/10' : ''}
+              ${isSystem && !isLoading ? 'border-blue-300/50 dark:border-blue-600/50 bg-blue-50/50 dark:bg-blue-900/30 shadow-md shadow-blue-500/10' : ''}
+              transition-all duration-300 hover:shadow-xl
+            `}
+          >
+            <CardBody className="py-3 px-4 relative overflow-hidden">
+              {/* Shimmer effect for loading messages */}
+              {isLoading && (
+                <motion.div
+                  className="absolute inset-0 bg-gradient-to-r from-transparent via-amber-200/30 dark:via-amber-400/20 to-transparent"
+                  animate={{ x: ['-100%', '200%'] }}
+                  transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
+                />
+              )}
+
+              {/* Typing indicator for loading messages */}
+              {isLoading && (
+                <div className="flex items-center gap-1.5 mb-2">
+                  {[0, 1, 2].map(i => (
+                    <motion.div
+                      key={i}
+                      className="w-2 h-2 rounded-full bg-amber-500/60 dark:bg-amber-400/60"
+                      animate={{
+                        scale: [1, 1.3, 1],
+                        opacity: [0.5, 1, 0.5],
+                      }}
+                      transition={{
+                        duration: 1,
+                        repeat: Infinity,
+                        delay: i * 0.15,
+                        ease: 'easeInOut',
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+
+              <div
+                className={`prose prose-sm ${
+                  isUser ? 'prose-invert' : 'prose-slate dark:prose-invert'
+                } max-w-none relative z-10`}
               >
-                {processLatexContent(message.content)}
-              </ReactMarkdown>
-            </div>
-          </CardBody>
-        </Card>
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm, remarkMath]}
+                  rehypePlugins={[rehypeKatex]}
+                  components={markdownComponents}
+                >
+                  {processLatexContent(message.content)}
+                </ReactMarkdown>
+              </div>
+            </CardBody>
+          </Card>
+        </motion.div>
       </div>
+      {isUser && (
+        <motion.div
+          className="flex items-end"
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 0.1, duration: 0.3, ease: [0.34, 1.56, 0.64, 1] }}
+        >
+          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-slate-400 to-slate-600 flex items-center justify-center text-white shadow-md">
+            <span className="text-xs font-bold">U</span>
+          </div>
+        </motion.div>
+      )}
     </motion.div>
   )
 }
@@ -1307,32 +1462,47 @@ ${html}
                             return (
                               <motion.div key={notebook.id} variants={fadeInUp}>
                                 {/* Notebook Header */}
-                                <div
-                                  className="p-3 flex items-center gap-2 cursor-pointer hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors"
+                                <motion.div
+                                  className="p-3 flex items-center gap-2 cursor-pointer rounded-lg transition-all duration-300 group"
                                   onClick={() => toggleNotebookExpanded(notebook.id)}
+                                  whileHover={{
+                                    backgroundColor: 'rgba(100, 116, 139, 0.05)',
+                                    x: 2,
+                                  }}
+                                  whileTap={{ scale: 0.98 }}
                                 >
                                   <motion.div
                                     animate={{ rotate: isExpanded ? 90 : 0 }}
-                                    transition={{ duration: 0.2 }}
+                                    transition={{ duration: 0.3, ease: [0.22, 0.61, 0.36, 1] }}
+                                    className="flex-shrink-0"
                                   >
-                                    <ChevronRight className="w-4 h-4 text-slate-400 dark:text-slate-500" />
+                                    <ChevronRight className="w-4 h-4 text-slate-400 dark:text-slate-500 group-hover:text-teal-500 dark:group-hover:text-teal-400 transition-colors" />
                                   </motion.div>
-                                  <div
-                                    className="w-3 h-3 rounded-full ring-2 ring-white dark:ring-slate-800 shadow"
+                                  <motion.div
+                                    className="w-3 h-3 rounded-full ring-2 ring-white dark:ring-slate-800 shadow-sm group-hover:ring-4 transition-all duration-300"
                                     style={{ backgroundColor: notebook.color || '#94a3b8' }}
+                                    whileHover={{ scale: 1.2 }}
                                   />
-                                  <span className="flex-1 text-sm font-medium text-slate-700 dark:text-slate-200 truncate">
+                                  <span className="flex-1 text-sm font-medium text-slate-700 dark:text-slate-200 truncate group-hover:text-teal-700 dark:group-hover:text-teal-300 transition-colors">
                                     {notebook.name}
                                   </span>
-                                  <span className="text-xs text-slate-400 dark:text-slate-500">
+                                  <motion.span
+                                    className="text-xs text-slate-400 dark:text-slate-500 flex items-center gap-1"
+                                    whileHover={{ scale: 1.05 }}
+                                  >
                                     {selectedFromThis > 0 && (
-                                      <span className="text-teal-600 dark:text-teal-400 font-medium">
+                                      <motion.span
+                                        className="text-teal-600 dark:text-teal-400 font-bold"
+                                        initial={{ scale: 0 }}
+                                        animate={{ scale: 1 }}
+                                        transition={{ duration: 0.3, ease: [0.34, 1.56, 0.64, 1] }}
+                                      >
                                         {selectedFromThis}/
-                                      </span>
+                                      </motion.span>
                                     )}
-                                    {notebook.record_count}
-                                  </span>
-                                </div>
+                                    <span className="font-medium">{notebook.record_count}</span>
+                                  </motion.span>
+                                </motion.div>
 
                                 {/* Records List */}
                                 <AnimatePresence>
@@ -1397,42 +1567,61 @@ ${html}
                                                     )
                                                   }}
                                                   className={`
-                                                    p-2 rounded-lg cursor-pointer transition-all border
+                                                    p-2.5 rounded-xl cursor-pointer transition-all duration-300 border group
                                                     ${
                                                       selectedRecords.has(record.id)
-                                                        ? 'bg-teal-50/80 dark:bg-teal-900/20 border-teal-200 dark:border-teal-700 shadow-sm'
-                                                        : 'bg-white/50 dark:bg-slate-800/30 border-transparent hover:border-slate-200 dark:hover:border-slate-600 hover:bg-white dark:hover:bg-slate-800/50'
+                                                        ? 'bg-gradient-to-br from-teal-50 to-teal-50/60 dark:from-teal-900/30 dark:to-teal-900/10 border-teal-300 dark:border-teal-600 shadow-md shadow-teal-500/10'
+                                                        : 'bg-white/60 dark:bg-slate-800/40 border-transparent hover:border-teal-200 dark:hover:border-teal-700/50 hover:bg-white dark:hover:bg-slate-800/60 hover:shadow-sm'
                                                     }
                                                   `}
+                                                  whileHover={{ scale: 1.01, x: 2 }}
+                                                  whileTap={{ scale: 0.98 }}
                                                 >
-                                                  <div className="flex items-center gap-2">
+                                                  <div className="flex items-center gap-2.5">
                                                     <motion.div
                                                       className={`
-                                                        w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-all
+                                                        w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all duration-300
                                                         ${
                                                           selectedRecords.has(record.id)
-                                                            ? 'bg-teal-500 border-teal-500 text-white'
-                                                            : 'border-slate-300 dark:border-slate-600'
+                                                            ? 'bg-gradient-to-br from-teal-500 to-teal-600 border-teal-500 text-white shadow-md shadow-teal-500/30'
+                                                            : 'border-slate-300 dark:border-slate-600 group-hover:border-teal-400 dark:group-hover:border-teal-500'
                                                         }
                                                       `}
                                                       animate={
                                                         selectedRecords.has(record.id)
-                                                          ? { scale: [1, 1.2, 1] }
+                                                          ? {
+                                                              scale: [1, 1.2, 1],
+                                                              rotate: [0, 10, 0],
+                                                            }
                                                           : {}
                                                       }
-                                                      transition={{ duration: 0.2 }}
+                                                      transition={{
+                                                        duration: 0.3,
+                                                        ease: [0.34, 1.56, 0.64, 1],
+                                                      }}
+                                                      whileHover={{ scale: 1.1 }}
                                                     >
                                                       {selectedRecords.has(record.id) && (
-                                                        <Check className="w-2.5 h-2.5" />
+                                                        <motion.div
+                                                          initial={{ scale: 0, rotate: -180 }}
+                                                          animate={{ scale: 1, rotate: 0 }}
+                                                          transition={{
+                                                            duration: 0.3,
+                                                            ease: [0.34, 1.56, 0.64, 1],
+                                                          }}
+                                                        >
+                                                          <Check className="w-3 h-3 stroke-[3]" />
+                                                        </motion.div>
                                                       )}
                                                     </motion.div>
-                                                    <div className="flex-1 min-w-0">
-                                                      <span
-                                                        className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded border ${getTypeColor(record.type)}`}
+                                                    <div className="flex-1 min-w-0 flex items-center gap-2">
+                                                      <motion.span
+                                                        className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-md border shadow-sm ${getTypeColor(record.type)}`}
+                                                        whileHover={{ scale: 1.05 }}
                                                       >
                                                         {record.type}
-                                                      </span>
-                                                      <span className="text-xs text-slate-700 dark:text-slate-200 ml-2 truncate">
+                                                      </motion.span>
+                                                      <span className="text-xs text-slate-700 dark:text-slate-200 truncate font-medium group-hover:text-teal-700 dark:group-hover:text-teal-300 transition-colors">
                                                         {record.title}
                                                       </span>
                                                     </div>
@@ -1479,29 +1668,104 @@ ${html}
               >
                 {/* Progress Bar */}
                 <div className="px-4 py-3 shrink-0">
-                  <Card variant="glass" interactive={false}>
-                    <CardBody className="py-3">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                  <Card variant="glass" interactive={false} className="overflow-hidden">
+                    <CardBody className="py-3 relative">
+                      <div className="flex items-center justify-between mb-2.5">
+                        <span className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                          <Target className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
                           Learning Progress
                         </span>
-                        <span className="text-xs font-bold text-teal-600 dark:text-teal-400">
+                        <motion.span
+                          className="text-sm font-bold text-teal-600 dark:text-teal-400 tabular-nums"
+                          key={sessionState.progress}
+                          initial={{ scale: 1.3, opacity: 0.5 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          transition={{ duration: 0.4, ease: [0.34, 1.56, 0.64, 1] }}
+                        >
                           {sessionState.progress}%
-                        </span>
+                        </motion.span>
                       </div>
-                      <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                      <div className="relative h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden shadow-inner">
                         <motion.div
-                          className="h-full bg-gradient-to-r from-teal-500 to-teal-400 rounded-full"
-                          initial={{ width: 0 }}
-                          animate={{ width: `${sessionState.progress}%` }}
-                          transition={{ duration: 0.5, ease: 'easeOut' }}
-                        />
+                          className="absolute inset-0 bg-gradient-to-r from-teal-500 via-teal-400 to-teal-500 rounded-full"
+                          initial={{ width: 0, x: '-10%' }}
+                          animate={{ width: `${sessionState.progress}%`, x: 0 }}
+                          transition={{
+                            width: { duration: 0.8, ease: [0.22, 0.61, 0.36, 1] },
+                            x: { duration: 0.8, ease: [0.22, 0.61, 0.36, 1] },
+                          }}
+                        >
+                          {/* Shimmer effect */}
+                          <motion.div
+                            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent"
+                            animate={{ x: ['-100%', '200%'] }}
+                            transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+                          />
+                          {/* Pulse glow */}
+                          <motion.div
+                            className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-white/80 shadow-lg shadow-teal-400/50"
+                            animate={{
+                              scale: [1, 1.3, 1],
+                              opacity: [0.8, 1, 0.8],
+                            }}
+                            transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+                          />
+                        </motion.div>
+
+                        {/* Celebration burst at 100% */}
+                        {sessionState.progress === 100 && (
+                          <>
+                            {[...Array(12)].map((_, i) => (
+                              <motion.div
+                                key={i}
+                                className="absolute top-1/2 left-1/2"
+                                initial={{ scale: 0, opacity: 1 }}
+                                animate={{
+                                  scale: [0, 1],
+                                  x: [0, Math.cos((i * 30 * Math.PI) / 180) * 40],
+                                  y: [0, Math.sin((i * 30 * Math.PI) / 180) * 40],
+                                  opacity: [1, 0],
+                                }}
+                                transition={{
+                                  duration: 0.8,
+                                  delay: i * 0.02,
+                                  ease: [0.34, 1.56, 0.64, 1],
+                                }}
+                              >
+                                <div
+                                  className={`w-1.5 h-1.5 rounded-full ${
+                                    i % 3 === 0
+                                      ? 'bg-teal-400'
+                                      : i % 3 === 1
+                                        ? 'bg-emerald-400'
+                                        : 'bg-cyan-400'
+                                  }`}
+                                />
+                              </motion.div>
+                            ))}
+                          </>
+                        )}
                       </div>
                       {sessionState.knowledge_points.length > 0 && (
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
-                          Point {Math.max(0, sessionState.current_index + 1)} of{' '}
-                          {sessionState.knowledge_points.length}
-                        </p>
+                        <motion.p
+                          className="text-xs text-slate-500 dark:text-slate-400 mt-2.5 flex items-center justify-between"
+                          initial={{ opacity: 0, y: 5 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.2 }}
+                        >
+                          <span>
+                            Point {Math.max(0, sessionState.current_index + 1)} of{' '}
+                            {sessionState.knowledge_points.length}
+                          </span>
+                          <motion.span
+                            className="text-teal-600 dark:text-teal-400 font-medium"
+                            animate={{ opacity: [0.5, 1, 0.5] }}
+                            transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                          >
+                            {sessionState.knowledge_points.length - sessionState.current_index - 1}{' '}
+                            remaining
+                          </motion.span>
+                        </motion.p>
                       )}
 
                       {/* Action Buttons */}
@@ -1703,40 +1967,122 @@ ${html}
               variants={scaleIn}
               initial="hidden"
               animate="visible"
-              className="flex-1 flex flex-col overflow-hidden"
+              className="flex-1 flex flex-col overflow-hidden relative"
             >
-              <div className="px-6 py-4 bg-gradient-to-r from-emerald-50/80 to-teal-50/80 dark:from-emerald-900/20 dark:to-teal-900/20 border-b border-emerald-200/50 dark:border-emerald-700/50 backdrop-blur-xl shrink-0">
-                <div className="flex items-center gap-3">
+              {/* Celebration confetti particles */}
+              {[...Array(20)].map((_, i) => (
+                <motion.div
+                  key={i}
+                  className="absolute pointer-events-none"
+                  style={{
+                    top: `${Math.random() * 100}%`,
+                    left: `${Math.random() * 100}%`,
+                  }}
+                  initial={{ scale: 0, opacity: 0, rotate: 0, y: -50 }}
+                  animate={{
+                    scale: [0, 1, 0.8],
+                    opacity: [0, 1, 0],
+                    rotate: [0, Math.random() * 720 - 360],
+                    y: [0, Math.random() * 200 + 100],
+                  }}
+                  transition={{
+                    duration: 2 + Math.random() * 2,
+                    delay: i * 0.05,
+                    ease: [0.34, 1.56, 0.64, 1],
+                  }}
+                >
+                  <div
+                    className={`w-3 h-3 rounded-full ${
+                      i % 4 === 0
+                        ? 'bg-emerald-400'
+                        : i % 4 === 1
+                          ? 'bg-teal-400'
+                          : i % 4 === 2
+                            ? 'bg-cyan-400'
+                            : 'bg-green-400'
+                    }`}
+                  />
+                </motion.div>
+              ))}
+
+              <div className="px-6 py-5 bg-gradient-to-r from-emerald-50/90 via-teal-50/90 to-cyan-50/90 dark:from-emerald-900/30 dark:via-teal-900/30 dark:to-cyan-900/30 border-b border-emerald-200/60 dark:border-emerald-700/60 backdrop-blur-xl shrink-0 relative overflow-hidden">
+                {/* Animated background shimmer */}
+                <motion.div
+                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
+                  animate={{ x: ['-100%', '200%'] }}
+                  transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
+                />
+
+                <div className="flex items-center gap-4 relative z-10">
                   <motion.div
-                    className="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center shadow-lg shadow-emerald-500/20"
-                    animate={{ scale: [1, 1.1, 1] }}
-                    transition={{ duration: 2, repeat: Infinity }}
+                    className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-400 via-teal-500 to-cyan-500 flex items-center justify-center shadow-2xl shadow-emerald-500/40 relative"
+                    animate={{
+                      scale: [1, 1.1, 1],
+                      rotate: [0, 5, -5, 0],
+                    }}
+                    transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
                   >
-                    <CheckCircle2 className="w-5 h-5 text-white" />
+                    <CheckCircle2 className="w-7 h-7 text-white" />
+                    <motion.div
+                      className="absolute inset-0 rounded-2xl bg-white/20"
+                      animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0, 0.3] }}
+                      transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                    />
                   </motion.div>
                   <div>
-                    <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">
-                      Learning Complete!
-                    </h2>
-                    <p className="text-sm text-slate-600 dark:text-slate-400">
+                    <motion.h2
+                      className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-1"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2, duration: 0.5 }}
+                    >
+                      Learning Complete! 🎉
+                    </motion.h2>
+                    <motion.p
+                      className="text-sm text-slate-600 dark:text-slate-400"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3, duration: 0.5 }}
+                    >
                       Congratulations on finishing your learning session
-                    </p>
+                    </motion.p>
                   </div>
                 </div>
               </div>
               <div className="flex-1 overflow-y-auto p-8">
-                <Card variant="glass" interactive={false}>
-                  <CardBody>
-                    <div className="prose prose-slate dark:prose-invert prose-headings:font-bold prose-h1:text-2xl prose-h2:text-xl max-w-none">
-                      <ReactMarkdown
-                        remarkPlugins={[remarkGfm, remarkMath]}
-                        rehypePlugins={[rehypeKatex]}
-                      >
-                        {processLatexContent(sessionState.summary || '')}
-                      </ReactMarkdown>
-                    </div>
-                  </CardBody>
-                </Card>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4, duration: 0.6 }}
+                >
+                  <Card variant="glass" interactive={false} className="shadow-xl">
+                    <CardBody className="p-6">
+                      <div className="prose prose-slate dark:prose-invert prose-headings:font-bold prose-h1:text-2xl prose-h2:text-xl prose-p:leading-relaxed max-w-none">
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm, remarkMath]}
+                          rehypePlugins={[rehypeKatex]}
+                        >
+                          {processLatexContent(sessionState.summary || '')}
+                        </ReactMarkdown>
+                      </div>
+                    </CardBody>
+                  </Card>
+                </motion.div>
+
+                {/* Motivational footer */}
+                <motion.div
+                  className="mt-6 text-center"
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.6, duration: 0.5 }}
+                >
+                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-100 to-teal-100 dark:from-emerald-900/30 dark:to-teal-900/30 rounded-full border border-emerald-300/50 dark:border-emerald-700/50 shadow-md">
+                    <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                    <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+                      Keep up the great work!
+                    </span>
+                  </div>
+                </motion.div>
               </div>
             </motion.div>
           ) : sessionState.status === 'learning' ? (

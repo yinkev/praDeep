@@ -257,28 +257,60 @@ interface TopicCardProps {
 
 function TopicCard({ topic, formatTime }: TopicCardProps) {
   return (
-    <Card variant="glass" padding="sm" className="h-full">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="truncate font-medium text-zinc-900 dark:text-zinc-50">{topic.name}</div>
-          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-            <span className="inline-flex items-center gap-1.5">
-              <Clock className="h-3.5 w-3.5" />
-              {formatTime(topic.last_accessed)}
-            </span>
-            {topic.category && (
-              <>
-                <span className="text-zinc-300 dark:text-zinc-700">•</span>
-                <span className="text-blue-600 dark:text-blue-400">{topic.category}</span>
-              </>
-            )}
+    <motion.div
+      variants={scaleIn}
+      whileHover={{
+        scale: 1.02,
+        y: -4,
+        transition: { duration: 0.2, ease: [0.16, 1, 0.3, 1] },
+      }}
+      className="h-full"
+    >
+      <Card
+        variant="glass"
+        padding="sm"
+        className="h-full transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/10"
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="truncate font-medium text-zinc-900 dark:text-zinc-50">{topic.name}</div>
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
+              <span className="inline-flex items-center gap-1.5">
+                <Clock className="h-3.5 w-3.5" />
+                {formatTime(topic.last_accessed)}
+              </span>
+              {topic.category && (
+                <>
+                  <span className="text-zinc-300 dark:text-zinc-700">•</span>
+                  <motion.span
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.1 }}
+                    className="text-blue-600 dark:text-blue-400"
+                  >
+                    {topic.category}
+                  </motion.span>
+                </>
+              )}
+            </div>
           </div>
+          <motion.span
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{
+              type: 'spring',
+              stiffness: 260,
+              damping: 20,
+              delay: 0.1,
+            }}
+            whileHover={{ scale: 1.1 }}
+            className="shrink-0 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 ring-1 ring-blue-200/60 dark:bg-blue-950/40 dark:text-blue-300 dark:ring-white/10 tabular-nums"
+          >
+            {topic.frequency}x
+          </motion.span>
         </div>
-        <span className="shrink-0 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 ring-1 ring-blue-200/60 dark:bg-blue-950/40 dark:text-blue-300 dark:ring-white/10 tabular-nums">
-          {topic.frequency}x
-        </span>
-      </div>
-    </Card>
+      </Card>
+    </motion.div>
   )
 }
 
@@ -289,36 +321,67 @@ interface QuestionCardProps {
 }
 
 function QuestionCard({ question, onResolve, formatTime }: QuestionCardProps) {
-  return (
-    <Card variant="glass" padding="sm" className="h-full">
-      <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0 flex-1">
-          <p className="line-clamp-2 leading-relaxed text-zinc-900 dark:text-zinc-50">
-            {question.normalized}
-          </p>
-          <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-zinc-500 dark:text-zinc-400">
-            <span className="flex items-center gap-1.5 rounded-lg bg-blue-50 px-2 py-1 text-blue-700 ring-1 ring-blue-200/60 dark:bg-blue-950/40 dark:text-blue-300 dark:ring-white/10">
-              <TrendingUp className="h-3.5 w-3.5" />
-              Asked {question.frequency}x
-            </span>
-            <span className="flex items-center gap-1.5">
-              <Clock className="h-3.5 w-3.5" />
-              {formatTime(question.last_asked)}
-            </span>
-          </div>
-        </div>
+  const [isResolving, setIsResolving] = useState(false)
 
-        <button
-          type="button"
-          onClick={onResolve}
-          className="rounded-xl border border-blue-200/70 bg-blue-50 p-2.5 text-blue-700 shadow-sm transition-colors hover:bg-blue-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/35 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:border-white/10 dark:bg-blue-950/40 dark:text-blue-300 dark:hover:bg-blue-950/60 dark:focus-visible:ring-offset-zinc-950"
-          aria-label="Mark question as resolved"
-          title="Mark as resolved"
-        >
-          <CheckCircle className="h-5 w-5" />
-        </button>
-      </div>
-    </Card>
+  const handleResolve = () => {
+    setIsResolving(true)
+    setTimeout(() => onResolve(), 300)
+  }
+
+  return (
+    <motion.div
+      variants={scaleIn}
+      animate={isResolving ? { scale: 0.9, opacity: 0 } : {}}
+      whileHover={{
+        scale: 1.02,
+        y: -4,
+        transition: { duration: 0.2, ease: [0.16, 1, 0.3, 1] },
+      }}
+      className="h-full"
+    >
+      <Card
+        variant="glass"
+        padding="sm"
+        className="h-full transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/10"
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0 flex-1">
+            <p className="line-clamp-2 leading-relaxed text-zinc-900 dark:text-zinc-50">
+              {question.normalized}
+            </p>
+            <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-zinc-500 dark:text-zinc-400">
+              <motion.span
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 0.1, type: 'spring', stiffness: 260, damping: 20 }}
+                className="flex items-center gap-1.5 rounded-lg bg-blue-50 px-2 py-1 text-blue-700 ring-1 ring-blue-200/60 dark:bg-blue-950/40 dark:text-blue-300 dark:ring-white/10"
+              >
+                <TrendingUp className="h-3.5 w-3.5" />
+                Asked {question.frequency}x
+              </motion.span>
+              <span className="flex items-center gap-1.5">
+                <Clock className="h-3.5 w-3.5" />
+                {formatTime(question.last_asked)}
+              </span>
+            </div>
+          </div>
+
+          <motion.button
+            type="button"
+            onClick={handleResolve}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+            className="rounded-xl border border-blue-200/70 bg-blue-50 p-2.5 text-blue-700 shadow-sm transition-all duration-200 hover:bg-blue-100 hover:shadow-md hover:shadow-blue-500/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/35 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:border-white/10 dark:bg-blue-950/40 dark:text-blue-300 dark:hover:bg-blue-950/60 dark:focus-visible:ring-offset-zinc-950"
+            aria-label="Mark question as resolved"
+            title="Mark as resolved"
+          >
+            <motion.div whileHover={{ rotate: 360 }} transition={{ duration: 0.5 }}>
+              <CheckCircle className="h-5 w-5" />
+            </motion.div>
+          </motion.button>
+        </div>
+      </Card>
+    </motion.div>
   )
 }
 
@@ -525,7 +588,70 @@ export default function MemoryPage() {
   }, [patterns])
 
   if (loading) {
-    return <FullPageLoading message={t('Loading memory data...')} />
+    return (
+      <PageWrapper maxWidth="wide" showPattern breadcrumbs={[{ label: t('Memory') }]}>
+        <PageHeader
+          title={t('Memory')}
+          description={t('Personalization & Learning Patterns')}
+          icon={<Brain className="h-5 w-5 text-blue-600 dark:text-blue-400" />}
+        />
+        <div className="space-y-8">
+          {/* Skeleton Stats */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            {[1, 2, 3].map(i => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: i * 0.1 }}
+              >
+                <Card variant="glass" padding="sm">
+                  <div className="flex items-center gap-3">
+                    <div className="h-9 w-9 animate-pulse rounded-lg bg-blue-100/50 dark:bg-blue-950/30" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-3 w-20 animate-pulse rounded bg-zinc-200/70 dark:bg-white/10" />
+                      <div className="h-5 w-16 animate-pulse rounded bg-zinc-300/70 dark:bg-white/15" />
+                    </div>
+                  </div>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Skeleton Cards */}
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            {[1, 2].map(i => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.4, delay: 0.3 + i * 0.1 }}
+              >
+                <Card variant="glass" padding="lg">
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 animate-pulse rounded-xl bg-blue-100/50 dark:bg-blue-950/30" />
+                      <div className="space-y-2">
+                        <div className="h-4 w-32 animate-pulse rounded bg-zinc-200/70 dark:bg-white/10" />
+                        <div className="h-3 w-48 animate-pulse rounded bg-zinc-200/70 dark:bg-white/10" />
+                      </div>
+                    </div>
+                    <div className="space-y-3">
+                      {[1, 2, 3].map(j => (
+                        <div
+                          key={j}
+                          className="h-12 animate-pulse rounded-lg bg-zinc-100/70 dark:bg-white/5"
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </PageWrapper>
+    )
   }
 
   return (
@@ -612,8 +738,13 @@ export default function MemoryPage() {
         }
       />
 
-      <div className="space-y-8">
-        <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <motion.div
+        initial="hidden"
+        animate="visible"
+        variants={staggerContainer}
+        className="space-y-8"
+      >
+        <motion.section variants={fadeInUp} className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <StatCard
             icon={<Sparkles className="h-4 w-4" />}
             value={patterns?.interaction_count ?? '—'}
@@ -629,9 +760,9 @@ export default function MemoryPage() {
             value={questions.length}
             label="Questions Tracked"
           />
-        </section>
+        </motion.section>
 
-        <section className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <motion.section variants={fadeInUp} className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <Card variant="glass" padding="none" interactive={false} className="overflow-hidden">
             <div className="flex items-start justify-between gap-4 border-b border-border/40 p-6 dark:border-white/10">
               <div className="flex items-start gap-3">
@@ -659,8 +790,13 @@ export default function MemoryPage() {
                   asCard={false}
                 />
               ) : (
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <div>
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.1 }}
+                  className="grid grid-cols-1 gap-4 md:grid-cols-2"
+                >
+                  <motion.div whileHover={{ scale: 1.01 }} transition={{ duration: 0.2 }}>
                     <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
                       Response Style
                     </label>
@@ -668,15 +804,15 @@ export default function MemoryPage() {
                       value={preferences.response_style}
                       onChange={e => updatePreference('response_style', e.target.value)}
                       disabled={saving}
-                      className="mt-2 w-full rounded-xl border border-white/55 bg-white/70 px-3 py-2 text-sm text-zinc-900 shadow-glass-sm backdrop-blur-md transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/40 dark:border-white/10 dark:bg-white/5 dark:text-zinc-100"
+                      className="mt-2 w-full rounded-xl border border-white/55 bg-white/70 px-3 py-2 text-sm text-zinc-900 shadow-glass-sm backdrop-blur-md transition-all duration-200 hover:bg-white/85 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500/40 dark:border-white/10 dark:bg-white/5 dark:text-zinc-100 dark:hover:bg-white/8"
                     >
                       <option value="concise">Concise</option>
                       <option value="balanced">Balanced</option>
                       <option value="detailed">Detailed</option>
                     </select>
-                  </div>
+                  </motion.div>
 
-                  <div>
+                  <motion.div whileHover={{ scale: 1.01 }} transition={{ duration: 0.2 }}>
                     <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
                       Difficulty Level
                     </label>
@@ -684,16 +820,16 @@ export default function MemoryPage() {
                       value={preferences.difficulty_level}
                       onChange={e => updatePreference('difficulty_level', e.target.value)}
                       disabled={saving}
-                      className="mt-2 w-full rounded-xl border border-white/55 bg-white/70 px-3 py-2 text-sm text-zinc-900 shadow-glass-sm backdrop-blur-md transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/40 dark:border-white/10 dark:bg-white/5 dark:text-zinc-100"
+                      className="mt-2 w-full rounded-xl border border-white/55 bg-white/70 px-3 py-2 text-sm text-zinc-900 shadow-glass-sm backdrop-blur-md transition-all duration-200 hover:bg-white/85 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500/40 dark:border-white/10 dark:bg-white/5 dark:text-zinc-100 dark:hover:bg-white/8"
                     >
                       <option value="adaptive">Adaptive</option>
                       <option value="beginner">Beginner</option>
                       <option value="intermediate">Intermediate</option>
                       <option value="advanced">Advanced</option>
                     </select>
-                  </div>
+                  </motion.div>
 
-                  <div>
+                  <motion.div whileHover={{ scale: 1.01 }} transition={{ duration: 0.2 }}>
                     <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
                       Explanation Format
                     </label>
@@ -703,15 +839,19 @@ export default function MemoryPage() {
                         updatePreference('preferred_explanation_format', e.target.value)
                       }
                       disabled={saving}
-                      className="mt-2 w-full rounded-xl border border-white/55 bg-white/70 px-3 py-2 text-sm text-zinc-900 shadow-glass-sm backdrop-blur-md transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/40 dark:border-white/10 dark:bg-white/5 dark:text-zinc-100"
+                      className="mt-2 w-full rounded-xl border border-white/55 bg-white/70 px-3 py-2 text-sm text-zinc-900 shadow-glass-sm backdrop-blur-md transition-all duration-200 hover:bg-white/85 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500/40 dark:border-white/10 dark:bg-white/5 dark:text-zinc-100 dark:hover:bg-white/8"
                     >
                       <option value="narrative">Narrative</option>
                       <option value="structured">Structured</option>
                       <option value="visual">Visual</option>
                     </select>
-                  </div>
+                  </motion.div>
 
-                  <div className="flex items-center justify-between rounded-xl border border-white/55 bg-white/70 px-3 py-2 shadow-glass-sm backdrop-blur-md dark:border-white/10 dark:bg-white/5">
+                  <motion.div
+                    whileHover={{ scale: 1.01 }}
+                    transition={{ duration: 0.2 }}
+                    className="flex items-center justify-between rounded-xl border border-white/55 bg-white/70 px-3 py-2 shadow-glass-sm backdrop-blur-md transition-all duration-200 hover:bg-white/85 hover:shadow-md dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/8"
+                  >
                     <div className="min-w-0">
                       <div className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
                         Include Examples
@@ -725,9 +865,13 @@ export default function MemoryPage() {
                       onChange={checked => updatePreference('enable_examples', checked)}
                       disabled={saving}
                     />
-                  </div>
+                  </motion.div>
 
-                  <div className="flex items-center justify-between rounded-xl border border-white/55 bg-white/70 px-3 py-2 shadow-glass-sm backdrop-blur-md dark:border-white/10 dark:bg-white/5 md:col-span-2">
+                  <motion.div
+                    whileHover={{ scale: 1.01 }}
+                    transition={{ duration: 0.2 }}
+                    className="flex items-center justify-between rounded-xl border border-white/55 bg-white/70 px-3 py-2 shadow-glass-sm backdrop-blur-md transition-all duration-200 hover:bg-white/85 hover:shadow-md dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/8 md:col-span-2"
+                  >
                     <div className="min-w-0">
                       <div className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
                         Show Sources
@@ -741,8 +885,8 @@ export default function MemoryPage() {
                       onChange={checked => updatePreference('show_sources', checked)}
                       disabled={saving}
                     />
-                  </div>
-                </div>
+                  </motion.div>
+                </motion.div>
               )}
             </div>
           </Card>
@@ -861,10 +1005,15 @@ export default function MemoryPage() {
               )}
             </div>
           </Card>
-        </section>
+        </motion.section>
 
-        <section className="space-y-4">
-          <div className="flex items-end justify-between gap-4">
+        <motion.section variants={fadeInUp} className="space-y-4">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+            className="flex items-end justify-between gap-4"
+          >
             <div>
               <h2 className="text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
                 {t('Topics')}
@@ -873,7 +1022,7 @@ export default function MemoryPage() {
                 {topics.length} topics tracked
               </p>
             </div>
-          </div>
+          </motion.div>
 
           {topics.length === 0 ? (
             <EmptyState
@@ -882,25 +1031,35 @@ export default function MemoryPage() {
               description="Topics will appear as you interact with the system."
             />
           ) : (
-            <div className={itemsLayoutClassName}>
+            <motion.div
+              initial="hidden"
+              animate="visible"
+              variants={staggerContainer}
+              className={itemsLayoutClassName}
+            >
               {topics.map(topic => (
                 <TopicCard key={topic.name} topic={topic} formatTime={formatTime} />
               ))}
-            </div>
+            </motion.div>
           )}
-        </section>
+        </motion.section>
 
-        <section className="space-y-4">
-          <div className="flex items-end justify-between gap-4">
+        <motion.section variants={fadeInUp} className="space-y-4">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+            className="flex items-end justify-between gap-4"
+          >
             <div>
               <h2 className="text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
                 {t('Recurring Questions')}
               </h2>
               <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-                Questions you’ve asked multiple times
+                Questions you've asked multiple times
               </p>
             </div>
-          </div>
+          </motion.div>
 
           {questions.length === 0 ? (
             <EmptyState
@@ -909,7 +1068,12 @@ export default function MemoryPage() {
               description="Repeated questions will show up here."
             />
           ) : (
-            <div className={itemsLayoutClassName}>
+            <motion.div
+              initial="hidden"
+              animate="visible"
+              variants={staggerContainer}
+              className={itemsLayoutClassName}
+            >
               {questions.map(question => (
                 <QuestionCard
                   key={question.hash}
@@ -918,11 +1082,11 @@ export default function MemoryPage() {
                   formatTime={formatTime}
                 />
               ))}
-            </div>
+            </motion.div>
           )}
-        </section>
+        </motion.section>
 
-        <section className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <motion.section variants={fadeInUp} className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <Card variant="glass" padding="none" interactive={false} className="overflow-hidden">
             <div className="flex items-start gap-3 border-b border-border/40 p-6 dark:border-white/10">
               <div className="mt-0.5 flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600 ring-1 ring-blue-100/80 dark:bg-blue-950/40 dark:text-blue-400 dark:ring-white/10">
@@ -997,14 +1161,24 @@ export default function MemoryPage() {
             </div>
 
             <div className="grid grid-cols-1 gap-3 p-6 sm:grid-cols-2">
-              <button
+              <motion.button
                 type="button"
                 onClick={exportMemory}
-                className="group flex items-start gap-3 rounded-xl border border-white/55 bg-white/70 p-4 text-left shadow-glass-sm backdrop-blur-md transition-colors hover:bg-white/85 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/8"
+                whileHover={{
+                  scale: 1.02,
+                  y: -2,
+                  transition: { duration: 0.2, ease: [0.16, 1, 0.3, 1] },
+                }}
+                whileTap={{ scale: 0.98 }}
+                className="group flex items-start gap-3 rounded-xl border border-white/55 bg-white/70 p-4 text-left shadow-glass-sm backdrop-blur-md transition-all duration-200 hover:bg-white/85 hover:shadow-md dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/8"
               >
-                <div className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300">
+                <motion.div
+                  whileHover={{ rotate: [0, -10, 10, 0], scale: 1.1 }}
+                  transition={{ duration: 0.4 }}
+                  className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300"
+                >
                   <Download className="h-4 w-4" />
-                </div>
+                </motion.div>
                 <div className="min-w-0">
                   <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
                     Export
@@ -1013,16 +1187,26 @@ export default function MemoryPage() {
                     Download a JSON snapshot
                   </div>
                 </div>
-              </button>
+              </motion.button>
 
-              <button
+              <motion.button
                 type="button"
                 onClick={() => importInputRef.current?.click()}
-                className="group flex items-start gap-3 rounded-xl border border-white/55 bg-white/70 p-4 text-left shadow-glass-sm backdrop-blur-md transition-colors hover:bg-white/85 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/8"
+                whileHover={{
+                  scale: 1.02,
+                  y: -2,
+                  transition: { duration: 0.2, ease: [0.16, 1, 0.3, 1] },
+                }}
+                whileTap={{ scale: 0.98 }}
+                className="group flex items-start gap-3 rounded-xl border border-white/55 bg-white/70 p-4 text-left shadow-glass-sm backdrop-blur-md transition-all duration-200 hover:bg-white/85 hover:shadow-md dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/8"
               >
-                <div className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300">
+                <motion.div
+                  whileHover={{ rotate: [0, 10, -10, 0], scale: 1.1 }}
+                  transition={{ duration: 0.4 }}
+                  className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300"
+                >
                   <Upload className="h-4 w-4" />
-                </div>
+                </motion.div>
                 <div className="min-w-0">
                   <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
                     Import
@@ -1031,16 +1215,26 @@ export default function MemoryPage() {
                     Restore from a snapshot
                   </div>
                 </div>
-              </button>
+              </motion.button>
 
-              <button
+              <motion.button
                 type="button"
                 onClick={clearAllMemory}
-                className="group flex items-start gap-3 rounded-xl border border-red-200/70 bg-red-50/70 p-4 text-left shadow-sm backdrop-blur-md transition-colors hover:bg-red-50 dark:border-red-900/40 dark:bg-red-950/25 dark:hover:bg-red-950/35 sm:col-span-2"
+                whileHover={{
+                  scale: 1.02,
+                  y: -2,
+                  transition: { duration: 0.2, ease: [0.16, 1, 0.3, 1] },
+                }}
+                whileTap={{ scale: 0.98 }}
+                className="group flex items-start gap-3 rounded-xl border border-red-200/70 bg-red-50/70 p-4 text-left shadow-sm backdrop-blur-md transition-all duration-200 hover:bg-red-50 hover:shadow-md hover:shadow-red-500/10 dark:border-red-900/40 dark:bg-red-950/25 dark:hover:bg-red-950/35 sm:col-span-2"
               >
-                <div className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-lg bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-300">
+                <motion.div
+                  whileHover={{ rotate: [0, -10, 10, -10, 0], scale: 1.1 }}
+                  transition={{ duration: 0.5 }}
+                  className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-lg bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-300"
+                >
                   <Trash2 className="h-4 w-4" />
-                </div>
+                </motion.div>
                 <div className="min-w-0">
                   <div className="text-sm font-semibold text-red-700 dark:text-red-200">
                     Clear all memory
@@ -1049,11 +1243,11 @@ export default function MemoryPage() {
                     Irreversible. Use export first.
                   </div>
                 </div>
-              </button>
+              </motion.button>
             </div>
           </Card>
-        </section>
-      </div>
+        </motion.section>
+      </motion.div>
     </PageWrapper>
   )
 }

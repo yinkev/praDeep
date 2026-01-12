@@ -433,14 +433,20 @@ export default function RecommendationPage() {
                 leftIcon={<Search className="h-5 w-5" />}
                 rightIcon={
                   query ? (
-                    <button
+                    <motion.button
                       type="button"
                       onClick={() => setQuery('')}
-                      className="text-zinc-400 hover:text-zinc-700 dark:text-zinc-500 dark:hover:text-zinc-200"
+                      initial={{ opacity: 0, scale: 0.8, rotate: -90 }}
+                      animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                      exit={{ opacity: 0, scale: 0.8, rotate: 90 }}
+                      whileHover={{ scale: 1.1, rotate: 90 }}
+                      whileTap={{ scale: 0.9 }}
+                      transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+                      className="text-zinc-400 transition-colors duration-200 hover:text-zinc-700 dark:text-zinc-500 dark:hover:text-zinc-200"
                       aria-label="Clear query"
                     >
                       <X className="h-4 w-4" />
-                    </button>
+                    </motion.button>
                   ) : undefined
                 }
                 size="lg"
@@ -449,7 +455,12 @@ export default function RecommendationPage() {
 
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-white/50 bg-white/60 px-2.5 py-1 shadow-glass-sm backdrop-blur-md dark:border-white/10 dark:bg-white/5">
+                  <motion.span
+                    layout
+                    whileHover={{ scale: 1.05, y: -1 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-white/50 bg-white/60 px-2.5 py-1 shadow-glass-sm backdrop-blur-md transition-shadow duration-200 hover:shadow-md dark:border-white/10 dark:bg-white/5"
+                  >
                     <SlidersHorizontal className="h-3.5 w-3.5" />
                     <span className="font-medium">
                       {recommendationType === 'hybrid'
@@ -458,18 +469,33 @@ export default function RecommendationPage() {
                           ? 'Semantic'
                           : 'Citation'}
                     </span>
-                  </span>
-                  {yearStart !== undefined || yearEnd !== undefined ? (
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-white/50 bg-white/60 px-2.5 py-1 shadow-glass-sm backdrop-blur-md dark:border-white/10 dark:bg-white/5">
-                      <span className="font-medium">
-                        {yearStart ?? '…'}–{yearEnd ?? '…'}
-                      </span>
-                    </span>
-                  ) : null}
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-white/50 bg-white/60 px-2.5 py-1 shadow-glass-sm backdrop-blur-md dark:border-white/10 dark:bg-white/5">
+                  </motion.span>
+                  <AnimatePresence mode="wait">
+                    {yearStart !== undefined || yearEnd !== undefined ? (
+                      <motion.span
+                        layout
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.8 }}
+                        whileHover={{ scale: 1.05, y: -1 }}
+                        transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-white/50 bg-white/60 px-2.5 py-1 shadow-glass-sm backdrop-blur-md transition-shadow duration-200 hover:shadow-md dark:border-white/10 dark:bg-white/5"
+                      >
+                        <span className="font-medium">
+                          {yearStart ?? '…'}–{yearEnd ?? '…'}
+                        </span>
+                      </motion.span>
+                    ) : null}
+                  </AnimatePresence>
+                  <motion.span
+                    layout
+                    whileHover={{ scale: 1.05, y: -1 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-white/50 bg-white/60 px-2.5 py-1 shadow-glass-sm backdrop-blur-md transition-shadow duration-200 hover:shadow-md dark:border-white/10 dark:bg-white/5"
+                  >
                     <span className="font-medium">{maxResults}</span>
                     <span>max</span>
-                  </span>
+                  </motion.span>
                 </div>
 
                 <Button
@@ -621,47 +647,102 @@ export default function RecommendationPage() {
                 </div>
               </div>
 
-              {result ? (
-                <div className="flex flex-col items-end gap-1 text-xs text-zinc-500 dark:text-zinc-400">
-                  <span className="inline-flex items-center gap-1.5">
-                    <TrendingUp className="h-3.5 w-3.5" />
-                    <span className="font-medium text-zinc-700 dark:text-zinc-200">
-                      {result.papers.length}
-                    </span>
-                    <span>of {result.total_candidates}</span>
-                  </span>
-                  <span>{Math.round(result.processing_time_ms)}ms</span>
-                </div>
-              ) : null}
+              <AnimatePresence mode="wait">
+                {result ? (
+                  <motion.div
+                    key="result-stats"
+                    initial={{ opacity: 0, x: 10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -10 }}
+                    transition={{ duration: 0.3 }}
+                    className="flex flex-col items-end gap-1 text-xs text-zinc-500 dark:text-zinc-400"
+                  >
+                    <motion.span
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.1, type: 'spring', stiffness: 400, damping: 25 }}
+                      className="inline-flex items-center gap-1.5"
+                    >
+                      <TrendingUp className="h-3.5 w-3.5" />
+                      <span className="font-medium text-zinc-700 dark:text-zinc-200">
+                        {result.papers.length}
+                      </span>
+                      <span>of {result.total_candidates}</span>
+                    </motion.span>
+                    <motion.span
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.2 }}
+                    >
+                      {Math.round(result.processing_time_ms)}ms
+                    </motion.span>
+                  </motion.div>
+                ) : null}
+              </AnimatePresence>
             </div>
           </CardHeader>
 
           {/* Status */}
-          {(progress || error) && (
-            <div className="px-5 pt-5">
-              {progress ? (
-                <div className="flex items-center justify-between gap-4 rounded-xl border border-blue-500/15 bg-blue-500/10 px-4 py-3 text-sm text-blue-800 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-200">
-                  <div className="flex items-center gap-2">
-                    <RefreshCw className="h-4 w-4 animate-spin" />
-                    <span className="font-medium">{progress}</span>
-                  </div>
-                  <span className="text-xs text-blue-700/80 dark:text-blue-200/80">Working…</span>
-                </div>
-              ) : null}
+          <AnimatePresence mode="wait">
+            {(progress || error) && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.3 }}
+                className="px-5 pt-5"
+              >
+                <AnimatePresence mode="wait">
+                  {progress ? (
+                    <motion.div
+                      key="progress"
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      transition={{ duration: 0.2 }}
+                      className="flex items-center justify-between gap-4 rounded-xl border border-blue-500/15 bg-blue-500/10 px-4 py-3 text-sm text-blue-800 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-200"
+                    >
+                      <div className="flex items-center gap-2">
+                        <RefreshCw className="h-4 w-4 animate-spin" />
+                        <span className="font-medium">{progress}</span>
+                      </div>
+                      <motion.span
+                        animate={{ opacity: [0.5, 1, 0.5] }}
+                        transition={{ duration: 2, repeat: Infinity }}
+                        className="text-xs text-blue-700/80 dark:text-blue-200/80"
+                      >
+                        Working…
+                      </motion.span>
+                    </motion.div>
+                  ) : null}
 
-              {error ? (
-                <div className="flex items-start gap-3 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-800 dark:border-red-500/25 dark:bg-red-500/10 dark:text-red-200">
-                  <X className="mt-0.5 h-4 w-4 flex-shrink-0" />
-                  <div className="min-w-0">
-                    <div className="font-medium">Something went wrong</div>
-                    <div className="mt-0.5 text-xs text-red-700/80 dark:text-red-200/80">
-                      {error}
-                    </div>
-                  </div>
-                </div>
-              ) : null}
-            </div>
-          )}
+                  {error ? (
+                    <motion.div
+                      key="error"
+                      initial={{ opacity: 0, scale: 0.95, x: -10 }}
+                      animate={{ opacity: 1, scale: 1, x: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, x: 10 }}
+                      transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                      className="flex items-start gap-3 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-800 dark:border-red-500/25 dark:bg-red-500/10 dark:text-red-200"
+                    >
+                      <motion.div
+                        animate={{ rotate: [0, -10, 10, -10, 0] }}
+                        transition={{ duration: 0.5 }}
+                      >
+                        <X className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                      </motion.div>
+                      <div className="min-w-0">
+                        <div className="font-medium">Something went wrong</div>
+                        <div className="mt-0.5 text-xs text-red-700/80 dark:text-red-200/80">
+                          {error}
+                        </div>
+                      </div>
+                    </motion.div>
+                  ) : null}
+                </AnimatePresence>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           <CardBody padding="none" className="pt-2">
             {hasPapers ? (
@@ -727,33 +808,68 @@ export default function RecommendationPage() {
                               </div>
 
                               <div className="mt-2 flex flex-wrap items-center gap-2">
-                                <span
+                                <motion.span
+                                  variants={badgeVariants}
+                                  initial="hidden"
+                                  animate="visible"
+                                  whileHover={{ scale: 1.05, y: -1 }}
+                                  transition={{ type: 'spring', stiffness: 400, damping: 20 }}
                                   className={cn(
-                                    'inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium',
+                                    'inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium transition-shadow duration-200 hover:shadow-md',
                                     getSourceBadgeStyle(paper.source)
                                   )}
                                 >
                                   {getSourceLabel(paper.source)}
-                                </span>
+                                </motion.span>
 
                                 {paper.citation_count !== undefined &&
                                 paper.citation_count !== null ? (
-                                  <span className="inline-flex items-center rounded-full border border-zinc-200/70 bg-white/60 px-2.5 py-1 text-xs text-zinc-600 shadow-glass-sm backdrop-blur-md dark:border-white/10 dark:bg-white/5 dark:text-zinc-300">
+                                  <motion.span
+                                    variants={badgeVariants}
+                                    initial="hidden"
+                                    animate="visible"
+                                    whileHover={{ scale: 1.05, y: -1 }}
+                                    transition={{
+                                      type: 'spring',
+                                      stiffness: 400,
+                                      damping: 20,
+                                      delay: 0.05,
+                                    }}
+                                    className="inline-flex items-center rounded-full border border-zinc-200/70 bg-white/60 px-2.5 py-1 text-xs text-zinc-600 shadow-glass-sm backdrop-blur-md transition-shadow duration-200 hover:shadow-md dark:border-white/10 dark:bg-white/5 dark:text-zinc-300"
+                                  >
                                     {paper.citation_count} citations
-                                  </span>
+                                  </motion.span>
                                 ) : null}
                               </div>
                             </div>
 
                             <div className="flex shrink-0 flex-col items-end gap-2">
                               <div className="flex flex-col items-end gap-1.5">
-                                <span className="inline-flex items-center gap-2 rounded-full border border-blue-500/15 bg-blue-500/10 px-2.5 py-1 text-xs font-semibold text-blue-800 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-200">
+                                <motion.span
+                                  initial={{ opacity: 0, scale: 0.8 }}
+                                  animate={{ opacity: 1, scale: 1 }}
+                                  transition={{
+                                    type: 'spring',
+                                    stiffness: 400,
+                                    damping: 25,
+                                    delay: index * 0.05 + 0.2,
+                                  }}
+                                  whileHover={{ scale: 1.08 }}
+                                  className="inline-flex items-center gap-2 rounded-full border border-blue-500/15 bg-blue-500/10 px-2.5 py-1 text-xs font-semibold text-blue-800 transition-all duration-200 hover:shadow-lg hover:border-blue-500/30 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-200"
+                                >
                                   {formatPercent(paper.combined_score)}
-                                </span>
+                                </motion.span>
                                 <div className="h-1.5 w-24 overflow-hidden rounded-full bg-zinc-200/60 dark:bg-white/10">
-                                  <div
-                                    className="h-full rounded-full bg-gradient-to-r from-blue-600 to-indigo-600"
-                                    style={{ width: `${Math.round(combined * 100)}%` }}
+                                  <motion.div
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${Math.round(combined * 100)}%` }}
+                                    transition={{
+                                      duration: 0.8,
+                                      delay: index * 0.05 + 0.3,
+                                      ease: [0.4, 0.0, 0.2, 1],
+                                    }}
+                                    whileHover={{ scaleY: 1.2 }}
+                                    className="h-full rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 transition-all duration-200"
                                   />
                                 </div>
                               </div>
@@ -803,157 +919,280 @@ export default function RecommendationPage() {
                             </div>
                           </div>
 
-                          {expanded ? (
-                            <div className="mt-4 rounded-xl border border-zinc-200/70 bg-white/60 p-4 shadow-glass-sm backdrop-blur-md dark:border-white/10 dark:bg-white/5">
-                              <div className="grid gap-5 md:grid-cols-2">
-                                <div className="space-y-4">
-                                  {paper.recommendation_reason ? (
-                                    <div>
-                                      <div className="text-xs font-semibold tracking-wide text-zinc-500 dark:text-zinc-400">
-                                        Why this paper
-                                      </div>
-                                      <p className="mt-1 text-sm text-zinc-700 dark:text-zinc-200">
-                                        {paper.recommendation_reason}
-                                      </p>
-                                    </div>
-                                  ) : null}
-
-                                  {paper.abstract ? (
-                                    <div>
-                                      <div className="text-xs font-semibold tracking-wide text-zinc-500 dark:text-zinc-400">
-                                        Abstract
-                                      </div>
-                                      <div className="mt-2 prose prose-sm max-w-none prose-p:leading-relaxed prose-p:text-zinc-600 dark:prose-invert dark:prose-p:text-zinc-300">
-                                        <ReactMarkdown>{paper.abstract}</ReactMarkdown>
-                                      </div>
-                                    </div>
-                                  ) : null}
-
-                                  {paper.fields_of_study?.length ? (
-                                    <div>
-                                      <div className="text-xs font-semibold tracking-wide text-zinc-500 dark:text-zinc-400">
-                                        Fields
-                                      </div>
-                                      <div className="mt-2 flex flex-wrap gap-2">
-                                        {paper.fields_of_study.slice(0, 6).map(field => (
-                                          <span
-                                            key={field}
-                                            className="rounded-full border border-zinc-200/70 bg-zinc-100/70 px-2.5 py-1 text-xs text-zinc-700 dark:border-white/10 dark:bg-white/5 dark:text-zinc-300"
-                                          >
-                                            {field}
-                                          </span>
-                                        ))}
-                                      </div>
-                                    </div>
-                                  ) : null}
-                                </div>
-
-                                <div className="space-y-4">
-                                  <div>
-                                    <div className="text-xs font-semibold tracking-wide text-zinc-500 dark:text-zinc-400">
-                                      Signals
-                                    </div>
-                                    <div className="mt-2 space-y-2">
-                                      {[
-                                        { label: 'Similarity', value: paper.similarity_score },
-                                        { label: 'Citation', value: paper.citation_score },
-                                        { label: 'Recency', value: paper.recency_score },
-                                      ].map(metric => (
-                                        <div key={metric.label} className="flex items-center gap-3">
-                                          <div className="w-20 text-xs text-zinc-600 dark:text-zinc-300">
-                                            {metric.label}
+                          <AnimatePresence mode="wait">
+                            {expanded && (
+                              <motion.div
+                                key={`expanded-${paper.paper_id}`}
+                                variants={expandVariants}
+                                initial="collapsed"
+                                animate="expanded"
+                                exit="collapsed"
+                                className="overflow-hidden"
+                              >
+                                <div className="rounded-xl border border-zinc-200/70 bg-white/60 p-4 shadow-glass-sm backdrop-blur-md dark:border-white/10 dark:bg-white/5">
+                                  <div className="grid gap-5 md:grid-cols-2">
+                                    <div className="space-y-4">
+                                      {paper.recommendation_reason ? (
+                                        <div>
+                                          <div className="text-xs font-semibold tracking-wide text-zinc-500 dark:text-zinc-400">
+                                            Why this paper
                                           </div>
-                                          <div className="h-2 flex-1 overflow-hidden rounded-full bg-zinc-200/60 dark:bg-white/10">
-                                            <div
-                                              className="h-full rounded-full bg-gradient-to-r from-blue-600 to-indigo-600"
-                                              style={{
-                                                width: `${Math.round(clamp01(metric.value) * 100)}%`,
-                                              }}
-                                            />
+                                          <p className="mt-1 text-sm text-zinc-700 dark:text-zinc-200">
+                                            {paper.recommendation_reason}
+                                          </p>
+                                        </div>
+                                      ) : null}
+
+                                      {paper.abstract ? (
+                                        <div>
+                                          <div className="text-xs font-semibold tracking-wide text-zinc-500 dark:text-zinc-400">
+                                            Abstract
                                           </div>
-                                          <div className="w-10 text-right text-xs font-medium text-zinc-700 dark:text-zinc-200">
-                                            {formatPercent(metric.value)}
+                                          <div className="mt-2 prose prose-sm max-w-none prose-p:leading-relaxed prose-p:text-zinc-600 dark:prose-invert dark:prose-p:text-zinc-300">
+                                            <ReactMarkdown>{paper.abstract}</ReactMarkdown>
                                           </div>
                                         </div>
-                                      ))}
+                                      ) : null}
+
+                                      {paper.fields_of_study?.length ? (
+                                        <div>
+                                          <div className="text-xs font-semibold tracking-wide text-zinc-500 dark:text-zinc-400">
+                                            Fields
+                                          </div>
+                                          <div className="mt-2 flex flex-wrap gap-2">
+                                            {paper.fields_of_study
+                                              .slice(0, 6)
+                                              .map((field, fieldIndex) => (
+                                                <motion.span
+                                                  key={field}
+                                                  initial={{ opacity: 0, scale: 0.8, y: 4 }}
+                                                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                                                  transition={{
+                                                    delay: fieldIndex * 0.05,
+                                                    type: 'spring',
+                                                    stiffness: 400,
+                                                    damping: 25,
+                                                  }}
+                                                  whileHover={{ scale: 1.05, y: -2 }}
+                                                  className="rounded-full border border-zinc-200/70 bg-zinc-100/70 px-2.5 py-1 text-xs text-zinc-700 transition-shadow duration-200 hover:shadow-md dark:border-white/10 dark:bg-white/5 dark:text-zinc-300"
+                                                >
+                                                  {field}
+                                                </motion.span>
+                                              ))}
+                                          </div>
+                                        </div>
+                                      ) : null}
+                                    </div>
+
+                                    <div className="space-y-4">
+                                      <div>
+                                        <div className="text-xs font-semibold tracking-wide text-zinc-500 dark:text-zinc-400">
+                                          Signals
+                                        </div>
+                                        <div className="mt-2 space-y-2">
+                                          {[
+                                            { label: 'Similarity', value: paper.similarity_score },
+                                            { label: 'Citation', value: paper.citation_score },
+                                            { label: 'Recency', value: paper.recency_score },
+                                          ].map((metric, metricIndex) => (
+                                            <motion.div
+                                              key={metric.label}
+                                              initial={{ opacity: 0, x: -10 }}
+                                              animate={{ opacity: 1, x: 0 }}
+                                              transition={{
+                                                delay: metricIndex * 0.1,
+                                                duration: 0.3,
+                                              }}
+                                              className="group/metric flex items-center gap-3"
+                                            >
+                                              <div className="w-20 text-xs text-zinc-600 dark:text-zinc-300">
+                                                {metric.label}
+                                              </div>
+                                              <div className="h-2 flex-1 overflow-hidden rounded-full bg-zinc-200/60 transition-all duration-200 group-hover/metric:h-2.5 dark:bg-white/10">
+                                                <motion.div
+                                                  initial={{ width: 0 }}
+                                                  animate={{
+                                                    width: `${Math.round(clamp01(metric.value) * 100)}%`,
+                                                  }}
+                                                  transition={{
+                                                    delay: metricIndex * 0.1 + 0.2,
+                                                    duration: 0.6,
+                                                    ease: [0.4, 0.0, 0.2, 1],
+                                                  }}
+                                                  className="h-full rounded-full bg-gradient-to-r from-blue-600 to-indigo-600"
+                                                />
+                                              </div>
+                                              <motion.div
+                                                initial={{ opacity: 0 }}
+                                                animate={{ opacity: 1 }}
+                                                transition={{
+                                                  delay: metricIndex * 0.1 + 0.4,
+                                                }}
+                                                className="w-10 text-right text-xs font-medium text-zinc-700 dark:text-zinc-200"
+                                              >
+                                                {formatPercent(metric.value)}
+                                              </motion.div>
+                                            </motion.div>
+                                          ))}
+                                        </div>
+                                      </div>
+
+                                      {(paper.arxiv_id || paper.doi) && (
+                                        <div>
+                                          <div className="text-xs font-semibold tracking-wide text-zinc-500 dark:text-zinc-400">
+                                            Identifiers
+                                          </div>
+                                          <dl className="mt-2 space-y-1 text-xs text-zinc-600 dark:text-zinc-300">
+                                            {paper.arxiv_id ? (
+                                              <div className="flex justify-between gap-3">
+                                                <dt className="text-zinc-500 dark:text-zinc-400">
+                                                  arXiv
+                                                </dt>
+                                                <dd className="font-medium text-zinc-700 dark:text-zinc-200">
+                                                  {paper.arxiv_id}
+                                                </dd>
+                                              </div>
+                                            ) : null}
+                                            {paper.doi ? (
+                                              <div className="flex justify-between gap-3">
+                                                <dt className="text-zinc-500 dark:text-zinc-400">
+                                                  DOI
+                                                </dt>
+                                                <dd className="font-medium text-zinc-700 dark:text-zinc-200">
+                                                  {paper.doi}
+                                                </dd>
+                                              </div>
+                                            ) : null}
+                                          </dl>
+                                        </div>
+                                      )}
                                     </div>
                                   </div>
-
-                                  {(paper.arxiv_id || paper.doi) && (
-                                    <div>
-                                      <div className="text-xs font-semibold tracking-wide text-zinc-500 dark:text-zinc-400">
-                                        Identifiers
-                                      </div>
-                                      <dl className="mt-2 space-y-1 text-xs text-zinc-600 dark:text-zinc-300">
-                                        {paper.arxiv_id ? (
-                                          <div className="flex justify-between gap-3">
-                                            <dt className="text-zinc-500 dark:text-zinc-400">
-                                              arXiv
-                                            </dt>
-                                            <dd className="font-medium text-zinc-700 dark:text-zinc-200">
-                                              {paper.arxiv_id}
-                                            </dd>
-                                          </div>
-                                        ) : null}
-                                        {paper.doi ? (
-                                          <div className="flex justify-between gap-3">
-                                            <dt className="text-zinc-500 dark:text-zinc-400">
-                                              DOI
-                                            </dt>
-                                            <dd className="font-medium text-zinc-700 dark:text-zinc-200">
-                                              {paper.doi}
-                                            </dd>
-                                          </div>
-                                        ) : null}
-                                      </dl>
-                                    </div>
-                                  )}
                                 </div>
-                              </div>
-                            </div>
-                          ) : null}
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
                         </div>
                       </div>
-                    </li>
+                    </motion.li>
                   )
                 })}
-              </ol>
+              </motion.ol>
             ) : result && papers.length === 0 ? (
-              <div className="px-5 py-16 text-center">
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-100 text-zinc-500 dark:bg-white/5 dark:text-zinc-300">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4 }}
+                className="px-5 py-16 text-center"
+              >
+                <motion.div
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ delay: 0.1, type: 'spring', stiffness: 300, damping: 25 }}
+                  className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-100 text-zinc-500 dark:bg-white/5 dark:text-zinc-300"
+                >
                   <Search className="h-5 w-5" />
-                </div>
-                <div className="mt-4 text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+                </motion.div>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.2 }}
+                  className="mt-4 text-sm font-semibold text-zinc-900 dark:text-zinc-50"
+                >
                   No papers found
-                </div>
-                <div className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
+                </motion.div>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.3 }}
+                  className="mt-1 text-sm text-zinc-600 dark:text-zinc-300"
+                >
                   Try a different query or broaden your filters.
-                </div>
-              </div>
+                </motion.div>
+              </motion.div>
             ) : isLoading ? (
-              <div className="px-5 py-16 text-center">
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-700 dark:text-blue-200">
-                  <RefreshCw className="h-5 w-5 animate-spin" />
-                </div>
-                <div className="mt-4 text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3 }}
+                className="px-5 py-16 text-center"
+              >
+                <motion.div
+                  animate={{
+                    scale: [1, 1.05, 1],
+                    rotate: [0, 360],
+                  }}
+                  transition={{
+                    scale: {
+                      duration: 2,
+                      repeat: Infinity,
+                      ease: 'easeInOut',
+                    },
+                    rotate: {
+                      duration: 3,
+                      repeat: Infinity,
+                      ease: 'linear',
+                    },
+                  }}
+                  className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-700 dark:text-blue-200"
+                >
+                  <RefreshCw className="h-5 w-5" />
+                </motion.div>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.2 }}
+                  className="mt-4 text-sm font-semibold text-zinc-900 dark:text-zinc-50"
+                >
                   Working…
-                </div>
-                <div className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
+                </motion.div>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.3 }}
+                  className="mt-1 text-sm text-zinc-600 dark:text-zinc-300"
+                >
                   Streaming progress as results are computed.
-                </div>
-              </div>
+                </motion.div>
+              </motion.div>
             ) : (
-              <div className="px-5 py-16 text-center">
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-700 dark:text-blue-200">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.4, ease: [0.4, 0.0, 0.2, 1] }}
+                className="px-5 py-16 text-center"
+              >
+                <motion.div
+                  animate={{
+                    y: [0, -4, 0],
+                    rotate: [0, 5, -5, 0],
+                  }}
+                  transition={{
+                    duration: 4,
+                    repeat: Infinity,
+                    ease: 'easeInOut',
+                  }}
+                  className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-700 dark:text-blue-200"
+                >
                   <Sparkles className="h-5 w-5" />
-                </div>
-                <div className="mt-4 text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+                </motion.div>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.2 }}
+                  className="mt-4 text-sm font-semibold text-zinc-900 dark:text-zinc-50"
+                >
                   Ready when you are
-                </div>
-                <div className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
+                </motion.div>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.3 }}
+                  className="mt-1 text-sm text-zinc-600 dark:text-zinc-300"
+                >
                   Enter a query above to get ranked recommendations.
-                </div>
-              </div>
+                </motion.div>
+              </motion.div>
             )}
           </CardBody>
         </Card>
@@ -979,43 +1218,97 @@ export default function RecommendationPage() {
           </CardHeader>
 
           <CardBody padding="none" className="px-5 py-5">
-            {result?.explanation || result?.related_topics ? (
-              <div className="space-y-6 max-h-[calc(100vh-14rem)] overflow-y-auto pr-1">
-                {result.explanation ? (
-                  <section>
-                    <div className="text-xs font-semibold tracking-wide text-zinc-500 dark:text-zinc-400">
-                      Why these papers
-                    </div>
-                    <div className="mt-2 prose prose-sm max-w-none prose-p:text-zinc-600 dark:prose-invert dark:prose-p:text-zinc-300">
-                      <ReactMarkdown>{result.explanation}</ReactMarkdown>
-                    </div>
-                  </section>
-                ) : null}
+            <AnimatePresence mode="wait">
+              {result?.explanation || result?.related_topics ? (
+                <motion.div
+                  key="insights-content"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.4, ease: [0.4, 0.0, 0.2, 1] }}
+                  className="space-y-6 max-h-[calc(100vh-14rem)] overflow-y-auto pr-1"
+                >
+                  {result.explanation ? (
+                    <motion.section
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.1, duration: 0.3 }}
+                    >
+                      <div className="text-xs font-semibold tracking-wide text-zinc-500 dark:text-zinc-400">
+                        Why these papers
+                      </div>
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.2, duration: 0.4 }}
+                        className="mt-2 prose prose-sm max-w-none prose-p:text-zinc-600 dark:prose-invert dark:prose-p:text-zinc-300"
+                      >
+                        <ReactMarkdown>{result.explanation}</ReactMarkdown>
+                      </motion.div>
+                    </motion.section>
+                  ) : null}
 
-                {result.related_topics ? (
-                  <section>
-                    <div className="text-xs font-semibold tracking-wide text-zinc-500 dark:text-zinc-400">
-                      Related topics to explore
-                    </div>
-                    <div className="mt-2 prose prose-sm max-w-none prose-p:text-zinc-600 dark:prose-invert dark:prose-p:text-zinc-300">
-                      <ReactMarkdown>{result.related_topics}</ReactMarkdown>
-                    </div>
-                  </section>
-                ) : null}
-              </div>
-            ) : (
-              <div className="py-10 text-center">
-                <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-2xl bg-white/60 text-zinc-500 shadow-glass-sm backdrop-blur-md dark:bg-white/5 dark:text-zinc-300">
-                  <Sparkles className="h-4 w-4" />
-                </div>
-                <div className="mt-4 text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-                  No insights yet
-                </div>
-                <div className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
-                  Enable “AI explanation” or “Related topics”, then search.
-                </div>
-              </div>
-            )}
+                  {result.related_topics ? (
+                    <motion.section
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.3, duration: 0.3 }}
+                    >
+                      <div className="text-xs font-semibold tracking-wide text-zinc-500 dark:text-zinc-400">
+                        Related topics to explore
+                      </div>
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.4, duration: 0.4 }}
+                        className="mt-2 prose prose-sm max-w-none prose-p:text-zinc-600 dark:prose-invert dark:prose-p:text-zinc-300"
+                      >
+                        <ReactMarkdown>{result.related_topics}</ReactMarkdown>
+                      </motion.div>
+                    </motion.section>
+                  ) : null}
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="insights-empty"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.3 }}
+                  className="py-10 text-center"
+                >
+                  <motion.div
+                    animate={{
+                      y: [0, -3, 0],
+                    }}
+                    transition={{
+                      duration: 3,
+                      repeat: Infinity,
+                      ease: 'easeInOut',
+                    }}
+                    className="mx-auto flex h-10 w-10 items-center justify-center rounded-2xl bg-white/60 text-zinc-500 shadow-glass-sm backdrop-blur-md dark:bg-white/5 dark:text-zinc-300"
+                  >
+                    <Sparkles className="h-4 w-4" />
+                  </motion.div>
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.1 }}
+                    className="mt-4 text-sm font-semibold text-zinc-900 dark:text-zinc-50"
+                  >
+                    No insights yet
+                  </motion.div>
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.2 }}
+                    className="mt-1 text-sm text-zinc-600 dark:text-zinc-300"
+                  >
+                    Enable "AI explanation" or "Related topics", then search.
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </CardBody>
         </Card>
       </div>

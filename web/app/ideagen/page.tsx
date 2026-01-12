@@ -804,23 +804,54 @@ export default function IdeaGenPage() {
 
                 <CardBody padding="lg" className="min-h-[520px]">
                   {generatedIdeas.length === 0 ? (
-                    <div className="h-full flex flex-col items-center justify-center text-center">
-                      <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-white/70 shadow-sm ring-1 ring-white/60 dark:bg-white/10 dark:ring-white/10">
+                    <motion.div
+                      className="h-full flex flex-col items-center justify-center text-center"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                    >
+                      <motion.div
+                        className="flex h-20 w-20 items-center justify-center rounded-3xl bg-white/70 shadow-sm ring-1 ring-white/60 dark:bg-white/10 dark:ring-white/10"
+                        animate={isGenerating ? { scale: [1, 1.05, 1] } : {}}
+                        transition={
+                          isGenerating ? { duration: 2, repeat: Infinity, ease: 'easeInOut' } : {}
+                        }
+                      >
                         {isGenerating ? (
-                          <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
+                          <motion.div
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
+                          >
+                            <Loader2 className="h-10 w-10 text-blue-600" />
+                          </motion.div>
                         ) : (
-                          <Brain className="h-10 w-10 text-zinc-400 dark:text-zinc-500" />
+                          <motion.div
+                            animate={{ y: [0, -5, 0] }}
+                            transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                          >
+                            <Brain className="h-10 w-10 text-zinc-400 dark:text-zinc-500" />
+                          </motion.div>
                         )}
-                      </div>
-                      <p className="mt-5 text-sm font-medium text-zinc-700 dark:text-zinc-200">
+                      </motion.div>
+                      <motion.p
+                        className="mt-5 text-sm font-medium text-zinc-700 dark:text-zinc-200"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.4, delay: 0.1 }}
+                      >
                         {isGenerating ? 'Generating ideas…' : 'Ready when you are'}
-                      </p>
-                      <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400 max-w-sm">
+                      </motion.p>
+                      <motion.p
+                        className="mt-1 text-xs text-zinc-500 dark:text-zinc-400 max-w-sm"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.4, delay: 0.2 }}
+                      >
                         {isGenerating
                           ? generationStatus || 'This usually takes a moment.'
-                          : 'Select sources and/or add a prompt, then press “Generate ideas”.'}
-                      </p>
-                    </div>
+                          : 'Select sources and/or add a prompt, then press "Generate ideas".'}
+                      </motion.p>
+                    </motion.div>
                   ) : (
                     <motion.div
                       className="grid grid-cols-1 gap-4 md:grid-cols-2"
@@ -829,142 +860,161 @@ export default function IdeaGenPage() {
                       transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
                     >
                       <AnimatePresence mode="popLayout">
-                        {generatedIdeas.map(idea => (
+                        {generatedIdeas.map((idea, ideaIndex) => (
                           <motion.div
                             key={idea.id}
                             layout
-                            initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                            initial={{ opacity: 0, y: 20, scale: 0.95 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.98 }}
-                            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                            exit={{ opacity: 0, scale: 0.95, y: -20 }}
+                            transition={{
+                              duration: 0.4,
+                              delay: ideaIndex * 0.08,
+                              ease: [0.16, 1, 0.3, 1],
+                            }}
                           >
-                            <Card
-                              variant="glass"
-                              padding="none"
-                              interactive
-                              className={cn(
-                                'overflow-hidden border-white/55 dark:border-white/10',
-                                idea.selected && 'ring-2 ring-blue-500/20 border-blue-200/70'
-                              )}
+                            <motion.div
+                              whileHover={{ y: -4, scale: 1.02 }}
+                              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
                             >
-                              <CardHeader
-                                padding="sm"
-                                className="flex-row items-start justify-between gap-4"
+                              <Card
+                                variant="glass"
+                                padding="none"
+                                interactive
+                                className={cn(
+                                  'overflow-hidden border-white/55 dark:border-white/10 transition-all duration-300',
+                                  idea.selected &&
+                                    'ring-2 ring-blue-500/30 border-blue-300/80 shadow-lg shadow-blue-500/10'
+                                )}
                               >
-                                <div className="flex items-start gap-3 min-w-0">
-                                  <motion.button
-                                    type="button"
-                                    onClick={() => toggleIdeaSelected(idea.id)}
-                                    className={cn(
-                                      'mt-0.5 h-7 w-7 rounded-full border-2 flex items-center justify-center shrink-0 transition-all duration-200',
-                                      idea.selected
-                                        ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-600/30'
-                                        : 'border-zinc-300 dark:border-white/20 hover:border-blue-400 dark:hover:border-blue-400 hover:shadow-md hover:scale-110'
-                                    )}
-                                    aria-pressed={idea.selected}
-                                    aria-label={idea.selected ? 'Deselect idea' : 'Select idea'}
-                                    whileTap={{ scale: 0.9 }}
-                                    animate={idea.selected ? { scale: [1, 1.1, 1] } : {}}
-                                    transition={{ duration: 0.3 }}
-                                  >
-                                    <AnimatePresence mode="wait">
-                                      {idea.selected && (
-                                        <motion.div
-                                          initial={{ scale: 0, rotate: -90 }}
-                                          animate={{ scale: 1, rotate: 0 }}
-                                          exit={{ scale: 0, rotate: 90 }}
-                                          transition={{
-                                            type: 'spring',
-                                            stiffness: 300,
-                                            damping: 20,
-                                          }}
-                                        >
-                                          <Check className="h-4 w-4" />
-                                        </motion.div>
+                                <CardHeader
+                                  padding="sm"
+                                  className="flex-row items-start justify-between gap-4"
+                                >
+                                  <div className="flex items-start gap-3 min-w-0">
+                                    <motion.button
+                                      type="button"
+                                      onClick={() => toggleIdeaSelected(idea.id)}
+                                      className={cn(
+                                        'mt-0.5 h-7 w-7 rounded-full border-2 flex items-center justify-center shrink-0 transition-all duration-200',
+                                        idea.selected
+                                          ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-600/30'
+                                          : 'border-zinc-300 dark:border-white/20 hover:border-blue-400 dark:hover:border-blue-400 hover:shadow-md hover:scale-110'
                                       )}
-                                    </AnimatePresence>
-                                  </motion.button>
-
-                                  <div className="min-w-0">
-                                    <div className="flex flex-wrap items-center gap-2">
-                                      <Zap className="h-4 w-4 text-blue-600" />
-                                      <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50 truncate">
-                                        {idea.knowledge_point}
-                                      </h3>
-                                      <span className="text-[11px] font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/40 px-2 py-0.5 rounded-full border border-blue-200/60 dark:border-white/10">
-                                        {idea.research_ideas.length} ideas
-                                      </span>
-                                    </div>
-                                    <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-300 line-clamp-2">
-                                      {idea.description}
-                                    </p>
-                                  </div>
-                                </div>
-
-                                <div className="flex items-center gap-1.5 shrink-0">
-                                  <IconButton
-                                    aria-label="Save idea"
-                                    size="sm"
-                                    variant="ghost"
-                                    icon={<Save className="h-4 w-4" />}
-                                    onClick={() => saveIdea(idea)}
-                                  />
-                                  <IconButton
-                                    aria-label={idea.expanded ? 'Collapse idea' : 'Expand idea'}
-                                    size="sm"
-                                    variant="ghost"
-                                    icon={
-                                      <motion.div animate={{ rotate: idea.expanded ? 90 : 0 }}>
-                                        <ChevronRight className="h-4 w-4" />
-                                      </motion.div>
-                                    }
-                                    onClick={() => toggleIdeaExpanded(idea.id)}
-                                  />
-                                </div>
-                              </CardHeader>
-
-                              <CardBody padding="sm" className="space-y-3">
-                                <div className="flex flex-wrap gap-2">
-                                  {idea.research_ideas.slice(0, 3).map((ri, idx) => (
-                                    <span
-                                      key={`${idea.id}-${idx}`}
-                                      className="text-xs bg-white/70 dark:bg-white/5 text-zinc-700 dark:text-zinc-300 px-2.5 py-1 rounded-lg border border-zinc-200/70 dark:border-white/10 line-clamp-1 max-w-[240px]"
-                                      title={ri}
+                                      aria-pressed={idea.selected}
+                                      aria-label={idea.selected ? 'Deselect idea' : 'Select idea'}
+                                      whileTap={{ scale: 0.9 }}
+                                      animate={idea.selected ? { scale: [1, 1.1, 1] } : {}}
+                                      transition={{ duration: 0.3 }}
                                     >
-                                      {ri}
-                                    </span>
-                                  ))}
-                                  {idea.research_ideas.length > 3 && (
-                                    <span className="text-xs text-zinc-500 dark:text-zinc-400 px-1 py-1">
-                                      +{idea.research_ideas.length - 3} more
-                                    </span>
-                                  )}
-                                </div>
-
-                                <AnimatePresence initial={false}>
-                                  {idea.expanded && (
-                                    <motion.div
-                                      initial={{ height: 0, opacity: 0 }}
-                                      animate={{ height: 'auto', opacity: 1 }}
-                                      exit={{ height: 0, opacity: 0 }}
-                                      transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-                                      className="overflow-hidden"
-                                    >
-                                      <div className="pt-3 border-t border-zinc-200/60 dark:border-white/10">
-                                        <div className="prose prose-sm prose-zinc dark:prose-invert max-w-none prose-headings:text-blue-700 dark:prose-headings:text-blue-300">
-                                          <ReactMarkdown
-                                            remarkPlugins={[remarkGfm, remarkMath]}
-                                            rehypePlugins={[rehypeKatex]}
+                                      <AnimatePresence mode="wait">
+                                        {idea.selected && (
+                                          <motion.div
+                                            initial={{ scale: 0, rotate: -90 }}
+                                            animate={{ scale: 1, rotate: 0 }}
+                                            exit={{ scale: 0, rotate: 90 }}
+                                            transition={{
+                                              type: 'spring',
+                                              stiffness: 300,
+                                              damping: 20,
+                                            }}
                                           >
-                                            {processLatexContent(idea.statement)}
-                                          </ReactMarkdown>
-                                        </div>
+                                            <Check className="h-4 w-4" />
+                                          </motion.div>
+                                        )}
+                                      </AnimatePresence>
+                                    </motion.button>
+
+                                    <div className="min-w-0">
+                                      <div className="flex flex-wrap items-center gap-2">
+                                        <Zap className="h-4 w-4 text-blue-600" />
+                                        <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50 truncate">
+                                          {idea.knowledge_point}
+                                        </h3>
+                                        <span className="text-[11px] font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/40 px-2 py-0.5 rounded-full border border-blue-200/60 dark:border-white/10">
+                                          {idea.research_ideas.length} ideas
+                                        </span>
                                       </div>
-                                    </motion.div>
-                                  )}
-                                </AnimatePresence>
-                              </CardBody>
-                            </Card>
+                                      <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-300 line-clamp-2">
+                                        {idea.description}
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center gap-1.5 shrink-0">
+                                    <IconButton
+                                      aria-label="Save idea"
+                                      size="sm"
+                                      variant="ghost"
+                                      icon={<Save className="h-4 w-4" />}
+                                      onClick={() => saveIdea(idea)}
+                                    />
+                                    <IconButton
+                                      aria-label={idea.expanded ? 'Collapse idea' : 'Expand idea'}
+                                      size="sm"
+                                      variant="ghost"
+                                      icon={
+                                        <motion.div animate={{ rotate: idea.expanded ? 90 : 0 }}>
+                                          <ChevronRight className="h-4 w-4" />
+                                        </motion.div>
+                                      }
+                                      onClick={() => toggleIdeaExpanded(idea.id)}
+                                    />
+                                  </div>
+                                </CardHeader>
+
+                                <CardBody padding="sm" className="space-y-3">
+                                  <div className="flex flex-wrap gap-2">
+                                    {idea.research_ideas.slice(0, 3).map((ri, idx) => (
+                                      <motion.span
+                                        key={`${idea.id}-${idx}`}
+                                        className="text-xs bg-white/70 dark:bg-white/5 text-zinc-700 dark:text-zinc-300 px-2.5 py-1 rounded-lg border border-zinc-200/70 dark:border-white/10 line-clamp-1 max-w-[240px] hover:bg-white dark:hover:bg-white/10 hover:scale-105 hover:shadow-sm transition-all duration-200 cursor-default"
+                                        title={ri}
+                                        initial={{ opacity: 0, scale: 0.8 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        transition={{ duration: 0.2, delay: idx * 0.05 }}
+                                        whileHover={{ y: -2 }}
+                                      >
+                                        {ri}
+                                      </motion.span>
+                                    ))}
+                                    {idea.research_ideas.length > 3 && (
+                                      <motion.span
+                                        className="text-xs text-zinc-500 dark:text-zinc-400 px-1 py-1"
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        transition={{ duration: 0.2, delay: 0.15 }}
+                                      >
+                                        +{idea.research_ideas.length - 3} more
+                                      </motion.span>
+                                    )}
+                                  </div>
+
+                                  <AnimatePresence initial={false}>
+                                    {idea.expanded && (
+                                      <motion.div
+                                        initial={{ height: 0, opacity: 0 }}
+                                        animate={{ height: 'auto', opacity: 1 }}
+                                        exit={{ height: 0, opacity: 0 }}
+                                        transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                                        className="overflow-hidden"
+                                      >
+                                        <div className="pt-3 border-t border-zinc-200/60 dark:border-white/10">
+                                          <div className="prose prose-sm prose-zinc dark:prose-invert max-w-none prose-headings:text-blue-700 dark:prose-headings:text-blue-300">
+                                            <ReactMarkdown
+                                              remarkPlugins={[remarkGfm, remarkMath]}
+                                              rehypePlugins={[rehypeKatex]}
+                                            >
+                                              {processLatexContent(idea.statement)}
+                                            </ReactMarkdown>
+                                          </div>
+                                        </div>
+                                      </motion.div>
+                                    )}
+                                  </AnimatePresence>
+                                </CardBody>
+                              </Card>
+                            </motion.div>
                           </motion.div>
                         ))}
                       </AnimatePresence>
@@ -1018,33 +1068,53 @@ export default function IdeaGenPage() {
                     const selectedFromThis = records.filter(r => selectedRecords.has(r.id)).length
 
                     return (
-                      <div key={notebook.id} className="py-3">
-                        <button
+                      <motion.div
+                        key={notebook.id}
+                        className="py-3"
+                        initial={{ opacity: 0, y: 5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <motion.button
                           type="button"
                           onClick={() => toggleNotebookExpanded(notebook.id)}
-                          className="w-full flex items-center gap-3 rounded-xl px-3 py-2 text-left hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30"
+                          className="w-full flex items-center gap-3 rounded-xl px-3 py-2 text-left hover:bg-zinc-50 dark:hover:bg-zinc-900/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30 transition-all duration-200"
                           aria-expanded={isExpanded}
+                          whileHover={{ x: 2 }}
+                          whileTap={{ scale: 0.98 }}
                         >
-                          <ChevronRight
-                            className={cn(
-                              'h-4 w-4 text-zinc-400 transition-transform duration-200',
-                              isExpanded && 'rotate-90'
-                            )}
-                          />
-                          <span
+                          <motion.div
+                            animate={{ rotate: isExpanded ? 90 : 0 }}
+                            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                          >
+                            <ChevronRight className="h-4 w-4 text-zinc-400" />
+                          </motion.div>
+                          <motion.span
                             className="h-2.5 w-2.5 rounded-full ring-2 ring-white shadow-sm"
                             style={{ backgroundColor: notebook.color || '#94a3b8' }}
+                            animate={isExpanded ? { scale: [1, 1.2, 1] } : {}}
+                            transition={{ duration: 0.3 }}
                           />
-                          <span className="flex-1 min-w-0 text-sm font-medium text-zinc-900 truncate">
+                          <span className="flex-1 min-w-0 text-sm font-medium text-zinc-900 dark:text-zinc-50 truncate">
                             {notebook.name}
                           </span>
-                          {selectedFromThis > 0 && (
-                            <span className="text-xs font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full">
-                              {selectedFromThis}
-                            </span>
-                          )}
-                          <span className="text-xs text-zinc-500">{notebook.record_count}</span>
-                        </button>
+                          <AnimatePresence>
+                            {selectedFromThis > 0 && (
+                              <motion.span
+                                className="text-xs font-semibold text-blue-700 bg-blue-50 dark:bg-blue-950/40 dark:text-blue-300 px-2 py-0.5 rounded-full"
+                                initial={{ opacity: 0, scale: 0.8 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.8 }}
+                                transition={{ duration: 0.2 }}
+                              >
+                                {selectedFromThis}
+                              </motion.span>
+                            )}
+                          </AnimatePresence>
+                          <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                            {notebook.record_count}
+                          </span>
+                        </motion.button>
 
                         <AnimatePresence initial={false}>
                           {isExpanded && (
@@ -1085,10 +1155,10 @@ export default function IdeaGenPage() {
                                   <div className="py-3 text-xs text-zinc-500">No records</div>
                                 ) : (
                                   <div className="space-y-1">
-                                    {records.map(record => {
+                                    {records.map((record, recordIndex) => {
                                       const isSelected = selectedRecords.has(record.id)
                                       return (
-                                        <button
+                                        <motion.button
                                           key={record.id}
                                           type="button"
                                           onClick={() =>
@@ -1099,30 +1169,48 @@ export default function IdeaGenPage() {
                                             )
                                           }
                                           className={cn(
-                                            'w-full flex items-start gap-3 rounded-xl px-3 py-2 text-left hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30',
-                                            isSelected && 'bg-blue-50/70'
+                                            'w-full flex items-start gap-3 rounded-xl px-3 py-2 text-left hover:bg-zinc-50 dark:hover:bg-zinc-900/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30 transition-all duration-200',
+                                            isSelected && 'bg-blue-50/70 dark:bg-blue-950/30'
                                           )}
+                                          initial={{ opacity: 0, x: -10 }}
+                                          animate={{ opacity: 1, x: 0 }}
+                                          transition={{ duration: 0.2, delay: recordIndex * 0.03 }}
+                                          whileHover={{ x: 4 }}
+                                          whileTap={{ scale: 0.98 }}
                                         >
-                                          <span
+                                          <motion.span
                                             className={cn(
-                                              'mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-md border shrink-0',
+                                              'mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-md border shrink-0 transition-all duration-200',
                                               isSelected
-                                                ? 'border-blue-600 bg-blue-600 text-white'
-                                                : 'border-zinc-200 bg-white'
+                                                ? 'border-blue-600 bg-blue-600 text-white shadow-md shadow-blue-600/30'
+                                                : 'border-zinc-200 bg-white dark:border-white/20 dark:bg-white/5'
                                             )}
                                             aria-hidden="true"
+                                            animate={isSelected ? { scale: [1, 1.15, 1] } : {}}
+                                            transition={{ duration: 0.3 }}
                                           >
-                                            {isSelected && <Check className="h-3.5 w-3.5" />}
-                                          </span>
+                                            <AnimatePresence mode="wait">
+                                              {isSelected && (
+                                                <motion.div
+                                                  initial={{ scale: 0, rotate: -45 }}
+                                                  animate={{ scale: 1, rotate: 0 }}
+                                                  exit={{ scale: 0, rotate: 45 }}
+                                                  transition={{ duration: 0.2 }}
+                                                >
+                                                  <Check className="h-3.5 w-3.5" />
+                                                </motion.div>
+                                              )}
+                                            </AnimatePresence>
+                                          </motion.span>
 
                                           <span className="min-w-0 flex-1">
                                             <span className="flex items-center gap-2 min-w-0">
-                                              <span className="text-sm font-medium text-zinc-900 truncate">
+                                              <span className="text-sm font-medium text-zinc-900 dark:text-zinc-50 truncate">
                                                 {getRecordTitle(record)}
                                               </span>
                                               <span
                                                 className={cn(
-                                                  'shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-medium',
+                                                  'shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-medium transition-all duration-200',
                                                   getTypeColor(record.type)
                                                 )}
                                               >
@@ -1130,12 +1218,12 @@ export default function IdeaGenPage() {
                                               </span>
                                             </span>
                                             {record.user_query && (
-                                              <span className="mt-0.5 block text-xs text-zinc-500 line-clamp-2">
+                                              <span className="mt-0.5 block text-xs text-zinc-500 dark:text-zinc-400 line-clamp-2">
                                                 {record.user_query}
                                               </span>
                                             )}
                                           </span>
-                                        </button>
+                                        </motion.button>
                                       )
                                     })}
                                   </div>
@@ -1144,7 +1232,7 @@ export default function IdeaGenPage() {
                             </motion.div>
                           )}
                         </AnimatePresence>
-                      </div>
+                      </motion.div>
                     )
                   })}
                 </div>
