@@ -23,6 +23,7 @@ import { useGlobal } from '@/context/GlobalContext'
 import { getTranslation } from '@/lib/i18n'
 import { Card, CardHeader, CardBody, CardFooter } from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
+import { ReasoningSteps, ConfidenceBadge, type ReasoningStep } from '@/components/ai'
 
 interface ChatMessage {
   role: 'user' | 'assistant'
@@ -32,6 +33,9 @@ interface ChatMessage {
     rag?: Array<{ kb_name: string; content: string }>
     web?: Array<{ url: string; title?: string }>
   }
+  // AI transparency features
+  reasoning?: ReasoningStep[]
+  confidence?: number
 }
 
 interface ChatSession {
@@ -286,14 +290,34 @@ export default function ChatSessionDetail({
                           {msg.role === 'user' ? (
                             <p className="whitespace-pre-wrap">{msg.content}</p>
                           ) : (
-                            <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-2 prose-headings:my-2">
-                              <ReactMarkdown
-                                remarkPlugins={[remarkMath]}
-                                rehypePlugins={[rehypeKatex]}
-                              >
-                                {processLatexContent(msg.content)}
-                              </ReactMarkdown>
-                            </div>
+                            <>
+                              <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-2 prose-headings:my-2">
+                                <ReactMarkdown
+                                  remarkPlugins={[remarkMath]}
+                                  rehypePlugins={[rehypeKatex]}
+                                >
+                                  {processLatexContent(msg.content)}
+                                </ReactMarkdown>
+                              </div>
+
+                              {/* AI Transparency: Confidence Badge */}
+                              {msg.confidence !== undefined && (
+                                <div className="mt-3">
+                                  <ConfidenceBadge
+                                    confidence={msg.confidence}
+                                    showPercentage={true}
+                                    showIcon={true}
+                                  />
+                                </div>
+                              )}
+
+                              {/* AI Transparency: Reasoning Steps */}
+                              {msg.reasoning && msg.reasoning.length > 0 && (
+                                <div className="mt-3">
+                                  <ReasoningSteps steps={msg.reasoning} defaultExpanded={false} />
+                                </div>
+                              )}
+                            </>
                           )}
 
                           {/* Sources */}
