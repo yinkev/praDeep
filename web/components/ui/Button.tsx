@@ -1,14 +1,15 @@
 'use client'
 
-import React, { forwardRef } from 'react'
-import { motion, type HTMLMotionProps } from 'framer-motion'
+import { forwardRef, type ReactNode } from 'react'
+import { motion, useReducedMotion, type HTMLMotionProps, type Variants } from 'framer-motion'
 import { Loader2 } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 // ============================================================================
 // Types
 // ============================================================================
 
-export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'destructive'
+export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'destructive'
 export type ButtonSize = 'sm' | 'md' | 'lg'
 
 export interface ButtonProps extends Omit<HTMLMotionProps<'button'>, 'children'> {
@@ -19,79 +20,56 @@ export interface ButtonProps extends Omit<HTMLMotionProps<'button'>, 'children'>
   /** Show loading spinner and disable interactions */
   loading?: boolean
   /** Icon to display on the left side */
-  iconLeft?: React.ReactNode
+  iconLeft?: ReactNode
   /** Icon to display on the right side */
-  iconRight?: React.ReactNode
+  iconRight?: ReactNode
   /** @deprecated Use iconLeft instead */
-  icon?: React.ReactNode
+  icon?: ReactNode
   /** Button content (optional for icon-only buttons) */
-  children?: React.ReactNode
+  children?: ReactNode
 }
 
 // ============================================================================
-// Styles Configuration
+// Styles Configuration - Liquid Cloud Design System
+// Clean, subtle depth on hover, Linear/Vercel aesthetics
 // ============================================================================
 
 const variantStyles: Record<ButtonVariant, string> = {
-  primary: [
-    // Teal gradient background
-    'bg-gradient-to-r from-teal-500 to-teal-600',
-    'text-white font-medium',
-    // Glow effect
-    'shadow-lg shadow-teal-500/25',
-    // Hover state
-    'hover:from-teal-400 hover:to-teal-500',
-    'hover:shadow-xl hover:shadow-teal-500/30',
-    // Focus ring
-    'focus-visible:ring-2 focus-visible:ring-teal-400 focus-visible:ring-offset-2',
-  ].join(' '),
+  primary: cn('bg-accent-primary text-white', 'hover:bg-blue-600', 'active:bg-blue-700'),
 
-  secondary: [
-    // Glassmorphism effect
-    'bg-white/70 dark:bg-slate-800/70',
-    'backdrop-blur-xl backdrop-saturate-150',
-    'text-slate-700 dark:text-slate-200',
-    // Subtle border for glass effect
-    'border border-white/50 dark:border-slate-700/50',
-    // Soft shadow
-    'shadow-lg shadow-slate-200/50 dark:shadow-slate-900/50',
-    // Hover state
-    'hover:bg-white/90 dark:hover:bg-slate-800/90',
-    'hover:border-white/70 dark:hover:border-slate-600/70',
-    'hover:shadow-xl',
-    // Focus ring
-    'focus-visible:ring-2 focus-visible:ring-teal-400/50 focus-visible:ring-offset-2',
-  ].join(' '),
+  secondary: cn(
+    'bg-surface-secondary text-foreground',
+    'border border-border',
+    'hover:bg-surface-tertiary',
+    'active:bg-surface-tertiary/80'
+  ),
 
-  ghost: [
-    // Transparent background
-    'bg-transparent',
-    'text-slate-600 dark:text-slate-300',
-    // Hover state
-    'hover:bg-slate-100/80 dark:hover:bg-slate-800/80',
-    'hover:text-slate-900 dark:hover:text-slate-100',
-    // Focus ring
-    'focus-visible:ring-2 focus-visible:ring-slate-400/50 focus-visible:ring-offset-2',
-  ].join(' '),
+  outline: cn(
+    'bg-transparent text-foreground',
+    'border border-border',
+    'hover:bg-surface-secondary',
+    'active:bg-surface-tertiary'
+  ),
 
-  destructive: [
-    // Red gradient background
-    'bg-gradient-to-r from-red-500 to-red-600',
-    'text-white font-medium',
-    // Glow effect
-    'shadow-lg shadow-red-500/25',
-    // Hover state
-    'hover:from-red-400 hover:to-red-500',
-    'hover:shadow-xl hover:shadow-red-500/30',
-    // Focus ring
-    'focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2',
-  ].join(' '),
+  ghost: cn(
+    'bg-transparent text-foreground',
+    'hover:bg-surface-secondary',
+    'active:bg-surface-tertiary'
+  ),
+
+  destructive: cn('bg-semantic-error text-white', 'hover:bg-red-600', 'active:bg-red-700'),
 }
 
 const sizeStyles: Record<ButtonSize, string> = {
-  sm: 'h-8 px-3 text-xs gap-1.5 rounded-lg',
-  md: 'h-10 px-4 text-sm gap-2 rounded-xl',
-  lg: 'h-12 px-6 text-base gap-2.5 rounded-xl',
+  sm: 'h-8 px-3 text-xs',
+  md: 'h-10 px-4 text-sm',
+  lg: 'h-12 px-6 text-base',
+}
+
+const contentGapStyles: Record<ButtonSize, string> = {
+  sm: 'gap-1.5',
+  md: 'gap-2',
+  lg: 'gap-2.5',
 }
 
 const iconSizeStyles: Record<ButtonSize, string> = {
@@ -101,41 +79,30 @@ const iconSizeStyles: Record<ButtonSize, string> = {
 }
 
 // ============================================================================
-// Animation Variants
+// Animation Variants - Subtle hover lift with shadow depth
 // ============================================================================
 
 const buttonMotionVariants = {
   initial: {
-    scale: 1,
+    y: 0,
   },
   hover: {
-    scale: 1.02,
+    y: -1,
+    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04)',
     transition: {
-      type: 'spring' as const,
-      stiffness: 400,
-      damping: 17,
+      duration: 0.15,
+      ease: [0.16, 1, 0.3, 1],
     },
   },
   tap: {
     scale: 0.98,
+    y: 0,
     transition: {
-      type: 'spring' as const,
-      stiffness: 400,
-      damping: 17,
+      duration: 0.1,
+      ease: [0.16, 1, 0.3, 1],
     },
   },
-}
-
-const spinnerVariants = {
-  animate: {
-    rotate: 360,
-    transition: {
-      duration: 1,
-      repeat: Infinity,
-      ease: 'linear' as const,
-    },
-  },
-}
+} satisfies Variants
 
 // ============================================================================
 // Component
@@ -151,60 +118,89 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       iconRight,
       icon, // deprecated
       children,
-      className = '',
+      className,
       disabled,
+      type,
       ...props
     },
     ref
   ) => {
+    const reduceMotion = useReducedMotion()
     const isDisabled = disabled || loading
-    const leftIcon = iconLeft || icon // Support deprecated icon prop
+    const leftIcon = iconLeft ?? icon // Support deprecated icon prop
 
     return (
       <motion.button
         ref={ref}
-        className={[
+        type={type ?? 'button'}
+        aria-busy={loading || undefined}
+        className={cn(
           // Base styles
-          'relative inline-flex items-center justify-center',
-          'font-medium transition-colors duration-200',
-          'outline-none focus-visible:ring-offset-background',
+          'relative isolate inline-flex items-center justify-center whitespace-nowrap overflow-hidden',
+          'rounded-md font-medium tracking-tight select-none',
+          // Focus ring with design system accent
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/20',
+          'focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+          // Smooth transitions (colors + shadow)
+          'transition-[background-color,border-color,color,box-shadow,transform,filter] duration-200 ease-out-expo',
           // Disabled state
           'disabled:pointer-events-none disabled:opacity-50',
           // Variant and size
           variantStyles[variant],
           sizeStyles[size],
-          className,
-        ].join(' ')}
+          className
+        )}
         disabled={isDisabled}
         variants={buttonMotionVariants}
         initial="initial"
-        whileHover={!isDisabled ? 'hover' : undefined}
-        whileTap={!isDisabled ? 'tap' : undefined}
+        whileHover={!isDisabled && !reduceMotion ? 'hover' : undefined}
+        whileTap={!isDisabled && !reduceMotion ? 'tap' : undefined}
         {...props}
       >
-        {/* Loading Spinner */}
+        {/* Loading Shimmer */}
         {loading && (
-          <motion.span
-            className={iconSizeStyles[size]}
-            variants={spinnerVariants}
-            animate="animate"
-          >
-            <Loader2 className="w-full h-full" />
-          </motion.span>
+          <span
+            aria-hidden="true"
+            className={cn(
+              'pointer-events-none absolute inset-0 z-0 opacity-60',
+              'bg-[linear-gradient(110deg,transparent_0%,rgba(255,255,255,0.35)_50%,transparent_100%)]',
+              'dark:bg-[linear-gradient(110deg,transparent_0%,rgba(255,255,255,0.16)_50%,transparent_100%)]',
+              '[background-size:200%_100%]',
+              'motion-safe:animate-shimmer'
+            )}
+          />
         )}
 
-        {/* Left Icon */}
-        {!loading && leftIcon && (
-          <span className={`flex-shrink-0 ${iconSizeStyles[size]}`}>{leftIcon}</span>
-        )}
+        <span
+          className={cn(
+            'relative z-10 inline-flex items-center justify-center',
+            contentGapStyles[size]
+          )}
+        >
+          {/* Left Icon / Loading Spinner Container (fixed width) */}
+          {(leftIcon || loading) && (
+            <span
+              className={cn(
+                'flex-shrink-0 inline-flex items-center justify-center',
+                iconSizeStyles[size]
+              )}
+            >
+              {loading ? (
+                <Loader2 className={cn(iconSizeStyles[size], 'motion-safe:animate-spin')} />
+              ) : (
+                leftIcon
+              )}
+            </span>
+          )}
 
-        {/* Content */}
-        <span className="truncate">{children}</span>
+          {/* Content */}
+          {children && <span className="truncate">{children}</span>}
 
-        {/* Right Icon */}
-        {!loading && iconRight && (
-          <span className={`flex-shrink-0 ${iconSizeStyles[size]}`}>{iconRight}</span>
-        )}
+          {/* Right Icon */}
+          {!loading && iconRight && (
+            <span className={cn('flex-shrink-0', iconSizeStyles[size])}>{iconRight}</span>
+          )}
+        </span>
       </motion.button>
     )
   }
@@ -221,24 +217,29 @@ export default Button
 export interface IconButtonProps
   extends Omit<ButtonProps, 'children' | 'iconLeft' | 'iconRight' | 'icon'> {
   /** Icon to display */
-  icon: React.ReactNode
+  icon: ReactNode
   /** Accessible label for screen readers */
   'aria-label': string
 }
+
+const iconButtonSquareSizes = {
+  sm: '!w-8 !px-0',
+  md: '!w-10 !px-0',
+  lg: '!w-12 !px-0',
+} satisfies Record<ButtonSize, string>
 
 /**
  * Icon-only button variant with proper accessibility
  */
 export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
-  ({ icon, size = 'md', className = '', ...props }, ref) => {
-    const squareSizes: Record<ButtonSize, string> = {
-      sm: '!w-8 !px-0',
-      md: '!w-10 !px-0',
-      lg: '!w-12 !px-0',
-    }
-
+  ({ icon, size = 'md', className, ...props }, ref) => {
     return (
-      <Button ref={ref} size={size} className={`${squareSizes[size]} ${className}`} {...props}>
+      <Button
+        ref={ref}
+        size={size}
+        className={cn(iconButtonSquareSizes[size], className)}
+        {...props}
+      >
         <span className={iconSizeStyles[size]}>{icon}</span>
       </Button>
     )

@@ -1,18 +1,10 @@
 'use client'
 
 import type { ComponentType } from 'react'
-import { useRef, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { motion, useInView, type Variants } from 'framer-motion'
-import {
-  ArrowRight,
-  Database,
-  FolderOpen,
-  Microscope,
-  SlidersHorizontal,
-  Workflow,
-  Zap,
-} from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { motion, type Variants } from 'framer-motion'
+import { ArrowRight, Database, FolderOpen, Microscope, SlidersHorizontal, Sparkles, Workflow } from 'lucide-react'
 import { useGlobal } from '@/context/GlobalContext'
 import { getTranslation } from '@/lib/i18n'
 import PageWrapper, { PageHeader } from '@/components/ui/PageWrapper'
@@ -23,15 +15,13 @@ import Button from '@/components/ui/Button'
 // Types
 // ============================================================================
 
-type InsightItem = {
+type WorkflowNode = {
   id: string
   title: string
   description: string
   href: string
-  icon: ComponentType<{ className?: string }>
-  accentColor: string
-  glowColor: string
   step: number
+  icon: ComponentType<{ className?: string }>
 }
 
 // ============================================================================
@@ -43,269 +33,75 @@ const containerVariants: Variants = {
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.15,
-      delayChildren: 0.2,
+      staggerChildren: 0.08,
+      delayChildren: 0.08,
     },
   },
 }
 
-const nodeVariants: Variants = {
-  hidden: {
-    opacity: 0,
-    y: 30,
-    scale: 0.9,
-  },
+const itemVariants: Variants = {
+  hidden: { opacity: 0, y: 14 },
   visible: {
     opacity: 1,
     y: 0,
-    scale: 1,
     transition: {
       type: 'spring' as const,
-      stiffness: 300,
-      damping: 24,
-    },
-  },
-}
-
-const connectionVariants: Variants = {
-  hidden: {
-    pathLength: 0,
-    opacity: 0,
-  },
-  visible: {
-    pathLength: 1,
-    opacity: 1,
-    transition: {
-      pathLength: {
-        duration: 0.8,
-        ease: 'easeInOut' as const,
-      },
-      opacity: {
-        duration: 0.3,
-      },
-    },
-  },
-}
-
-const pulseVariants: Variants = {
-  animate: {
-    scale: [1, 1.2, 1],
-    opacity: [0.5, 0.8, 0.5],
-    transition: {
-      duration: 2,
-      repeat: Infinity,
-      ease: 'easeInOut' as const,
-    },
-  },
-}
-
-const floatVariants: Variants = {
-  animate: {
-    y: [-2, 2, -2],
-    transition: {
-      duration: 3,
-      repeat: Infinity,
-      ease: 'easeInOut' as const,
+      stiffness: 420,
+      damping: 30,
     },
   },
 }
 
 // ============================================================================
-// Flow Connection Component
+// Components
 // ============================================================================
 
-interface FlowConnectionProps {
-  from: { x: number; y: number }
-  to: { x: number; y: number }
-  delay?: number
-  color?: string
-}
-
-function FlowConnection({ from, to, delay = 0, color = 'teal' }: FlowConnectionProps) {
-  // Calculate control points for a smooth curve
-  const midX = (from.x + to.x) / 2
-  const midY = (from.y + to.y) / 2
-  const controlOffset = Math.abs(to.y - from.y) * 0.3
-
-  const path = `M ${from.x} ${from.y} Q ${midX} ${midY - controlOffset} ${to.x} ${to.y}`
-
+function TimelineNode({
+  node,
+  isLast,
+}: {
+  node: WorkflowNode
+  isLast: boolean
+}) {
   return (
-    <svg
-      className="absolute inset-0 w-full h-full pointer-events-none overflow-visible"
-      style={{ zIndex: 0 }}
-    >
-      <defs>
-        <linearGradient id={`flow-gradient-${from.x}-${to.x}`} x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor={`var(--color-${color}-400)`} stopOpacity="0.2" />
-          <stop offset="50%" stopColor={`var(--color-${color}-500)`} stopOpacity="0.6" />
-          <stop offset="100%" stopColor={`var(--color-${color}-400)`} stopOpacity="0.2" />
-        </linearGradient>
-        <filter id="glow">
-          <feGaussianBlur stdDeviation="3" result="coloredBlur" />
-          <feMerge>
-            <feMergeNode in="coloredBlur" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
-        </filter>
-      </defs>
-
-      {/* Background glow path */}
-      <motion.path
-        d={path}
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="4"
-        className="text-teal-500/20 dark:text-teal-400/20"
-        filter="url(#glow)"
-        variants={connectionVariants}
-        initial="hidden"
-        animate="visible"
-        style={{ transition: `all 0.8s ease-in-out ${delay}s` }}
-      />
-
-      {/* Main path */}
-      <motion.path
-        d={path}
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeDasharray="8 4"
-        className="text-teal-500/60 dark:text-teal-400/60"
-        variants={connectionVariants}
-        initial="hidden"
-        animate="visible"
-        style={{ transition: `all 0.8s ease-in-out ${delay}s` }}
-      />
-
-      {/* Animated flow particle */}
-      <motion.circle
-        r="4"
-        fill="currentColor"
-        className="text-teal-500 dark:text-teal-400"
-        filter="url(#glow)"
-        initial={{ offsetDistance: '0%' }}
-        animate={{ offsetDistance: '100%' }}
-        transition={{
-          duration: 2,
-          repeat: Infinity,
-          ease: 'linear' as const,
-          delay: delay + 0.5,
-        }}
-        style={{
-          offsetPath: `path('${path}')`,
-        }}
-      />
-    </svg>
-  )
-}
-
-// ============================================================================
-// Workflow Node Card Component
-// ============================================================================
-
-interface WorkflowNodeProps {
-  item: InsightItem
-  index: number
-  t: (key: string) => string
-}
-
-function WorkflowNode({ item, index, t }: WorkflowNodeProps) {
-  const nodeRef = useRef<HTMLDivElement>(null)
-  const isInView = useInView(nodeRef, { once: true, margin: '-50px' })
-
-  return (
-    <motion.div
-      ref={nodeRef}
-      variants={nodeVariants}
-      className="relative"
-      whileHover={{ scale: 1.02 }}
-      transition={{ type: 'spring' as const, stiffness: 400, damping: 25 }}
-    >
-      {/* Step indicator */}
-      <motion.div
-        className="absolute -top-3 -left-3 z-10"
-        variants={pulseVariants}
-        animate="animate"
-      >
-        <div
-          className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white shadow-lg ${item.accentColor}`}
-          style={{
-            boxShadow: `0 0 20px ${item.glowColor}`,
-          }}
-        >
-          {item.step}
+    <motion.div variants={itemVariants} className="relative flex gap-4">
+      <div className="relative flex flex-col items-center">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/70 ring-1 ring-black/5 backdrop-blur-sm dark:bg-white/5 dark:ring-white/10">
+          <node.icon className="h-5 w-5 text-blue-600 dark:text-blue-300" />
         </div>
-      </motion.div>
 
-      <Link href={item.href} className="block">
+        {!isLast && <div aria-hidden="true" className="mt-2 w-px flex-1 bg-zinc-200/70 dark:bg-white/10" />}
+      </div>
+
+      <Link
+        href={node.href}
+        className="group block flex-1 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/35 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-zinc-950"
+      >
         <Card
           variant="glass"
-          className={`
-            relative overflow-hidden group cursor-pointer
-            hover:border-teal-300/50 dark:hover:border-teal-600/50
-            transition-all duration-300
-          `}
-          hoverEffect={false}
+          interactive={false}
+          className="border-white/55 transition-colors group-hover:border-white/70 dark:border-white/10 dark:group-hover:border-white/15"
         >
-          {/* Glassmorphism overlay */}
-          <div className="absolute inset-0 bg-gradient-to-br from-white/50 via-white/30 to-transparent dark:from-slate-800/50 dark:via-slate-800/30 dark:to-transparent" />
-
-          {/* Animated glow effect on hover */}
-          <motion.div
-            className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-            style={{
-              background: `radial-gradient(circle at 50% 50%, ${item.glowColor}20, transparent 70%)`,
-            }}
-          />
-
-          <div className="relative p-6">
-            <div className="flex items-start gap-4">
-              {/* Icon container with floating animation */}
-              <motion.div
-                className={`
-                  w-14 h-14 rounded-2xl flex items-center justify-center shrink-0
-                  bg-white/70 dark:bg-slate-900/50
-                  backdrop-blur-xl
-                  border border-white/50 dark:border-slate-700/50
-                  shadow-lg
-                  ${item.accentColor.replace('bg-', 'shadow-')}/20
-                `}
-                variants={floatVariants}
-                animate="animate"
-              >
-                <item.icon
-                  className={`w-7 h-7 ${item.accentColor.replace('bg-', 'text-').replace('-500', '-600')} dark:${item.accentColor.replace('bg-', 'text-').replace('-500', '-400')}`}
-                />
-              </motion.div>
-
-              <div className="flex-1 min-w-0">
-                <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-1 group-hover:text-teal-700 dark:group-hover:text-teal-300 transition-colors">
-                  {item.title}
-                </h3>
-                <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                  {item.description}
-                </p>
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-700 dark:bg-blue-500/10 dark:text-blue-200">
+                  #{node.step}
+                </span>
               </div>
 
-              {/* Arrow indicator */}
-              <motion.div
-                className="shrink-0 mt-1"
-                initial={{ x: 0 }}
-                whileHover={{ x: 4 }}
-                transition={{ type: 'spring' as const, stiffness: 400, damping: 20 }}
-              >
-                <ArrowRight className="w-5 h-5 text-slate-400 group-hover:text-teal-500 dark:group-hover:text-teal-400 transition-colors" />
-              </motion.div>
+              <h3 className="mt-2 truncate text-sm font-semibold text-zinc-900 transition-colors group-hover:text-blue-700 dark:text-zinc-50 dark:group-hover:text-blue-300">
+                {node.title}
+              </h3>
+              <p className="mt-1 text-sm leading-relaxed text-zinc-500 dark:text-zinc-400">
+                {node.description}
+              </p>
+            </div>
+
+            <div className="mt-1 shrink-0 text-zinc-400 transition-[transform,color] duration-200 group-hover:translate-x-0.5 group-hover:text-blue-600 dark:text-zinc-500 dark:group-hover:text-blue-300">
+              <ArrowRight className="h-5 w-5" />
             </div>
           </div>
-
-          {/* Bottom accent line */}
-          <motion.div
-            className={`h-1 ${item.accentColor} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}
-            initial={{ scaleX: 0 }}
-            whileHover={{ scaleX: 1 }}
-            transition={{ duration: 0.3 }}
-          />
         </Card>
       </Link>
     </motion.div>
@@ -313,312 +109,168 @@ function WorkflowNode({ item, index, t }: WorkflowNodeProps) {
 }
 
 // ============================================================================
-// Central Hub Component
-// ============================================================================
-
-function CentralHub() {
-  return (
-    <motion.div
-      className="relative flex items-center justify-center"
-      variants={nodeVariants}
-      whileHover={{ scale: 1.05 }}
-    >
-      {/* Outer pulsing ring */}
-      <motion.div
-        className="absolute w-32 h-32 rounded-full border-2 border-teal-500/30 dark:border-teal-400/30"
-        variants={pulseVariants}
-        animate="animate"
-      />
-
-      {/* Middle ring */}
-      <motion.div
-        className="absolute w-24 h-24 rounded-full border border-teal-500/50 dark:border-teal-400/50"
-        animate={{
-          scale: [1, 1.1, 1],
-          opacity: [0.3, 0.6, 0.3],
-        }}
-        transition={{
-          duration: 2.5,
-          repeat: Infinity,
-          ease: 'easeInOut' as const,
-          delay: 0.3,
-        }}
-      />
-
-      {/* Central hub */}
-      <div
-        className={`
-          w-20 h-20 rounded-full
-          bg-gradient-to-br from-teal-400 to-teal-600
-          dark:from-teal-500 dark:to-teal-700
-          flex items-center justify-center
-          shadow-xl shadow-teal-500/30
-          backdrop-blur-xl
-          border border-teal-300/50 dark:border-teal-500/50
-        `}
-      >
-        <Workflow className="w-10 h-10 text-white" />
-      </div>
-
-      {/* Decorative particles */}
-      {[0, 1, 2, 3].map(i => (
-        <motion.div
-          key={i}
-          className="absolute w-2 h-2 rounded-full bg-teal-500/60 dark:bg-teal-400/60"
-          style={{
-            top: `${20 + Math.sin((i * Math.PI) / 2) * 35}%`,
-            left: `${50 + Math.cos((i * Math.PI) / 2) * 35}%`,
-          }}
-          animate={{
-            scale: [1, 1.5, 1],
-            opacity: [0.4, 0.8, 0.4],
-          }}
-          transition={{
-            duration: 2,
-            repeat: Infinity,
-            delay: i * 0.25,
-          }}
-        />
-      ))}
-    </motion.div>
-  )
-}
-
-// ============================================================================
-// Main Page Component
+// Main Page
 // ============================================================================
 
 export default function WorkflowInsightsPage() {
   const { uiSettings } = useGlobal()
   const t = (key: string) => getTranslation(uiSettings.language, key)
-  const containerRef = useRef<HTMLDivElement>(null)
-  const [showConnections, setShowConnections] = useState(false)
+  const router = useRouter()
 
-  useEffect(() => {
-    // Delay showing connections for smoother load
-    const timer = setTimeout(() => setShowConnections(true), 500)
-    return () => clearTimeout(timer)
-  }, [])
-
-  const insights: InsightItem[] = [
+  const nodes: WorkflowNode[] = [
     {
       id: 'knowledge',
-      title: t('Multi-Step Knowledge Base Setup'),
-      description: t('KB setup requires repeated, manual steps for related materials.'),
+      title: t('Knowledge Base Setup'),
+      description: t('Capture sources once so every module can reuse them.'),
       href: '/knowledge',
       icon: Database,
-      accentColor: 'bg-blue-500',
-      glowColor: '#3b82f6',
       step: 1,
     },
     {
       id: 'solver',
-      title: t('Solve Agent Configuration Overhead'),
-      description: t('Solving similar problems often means re-selecting the same settings.'),
+      title: t('Solve Configuration'),
+      description: t('Tune the solver once, then iterate fast with consistent settings.'),
       href: '/solver',
       icon: SlidersHorizontal,
-      accentColor: 'bg-purple-500',
-      glowColor: '#a855f7',
       step: 2,
     },
     {
       id: 'research',
-      title: t('Research Pipeline Manual Topic Management'),
-      description: t('Users spend time babysitting the research queue instead of learning.'),
+      title: t('Research Pipeline'),
+      description: t('Queue topics, track progress, and keep the thread organized.'),
       href: '/research',
       icon: Microscope,
-      accentColor: 'bg-emerald-500',
-      glowColor: '#10b981',
       step: 3,
     },
     {
       id: 'history',
-      title: t('Fragmented Output Management'),
-      description: t(
-        'Outputs are spread across modules, making past work hard to find and compare.'
-      ),
+      title: t('History & Outputs'),
+      description: t('Review, compare, and reuse results across sessions.'),
       href: '/history',
       icon: FolderOpen,
-      accentColor: 'bg-amber-500',
-      glowColor: '#f59e0b',
       step: 4,
     },
   ]
 
   return (
-    <PageWrapper maxWidth="2xl" showPattern={true}>
-      {/* Header Section */}
-      <div className="mb-8">
-        <div className="flex items-start justify-between gap-4 mb-6">
-          <div className="flex items-start gap-4">
-            <motion.div
-              className="w-14 h-14 rounded-2xl bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center shadow-lg shadow-teal-500/25"
-              initial={{ scale: 0, rotate: -180 }}
-              animate={{ scale: 1, rotate: 0 }}
-              transition={{ type: 'spring' as const, stiffness: 200, damping: 15 }}
-            >
-              <Zap className="w-7 h-7 text-white" />
-            </motion.div>
-            <div>
-              <motion.h1
-                className="text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight"
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-              >
-                {t('Key Workflow Inefficiencies Identified')}
-              </motion.h1>
-              <motion.p
-                className="text-slate-500 dark:text-slate-400 mt-2 max-w-2xl"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.2 }}
-              >
-                {t(
-                  'A quick map of the highest-friction workflows in praDeep, with shortcuts to where you can address them.'
-                )}
-              </motion.p>
-            </div>
-          </div>
-
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.3 }}
-          >
-            <Button variant="secondary" iconRight={<ArrowRight className="w-4 h-4" />}>
-              {t('View All Workflows')}
+    <PageWrapper maxWidth="wide" showPattern>
+      <PageHeader
+        title={t('Workflow')}
+        description={t(
+          'A clean, end-to-end flow through praDeep — jump into each module in the order that compounds the most value.'
+        )}
+        icon={<Workflow className="h-5 w-5 text-blue-600 dark:text-blue-400" />}
+        actions={
+          <div className="flex items-center gap-2">
+            <Button variant="secondary" size="sm" onClick={() => router.push('/guide')}>
+              {t('View guide')}
             </Button>
-          </motion.div>
-        </div>
-      </div>
-
-      {/* Workflow Visualization */}
-      <div ref={containerRef} className="relative">
-        {/* Main grid layout with central hub */}
-        <motion.div
-          className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start"
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-        >
-          {/* Left column - nodes 1 & 3 */}
-          <div className="space-y-6">
-            <WorkflowNode item={insights[0]} index={0} t={t} />
-            <WorkflowNode item={insights[2]} index={2} t={t} />
+            <Button size="sm" onClick={() => router.push('/knowledge')} iconRight={<ArrowRight className="h-4 w-4" />}>
+              {t('Start with KB')}
+            </Button>
           </div>
+        }
+      />
 
-          {/* Center column - hub */}
-          <div className="flex items-center justify-center py-8 lg:py-16">
-            <CentralHub />
-          </div>
+      <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-8">
+        <motion.div variants={itemVariants} className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <Card
+            variant="glass"
+            padding="lg"
+            interactive={false}
+            className="relative overflow-hidden border-white/55 dark:border-white/10"
+          >
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.12),transparent_55%)]"
+            />
 
-          {/* Right column - nodes 2 & 4 */}
-          <div className="space-y-6">
-            <WorkflowNode item={insights[1]} index={1} t={t} />
-            <WorkflowNode item={insights[3]} index={3} t={t} />
-          </div>
+            <div className="relative">
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/60 bg-white/60 px-3 py-1.5 text-xs font-medium text-zinc-700 shadow-sm shadow-blue-600/5 dark:border-white/10 dark:bg-white/5 dark:text-zinc-200">
+                <Sparkles className="h-3.5 w-3.5 text-blue-600 dark:text-blue-300" />
+                {t('Flow at a glance')}
+              </div>
+
+              <h2 className="mt-4 text-lg font-semibold text-zinc-900 tracking-tight dark:text-zinc-50">
+                {t('Four modules. One clean loop.')}
+              </h2>
+              <p className="mt-2 text-sm leading-relaxed text-zinc-500 dark:text-zinc-400">
+                {t('Start by grounding the system in your sources, then solve, research, and review outputs — repeat as you learn.')}
+              </p>
+
+              <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {nodes.map(node => (
+                  <Link
+                    key={node.id}
+                    href={node.href}
+                    className="group flex items-center justify-between gap-3 rounded-xl border border-white/60 bg-white/60 px-4 py-3 text-left shadow-sm shadow-blue-600/5 transition-colors hover:bg-white/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/35 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10 dark:focus-visible:ring-offset-zinc-950"
+                  >
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300">
+                        <node.icon className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+                          {node.title}
+                        </div>
+                        <div className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+                          #{node.step}
+                        </div>
+                      </div>
+                    </div>
+
+                    <ArrowRight className="h-4 w-4 shrink-0 text-zinc-400 transition-[transform,color] group-hover:translate-x-0.5 group-hover:text-blue-600 dark:text-zinc-500 dark:group-hover:text-blue-300" />
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </Card>
+
+          <Card
+            variant="glass"
+            padding="lg"
+            interactive={false}
+            className="relative overflow-hidden border-white/55 dark:border-white/10"
+          >
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.10),transparent_60%)]"
+            />
+
+            <div className="relative">
+              <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">{t('Timeline')}</div>
+              <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                {t('Follow the path top-to-bottom — each step links to the module.')}
+              </p>
+
+              <motion.div variants={containerVariants} className="mt-6 space-y-5">
+                {nodes.map((node, idx) => (
+                  <TimelineNode
+                    key={node.id}
+                    node={node}
+                    isLast={idx === nodes.length - 1}
+                  />
+                ))}
+              </motion.div>
+            </div>
+          </Card>
         </motion.div>
 
-        {/* SVG Connection Lines (visible on larger screens) */}
-        {showConnections && (
-          <div className="hidden lg:block absolute inset-0 pointer-events-none">
-            <svg className="w-full h-full" style={{ minHeight: '400px' }}>
-              <defs>
-                <linearGradient id="teal-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="rgb(20 184 166 / 0.3)" />
-                  <stop offset="50%" stopColor="rgb(20 184 166 / 0.6)" />
-                  <stop offset="100%" stopColor="rgb(20 184 166 / 0.3)" />
-                </linearGradient>
-                <filter id="connection-glow" x="-50%" y="-50%" width="200%" height="200%">
-                  <feGaussianBlur stdDeviation="2" result="blur" />
-                  <feMerge>
-                    <feMergeNode in="blur" />
-                    <feMergeNode in="SourceGraphic" />
-                  </feMerge>
-                </filter>
-              </defs>
-
-              {/* Connection from node 1 to center */}
-              <motion.path
-                d="M 28% 15% Q 40% 40% 50% 50%"
-                fill="none"
-                stroke="url(#teal-gradient)"
-                strokeWidth="2"
-                strokeDasharray="6 4"
-                filter="url(#connection-glow)"
-                initial={{ pathLength: 0, opacity: 0 }}
-                animate={{ pathLength: 1, opacity: 1 }}
-                transition={{ duration: 1, delay: 0.5 }}
-              />
-
-              {/* Connection from node 2 to center */}
-              <motion.path
-                d="M 72% 15% Q 60% 40% 50% 50%"
-                fill="none"
-                stroke="url(#teal-gradient)"
-                strokeWidth="2"
-                strokeDasharray="6 4"
-                filter="url(#connection-glow)"
-                initial={{ pathLength: 0, opacity: 0 }}
-                animate={{ pathLength: 1, opacity: 1 }}
-                transition={{ duration: 1, delay: 0.7 }}
-              />
-
-              {/* Connection from node 3 to center */}
-              <motion.path
-                d="M 28% 85% Q 40% 60% 50% 50%"
-                fill="none"
-                stroke="url(#teal-gradient)"
-                strokeWidth="2"
-                strokeDasharray="6 4"
-                filter="url(#connection-glow)"
-                initial={{ pathLength: 0, opacity: 0 }}
-                animate={{ pathLength: 1, opacity: 1 }}
-                transition={{ duration: 1, delay: 0.9 }}
-              />
-
-              {/* Connection from node 4 to center */}
-              <motion.path
-                d="M 72% 85% Q 60% 60% 50% 50%"
-                fill="none"
-                stroke="url(#teal-gradient)"
-                strokeWidth="2"
-                strokeDasharray="6 4"
-                filter="url(#connection-glow)"
-                initial={{ pathLength: 0, opacity: 0 }}
-                animate={{ pathLength: 1, opacity: 1 }}
-                transition={{ duration: 1, delay: 1.1 }}
-              />
-            </svg>
-          </div>
-        )}
-      </div>
-
-      {/* Bottom Summary Card */}
-      <motion.div
-        className="mt-10"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.8 }}
-      >
-        <Card variant="glass" hoverEffect={false}>
-          <div className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-400/20 to-teal-600/20 dark:from-teal-400/10 dark:to-teal-600/10 flex items-center justify-center backdrop-blur-xl border border-teal-300/30 dark:border-teal-500/30">
-                <Workflow className="w-6 h-6 text-teal-600 dark:text-teal-400" />
+        <motion.div variants={itemVariants}>
+          <Card variant="glass" padding="lg" interactive={false} className="border-white/55 dark:border-white/10">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">{t('Tip')}</div>
+                <div className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                  {t('If you are unsure where to start, begin with the Knowledge Base — it improves everything else downstream.')}
+                </div>
               </div>
-              <div>
-                <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-                  {t('Workflow Optimization')}
-                </h3>
-                <p className="text-sm text-slate-600 dark:text-slate-400">
-                  {t('Click any node above to address that specific workflow bottleneck.')}
-                </p>
-              </div>
+              <Button variant="outline" size="sm" onClick={() => router.push('/history')} iconRight={<ArrowRight className="h-4 w-4" />}>
+                {t('Go to history')}
+              </Button>
             </div>
-          </div>
-        </Card>
+          </Card>
+        </motion.div>
       </motion.div>
     </PageWrapper>
   )

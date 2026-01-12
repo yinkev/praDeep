@@ -15,6 +15,7 @@ import {
   RefreshCw,
 } from 'lucide-react'
 import { apiUrl } from '@/lib/api'
+import { cn } from '@/lib/utils'
 
 interface SystemStatusData {
   backend: {
@@ -51,30 +52,30 @@ interface TestResult {
 
 type ModelType = 'llm' | 'embeddings' | 'tts'
 
-// Cloud Dancer palette with teal accents
+// MICRO-INDUSTRIALISM palette (neutral panels + functional status colors)
 const cloudDancer = {
-  // Base glassmorphism
-  glass: 'bg-white/10 dark:bg-slate-900/20 backdrop-blur-xl',
-  glassBorder: 'border border-white/20 dark:border-white/10',
-  glassHover: 'hover:bg-white/20 dark:hover:bg-slate-800/30',
+  // Base panel
+  glass: 'bg-white dark:bg-zinc-950/40',
+  glassBorder: 'border border-border/80 dark:border-white/10',
+  glassHover: 'hover:bg-zinc-50 dark:hover:bg-white/5',
 
   // Status colors - teal for healthy, red for errors
   healthy: {
     bg: 'bg-teal-500/10 dark:bg-teal-400/10',
     border: 'border-teal-500/30 dark:border-teal-400/30',
     text: 'text-teal-600 dark:text-teal-400',
-    glow: 'shadow-[0_0_15px_rgba(20,184,166,0.15)]',
+    glow: '',
   },
   error: {
     bg: 'bg-red-500/10 dark:bg-red-400/10',
     border: 'border-red-500/30 dark:border-red-400/30',
     text: 'text-red-600 dark:text-red-400',
-    glow: 'shadow-[0_0_15px_rgba(239,68,68,0.15)]',
+    glow: '',
   },
   pending: {
-    bg: 'bg-slate-500/10 dark:bg-slate-400/10',
-    border: 'border-slate-500/30 dark:border-slate-400/30',
-    text: 'text-slate-500 dark:text-slate-400',
+    bg: 'bg-zinc-500/10 dark:bg-zinc-400/10',
+    border: 'border-zinc-500/30 dark:border-zinc-400/30',
+    text: 'text-zinc-500 dark:text-zinc-400',
     glow: '',
   },
 
@@ -248,7 +249,7 @@ export default function SystemStatus() {
       case 'error':
         return <XCircle className="w-3.5 h-3.5" />
       default:
-        return <div className="w-3 h-3 rounded-full bg-slate-400/50" />
+        return <div className="w-3 h-3 rounded-full bg-zinc-400/50" />
     }
   }
 
@@ -290,16 +291,17 @@ export default function SystemStatus() {
     return (
       <motion.div
         variants={itemVariants}
-        className={`
-          px-4 py-3 rounded-xl text-sm transition-all duration-300
-          ${cloudDancer.glass} ${cloudDancer.glassBorder}
-          ${style.glow || ''}
-        `}
+        className={cn(
+          'ui-frame px-4 py-3 rounded-lg text-sm transition-colors duration-150',
+          cloudDancer.glass,
+          cloudDancer.glassBorder,
+          style.glow || ''
+        )}
       >
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2.5">
             {icon}
-            <span className="font-medium text-slate-700 dark:text-slate-200">{label}</span>
+            <span className="font-medium text-zinc-800 dark:text-zinc-200">{label}</span>
           </div>
           <motion.div
             className="flex items-center gap-2"
@@ -316,7 +318,7 @@ export default function SystemStatus() {
               </motion.span>
             )}
             <span className={style.text}>{getStatusIcon(data.status)}</span>
-            <span className={`text-xs font-medium ${style.text}`}>
+            <span className={cn('text-xs font-medium ui-mono', style.text)}>
               {getStatusText(data.status)}
             </span>
           </motion.div>
@@ -326,7 +328,7 @@ export default function SystemStatus() {
           <motion.div
             initial={{ opacity: 0, y: -5 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-xs text-slate-500 dark:text-slate-400 truncate mb-2 pl-7"
+            className="text-xs ui-mono text-zinc-500 dark:text-zinc-400 truncate mb-2 pl-7"
           >
             {data.model}
           </motion.div>
@@ -340,14 +342,16 @@ export default function SystemStatus() {
             whileTap="tap"
             onClick={() => testModelConnection(modelType)}
             disabled={testing[modelType] || !backendConnected}
-            className={`
-              w-full mt-2 px-3 py-2 text-xs font-medium rounded-lg
-              ${cloudDancer.glass} ${cloudDancer.glassBorder} ${cloudDancer.glassHover}
-              text-slate-700 dark:text-slate-200
-              transition-all duration-200
-              disabled:opacity-50 disabled:cursor-not-allowed
-              flex items-center justify-center gap-2
-            `}
+            className={cn(
+              'ui-frame w-full mt-2 px-3 py-2 text-xs font-medium rounded-md',
+              cloudDancer.glass,
+              cloudDancer.glassBorder,
+              cloudDancer.glassHover,
+              'text-zinc-800 dark:text-zinc-200',
+              'transition-colors duration-150',
+              'disabled:opacity-50 disabled:cursor-not-allowed',
+              'flex items-center justify-center gap-2'
+            )}
           >
             {testing[modelType] ? (
               <>
@@ -374,11 +378,14 @@ export default function SystemStatus() {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className={`mt-2 text-xs ${testResults[modelType]?.success ? cloudDancer.healthy.text : cloudDancer.error.text}`}
+              className={cn(
+                'mt-2 text-xs ui-mono',
+                testResults[modelType]?.success ? cloudDancer.healthy.text : cloudDancer.error.text
+              )}
             >
               {testResults[modelType]?.message}
               {testResults[modelType]?.response_time_ms && (
-                <span className="text-slate-500 dark:text-slate-400 ml-1">
+                <span className="text-zinc-500 dark:text-zinc-400 ml-1">
                   ({testResults[modelType]?.response_time_ms}ms)
                 </span>
               )}
@@ -399,12 +406,12 @@ export default function SystemStatus() {
       {/* Backend Status */}
       <motion.div
         variants={itemVariants}
-        className={`
-          px-4 py-3 rounded-xl flex items-center justify-between text-sm
-          transition-all duration-300
-          ${cloudDancer.glass} ${cloudDancer.glassBorder}
-          ${getBackendStyle().glow || ''}
-        `}
+        className={cn(
+          'ui-frame px-4 py-3 rounded-lg flex items-center justify-between text-sm',
+          cloudDancer.glass,
+          cloudDancer.glassBorder,
+          getBackendStyle().glow || ''
+        )}
       >
         <div className="flex items-center gap-2.5">
           <motion.div
@@ -414,13 +421,13 @@ export default function SystemStatus() {
           >
             {getStatusIcon('', true)}
           </motion.div>
-          <span className="font-medium text-slate-700 dark:text-slate-200">Backend Service</span>
+          <span className="font-medium text-zinc-800 dark:text-zinc-200">Backend Service</span>
         </div>
         <motion.span
           key={backendConnected?.toString()}
           initial={{ opacity: 0, x: 10 }}
           animate={{ opacity: 1, x: 0 }}
-          className={`text-xs font-medium ${getBackendStyle().text}`}
+          className={cn('text-xs font-medium ui-mono', getBackendStyle().text)}
         >
           {getStatusText('', true)}
         </motion.span>

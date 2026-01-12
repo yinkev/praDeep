@@ -1,29 +1,31 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
+import type { LucideIcon } from 'lucide-react'
 import {
   Activity,
-  Zap,
+  AlertTriangle,
+  BarChart3,
+  CheckCircle2,
   Clock,
   DollarSign,
-  AlertTriangle,
-  CheckCircle2,
-  RefreshCw,
   Download,
-  TrendingUp,
-  BarChart3,
-  Cpu,
   Layers,
+  RefreshCw,
   Signal,
+  TrendingUp,
   WifiOff,
+  Zap,
 } from 'lucide-react'
 import { apiUrl, wsUrl } from '@/lib/api'
+import { cn } from '@/lib/utils'
 import { getTranslation } from '@/lib/i18n'
 import { useGlobal } from '@/context/GlobalContext'
 import PageWrapper, { PageHeader } from '@/components/ui/PageWrapper'
-import { Card, CardHeader, CardBody } from '@/components/ui/Card'
+import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
+import { useToast } from '@/components/ui/Toast'
 
 // ============================================================================
 // Types
@@ -82,63 +84,21 @@ interface HistoryEntry {
   timestamp: string
 }
 
+type TrendMetric = 'tokens' | 'cost' | 'duration'
+
 // ============================================================================
-// Module Colors with Teal Accents
+// Helpers
 // ============================================================================
 
-const MODULE_COLORS: Record<string, { bg: string; text: string; border: string; glow: string }> = {
-  solve: {
-    bg: 'bg-teal-100/80 dark:bg-teal-900/30',
-    text: 'text-teal-600 dark:text-teal-400',
-    border: 'border-teal-200/50 dark:border-teal-800/50',
-    glow: 'shadow-teal-500/20',
-  },
-  research: {
-    bg: 'bg-emerald-100/80 dark:bg-emerald-900/30',
-    text: 'text-emerald-600 dark:text-emerald-400',
-    border: 'border-emerald-200/50 dark:border-emerald-800/50',
-    glow: 'shadow-emerald-500/20',
-  },
-  guide: {
-    bg: 'bg-violet-100/80 dark:bg-violet-900/30',
-    text: 'text-violet-600 dark:text-violet-400',
-    border: 'border-violet-200/50 dark:border-violet-800/50',
-    glow: 'shadow-violet-500/20',
-  },
-  question: {
-    bg: 'bg-amber-100/80 dark:bg-amber-900/30',
-    text: 'text-amber-600 dark:text-amber-400',
-    border: 'border-amber-200/50 dark:border-amber-800/50',
-    glow: 'shadow-amber-500/20',
-  },
-  ideagen: {
-    bg: 'bg-rose-100/80 dark:bg-rose-900/30',
-    text: 'text-rose-600 dark:text-rose-400',
-    border: 'border-rose-200/50 dark:border-rose-800/50',
-    glow: 'shadow-rose-500/20',
-  },
-  co_writer: {
-    bg: 'bg-cyan-100/80 dark:bg-cyan-900/30',
-    text: 'text-cyan-600 dark:text-cyan-400',
-    border: 'border-cyan-200/50 dark:border-cyan-800/50',
-    glow: 'shadow-cyan-500/20',
-  },
+const glassCardClassName =
+  'border-white/55 bg-white/55 shadow-glass-sm backdrop-blur-xl dark:border-white/10 dark:bg-white/5'
+
+const modulePillClassName =
+  'inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 dark:border-blue-500/25 dark:bg-blue-500/10 dark:text-blue-200'
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value))
 }
-
-const getModuleColor = (module: string) => {
-  return (
-    MODULE_COLORS[module] || {
-      bg: 'bg-slate-100/80 dark:bg-slate-800/50',
-      text: 'text-slate-600 dark:text-slate-400',
-      border: 'border-slate-200/50 dark:border-slate-700/50',
-      glow: 'shadow-slate-500/20',
-    }
-  )
-}
-
-// ============================================================================
-// Format Helpers
-// ============================================================================
 
 const formatDuration = (ms: number | null | undefined): string => {
   if (ms === null || ms === undefined || ms === 0) return '0ms'
@@ -159,524 +119,636 @@ const formatCost = (cost: number): string => {
   return `$${cost.toFixed(2)}`
 }
 
+function percentile(values: number[], p: number) {
+  if (values.length === 0) return 0
+  const sorted = [...values].sort((a, b) => a - b)
+  const idx = clamp(Math.floor((sorted.length - 1) * p), 0, sorted.length - 1)
+  return sorted[idx]
+}
+
+function average(values: number[]) {
+  if (values.length === 0) return 0
+  return values.reduce((sum, val) => sum + val, 0) / values.length
+}
+
 // ============================================================================
-// Animation Variants
+// Motion
 // ============================================================================
 
-const staggerContainer = {
+const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: {
-      staggerChildren: 0.08,
-      delayChildren: 0.1,
-    },
+    transition: { staggerChildren: 0.08, delayChildren: 0.06 },
   },
 }
 
-const fadeInUp = {
-  hidden: { opacity: 0, y: 20 },
+const itemVariants = {
+  hidden: { opacity: 0, y: 14 },
   visible: {
     opacity: 1,
     y: 0,
-    transition: {
-      type: 'spring' as const,
-      stiffness: 300,
-      damping: 24,
-    },
-  },
-}
-
-const scaleIn = {
-  hidden: { opacity: 0, scale: 0.9 },
-  visible: {
-    opacity: 1,
-    scale: 1,
-    transition: {
-      type: 'spring' as const,
-      stiffness: 400,
-      damping: 25,
-    },
+    transition: { duration: 0.38, ease: [0.16, 1, 0.3, 1] as const },
   },
 }
 
 const pulseVariants = {
   pulse: {
-    scale: [1, 1.05, 1],
-    transition: {
-      duration: 2,
-      repeat: Infinity,
-      ease: 'easeInOut' as const,
-    },
+    scale: [1, 1.12, 1],
+    transition: { duration: 1.9, repeat: Infinity, ease: 'easeInOut' as const },
   },
 }
 
 // ============================================================================
-// Glassmorphism Metric Card Component
+// Charts
 // ============================================================================
 
-function MetricCard({
-  icon: Icon,
-  label,
-  value,
-  color,
-  trend,
-}: {
-  icon: React.ElementType
-  label: string
-  value: string | number
-  color: 'teal' | 'violet' | 'emerald' | 'rose' | 'amber' | 'cyan'
-  trend?: 'up' | 'down' | 'neutral'
-}) {
-  const colorConfig = {
-    teal: {
-      bg: 'from-teal-500/20 to-teal-600/10',
-      icon: 'text-teal-500 dark:text-teal-400',
-      value: 'text-teal-600 dark:text-teal-300',
-      glow: 'shadow-teal-500/10',
-    },
-    violet: {
-      bg: 'from-violet-500/20 to-violet-600/10',
-      icon: 'text-violet-500 dark:text-violet-400',
-      value: 'text-violet-600 dark:text-violet-300',
-      glow: 'shadow-violet-500/10',
-    },
-    emerald: {
-      bg: 'from-emerald-500/20 to-emerald-600/10',
-      icon: 'text-emerald-500 dark:text-emerald-400',
-      value: 'text-emerald-600 dark:text-emerald-300',
-      glow: 'shadow-emerald-500/10',
-    },
-    rose: {
-      bg: 'from-rose-500/20 to-rose-600/10',
-      icon: 'text-rose-500 dark:text-rose-400',
-      value: 'text-rose-600 dark:text-rose-300',
-      glow: 'shadow-rose-500/10',
-    },
-    amber: {
-      bg: 'from-amber-500/20 to-amber-600/10',
-      icon: 'text-amber-500 dark:text-amber-400',
-      value: 'text-amber-600 dark:text-amber-300',
-      glow: 'shadow-amber-500/10',
-    },
-    cyan: {
-      bg: 'from-cyan-500/20 to-cyan-600/10',
-      icon: 'text-cyan-500 dark:text-cyan-400',
-      value: 'text-cyan-600 dark:text-cyan-300',
-      glow: 'shadow-cyan-500/10',
-    },
+type ChartPoint = { x: number; y: number; value: number }
+
+function buildLineAreaPath(values: number[], width: number, height: number, padding: number) {
+  if (values.length === 0) {
+    return { line: '', area: '', points: [] as ChartPoint[], min: 0, max: 0 }
   }
 
-  const config = colorConfig[color]
+  const min = Math.min(...values)
+  const max = Math.max(...values)
+  const range = Math.max(1e-9, max - min)
+  const innerWidth = Math.max(1, width - padding * 2)
+  const innerHeight = Math.max(1, height - padding * 2)
+  const step = values.length <= 1 ? 0 : innerWidth / (values.length - 1)
 
-  return (
-    <motion.div
-      variants={fadeInUp}
-      whileHover={{ y: -4, scale: 1.02 }}
-      className={`
-        relative overflow-hidden rounded-2xl p-5
-        bg-white/60 dark:bg-slate-900/40
-        backdrop-blur-xl backdrop-saturate-150
-        border border-white/40 dark:border-slate-700/40
-        shadow-xl ${config.glow}
-        transition-shadow duration-300
-        hover:shadow-2xl hover:${config.glow}
-      `}
-    >
-      {/* Gradient overlay */}
-      <div
-        className={`absolute inset-0 bg-gradient-to-br ${config.bg} opacity-50 pointer-events-none`}
-      />
+  const points = values.map((value, index) => {
+    const normalized = (value - min) / range
+    const x = padding + index * step
+    const y = height - padding - normalized * innerHeight
+    return { x, y, value }
+  })
 
-      <div className="relative z-10">
-        <div className="flex items-center gap-3 mb-3">
-          <div
-            className={`
-            p-2.5 rounded-xl
-            bg-white/70 dark:bg-slate-800/70
-            backdrop-blur-sm
-            shadow-sm
-          `}
-          >
-            <Icon className={`w-5 h-5 ${config.icon}`} />
-          </div>
-          <span className="text-sm font-medium text-slate-500 dark:text-slate-400">{label}</span>
-        </div>
-        <motion.div
-          className={`text-3xl font-bold ${config.value} tracking-tight`}
-          initial={{ opacity: 0, scale: 0.5 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ type: 'spring' as const, stiffness: 400, damping: 20 }}
-        >
-          {value}
-        </motion.div>
-      </div>
-    </motion.div>
-  )
+  const line = `M ${points.map(p => `${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(' L ')}`
+  const lastX = points.at(-1)?.x ?? padding
+  const area = `${line} L ${lastX.toFixed(2)},${(height - padding).toFixed(2)} L ${padding.toFixed(
+    2
+  )},${(height - padding).toFixed(2)} Z`
+
+  return { line, area, points, min, max }
 }
 
-// ============================================================================
-// Live Status Indicator
-// ============================================================================
+function MiniSparkline({ id, values }: { id: string; values: number[] }) {
+  const { line, area } = buildLineAreaPath(values, 100, 32, 2)
 
-function LiveIndicator({ connected }: { connected: boolean }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, x: 10 }}
-      animate={{ opacity: 1, x: 0 }}
-      className={`
-        flex items-center gap-2 px-4 py-2 rounded-xl
-        ${
-          connected
-            ? 'bg-emerald-100/80 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'
-            : 'bg-slate-100/80 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400'
-        }
-        backdrop-blur-sm border
-        ${connected ? 'border-emerald-200/50 dark:border-emerald-800/50' : 'border-slate-200/50 dark:border-slate-700/50'}
-      `}
-    >
-      {connected ? (
-        <>
-          <motion.div
-            variants={pulseVariants}
-            animate="pulse"
-            className="w-2.5 h-2.5 rounded-full bg-emerald-500"
-          />
-          <Signal className="w-4 h-4" />
-          <span className="text-sm font-medium">Live</span>
-        </>
-      ) : (
-        <>
-          <div className="w-2.5 h-2.5 rounded-full bg-slate-400" />
-          <WifiOff className="w-4 h-4" />
-          <span className="text-sm font-medium">Disconnected</span>
-        </>
-      )}
-    </motion.div>
-  )
-}
-
-// ============================================================================
-// Module Stats Card with Glassmorphism
-// ============================================================================
-
-function ModuleCard({
-  moduleName,
-  stats,
-  isSelected,
-  onClick,
-}: {
-  moduleName: string
-  stats: ModuleStats
-  isSelected: boolean
-  onClick: () => void
-}) {
-  const colors = getModuleColor(moduleName)
+  if (!line) {
+    return (
+      <div className="h-8 w-20 rounded-lg border border-white/60 bg-white/50 dark:border-white/10 dark:bg-white/5" />
+    )
+  }
 
   return (
-    <motion.button
-      variants={scaleIn}
-      whileHover={{ y: -4 }}
-      whileTap={{ scale: 0.98 }}
-      onClick={onClick}
-      className={`
-        text-left w-full p-5 rounded-2xl
-        transition-all duration-300
-        ${
-          isSelected
-            ? `bg-white/80 dark:bg-slate-800/80 ring-2 ring-teal-500/50 shadow-xl ${colors.glow}`
-            : 'bg-white/50 dark:bg-slate-900/30 hover:bg-white/70 dark:hover:bg-slate-800/50'
-        }
-        backdrop-blur-xl backdrop-saturate-150
-        border ${isSelected ? 'border-teal-300/50 dark:border-teal-700/50' : 'border-white/30 dark:border-slate-700/30'}
-      `}
-    >
-      <div className="flex items-center justify-between mb-4">
-        <span className={`text-lg font-semibold capitalize ${colors.text}`}>{moduleName}</span>
-        <span
-          className={`
-          text-xs px-3 py-1.5 rounded-full font-medium
-          ${colors.bg} ${colors.text}
-          backdrop-blur-sm
-        `}
-        >
-          {stats.unique_agents} agents
-        </span>
-      </div>
-
-      <motion.div
-        className="grid grid-cols-2 gap-3"
-        initial="hidden"
-        animate="visible"
-        variants={staggerContainer}
-      >
-        <StatItem label="Calls" value={stats.total_calls.toString()} />
-        <StatItem label="Tokens" value={formatTokens(stats.total_tokens)} />
-        <StatItem label="Cost" value={formatCost(stats.total_cost_usd)} />
-        <StatItem
-          label="Error Rate"
-          value={`${stats.error_rate.toFixed(1)}%`}
-          valueColor={
-            stats.error_rate > 10
-              ? 'text-rose-500'
-              : stats.error_rate > 0
-                ? 'text-amber-500'
-                : 'text-emerald-500'
-          }
+    <div className="h-8 w-20 rounded-lg border border-white/60 bg-white/50 px-2 py-1 shadow-xs backdrop-blur-md dark:border-white/10 dark:bg-white/5">
+      <svg viewBox="0 0 100 32" className="h-full w-full" aria-hidden="true">
+        <defs>
+          <linearGradient id={`${id}-fill`} x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor="rgb(37 99 235)" stopOpacity="0.26" />
+            <stop offset="100%" stopColor="rgb(37 99 235)" stopOpacity="0.02" />
+          </linearGradient>
+        </defs>
+        <path d={area} fill={`url(#${id}-fill)`} />
+        <path
+          d={line}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="text-blue-600 dark:text-blue-400"
         />
-      </motion.div>
-    </motion.button>
+      </svg>
+    </div>
   )
 }
 
-function StatItem({
-  label,
-  value,
-  valueColor,
+function PremiumAreaChart({
+  id,
+  values,
+  labels,
+  formatValue,
 }: {
-  label: string
-  value: string
-  valueColor?: string
+  id: string
+  values: number[]
+  labels: string[]
+  formatValue: (value: number) => string
 }) {
-  return (
-    <div>
-      <div className="text-xs text-slate-500 dark:text-slate-400 mb-0.5">{label}</div>
-      <div className={`font-semibold ${valueColor || 'text-slate-900 dark:text-slate-100'}`}>
-        {value}
+  const width = 1000
+  const height = 260
+  const padding = 18
+  const { line, area, points, min, max } = buildLineAreaPath(values, width, height, padding)
+
+  const containerRef = useRef<HTMLDivElement | null>(null)
+  const [activeIndex, setActiveIndex] = useState<number | null>(null)
+
+  const setFromClientX = (clientX: number) => {
+    const el = containerRef.current
+    if (!el || points.length === 0) return
+    const rect = el.getBoundingClientRect()
+    const ratio = clamp((clientX - rect.left) / rect.width, 0, 1)
+    const idx = Math.round(ratio * (points.length - 1))
+    setActiveIndex(clamp(idx, 0, points.length - 1))
+  }
+
+  const activePoint = activeIndex === null ? null : points[activeIndex]
+  const activeLabel = activeIndex === null ? null : labels[activeIndex]
+
+  const tooltipLeftPercent = activePoint ? clamp((activePoint.x / width) * 100, 6, 94) : 0
+
+  if (!line || values.length <= 1) {
+    return (
+      <div className="flex h-56 items-center justify-center rounded-2xl border border-white/60 bg-white/45 text-sm text-zinc-500 backdrop-blur-md dark:border-white/10 dark:bg-white/5 dark:text-zinc-400">
+        No chart data yet
       </div>
+    )
+  }
+
+  return (
+    <div ref={containerRef} className="relative">
+      <svg
+        viewBox={`0 0 ${width} ${height}`}
+        className="h-56 w-full"
+        preserveAspectRatio="none"
+        onPointerMove={e => setFromClientX(e.clientX)}
+        onPointerLeave={() => setActiveIndex(null)}
+        role="img"
+        aria-label="Trend chart"
+      >
+        <defs>
+          <linearGradient id={`${id}-fill`} x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor="rgb(37 99 235)" stopOpacity="0.24" />
+            <stop offset="100%" stopColor="rgb(37 99 235)" stopOpacity="0.02" />
+          </linearGradient>
+          <linearGradient id={`${id}-stroke`} x1="0" x2="1" y1="0" y2="0">
+            <stop offset="0%" stopColor="rgb(37 99 235)" stopOpacity="0.8" />
+            <stop offset="100%" stopColor="rgb(99 102 241)" stopOpacity="0.85" />
+          </linearGradient>
+        </defs>
+
+        {[0.25, 0.5, 0.75].map(tick => {
+          const y = padding + (height - padding * 2) * tick
+          return (
+            <line
+              key={tick}
+              x1={padding}
+              x2={width - padding}
+              y1={y}
+              y2={y}
+              stroke="currentColor"
+              className="text-zinc-200/70 dark:text-white/10"
+              strokeDasharray="3 3"
+            />
+          )
+        })}
+
+        <path d={area} fill={`url(#${id}-fill)`} />
+        <path
+          d={line}
+          fill="none"
+          stroke={`url(#${id}-stroke)`}
+          strokeWidth="3"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+
+        {activePoint && (
+          <>
+            <line
+              x1={activePoint.x}
+              x2={activePoint.x}
+              y1={padding}
+              y2={height - padding}
+              stroke="currentColor"
+              className="text-blue-600/35 dark:text-blue-400/35"
+            />
+            <circle cx={activePoint.x} cy={activePoint.y} r="8" fill="rgb(37 99 235)" opacity={0.12} />
+            <circle cx={activePoint.x} cy={activePoint.y} r="4" fill="rgb(37 99 235)" />
+          </>
+        )}
+      </svg>
+
+      <div className="mt-3 flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
+        <span className="font-mono tabular-nums">{formatValue(min)}</span>
+        <span className="font-mono tabular-nums">{formatValue(max)}</span>
+      </div>
+
+      {activePoint && activeLabel && (
+        <div
+          className="pointer-events-none absolute top-3 -translate-x-1/2"
+          style={{ left: `${tooltipLeftPercent}%` }}
+        >
+          <div className="rounded-xl border border-white/60 bg-white/80 px-3 py-2 text-xs text-zinc-800 shadow-lg backdrop-blur-md dark:border-white/10 dark:bg-zinc-950/70 dark:text-zinc-200">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-zinc-500 dark:text-zinc-400">{activeLabel}</span>
+              <span className="font-mono font-semibold tabular-nums text-zinc-900 dark:text-zinc-100">
+                {formatValue(activePoint.value)}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
 
 // ============================================================================
-// Agent Table with Glass Styling
+// UI Pieces
 // ============================================================================
 
-function AgentTable({
-  agents,
+function LiveStatusPill({ connected }: { connected: boolean }) {
+  return (
+    <div
+      className={cn(
+        'inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium backdrop-blur-md',
+        connected
+          ? 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-500/25 dark:bg-blue-500/10 dark:text-blue-200'
+          : 'border-white/60 bg-white/60 text-zinc-600 dark:border-white/10 dark:bg-white/5 dark:text-zinc-300'
+      )}
+    >
+      {connected ? (
+        <>
+          <motion.span
+            variants={pulseVariants}
+            animate="pulse"
+            className="h-2.5 w-2.5 rounded-full bg-blue-500"
+          />
+          <Signal className="h-4 w-4" />
+          <span>Live</span>
+        </>
+      ) : (
+        <>
+          <span className="h-2.5 w-2.5 rounded-full bg-zinc-400" />
+          <WifiOff className="h-4 w-4" />
+          <span>Offline</span>
+        </>
+      )}
+    </div>
+  )
+}
+
+function KpiCard({
+  icon: Icon,
+  label,
+  value,
+  valueClassName,
+  sparklineId,
+  sparklineValues,
+}: {
+  icon: LucideIcon
+  label: string
+  value: string
+  valueClassName?: string
+  sparklineId?: string
+  sparklineValues?: number[]
+}) {
+  return (
+    <Card variant="glass" padding="md" interactive={false} className={cn('relative', glassCardClassName)}>
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300">
+          <Icon className="h-5 w-5" />
+        </div>
+        {sparklineId && sparklineValues ? (
+          <MiniSparkline id={sparklineId} values={sparklineValues} />
+        ) : (
+          <div className="h-8 w-20" />
+        )}
+      </div>
+
+      <div className="mt-4">
+        <div className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+          {label}
+        </div>
+        <div
+          className={cn(
+            'mt-1 text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50 tabular-nums',
+            valueClassName
+          )}
+        >
+          {value}
+        </div>
+      </div>
+    </Card>
+  )
+}
+
+function MetricToggle({
+  value,
+  onChange,
+  options,
+}: {
+  value: TrendMetric
+  onChange: (next: TrendMetric) => void
+  options: Array<{ id: TrendMetric; label: string; icon: LucideIcon }>
+}) {
+  return (
+    <div className="inline-flex items-center gap-1 rounded-full border border-white/60 bg-white/60 p-1 backdrop-blur-md dark:border-white/10 dark:bg-white/5">
+      {options.map(option => {
+        const isActive = option.id === value
+        return (
+          <button
+            key={option.id}
+            type="button"
+            onClick={() => onChange(option.id)}
+            className={cn(
+              'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors',
+              isActive
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
+                : 'text-zinc-600 hover:text-zinc-900 dark:text-zinc-200 dark:hover:text-white'
+            )}
+          >
+            <option.icon className="h-3.5 w-3.5" />
+            <span>{option.label}</span>
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+function ModulesList({
+  modules,
+  selectedModule,
+  onSelect,
+}: {
+  modules: Array<[string, ModuleStats]>
+  selectedModule: string | null
+  onSelect: (next: string | null) => void
+}) {
+  return (
+    <div className="space-y-3">
+      {modules.map(([moduleName, stats]) => {
+        const isSelected = selectedModule === moduleName
+        return (
+          <button
+            key={moduleName}
+            type="button"
+            onClick={() => onSelect(isSelected ? null : moduleName)}
+            className="w-full text-left"
+          >
+            <Card
+              variant="glass"
+              padding="md"
+              interactive={false}
+              className={cn(
+                glassCardClassName,
+                'transition-[border-color,box-shadow] duration-200 ease-out-expo',
+                isSelected
+                  ? 'ring-2 ring-blue-500/25 border-blue-500/25 shadow-glass'
+                  : 'hover:border-white/80 dark:hover:border-white/20'
+              )}
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold capitalize text-zinc-900 dark:text-zinc-50">
+                      {moduleName}
+                    </span>
+                    <span className={modulePillClassName}>{stats.unique_agents} agents</span>
+                  </div>
+                  <div className="mt-3 grid grid-cols-2 gap-3">
+                    <div>
+                      <div className="text-[11px] text-zinc-500 dark:text-zinc-400">Calls</div>
+                      <div className="mt-0.5 font-mono text-sm text-zinc-900 dark:text-zinc-100 tabular-nums">
+                        {stats.total_calls}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-[11px] text-zinc-500 dark:text-zinc-400">Error rate</div>
+                      <div
+                        className={cn(
+                          'mt-0.5 font-mono text-sm font-semibold tabular-nums',
+                          stats.error_rate > 10
+                            ? 'text-rose-500'
+                            : stats.error_rate > 0
+                              ? 'text-amber-500'
+                              : 'text-emerald-500'
+                        )}
+                      >
+                        {stats.error_rate.toFixed(1)}%
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-[11px] text-zinc-500 dark:text-zinc-400">Tokens</div>
+                      <div className="mt-0.5 font-mono text-sm text-zinc-900 dark:text-zinc-100 tabular-nums">
+                        {formatTokens(stats.total_tokens)}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-[11px] text-zinc-500 dark:text-zinc-400">Cost</div>
+                      <div className="mt-0.5 font-mono text-sm text-zinc-900 dark:text-zinc-100 tabular-nums">
+                        {formatCost(stats.total_cost_usd)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <TrendingUp className="mt-1 h-4 w-4 text-zinc-400 dark:text-zinc-500" />
+              </div>
+            </Card>
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+function AgentPerformanceTable({
+  rows,
   selectedModule,
 }: {
-  agents: [string, AgentStats][]
+  rows: AgentStats[]
   selectedModule: string | null
 }) {
   return (
-    <Card variant="glass" hoverEffect={false} className="overflow-hidden">
-      <CardHeader className="flex items-center gap-3">
-        <div className="p-2 rounded-lg bg-emerald-100/80 dark:bg-emerald-900/30">
-          <TrendingUp className="w-5 h-5 text-emerald-500" />
+    <Card variant="glass" padding="none" interactive={false} className={cn('overflow-hidden', glassCardClassName)}>
+      <CardHeader className="flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300">
+            <TrendingUp className="h-5 w-5" />
+          </div>
+          <div>
+            <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">Agents</h2>
+            <p className="mt-0.5 text-sm text-zinc-500 dark:text-zinc-400">
+              {selectedModule ? (
+                <>
+                  Filtered by{' '}
+                  <span className="font-medium text-zinc-700 dark:text-zinc-200">{selectedModule}</span>
+                </>
+              ) : (
+                `${rows.length} agents`
+              )}
+            </p>
+          </div>
         </div>
-        <div>
-          <h2 className="font-semibold text-slate-900 dark:text-slate-100">Agent Performance</h2>
-          {selectedModule && (
-            <span className="text-sm text-slate-500 dark:text-slate-400">
-              Filtered by {selectedModule}
-            </span>
-          )}
+
+        <div className="flex items-center gap-2">
+          <span className="rounded-full border border-white/60 bg-white/60 px-3 py-1.5 text-xs text-zinc-600 backdrop-blur-md dark:border-white/10 dark:bg-white/5 dark:text-zinc-300">
+            {rows.length} rows
+          </span>
         </div>
       </CardHeader>
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-[#F7F4EC]/50 dark:bg-slate-800/50">
-              <th className="px-5 py-4 text-left font-medium text-slate-600 dark:text-slate-400">
-                Agent
-              </th>
-              <th className="px-5 py-4 text-left font-medium text-slate-600 dark:text-slate-400">
-                Module
-              </th>
-              <th className="px-5 py-4 text-right font-medium text-slate-600 dark:text-slate-400">
-                Calls
-              </th>
-              <th className="px-5 py-4 text-right font-medium text-slate-600 dark:text-slate-400">
-                Avg Time
-              </th>
-              <th className="px-5 py-4 text-right font-medium text-slate-600 dark:text-slate-400">
-                Tokens
-              </th>
-              <th className="px-5 py-4 text-right font-medium text-slate-600 dark:text-slate-400">
-                Cost
-              </th>
-              <th className="px-5 py-4 text-right font-medium text-slate-600 dark:text-slate-400">
-                Success
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[#E8E2D0]/50 dark:divide-slate-700/50">
-            <AnimatePresence mode="popLayout">
-              {agents.map(([key, stats]) => {
-                const colors = getModuleColor(stats.module_name)
-
-                return (
-                  <motion.tr
-                    key={key}
-                    layout
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="hover:bg-white/50 dark:hover:bg-slate-800/30 transition-colors"
+      <CardContent padding="none" className="overflow-hidden">
+        <div className="max-h-[32rem] overflow-auto">
+          <table className="w-full text-sm">
+            <thead className="sticky top-0 z-10">
+              <tr className="bg-zinc-50/80 backdrop-blur-md dark:bg-zinc-950/40">
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400 sm:px-6">
+                  Agent
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400 sm:px-6">
+                  Module
+                </th>
+                <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400 sm:px-6">
+                  Calls
+                </th>
+                <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400 sm:px-6">
+                  Avg
+                </th>
+                <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400 sm:px-6">
+                  Tokens
+                </th>
+                <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400 sm:px-6">
+                  Cost
+                </th>
+                <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400 sm:px-6">
+                  Success
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-zinc-200/60 dark:divide-white/10">
+              {rows.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-6 py-12 text-center text-sm text-zinc-500 dark:text-zinc-400">
+                    No agent data available yet. Run some agents to see metrics.
+                  </td>
+                </tr>
+              ) : (
+                rows.map((stats, idx) => (
+                  <tr
+                    key={`${stats.agent_name}-${stats.module_name}-${idx}`}
+                    className="transition-colors hover:bg-zinc-50/60 dark:hover:bg-white/5"
                   >
-                    <td className="px-5 py-4 font-medium text-slate-900 dark:text-slate-100">
+                    <td className="px-4 py-4 font-medium text-zinc-900 dark:text-zinc-100 sm:px-6">
                       {stats.agent_name}
                     </td>
-                    <td className="px-5 py-4">
-                      <span
-                        className={`
-                        px-2.5 py-1 rounded-lg text-xs font-medium
-                        ${colors.bg} ${colors.text}
-                        backdrop-blur-sm
-                      `}
-                      >
-                        {stats.module_name}
-                      </span>
+                    <td className="px-4 py-4 sm:px-6">
+                      <span className={modulePillClassName}>{stats.module_name}</span>
                     </td>
-                    <td className="px-5 py-4 text-right text-slate-600 dark:text-slate-400">
+                    <td className="px-4 py-4 text-right font-mono text-zinc-700 dark:text-zinc-300 tabular-nums sm:px-6">
                       {stats.total_invocations}
                     </td>
-                    <td className="px-5 py-4 text-right text-slate-600 dark:text-slate-400">
+                    <td className="px-4 py-4 text-right font-mono text-zinc-700 dark:text-zinc-300 tabular-nums sm:px-6">
                       {formatDuration(stats.avg_duration_ms)}
                     </td>
-                    <td className="px-5 py-4 text-right text-slate-600 dark:text-slate-400">
+                    <td className="px-4 py-4 text-right font-mono text-zinc-700 dark:text-zinc-300 tabular-nums sm:px-6">
                       {formatTokens(stats.total_tokens)}
                     </td>
-                    <td className="px-5 py-4 text-right text-slate-600 dark:text-slate-400">
+                    <td className="px-4 py-4 text-right font-mono text-zinc-700 dark:text-zinc-300 tabular-nums sm:px-6">
                       {formatCost(stats.total_cost_usd)}
                     </td>
-                    <td className="px-5 py-4 text-right">
+                    <td className="px-4 py-4 text-right sm:px-6">
                       <span
-                        className={`
-                        font-semibold
-                        ${
+                        className={cn(
+                          'font-semibold tabular-nums',
                           stats.success_rate >= 95
                             ? 'text-emerald-500'
                             : stats.success_rate >= 80
                               ? 'text-amber-500'
                               : 'text-rose-500'
-                        }
-                      `}
+                        )}
                       >
                         {stats.success_rate.toFixed(1)}%
                       </span>
                     </td>
-                  </motion.tr>
-                )
-              })}
-            </AnimatePresence>
-
-            {agents.length === 0 && (
-              <tr>
-                <td
-                  colSpan={7}
-                  className="px-5 py-12 text-center text-slate-400 dark:text-slate-500"
-                >
-                  <div className="flex flex-col items-center gap-2">
-                    <Cpu className="w-8 h-8 opacity-50" />
-                    <span>No agent data available yet. Run some agents to see metrics.</span>
-                  </div>
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </CardContent>
     </Card>
   )
 }
 
-// ============================================================================
-// Activity History with Animations
-// ============================================================================
+function ActivityFeed({ history }: { history: HistoryEntry[] }) {
+  const rows = history
+    .slice()
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+    .slice(0, 24)
 
-function ActivityHistory({ history }: { history: HistoryEntry[] }) {
   return (
-    <Card variant="glass" hoverEffect={false} className="overflow-hidden">
-      <CardHeader className="flex items-center justify-between">
+    <Card variant="glass" padding="none" interactive={false} className={cn('overflow-hidden', glassCardClassName)}>
+      <CardHeader className="flex-row items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-amber-100/80 dark:bg-amber-900/30">
-            <Clock className="w-5 h-5 text-amber-500" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300">
+            <Clock className="h-5 w-5" />
           </div>
-          <h2 className="font-semibold text-slate-900 dark:text-slate-100">Recent Activity</h2>
+          <div>
+            <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">Recent activity</h2>
+            <p className="mt-0.5 text-sm text-zinc-500 dark:text-zinc-400">Last {rows.length} events</p>
+          </div>
         </div>
-        <span className="text-xs text-slate-400 dark:text-slate-500 bg-slate-100/80 dark:bg-slate-800/50 px-3 py-1.5 rounded-full">
-          {history.length} entries
-        </span>
       </CardHeader>
 
-      <div className="divide-y divide-[#E8E2D0]/50 dark:divide-slate-700/50 max-h-80 overflow-y-auto">
-        <AnimatePresence initial={false}>
-          {history.map((entry, idx) => {
-            const colors = getModuleColor(entry.module_name)
-
-            return (
-              <motion.div
-                key={`${entry.timestamp}-${idx}`}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                transition={{ delay: idx * 0.02 }}
-                className="px-6 py-4 flex items-center justify-between hover:bg-white/30 dark:hover:bg-slate-800/30 transition-colors"
-              >
-                <div className="flex items-center gap-4">
-                  <motion.div
-                    className={`
-                      w-3 h-3 rounded-full
-                      ${entry.success ? 'bg-emerald-500' : 'bg-rose-500'}
-                    `}
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ type: 'spring' as const, stiffness: 500, damping: 25 }}
-                  />
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-slate-900 dark:text-slate-100">
+      <CardContent padding="none">
+        {rows.length === 0 ? (
+          <div className="px-6 py-12 text-center text-sm text-zinc-500 dark:text-zinc-400">No recent activity</div>
+        ) : (
+          <div className="divide-y divide-zinc-200/60 dark:divide-white/10">
+            {rows.map((entry, idx) => (
+              <div key={`${entry.timestamp}-${idx}`} className="flex items-center justify-between gap-4 px-6 py-4">
+                <div className="flex items-start gap-3 min-w-0">
+                  <div
+                    className={cn(
+                      'mt-0.5 flex h-8 w-8 items-center justify-center rounded-xl',
+                      entry.success
+                        ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300'
+                        : 'bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-300'
+                    )}
+                  >
+                    {entry.success ? <CheckCircle2 className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <div className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-50">
                         {entry.agent_name}
-                      </span>
-                      <span
-                        className={`
-                        px-2 py-0.5 rounded-md text-xs font-medium
-                        ${colors.bg} ${colors.text}
-                      `}
-                      >
-                        {entry.module_name}
-                      </span>
+                      </div>
+                      <span className={modulePillClassName}>{entry.module_name}</span>
                     </div>
-                    <div className="text-xs text-slate-400 dark:text-slate-500">
+                    <div className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
                       {new Date(entry.timestamp).toLocaleString()}
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-6 text-sm text-slate-500 dark:text-slate-400">
-                  <span className="font-mono">{formatDuration(entry.duration_ms)}</span>
-                  <span className="font-mono">{formatTokens(entry.total_tokens)}</span>
-                  <span className="font-mono">{formatCost(entry.cost_usd)}</span>
-                </div>
-              </motion.div>
-            )
-          })}
-        </AnimatePresence>
 
-        {history.length === 0 && (
-          <div className="px-6 py-12 text-center text-slate-400 dark:text-slate-500">
-            <div className="flex flex-col items-center gap-2">
-              <Clock className="w-8 h-8 opacity-50" />
-              <span>No recent activity</span>
-            </div>
+                <div className="hidden shrink-0 items-center gap-6 text-xs text-zinc-600 dark:text-zinc-300 sm:flex">
+                  <span className="font-mono tabular-nums">{formatDuration(entry.duration_ms)}</span>
+                  <span className="font-mono tabular-nums">{formatTokens(entry.total_tokens)}</span>
+                  <span className="font-mono tabular-nums">{formatCost(entry.cost_usd)}</span>
+                </div>
+              </div>
+            ))}
           </div>
         )}
-      </div>
+      </CardContent>
     </Card>
   )
 }
 
 // ============================================================================
-// Main Component
+// Page
 // ============================================================================
 
 export default function MetricsPage() {
   const { uiSettings } = useGlobal()
-  const t = (key: string) => getTranslation(uiSettings.language, key)
+  const t = useCallback((key: string) => getTranslation(uiSettings.language, key), [uiSettings.language])
+  const toast = useToast()
 
-  // State
   const [summary, setSummary] = useState<MetricsSummary | null>(null)
   const [moduleStats, setModuleStats] = useState<Record<string, ModuleStats>>({})
   const [agentStats, setAgentStats] = useState<Record<string, AgentStats>>({})
@@ -686,31 +758,38 @@ export default function MetricsPage() {
   const [wsConnected, setWsConnected] = useState(false)
   const [selectedModule, setSelectedModule] = useState<string | null>(null)
   const [autoRefresh, setAutoRefresh] = useState(true)
+  const [trendMetric, setTrendMetric] = useState<TrendMetric>('tokens')
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null)
 
   const wsRef = useRef<WebSocket | null>(null)
 
-  // Fetch data
   const fetchMetrics = useCallback(async () => {
     try {
       const [summaryRes, modulesRes, agentsRes, historyRes] = await Promise.all([
         fetch(apiUrl('/api/v1/metrics/summary')),
         fetch(apiUrl('/api/v1/metrics/modules')),
         fetch(apiUrl('/api/v1/metrics/agents')),
-        fetch(apiUrl('/api/v1/metrics/history?limit=50')),
+        fetch(apiUrl('/api/v1/metrics/history?limit=60')),
       ])
 
       if (summaryRes.ok) setSummary(await summaryRes.json())
       if (modulesRes.ok) setModuleStats(await modulesRes.json())
       if (agentsRes.ok) setAgentStats(await agentsRes.json())
       if (historyRes.ok) setHistory(await historyRes.json())
+      setLastUpdatedAt(new Date())
     } catch (err) {
-      console.error('Failed to fetch metrics:', err)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to fetch metrics:', err)
+      }
     } finally {
       setLoading(false)
     }
   }, [])
 
-  // WebSocket connection
+  useEffect(() => {
+    fetchMetrics()
+  }, [fetchMetrics])
+
   useEffect(() => {
     if (!autoRefresh) return
 
@@ -718,233 +797,367 @@ export default function MetricsPage() {
       try {
         const ws = new WebSocket(wsUrl('/api/v1/metrics/stream'))
 
-        ws.onopen = () => {
-          setWsConnected(true)
-          console.log('Metrics WebSocket connected')
-        }
-
+        ws.onopen = () => setWsConnected(true)
         ws.onmessage = event => {
           try {
             const message = JSON.parse(event.data)
-            if (message.type === 'metrics_update' || message.type === 'initial_summary') {
-              fetchMetrics()
-            }
+            if (message.type === 'metrics_update' || message.type === 'initial_summary') fetchMetrics()
           } catch (e) {
-            console.error('Failed to parse WebSocket message:', e)
+            if (process.env.NODE_ENV === 'development') {
+              console.error('Failed to parse WebSocket message:', e)
+            }
           }
         }
-
         ws.onclose = () => {
           setWsConnected(false)
           setTimeout(connectWebSocket, 5000)
         }
-
-        ws.onerror = () => {
-          setWsConnected(false)
-        }
+        ws.onerror = () => setWsConnected(false)
 
         wsRef.current = ws
       } catch (err) {
-        console.error('WebSocket connection failed:', err)
+        if (process.env.NODE_ENV === 'development') {
+          console.error('WebSocket connection failed:', err)
+        }
       }
     }
 
     connectWebSocket()
 
-    return () => {
-      if (wsRef.current) {
-        wsRef.current.close()
-      }
-    }
+    return () => wsRef.current?.close()
   }, [autoRefresh, fetchMetrics])
 
-  // Initial fetch
-  useEffect(() => {
-    fetchMetrics()
-  }, [fetchMetrics])
-
-  // Export report
   const handleExport = async () => {
     setExporting(true)
     try {
       const res = await fetch(apiUrl('/api/v1/metrics/export'), { method: 'POST' })
       const data = await res.json()
-      if (data.success) {
-        alert(`Report exported to: ${data.filepath}`)
-      } else {
-        alert(`Export failed: ${data.error}`)
-      }
+      if (data.success) toast.success(`Report exported to: ${data.filepath}`)
+      else toast.error(`Export failed: ${data.error}`)
     } catch (err) {
-      console.error('Export failed:', err)
-      alert('Export failed')
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Export failed:', err)
+      }
+      toast.error('Export failed')
     } finally {
       setExporting(false)
     }
   }
 
-  // Filter agents by module
-  const filteredAgents = selectedModule
-    ? Object.entries(agentStats).filter(([_, stats]) => stats.module_name === selectedModule)
-    : Object.entries(agentStats)
+  const filteredAgents = useMemo(() => {
+    const entries = Object.values(agentStats)
+    const filtered = selectedModule ? entries.filter(a => a.module_name === selectedModule) : entries
+    return filtered.slice().sort((a, b) => b.total_invocations - a.total_invocations)
+  }, [agentStats, selectedModule])
+
+  const modulesSorted = useMemo(() => {
+    return Object.entries(moduleStats).sort((a, b) => b[1].total_calls - a[1].total_calls)
+  }, [moduleStats])
+
+  const recentHistory = useMemo(() => {
+    return history
+      .slice()
+      .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+      .slice(-60)
+  }, [history])
+
+  const tokensSeries = useMemo(() => recentHistory.map(h => h.total_tokens), [recentHistory])
+  const costSeries = useMemo(() => recentHistory.map(h => h.cost_usd), [recentHistory])
+  const durationSeries = useMemo(() => recentHistory.map(h => h.duration_ms ?? 0), [recentHistory])
+  const durationsNonNull = useMemo(
+    () => recentHistory.map(h => h.duration_ms).filter((ms): ms is number => typeof ms === 'number'),
+    [recentHistory]
+  )
+  const avgDurationMs = useMemo(() => average(durationsNonNull), [durationsNonNull])
+  const successSeries = useMemo(() => recentHistory.map(h => (h.success ? 1 : 0)), [recentHistory])
+
+  const metricOptions = useMemo(
+    () =>
+      [
+        { id: 'tokens' as const, label: t('Tokens'), icon: Layers },
+        { id: 'cost' as const, label: t('Cost'), icon: DollarSign },
+        { id: 'duration' as const, label: t('Duration'), icon: Clock },
+      ] satisfies Array<{ id: TrendMetric; label: string; icon: LucideIcon }>,
+    [t]
+  )
+
+  const chartValues = useMemo(() => {
+    if (trendMetric === 'tokens') return tokensSeries
+    if (trendMetric === 'cost') return costSeries
+    return durationSeries
+  }, [costSeries, durationSeries, tokensSeries, trendMetric])
+
+  const chartLabels = useMemo(
+    () =>
+      recentHistory.map(entry =>
+        new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      ),
+    [recentHistory]
+  )
+
+  const chartFormatter = useMemo(() => {
+    if (trendMetric === 'tokens') return (value: number) => formatTokens(Math.round(value))
+    if (trendMetric === 'cost') return (value: number) => formatCost(value)
+    return (value: number) => formatDuration(value)
+  }, [trendMetric])
+
+  const chartStats = useMemo(() => {
+    if (chartValues.length === 0) return null
+    return {
+      avg: average(chartValues),
+      min: Math.min(...chartValues),
+      max: Math.max(...chartValues),
+      p95: percentile(chartValues, 0.95),
+    }
+  }, [chartValues])
+
+  const modulesSubtext = useMemo(() => {
+    if (!summary) return `${modulesSorted.length} modules`
+    return `${modulesSorted.length} modules · ${summary.unique_agents} unique agents`
+  }, [modulesSorted.length, summary])
 
   return (
-    <PageWrapper maxWidth="2xl" showPattern>
+    <PageWrapper maxWidth="wide" showPattern breadcrumbs={[{ label: t('Metrics') }]}>
       <PageHeader
         title={t('Performance Metrics')}
-        description="Real-time agent performance monitoring with live data streaming"
-        icon={<Activity className="w-6 h-6" />}
+        description={t('Real-time agent performance monitoring with live data streaming')}
+        icon={<Activity className="h-5 w-5 text-blue-600 dark:text-blue-300" />}
+        className="flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
         actions={
-          <div className="flex items-center gap-3">
-            <LiveIndicator connected={wsConnected} />
+          <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
+            <LiveStatusPill connected={wsConnected} />
+
+            {lastUpdatedAt && (
+              <span className="hidden rounded-full border border-white/60 bg-white/60 px-3 py-1.5 text-xs text-zinc-600 backdrop-blur-md dark:border-white/10 dark:bg-white/5 dark:text-zinc-300 sm:inline-flex">
+                Updated <span className="ml-1 font-mono tabular-nums">{lastUpdatedAt.toLocaleTimeString()}</span>
+              </span>
+            )}
 
             <Button
               variant={autoRefresh ? 'primary' : 'ghost'}
               size="sm"
-              iconLeft={<RefreshCw className={`w-4 h-4 ${autoRefresh ? 'animate-spin' : ''}`} />}
-              onClick={() => setAutoRefresh(!autoRefresh)}
+              iconLeft={<RefreshCw className={cn('h-4 w-4', autoRefresh && 'animate-spin')} />}
+              onClick={() => setAutoRefresh(prev => !prev)}
             >
-              Auto-refresh
+              {t('Auto-refresh')}
             </Button>
 
             <Button
               variant="secondary"
               size="sm"
-              iconLeft={<RefreshCw className="w-4 h-4" />}
+              iconLeft={<RefreshCw className="h-4 w-4" />}
               onClick={fetchMetrics}
             >
-              Refresh
+              {t('Refresh')}
             </Button>
 
             <Button
               variant="primary"
               size="sm"
-              iconLeft={<Download className="w-4 h-4" />}
+              iconLeft={<Download className="h-4 w-4" />}
               onClick={handleExport}
               loading={exporting}
             >
-              Export Report
+              {t('Export Report')}
             </Button>
           </div>
         }
       />
 
-      {/* Content */}
-      <div className="space-y-6">
+      <AnimatePresence mode="wait">
         {loading ? (
-          <div className="flex items-center justify-center h-64">
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-              className="w-10 h-10 border-3 border-teal-500 border-t-transparent rounded-full"
-            />
-          </div>
-        ) : (
-          <>
-            {/* Summary Cards */}
-            <motion.div
-              variants={staggerContainer}
-              initial="hidden"
-              animate="visible"
-              className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4"
-            >
-              <MetricCard
-                icon={Zap}
-                label="Total Calls"
-                value={summary?.total_calls || 0}
-                color="teal"
-              />
-              <MetricCard
-                icon={Layers}
-                label="Total Tokens"
-                value={formatTokens(summary?.total_tokens || 0)}
-                color="violet"
-              />
-              <MetricCard
-                icon={DollarSign}
-                label="Total Cost"
-                value={formatCost(summary?.total_cost_usd || 0)}
-                color="emerald"
-              />
-              <MetricCard
-                icon={CheckCircle2}
-                label="Success Rate"
-                value={`${(summary?.success_rate || 0).toFixed(1)}%`}
-                color="cyan"
-              />
-              <MetricCard
-                icon={AlertTriangle}
-                label="Errors"
-                value={summary?.total_errors || 0}
-                color="rose"
-              />
-              <MetricCard
-                icon={Cpu}
-                label="Unique Agents"
-                value={summary?.unique_agents || 0}
-                color="amber"
-              />
-            </motion.div>
-
-            {/* Module Stats */}
-            <Card variant="glass" hoverEffect={false}>
-              <CardHeader className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-teal-100/80 dark:bg-teal-900/30">
-                    <BarChart3 className="w-5 h-5 text-teal-500" />
-                  </div>
-                  <h2 className="font-semibold text-slate-900 dark:text-slate-100">
-                    Module Statistics
-                  </h2>
-                </div>
-                {selectedModule && (
-                  <button
-                    onClick={() => setSelectedModule(null)}
-                    className="text-sm text-teal-500 hover:text-teal-600 dark:hover:text-teal-400 font-medium transition-colors"
-                  >
-                    Clear filter
-                  </button>
-                )}
-              </CardHeader>
-
-              <CardBody>
+          <motion.div
+            key="loading"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="flex items-center justify-center py-16"
+          >
+            <Card variant="glass" padding="none" interactive={false} className={cn('overflow-hidden', glassCardClassName)}>
+              <CardContent className="flex items-center gap-3 px-6 py-5">
                 <motion.div
-                  variants={staggerContainer}
-                  initial="hidden"
-                  animate="visible"
-                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
-                >
-                  {Object.entries(moduleStats).map(([moduleName, stats]) => (
-                    <ModuleCard
-                      key={moduleName}
-                      moduleName={moduleName}
-                      stats={stats}
-                      isSelected={selectedModule === moduleName}
-                      onClick={() =>
-                        setSelectedModule(selectedModule === moduleName ? null : moduleName)
-                      }
-                    />
-                  ))}
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                  className="h-5 w-5 rounded-full border-[3px] border-blue-500 border-t-transparent"
+                />
+                <span className="text-sm text-zinc-600 dark:text-zinc-300">{t('Loading metrics')}...</span>
+              </CardContent>
+            </Card>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="content"
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="space-y-8"
+          >
+            {/* Overview */}
+            <motion.section variants={itemVariants} className="grid gap-6 lg:grid-cols-3">
+              <Card
+                variant="glass"
+                padding="none"
+                interactive={false}
+                className={cn('relative overflow-hidden lg:col-span-2', glassCardClassName)}
+              >
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-0 opacity-35 [mask-image:radial-gradient(ellipse_at_top,black_25%,transparent_70%)] bg-[linear-gradient(to_right,rgba(24,24,27,0.07)_1px,transparent_1px),linear-gradient(to_bottom,rgba(24,24,27,0.07)_1px,transparent_1px)] bg-[length:56px_56px] dark:opacity-20 dark:bg-[linear-gradient(to_right,rgba(255,255,255,0.07)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.07)_1px,transparent_1px)]"
+                />
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute -top-40 left-1/3 h-[420px] w-[420px] -translate-x-1/2 rounded-full bg-blue-500/15 blur-3xl dark:bg-blue-500/10"
+                />
 
-                  {Object.keys(moduleStats).length === 0 && (
-                    <div className="col-span-full text-center py-12 text-slate-400 dark:text-slate-500">
-                      <div className="flex flex-col items-center gap-2">
-                        <BarChart3 className="w-8 h-8 opacity-50" />
-                        <span>No module data available yet</span>
+                <CardHeader className="relative flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300">
+                      <BarChart3 className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">Trends</h2>
+                      <p className="mt-0.5 text-sm text-zinc-500 dark:text-zinc-400">
+                        Last {recentHistory.length} events
+                      </p>
+                    </div>
+                  </div>
+
+                  <MetricToggle value={trendMetric} onChange={setTrendMetric} options={metricOptions} />
+                </CardHeader>
+
+                <CardContent className="relative">
+                  <PremiumAreaChart
+                    id={`metrics-${trendMetric}`}
+                    values={chartValues}
+                    labels={chartLabels}
+                    formatValue={chartFormatter}
+                  />
+
+                  {chartStats && (
+                    <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
+                      <div className="rounded-xl border border-white/60 bg-white/55 px-4 py-3 backdrop-blur-md dark:border-white/10 dark:bg-white/5">
+                        <div className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                          Avg
+                        </div>
+                        <div className="mt-1 font-mono text-sm text-zinc-900 dark:text-zinc-100 tabular-nums">
+                          {chartFormatter(chartStats.avg)}
+                        </div>
+                      </div>
+                      <div className="rounded-xl border border-white/60 bg-white/55 px-4 py-3 backdrop-blur-md dark:border-white/10 dark:bg-white/5">
+                        <div className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                          p95
+                        </div>
+                        <div className="mt-1 font-mono text-sm text-zinc-900 dark:text-zinc-100 tabular-nums">
+                          {chartFormatter(chartStats.p95)}
+                        </div>
+                      </div>
+                      <div className="rounded-xl border border-white/60 bg-white/55 px-4 py-3 backdrop-blur-md dark:border-white/10 dark:bg-white/5">
+                        <div className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                          Min
+                        </div>
+                        <div className="mt-1 font-mono text-sm text-zinc-900 dark:text-zinc-100 tabular-nums">
+                          {chartFormatter(chartStats.min)}
+                        </div>
+                      </div>
+                      <div className="rounded-xl border border-white/60 bg-white/55 px-4 py-3 backdrop-blur-md dark:border-white/10 dark:bg-white/5">
+                        <div className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                          Max
+                        </div>
+                        <div className="mt-1 font-mono text-sm text-zinc-900 dark:text-zinc-100 tabular-nums">
+                          {chartFormatter(chartStats.max)}
+                        </div>
                       </div>
                     </div>
                   )}
-                </motion.div>
-              </CardBody>
-            </Card>
+                </CardContent>
+              </Card>
 
-            {/* Agent Stats Table */}
-            <AgentTable agents={filteredAgents} selectedModule={selectedModule} />
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-1">
+                <KpiCard icon={Zap} label={t('Total Calls')} value={(summary?.total_calls ?? 0).toString()} />
+                <KpiCard
+                  icon={Layers}
+                  label={t('Total Tokens')}
+                  value={formatTokens(summary?.total_tokens ?? 0)}
+                  sparklineId="kpi-tokens"
+                  sparklineValues={tokensSeries}
+                />
+                <KpiCard
+                  icon={DollarSign}
+                  label={t('Total Cost')}
+                  value={formatCost(summary?.total_cost_usd ?? 0)}
+                  sparklineId="kpi-cost"
+                  sparklineValues={costSeries}
+                />
+                <KpiCard
+                  icon={CheckCircle2}
+                  label={t('Success Rate')}
+                  value={`${(summary?.success_rate ?? 0).toFixed(1)}%`}
+                  valueClassName={(summary?.success_rate ?? 0) >= 95 ? 'text-emerald-500' : undefined}
+                  sparklineId="kpi-success"
+                  sparklineValues={successSeries}
+                />
+                <KpiCard
+                  icon={AlertTriangle}
+                  label={t('Errors')}
+                  value={(summary?.total_errors ?? 0).toString()}
+                  valueClassName={(summary?.total_errors ?? 0) > 0 ? 'text-rose-500' : undefined}
+                />
+                <KpiCard
+                  icon={Clock}
+                  label={t('Avg Duration')}
+                  value={avgDurationMs ? formatDuration(avgDurationMs) : '—'}
+                  sparklineId="kpi-duration"
+                  sparklineValues={durationSeries}
+                />
+              </div>
+            </motion.section>
 
-            {/* Recent Activity */}
-            <ActivityHistory history={history} />
-          </>
+            {/* Modules + Agents */}
+            <motion.section variants={itemVariants} className="grid gap-6 lg:grid-cols-3">
+              <Card variant="glass" padding="none" interactive={false} className={cn('overflow-hidden', glassCardClassName)}>
+                <CardHeader className="flex-row items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300">
+                      <BarChart3 className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">Modules</h2>
+                      <p className="mt-0.5 text-sm text-zinc-500 dark:text-zinc-400">{modulesSubtext}</p>
+                    </div>
+                  </div>
+
+                  {selectedModule && (
+                    <Button variant="ghost" size="sm" onClick={() => setSelectedModule(null)}>
+                      Clear filter
+                    </Button>
+                  )}
+                </CardHeader>
+
+                <CardContent>
+                  {modulesSorted.length === 0 ? (
+                    <div className="py-12 text-center text-sm text-zinc-500 dark:text-zinc-400">
+                      No module data available yet
+                    </div>
+                  ) : (
+                    <div className="max-h-[32rem] overflow-auto pr-1">
+                      <ModulesList modules={modulesSorted} selectedModule={selectedModule} onSelect={setSelectedModule} />
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <div className="lg:col-span-2">
+                <AgentPerformanceTable rows={filteredAgents} selectedModule={selectedModule} />
+              </div>
+            </motion.section>
+
+            {/* Activity */}
+            <motion.section variants={itemVariants}>
+              <ActivityFeed history={history} />
+            </motion.section>
+          </motion.div>
         )}
-      </div>
+      </AnimatePresence>
     </PageWrapper>
   )
 }

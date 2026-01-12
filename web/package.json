@@ -4,14 +4,13 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build --webpack",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "eslint ."
   },
   "dependencies": {
     "@fontsource/dm-sans": "^5.2.6",
     "@fontsource/instrument-sans": "^5.0.24",
-    "@fontsource/jetbrains-mono": "^5.2.5",
     "@monaco-editor/react": "^4.7.0",
     "clsx": "^2.1.1",
     "cytoscape": "^3.33.1",

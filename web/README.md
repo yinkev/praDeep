@@ -1,377 +1,69 @@
-# Web Frontend
+# praDeep Web (Frontend)
 
-The Web frontend is a Next.js 16 application that provides the user interface for the praDeep system.
+Next.js frontend for the praDeep system.
 
-## 📋 Overview
+## Project overview
 
-The frontend provides:
+This app provides the browser UI for praDeep (dashboard + modules like knowledge, solver, question generation, research, notebook, and settings). It is built using the Next.js App Router under `app/` and a shared component layer under `components/`.
 
-- Dashboard with activity tracking
-- Knowledge base management
-- Problem solving interface
-- Question generation interface
-- Research interface
-- Guided learning interface
-- Co-Writer interface
-- Notebook management
-- Idea generation interface
+## Tech stack
 
-## 🏗️ Architecture
+- Next.js 16 (App Router)
+- React 19
+- TypeScript
+- Tailwind CSS (v4)
+- UI/UX: Framer Motion, Lucide icons
+- Content: `react-markdown` + `remark-*`/`rehype-*` (GFM + math/KaTeX)
+- Editors/Diagrams: Monaco, Mermaid, MathLive
+- E2E tests: Playwright
 
-```
-web/
-├── app/                      # Next.js app directory
-│   ├── page.tsx             # Dashboard (home page)
-│   ├── layout.tsx            # Root layout
-│   ├── globals.css           # Global styles
-│   ├── knowledge/            # Knowledge base pages
-│   ├── solver/               # Problem solving pages
-│   ├── question/             # Question generation pages
-│   ├── research/             # Research pages
-│   ├── guide/                # Guided learning pages
-│   ├── co_writer/            # Co-Writer pages
-│   ├── notebook/             # Notebook pages
-│   ├── ideagen/              # Idea generation pages
-│   └── settings/             # Settings pages
-├── components/               # React components
-│   ├── Sidebar.tsx           # Navigation sidebar
-│   ├── SystemStatus.tsx      # System status indicator
-│   ├── ActivityDetail.tsx    # Activity detail view
-│   ├── CoWriterEditor.tsx    # Co-Writer editor
-│   ├── AddToNotebookModal.tsx # Add to notebook modal
-│   └── ui/                   # UI components
-│       ├── Button.tsx
-│       └── Modal.tsx
-├── context/                  # React context
-│   └── GlobalContext.tsx     # Global state management
-├── lib/                      # Utilities
-│   └── api.ts                # API client
-├── package.json              # Dependencies
-├── tsconfig.json             # TypeScript configuration
-├── tailwind.config.js        # Tailwind CSS configuration
-└── postcss.config.js         # PostCSS configuration
-```
+## Design system
 
-## 🛠️ Technology Stack
+The UI follows a “Liquid Glass” aesthetic with a light/dark theme:
 
-- **Framework**: Next.js 16 (App Router + Turbopack)
-- **Runtime**: React 19
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS
-- **UI Components**: Custom components with Lucide React icons
-- **Markdown**: react-markdown with KaTeX for math
-- **PDF Export**: jsPDF + html2canvas
-- **Animations**: Framer Motion 11
+- Tokens live in `tailwind.config.js` (surfaces, text hierarchy, accents, semantic colors, glass/shadows, radii).
+- Global CSS lives in `app/globals.css` and defines core CSS variables (e.g. `--glass-*`, `--radius`, focus rings, and base resets).
+- Dark mode is class-based (`darkMode: 'class'`) and is initialized before hydration via `components/ThemeScript.tsx`.
 
-## 📦 Dependencies
+## Component library
 
-### Core Dependencies
+The internal component library lives in `components/ui/` and is exported via `components/ui/index.ts`. It provides primitives and building blocks used across feature components:
 
-```json
-{
-  "next": "^16.1.1",
-  "react": "^19.0.0",
-  "react-dom": "^19.0.0",
-  "react-markdown": "^9.0.1",
-  "rehype-katex": "^7.0.1",
-  "remark-math": "^6.0.0",
-  "lucide-react": "^0.460.0",
-  "framer-motion": "^11.15.0",
-  "jspdf": "^2.5.2",
-  "html2canvas": "^1.4.1"
-}
-```
+- Primitives: `Button`/`IconButton`, `Input`/`Textarea`, `Card`, `Modal`, `Toast`, `LoadingState`, `PageWrapper`
+- Conventions: Tailwind-first styling and class composition via `cn()` (`lib/utils.ts` uses `clsx` + `tailwind-merge`)
+- Feature components live in `components/` (e.g. dashboards, editors, and module-specific UI)
 
-## 🚀 Getting Started
+## Getting started
 
-### Installation
+### 1) Install
 
 ```bash
-cd web
 npm install
 ```
 
-### Development
+### 2) Configure environment
 
-```bash
-npm run dev
-```
-
-This uses **Turbopack** by default for faster development builds.
-
-The frontend will be available at `http://localhost:3783` (or port configured in `config/main.yaml`).
-
-**Recommended**: Start both frontend and backend together from the project root (with venv activated):
+This frontend requires `NEXT_PUBLIC_API_BASE` to be set (see `lib/api.ts`). The recommended path is to start the full stack from the repo root, which generates `web/.env.local` automatically:
 
 ```bash
 python scripts/start_web.py
 ```
 
-This starts the frontend on port 3783 and the backend API on port 8783.
-
-### Build
+If you’re running the backend separately, create `web/.env.local` with:
 
 ```bash
-npm run build
-npm start
+NEXT_PUBLIC_API_BASE=http://localhost:<backend-port>
 ```
 
-## 📁 Key Components
-
-### Dashboard (app/page.tsx)
-
-Main dashboard showing:
-
-- Recent activities
-- Knowledge base overview
-- Notebook statistics
-- Quick access to modules
-
-### API Client (lib/api.ts)
-
-Centralized API client for backend communication:
-
-```typescript
-import { apiUrl } from "@/lib/api";
-
-// REST API
-const response = await fetch(`${apiUrl}/knowledge/list`);
-
-// WebSocket
-const ws = new WebSocket(`${wsUrl}/api/v1/solve`);
-```
-
-### Global Context (context/GlobalContext.tsx)
-
-Manages global state:
-
-- System status
-- User preferences
-- Active sessions
-
-### Sidebar (components/Sidebar.tsx)
-
-Navigation sidebar with links to all modules.
-
-## 🔌 API Integration
-
-### REST API
-
-```typescript
-const response = await fetch(`${apiUrl}/api/v1/knowledge/list`, {
-  method: "GET",
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
-const data = await response.json();
-```
-
-### WebSocket
-
-```typescript
-const ws = new WebSocket(`${wsUrl}/api/v1/solve`);
-
-ws.onopen = () => {
-  ws.send(
-    JSON.stringify({
-      question: "Your question",
-      kb_name: "ai_textbook",
-    }),
-  );
-};
-
-ws.onmessage = (event) => {
-  const data = JSON.parse(event.data);
-  // Handle streaming data
-};
-
-ws.onerror = (error) => {
-  console.error("WebSocket error:", error);
-};
-
-ws.onclose = () => {
-  console.log("WebSocket closed");
-};
-```
-
-## 🎨 Styling
-
-### Tailwind CSS
-
-The project uses Tailwind CSS for styling. Configuration in `tailwind.config.js`.
-
-### Global Styles
-
-Global styles in `app/globals.css` including:
-
-- Base styles
-- Custom CSS variables
-- Utility classes
-
-## 📱 Pages
-
-### Knowledge Base (`/knowledge`)
-
-- List knowledge bases
-- Create new knowledge base
-- Upload documents
-- View knowledge base details
-
-#### KB Management Features
-
-Each knowledge base card includes action buttons (visible on hover):
-
-- **Re-index Button** (`RefreshCw` icon): Rebuilds the RAG index from existing documents
-  - Calls `POST /api/v1/knowledge/{kb_name}/refresh` with `{ full: true }`
-  - Shows spinning animation while re-indexing is in progress
-  - Progress is tracked in real-time via WebSocket (`/api/v1/knowledge/{kb_name}/progress/ws`)
-  - Useful when documents have been modified or indexing needs to be refreshed
-
-- **Upload Button** (`Upload` icon): Opens modal to upload additional documents to the KB
-
-- **Delete Button** (`Trash2` icon): Permanently deletes the knowledge base (with confirmation)
-
-#### Progress Tracking
-
-The page maintains WebSocket connections to each knowledge base for real-time progress updates:
-
-- Progress state is persisted to `localStorage` to survive page refreshes
-- Stuck progress states (older than 30 minutes) are automatically cleaned up
-- Progress can be manually cleared using the X button on each KB card
-
-### Problem Solving (`/solver`)
-
-- Input problem
-- Select knowledge base
-- Real-time solving with streaming
-- View solution
-
-### Question Generation (`/question`)
-
-- Configure question requirements
-- Generate questions
-- View generated questions
-
-### Research (`/research`)
-
-- Input research topic
-- Select research mode
-- Real-time research progress
-- View research report
-
-### Guided Learning (`/guide`)
-
-- Select notebook
-- Generate learning plan
-- Interactive learning pages
-- Q&A during learning
-
-### Co-Writer (`/co_writer`)
-
-- Markdown editor
-- AI text editing
-- Automatic annotation
-- TTS narration
-
-### Notebook (`/notebook`)
-
-- List notebooks
-- Create/edit notebooks
-- View notebook records
-- Organize records
-
-### Idea Generation (`/ideagen`)
-
-- Select notebook
-- Generate research ideas
-- View generated ideas
-
-## ⚙️ Configuration
-
-### API Base URL
-
-Configured in `lib/api.ts`:
-
-```typescript
-export const apiUrl =
-  process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8783";
-export const wsUrl = process.env.NEXT_PUBLIC_WS_BASE || "ws://localhost:8783";
-```
-
-Set in `.env.local`:
+### 3) Run dev server
 
 ```bash
-NEXT_PUBLIC_API_BASE=http://localhost:8783
-NEXT_PUBLIC_WS_BASE=ws://localhost:8783
+npm run dev
 ```
 
-### Next.js Configuration
+## Available scripts
 
-Key settings in `next.config.js`:
-
-```javascript
-const nextConfig = {
-  // Dev indicator position
-  devIndicators: {
-    position: "bottom-right",
-  },
-  // Turbopack configuration
-  turbopack: {
-    resolveAlias: {
-      cytoscape: "cytoscape/dist/cytoscape.cjs.js",
-    },
-  },
-  // Transpile packages
-  transpilePackages: ["mermaid"],
-};
-```
-
-## 🔗 Related Modules
-
-- **Backend API**: `src/api/` - FastAPI backend
-- **Agents**: `src/agents/` - Agent implementations
-- **Config**: `config/` - Configuration files
-
-## 🛠️ Development
-
-### Adding a New Page
-
-1. Create page in `app/`:
-
-   ```typescript
-   // app/my-page/page.tsx
-   export default function MyPage() {
-     return <div>My Page</div>
-   }
-   ```
-
-2. Add navigation link in `components/Sidebar.tsx`
-
-### Adding a New Component
-
-1. Create component in `components/`:
-
-   ```typescript
-   // components/MyComponent.tsx
-   export default function MyComponent() {
-     return <div>My Component</div>
-   }
-   ```
-
-2. Export from `components/index.ts` if needed
-
-### Styling Guidelines
-
-- Use Tailwind CSS utility classes
-- Follow existing component patterns
-- Use Lucide React for icons
-- Maintain responsive design
-
-## ⚠️ Notes
-
-1. **API URL**: Ensure API base URL matches backend configuration
-2. **WebSocket**: WebSocket URL should use `wss://` for secure production environments (fallback to `ws://` for local development only)
-3. **CORS**: Backend must allow frontend origin in CORS settings
-4. **Environment Variables**: Use `NEXT_PUBLIC_` prefix for client-side variables
-5. **Turbopack**: Development mode uses Turbopack by default for faster builds
+- `npm run dev` — start Next.js dev server
+- `npm run build` — production build
+- `npm start` — start production server (after build)
+- `npm run lint` — run Next.js/ESLint linting

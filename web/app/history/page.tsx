@@ -1,32 +1,32 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useCallback, useEffect, useMemo, useState, type ComponentType } from 'react'
 import { useRouter } from 'next/navigation'
-import { motion, AnimatePresence } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
 import {
-  History,
-  Clock,
-  ChevronRight,
-  Calculator,
-  FileText,
-  Microscope,
-  MessageCircle,
-  Filter,
-  Search,
   Calendar,
-  X,
-  MessageSquare,
+  Calculator,
+  ChevronRight,
+  Clock,
+  FileText,
+  Filter,
+  History,
   Loader2,
-  Eye,
+  MessageCircle,
+  MessageSquare,
+  Microscope,
+  Search,
   Sparkles,
+  X,
 } from 'lucide-react'
 import { apiUrl } from '@/lib/api'
 import { getTranslation } from '@/lib/i18n'
+import { cn } from '@/lib/utils'
 import { useGlobal } from '@/context/GlobalContext'
 import ActivityDetail from '@/components/ActivityDetail'
 import ChatSessionDetail from '@/components/ChatSessionDetail'
 import PageWrapper, { PageHeader } from '@/components/ui/PageWrapper'
-import { Card, CardHeader, CardBody } from '@/components/ui/Card'
+import { Card, CardBody } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
 
@@ -40,7 +40,7 @@ interface HistoryEntry {
   title: string
   summary: string
   timestamp: number
-  content: any
+  content: unknown
 }
 
 interface ChatSession {
@@ -52,51 +52,58 @@ interface ChatSession {
   updated_at: number
 }
 
-// ============================================================================
-// Configuration
-// ============================================================================
+type IconType = ComponentType<{ className?: string }>
 
-const TYPE_CONFIG = {
+type FilterType = 'all' | 'chat' | 'solve' | 'question' | 'research'
+
+const FILTER_OPTIONS = [
+  { value: 'all', labelKey: 'All', icon: Sparkles },
+  { value: 'chat', labelKey: 'Chat', icon: MessageCircle },
+  { value: 'solve', labelKey: 'Solve', icon: Calculator },
+  { value: 'question', labelKey: 'Question', icon: FileText },
+  { value: 'research', labelKey: 'Research', icon: Microscope },
+] satisfies Array<{ value: FilterType; labelKey: string; icon: IconType }>
+
+type ActivityEntryType = Exclude<HistoryEntry['type'], 'chat'>
+
+const ACTIVITY_CONFIG = {
   solve: {
     icon: Calculator,
-    gradient: 'from-teal-400 to-cyan-500',
-    bgColor: 'bg-teal-100/80 dark:bg-teal-900/30',
-    textColor: 'text-teal-600 dark:text-teal-400',
-    borderColor: 'border-teal-200/50 dark:border-teal-700/30',
+    labelKey: 'Solve',
+    iconClassName:
+      'bg-blue-500/10 text-blue-700 ring-1 ring-blue-500/10 dark:bg-blue-400/10 dark:text-blue-300 dark:ring-blue-400/20',
+    pillClassName:
+      'border-blue-500/20 bg-blue-500/10 text-blue-700 dark:border-blue-400/20 dark:bg-blue-400/10 dark:text-blue-300',
   },
   question: {
     icon: FileText,
-    gradient: 'from-violet-400 to-purple-500',
-    bgColor: 'bg-violet-100/80 dark:bg-violet-900/30',
-    textColor: 'text-violet-600 dark:text-violet-400',
-    borderColor: 'border-violet-200/50 dark:border-violet-700/30',
+    labelKey: 'Question',
+    iconClassName:
+      'bg-indigo-500/10 text-indigo-700 ring-1 ring-indigo-500/10 dark:bg-indigo-400/10 dark:text-indigo-300 dark:ring-indigo-400/20',
+    pillClassName:
+      'border-indigo-500/20 bg-indigo-500/10 text-indigo-700 dark:border-indigo-400/20 dark:bg-indigo-400/10 dark:text-indigo-300',
   },
   research: {
     icon: Microscope,
-    gradient: 'from-emerald-400 to-green-500',
-    bgColor: 'bg-emerald-100/80 dark:bg-emerald-900/30',
-    textColor: 'text-emerald-600 dark:text-emerald-400',
-    borderColor: 'border-emerald-200/50 dark:border-emerald-700/30',
+    labelKey: 'Research',
+    iconClassName:
+      'bg-sky-500/10 text-sky-700 ring-1 ring-sky-500/10 dark:bg-sky-400/10 dark:text-sky-300 dark:ring-sky-400/20',
+    pillClassName:
+      'border-sky-500/20 bg-sky-500/10 text-sky-700 dark:border-sky-400/20 dark:bg-sky-400/10 dark:text-sky-300',
   },
-  chat: {
-    icon: MessageCircle,
-    gradient: 'from-amber-400 to-orange-500',
-    bgColor: 'bg-amber-100/80 dark:bg-amber-900/30',
-    textColor: 'text-amber-600 dark:text-amber-400',
-    borderColor: 'border-amber-200/50 dark:border-amber-700/30',
-  },
-}
+} satisfies Record<
+  ActivityEntryType,
+  { icon: IconType; labelKey: string; iconClassName: string; pillClassName: string }
+>
 
-const FILTER_OPTIONS = [
-  { value: 'all', label: 'All' },
-  { value: 'chat', label: 'Chat' },
-  { value: 'solve', label: 'Solve' },
-  { value: 'question', label: 'Question' },
-  { value: 'research', label: 'Research' },
-]
+type ActivityTimelineItem = { kind: 'activity'; id: string; timestamp: number; entry: HistoryEntry }
+type ChatTimelineItem = { kind: 'chat'; id: string; timestamp: number; session: ChatSession }
+type TimelineItem = ActivityTimelineItem | ChatTimelineItem
+
+type TimelineGroup = { key: string; label: string; items: TimelineItem[] }
 
 // ============================================================================
-// Animation Variants
+// Motion
 // ============================================================================
 
 const containerVariants = {
@@ -105,215 +112,204 @@ const containerVariants = {
     opacity: 1,
     transition: {
       staggerChildren: 0.06,
-      delayChildren: 0.1,
+      delayChildren: 0.08,
     },
   },
 }
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 20, scale: 0.95 },
+  hidden: { opacity: 0, y: 16 },
   visible: {
     opacity: 1,
     y: 0,
-    scale: 1,
     transition: {
       type: 'spring' as const,
-      stiffness: 300,
-      damping: 24,
+      stiffness: 420,
+      damping: 30,
     },
   },
 }
 
-const filterButtonVariants = {
-  inactive: { scale: 1 },
-  active: {
-    scale: 1.02,
-    transition: { type: 'spring' as const, stiffness: 400, damping: 25 },
-  },
-}
-
 // ============================================================================
-// Sub-components
+// Timeline Cards
 // ============================================================================
 
-interface ActivityCardProps {
+interface TimelineActivityCardProps {
   entry: HistoryEntry
-  onClick: () => void
-  language: string
+  onOpen: () => void
+  locale: string
+  t: (key: string) => string
 }
 
-function ActivityCard({ entry, onClick, language }: ActivityCardProps) {
-  const config = TYPE_CONFIG[entry.type] || TYPE_CONFIG.chat
+function TimelineActivityCard({ entry, onOpen, locale, t }: TimelineActivityCardProps) {
+  const config = ACTIVITY_CONFIG[entry.type as ActivityEntryType]
   const IconComponent = config.icon
 
   return (
-    <motion.div
+    <motion.button
+      type="button"
       variants={itemVariants}
-      whileHover={{ y: -2, transition: { duration: 0.2 } }}
-      onClick={onClick}
-      className="group cursor-pointer"
+      whileHover={{ y: -2 }}
+      onClick={onOpen}
+      aria-label={entry.title || config.labelKey}
+      className={cn(
+        'group relative w-full text-left',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30',
+        'focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-zinc-950'
+      )}
     >
       <Card
         variant="glass"
-        hoverEffect={false}
-        className={`
-          border ${config.borderColor}
-          hover:shadow-xl hover:shadow-teal-500/10
-          transition-all duration-300
-        `}
+        interactive={false}
+        padding="none"
+        className={cn(
+          'transition-[box-shadow,transform,border-color,background-color] duration-200 ease-out-expo',
+          'hover:shadow-glass'
+        )}
       >
-        <CardBody className="p-4">
-          <div className="flex gap-4">
-            {/* Icon with gradient background */}
-            <div className="mt-0.5 shrink-0">
-              <motion.div
-                className={`
-                  w-11 h-11 rounded-xl
-                  bg-gradient-to-br ${config.gradient}
-                  flex items-center justify-center
-                  shadow-lg shadow-black/10
-                `}
-                whileHover={{ scale: 1.1, rotate: 5 }}
-                transition={{ type: 'spring' as const, stiffness: 400, damping: 17 }}
+        <CardBody className="p-4 sm:p-5">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex min-w-0 items-start gap-3">
+              <div
+                className={cn(
+                  'mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl',
+                  config.iconClassName
+                )}
               >
-                <IconComponent className="w-5 h-5 text-white" />
-              </motion.div>
-            </div>
-
-            {/* Content */}
-            <div className="flex-1 min-w-0">
-              <div className="flex justify-between items-start mb-1">
-                <span
-                  className={`
-                    text-[10px] font-bold uppercase tracking-wider
-                    ${config.textColor}
-                    px-2 py-0.5 rounded-full ${config.bgColor}
-                  `}
-                >
-                  {entry.type}
-                </span>
-                <span className="text-xs text-slate-400 dark:text-slate-500 flex items-center gap-1">
-                  <Clock className="w-3 h-3" />
-                  {new Date(entry.timestamp * 1000).toLocaleTimeString(
-                    language === 'zh' ? 'zh-CN' : 'en-US',
-                    { hour: '2-digit', minute: '2-digit' }
-                  )}
-                </span>
+                <IconComponent className="h-4 w-4" />
               </div>
-              <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100 truncate pr-4 group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">
-                {entry.title}
-              </h3>
-              {entry.summary && (
-                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">
-                  {entry.summary}
-                </p>
-              )}
+
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <span
+                    className={cn(
+                      'inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider',
+                      config.pillClassName
+                    )}
+                  >
+                    {t(config.labelKey)}
+                  </span>
+                  <span className="text-xs text-zinc-400">·</span>
+                  <span className="flex items-center gap-1 text-xs text-zinc-500 dark:text-zinc-400">
+                    <Clock className="h-3 w-3" />
+                    {new Date(entry.timestamp * 1000).toLocaleTimeString(locale, {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </span>
+                </div>
+
+                <h3 className="mt-1 truncate pr-4 text-sm font-semibold text-zinc-900 dark:text-zinc-100 transition-colors group-hover:text-blue-700 dark:group-hover:text-blue-300">
+                  {entry.title}
+                </h3>
+                {entry.summary && (
+                  <p className="mt-1 line-clamp-2 text-sm text-zinc-600 dark:text-zinc-400">
+                    {entry.summary}
+                  </p>
+                )}
+              </div>
             </div>
 
-            {/* Arrow indicator */}
-            <div className="self-center">
-              <motion.div
-                initial={{ x: 0, opacity: 0 }}
-                whileHover={{ x: 4, opacity: 1 }}
-                className="opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                <ChevronRight className="w-5 h-5 text-teal-500 dark:text-teal-400" />
-              </motion.div>
-            </div>
+            <motion.div
+              initial={{ x: 0, opacity: 0 }}
+              whileHover={{ x: 4, opacity: 1 }}
+              className="mt-2 opacity-0 transition-opacity group-hover:opacity-100"
+            >
+              <ChevronRight className="h-4 w-4 text-zinc-400 group-hover:text-blue-600 dark:group-hover:text-blue-300" />
+            </motion.div>
           </div>
         </CardBody>
       </Card>
-    </motion.div>
+    </motion.button>
   )
 }
 
-interface ChatSessionCardProps {
+interface TimelineChatCardProps {
   session: ChatSession
   onView: () => void
   onContinue: () => void
   isLoading: boolean
-  language: string
+  locale: string
   t: (key: string) => string
 }
 
-function ChatSessionCard({
-  session,
-  onView,
-  onContinue,
-  isLoading,
-  language,
-  t,
-}: ChatSessionCardProps) {
+function TimelineChatCard({ session, onView, onContinue, isLoading, locale, t }: TimelineChatCardProps) {
   return (
     <motion.div
       variants={itemVariants}
-      whileHover={{ y: -2, transition: { duration: 0.2 } }}
-      className="group cursor-pointer"
+      whileHover={{ y: -2 }}
+      onClick={onView}
+      role="button"
+      tabIndex={0}
+      aria-label={session.title}
+      onKeyDown={e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onView()
+        }
+      }}
+      className={cn(
+        'group cursor-pointer outline-none',
+        'focus-visible:ring-2 focus-visible:ring-blue-500/30 focus-visible:ring-offset-2',
+        'focus-visible:ring-offset-white dark:focus-visible:ring-offset-zinc-950'
+      )}
     >
       <Card
         variant="glass"
-        hoverEffect={false}
-        onClick={onView}
-        className={`
-          border border-amber-200/50 dark:border-amber-700/30
-          hover:shadow-xl hover:shadow-amber-500/10
-          transition-all duration-300
-        `}
+        interactive={false}
+        padding="none"
+        className={cn(
+          'transition-[box-shadow,transform,border-color,background-color] duration-200 ease-out-expo',
+          'hover:shadow-glass'
+        )}
       >
-        <CardBody className="p-4">
+        <CardBody className="p-4 sm:p-5">
           <div className="flex gap-4">
-            {/* Icon */}
             <div className="mt-0.5 shrink-0">
               <motion.div
-                className="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg shadow-black/10"
-                whileHover={{ scale: 1.1, rotate: 5 }}
+                className={cn(
+                  'flex h-10 w-10 items-center justify-center rounded-xl',
+                  'bg-blue-500/10 text-blue-700 ring-1 ring-blue-500/10',
+                  'dark:bg-blue-400/10 dark:text-blue-300 dark:ring-blue-400/20'
+                )}
+                whileHover={{ scale: 1.06, rotate: 4 }}
                 transition={{ type: 'spring' as const, stiffness: 400, damping: 17 }}
               >
-                <MessageCircle className="w-5 h-5 text-white" />
+                <MessageCircle className="h-4 w-4" />
               </motion.div>
             </div>
 
-            {/* Content */}
             <div className="flex-1 min-w-0">
-              <div className="flex justify-between items-start mb-1">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-full bg-amber-100/80 dark:bg-amber-900/30">
-                  Chat
+              <div className="flex justify-between items-start mb-1 gap-3">
+                <span className="inline-flex items-center rounded-full border border-blue-500/20 bg-blue-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-blue-700 dark:border-blue-400/20 dark:text-blue-300">
+                  {t('Chat')}
                 </span>
-                <span className="text-xs text-slate-400 dark:text-slate-500 flex items-center gap-1">
-                  <Clock className="w-3 h-3" />
-                  {new Date(session.updated_at * 1000).toLocaleDateString(
-                    language === 'zh' ? 'zh-CN' : 'en-US'
-                  )}
+                <span className="flex items-center gap-1 text-xs text-zinc-500 dark:text-zinc-400">
+                  <Clock className="h-3 w-3" />
+                  {new Date(session.updated_at * 1000).toLocaleTimeString(locale, {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
                 </span>
               </div>
-              <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100 truncate pr-4 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
+
+              <h3 className="truncate pr-4 text-sm font-semibold text-zinc-900 dark:text-zinc-100 transition-colors group-hover:text-blue-700 dark:group-hover:text-blue-300">
                 {session.title}
               </h3>
-              <div className="flex items-center gap-2 mt-1">
-                <span className="text-xs text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full">
+
+              <div className="mt-1 flex items-center gap-2 min-w-0">
+                <span className="shrink-0 rounded-full bg-white/60 px-2 py-0.5 text-xs text-zinc-500 shadow-glass-sm backdrop-blur-md dark:bg-white/5 dark:text-zinc-400">
                   {session.message_count} messages
                 </span>
                 {session.last_message && (
-                  <p className="text-sm text-slate-500 dark:text-slate-400 truncate flex-1">
+                  <p className="truncate text-sm text-zinc-600 dark:text-zinc-400 flex-1">
                     {session.last_message}
                   </p>
                 )}
               </div>
             </div>
 
-            {/* Actions */}
-            <div className="self-center flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={e => {
-                  e.stopPropagation()
-                  onView()
-                }}
-                iconLeft={<Eye className="w-3.5 h-3.5" />}
-              >
-                {t('View')}
-              </Button>
+            <div className="self-center hidden items-center gap-2 opacity-0 transition-opacity group-hover:opacity-100 sm:flex">
               <Button
                 variant="secondary"
                 size="sm"
@@ -327,6 +323,10 @@ function ChatSessionCard({
                 {t('Continue')}
               </Button>
             </div>
+
+            <div className="self-center sm:hidden">
+              <ChevronRight className="h-4 w-4 text-zinc-400 group-hover:text-blue-600 dark:group-hover:text-blue-300" />
+            </div>
           </div>
         </CardBody>
       </Card>
@@ -335,13 +335,15 @@ function ChatSessionCard({
 }
 
 // ============================================================================
-// Main Component
+// Page
 // ============================================================================
 
 export default function HistoryPage() {
   const { uiSettings, loadChatSession } = useGlobal()
-  const t = (key: string) => getTranslation(uiSettings.language, key)
   const router = useRouter()
+
+  const t = useCallback((key: string) => getTranslation(uiSettings.language, key), [uiSettings.language])
+  const locale = uiSettings.language === 'zh' ? 'zh-CN' : 'en-US'
 
   const [entries, setEntries] = useState<HistoryEntry[]>([])
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([])
@@ -349,32 +351,26 @@ export default function HistoryPage() {
   const [loadingSessionId, setLoadingSessionId] = useState<string | null>(null)
   const [selectedEntry, setSelectedEntry] = useState<HistoryEntry | null>(null)
   const [selectedChatSession, setSelectedChatSession] = useState<string | null>(null)
-  const [filterType, setFilterType] = useState<string>('all')
+  const [filterType, setFilterType] = useState<FilterType>('all')
   const [searchQuery, setSearchQuery] = useState('')
 
-  useEffect(() => {
-    fetchHistory()
-  }, [filterType])
-
-  const fetchHistory = async () => {
+  const fetchHistory = useCallback(async () => {
     setLoading(true)
     try {
-      // Fetch regular activity history
-      if (filterType === 'all' || filterType !== 'chat') {
+      if (filterType !== 'chat') {
         const typeParam = filterType !== 'all' ? `&type=${filterType}` : ''
         const res = await fetch(apiUrl(`/api/v1/dashboard/recent?limit=50${typeParam}`))
         const data = await res.json()
-        setEntries(data)
+        setEntries(Array.isArray(data) ? data : [])
       } else {
         setEntries([])
       }
 
-      // Fetch chat sessions
       if (filterType === 'all' || filterType === 'chat') {
         try {
           const sessionsRes = await fetch(apiUrl('/api/v1/chat/sessions?limit=20'))
           const sessionsData = await sessionsRes.json()
-          setChatSessions(sessionsData)
+          setChatSessions(Array.isArray(sessionsData) ? sessionsData : [])
         } catch (err) {
           console.error('Failed to fetch chat sessions:', err)
           setChatSessions([])
@@ -387,91 +383,139 @@ export default function HistoryPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [filterType])
 
-  const handleLoadChatSession = async (sessionId: string) => {
-    setLoadingSessionId(sessionId)
-    try {
-      await loadChatSession(sessionId)
-      router.push('/')
-    } catch (err) {
-      console.error('Failed to load session:', err)
-    } finally {
-      setLoadingSessionId(null)
+  useEffect(() => {
+    fetchHistory()
+  }, [fetchHistory])
+
+  const handleLoadChatSession = useCallback(
+    async (sessionId: string) => {
+      setLoadingSessionId(sessionId)
+      try {
+        await loadChatSession(sessionId)
+        router.push('/')
+      } catch (err) {
+        console.error('Failed to load session:', err)
+      } finally {
+        setLoadingSessionId(null)
+      }
+    },
+    [loadChatSession, router]
+  )
+
+  const hasActiveFilters = filterType !== 'all' || Boolean(searchQuery.trim())
+
+  const timelineGroups = useMemo((): TimelineGroup[] => {
+    const pad2 = (value: number) => String(value).padStart(2, '0')
+    const dateKeyFor = (date: Date) =>
+      `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`
+
+    const today = new Date()
+    const todayKey = dateKeyFor(today)
+    const yesterday = new Date()
+    yesterday.setDate(today.getDate() - 1)
+    const yesterdayKey = dateKeyFor(yesterday)
+
+    const query = searchQuery.trim().toLowerCase()
+    const matchesQuery = (value?: string) =>
+      !query ? true : (value ?? '').toLowerCase().includes(query)
+
+    const activityItems: ActivityTimelineItem[] = entries
+      .filter(entry => entry.type !== 'chat')
+      .filter(entry => matchesQuery(entry.title) || matchesQuery(entry.summary))
+      .map(entry => ({
+        kind: 'activity',
+        id: `activity-${entry.id}`,
+        timestamp: entry.timestamp,
+        entry,
+      }))
+
+    const chatItems: ChatTimelineItem[] = chatSessions
+      .filter(session => matchesQuery(session.title) || matchesQuery(session.last_message))
+      .map(session => ({
+        kind: 'chat',
+        id: `chat-${session.session_id}`,
+        timestamp: session.updated_at || session.created_at,
+        session,
+      }))
+
+    let items: TimelineItem[]
+    if (filterType === 'chat') {
+      items = chatItems
+    } else if (filterType === 'all') {
+      items = [...activityItems, ...chatItems]
+    } else {
+      items = activityItems.filter(item => item.entry.type === filterType)
     }
-  }
 
-  const filteredEntries = entries.filter(entry => {
-    // Exclude chat type - they are shown in dedicated Chat History section
-    if (entry.type === 'chat') return false
+    items.sort((a, b) => b.timestamp - a.timestamp)
 
-    if (!searchQuery.trim()) return true
-    const query = searchQuery.toLowerCase()
-    return entry.title.toLowerCase().includes(query) || entry.summary?.toLowerCase().includes(query)
-  })
-
-  const groupEntriesByDate = (entries: HistoryEntry[]) => {
-    const groups: { [key: string]: HistoryEntry[] } = {}
-
-    entries.forEach(entry => {
-      const date = new Date(entry.timestamp * 1000)
-      const today = new Date()
-      const yesterday = new Date(today)
-      yesterday.setDate(yesterday.getDate() - 1)
-
-      let dateKey: string
-      if (date.toDateString() === today.toDateString()) {
-        dateKey = 'Today'
-      } else if (date.toDateString() === yesterday.toDateString()) {
-        dateKey = 'Yesterday'
-      } else {
-        dateKey = date.toLocaleDateString(uiSettings.language === 'zh' ? 'zh-CN' : 'en-US', {
-          month: 'long',
-          day: 'numeric',
-          year: date.getFullYear() !== today.getFullYear() ? 'numeric' : undefined,
-        })
+    const groups = new Map<
+      string,
+      {
+        key: string
+        date: Date
+        items: TimelineItem[]
       }
+    >()
 
-      if (!groups[dateKey]) {
-        groups[dateKey] = []
+    for (const item of items) {
+      const date = new Date(item.timestamp * 1000)
+      const key = dateKeyFor(date)
+      const existing = groups.get(key)
+      if (existing) {
+        existing.items.push(item)
+        continue
       }
-      groups[dateKey].push(entry)
+      groups.set(key, { key, date, items: [item] })
+    }
+
+    return Array.from(groups.values()).map(group => {
+      const label =
+        group.key === todayKey
+          ? t('Today')
+          : group.key === yesterdayKey
+            ? t('Yesterday')
+            : group.date.toLocaleDateString(locale, (() => {
+                const options: Intl.DateTimeFormatOptions = { month: 'long', day: 'numeric' }
+                if (group.date.getFullYear() !== today.getFullYear()) options.year = 'numeric'
+                return options
+              })())
+
+      return { key: group.key, label, items: group.items }
     })
-
-    return groups
-  }
-
-  const groupedEntries = groupEntriesByDate(filteredEntries)
-  const filteredChatSessions = chatSessions.filter(session => {
-    if (!searchQuery.trim()) return true
-    const query = searchQuery.toLowerCase()
-    return (
-      session.title.toLowerCase().includes(query) ||
-      session.last_message?.toLowerCase().includes(query)
-    )
-  })
+  }, [chatSessions, entries, filterType, locale, searchQuery, t])
 
   return (
-    <PageWrapper maxWidth="xl" showPattern={true}>
-      {/* Header */}
+    <PageWrapper maxWidth="2xl" showPattern={true}>
       <PageHeader
         title={t('History')}
         description={t('All Activities')}
-        icon={<History className="w-5 h-5" />}
+        icon={<History className="w-5 h-5 text-blue-600 dark:text-blue-400" />}
+        actions={
+          hasActiveFilters ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setFilterType('all')
+                setSearchQuery('')
+              }}
+              iconLeft={<X className="h-3.5 w-3.5" />}
+            >
+              {t('Clear Filters')}
+            </Button>
+          ) : null
+        }
       />
 
-      {/* Filters Section */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.15 }}
-        className="mb-6"
-      >
-        <Card variant="glass" hoverEffect={false} className="overflow-visible">
-          <CardBody className="p-4">
-            <div className="flex flex-wrap items-center gap-4">
-              {/* Search Input */}
-              <div className="flex-1 min-w-[200px] max-w-md">
+      {/* Controls */}
+      <motion.div variants={itemVariants} initial="hidden" animate="visible" className="mb-8">
+        <Card variant="glass" interactive={false} className="overflow-visible">
+          <CardBody className="p-4 sm:p-5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="w-full sm:max-w-md">
                 <Input
                   placeholder={`${t('Search')}...`}
                   value={searchQuery}
@@ -480,39 +524,56 @@ export default function HistoryPage() {
                   rightIcon={
                     searchQuery ? (
                       <button
+                        type="button"
                         onClick={() => setSearchQuery('')}
-                        className="hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+                        className="text-zinc-400 hover:text-zinc-700 dark:text-zinc-500 dark:hover:text-zinc-200"
+                        aria-label={t('Clear Filters')}
                       >
                         <X className="w-4 h-4" />
                       </button>
                     ) : undefined
                   }
                   size="sm"
+                  className="bg-white/70 border-white/60 shadow-glass-sm backdrop-blur-md dark:bg-white/5 dark:border-white/10"
                 />
               </div>
 
-              {/* Filter Pills */}
-              <div className="flex items-center gap-2">
-                <Filter className="w-4 h-4 text-slate-400" />
-                <div className="flex bg-slate-100/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-xl p-1 gap-1">
-                  {FILTER_OPTIONS.map(option => (
-                    <motion.button
-                      key={option.value}
-                      onClick={() => setFilterType(option.value)}
-                      variants={filterButtonVariants}
-                      animate={filterType === option.value ? 'active' : 'inactive'}
-                      className={`
-                        px-3 py-1.5 text-sm font-medium rounded-lg transition-all duration-200
-                        ${
-                          filterType === option.value
-                            ? 'bg-gradient-to-r from-teal-500 to-teal-600 text-white shadow-lg shadow-teal-500/25'
-                            : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-700/50'
-                        }
-                      `}
-                    >
-                      {t(option.label)}
-                    </motion.button>
-                  ))}
+              <div className="flex items-start gap-3">
+                <div className="mt-1 hidden sm:block">
+                  <Filter className="h-4 w-4 text-zinc-400" />
+                </div>
+                <div role="group" aria-label={t('Filter by type')} className="flex flex-wrap gap-2">
+                  {FILTER_OPTIONS.map(option => {
+                    const isActive = filterType === option.value
+                    const Icon = option.icon
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => setFilterType(option.value)}
+                        aria-pressed={isActive}
+                        className={cn(
+                          'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium',
+                          'shadow-glass-sm backdrop-blur-xl',
+                          'transition-[background-color,border-color,color,box-shadow] duration-200 ease-out-expo',
+                          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30',
+                          isActive
+                            ? 'border-blue-500/25 bg-blue-500/10 text-blue-700 dark:border-blue-400/20 dark:bg-blue-400/10 dark:text-blue-300'
+                            : 'border-white/60 bg-white/60 text-zinc-700 hover:bg-white/80 hover:text-zinc-900 dark:border-white/10 dark:bg-white/5 dark:text-zinc-300 dark:hover:bg-white/10 dark:hover:text-zinc-50'
+                        )}
+                      >
+                        <Icon
+                          className={cn(
+                            'h-3.5 w-3.5',
+                            isActive
+                              ? 'text-blue-700 dark:text-blue-300'
+                              : 'text-zinc-400 dark:text-zinc-500'
+                          )}
+                        />
+                        {t(option.labelKey)}
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
             </div>
@@ -520,142 +581,82 @@ export default function HistoryPage() {
         </Card>
       </motion.div>
 
-      {/* Content Area */}
-      <div className="space-y-6">
-        {/* Loading State */}
-        {loading && (
-          <Card variant="glass" hoverEffect={false}>
-            <CardBody className="p-12">
-              <div className="text-center">
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                  className="inline-block mb-4"
-                >
-                  <div className="w-10 h-10 rounded-full border-2 border-teal-500 border-t-transparent" />
-                </motion.div>
-                <p className="text-slate-500 dark:text-slate-400">{t('Loading')}...</p>
-              </div>
-            </CardBody>
-          </Card>
-        )}
-
-        {/* Empty State */}
-        {!loading && filteredEntries.length === 0 && filteredChatSessions.length === 0 && (
-          <Card variant="glass" hoverEffect={false}>
-            <CardBody className="p-12">
-              <div className="text-center">
-                <motion.div
-                  initial={{ scale: 0.8, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ type: 'spring' as const, stiffness: 300, damping: 20 }}
-                  className="w-20 h-20 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-800 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg"
-                >
-                  <Sparkles className="w-10 h-10 text-slate-400 dark:text-slate-500" />
-                </motion.div>
-                <p className="text-slate-600 dark:text-slate-300 font-medium text-lg">
+      {/* Timeline */}
+      <div className="space-y-8">
+        {loading ? (
+          <motion.div variants={itemVariants} initial="hidden" animate="visible">
+            <Card variant="glass" interactive={false} className="py-10">
+              <CardBody className="flex items-center justify-center gap-3 text-sm text-zinc-600 dark:text-zinc-300">
+                <Loader2 className="h-4 w-4 animate-spin text-blue-600 dark:text-blue-400" />
+                <span>{t('Loading')}</span>
+              </CardBody>
+            </Card>
+          </motion.div>
+        ) : timelineGroups.length === 0 ? (
+          <motion.div variants={itemVariants} initial="hidden" animate="visible">
+            <Card variant="glass" interactive={false} className="py-12">
+              <CardBody className="flex flex-col items-center text-center">
+                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-700 ring-1 ring-blue-500/10 dark:bg-blue-400/10 dark:text-blue-300 dark:ring-blue-400/20">
+                  <History className="h-6 w-6" />
+                </div>
+                <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
                   {t('No history found')}
-                </p>
-                <p className="text-sm text-slate-400 dark:text-slate-500 mt-2">
+                </h3>
+                <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
                   {t('Your activities will appear here')}
                 </p>
-              </div>
-            </CardBody>
-          </Card>
-        )}
-
-        {/* Activity Timeline */}
-        {!loading && filteredEntries.length > 0 && (
-          <div className="space-y-6">
-            {Object.entries(groupedEntries).map(([dateKey, dateEntries], groupIndex) => (
-              <motion.div
-                key={dateKey}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: groupIndex * 0.1 }}
-              >
-                {/* Date Header */}
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-teal-500/10 to-cyan-500/10 border border-teal-200/30 dark:border-teal-700/30">
-                    <Calendar className="w-4 h-4 text-teal-600 dark:text-teal-400" />
-                    <span className="text-sm font-semibold text-teal-700 dark:text-teal-300">
-                      {dateKey}
+              </CardBody>
+            </Card>
+          </motion.div>
+        ) : (
+          <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-10">
+            {timelineGroups.map(group => (
+              <motion.section key={group.key} variants={itemVariants}>
+                <div className="mb-4 flex items-center gap-3">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-white/60 bg-white/60 px-3 py-1 shadow-glass-sm backdrop-blur-md dark:border-white/10 dark:bg-white/5">
+                    <Calendar className="h-4 w-4 text-blue-600 dark:text-blue-300" />
+                    <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
+                      {group.label}
+                    </span>
+                    <span className="rounded-full bg-white/70 px-2 py-0.5 text-[11px] text-zinc-600 shadow-sm dark:bg-white/5 dark:text-zinc-300">
+                      {group.items.length}
                     </span>
                   </div>
-                  <div className="flex-1 h-px bg-gradient-to-r from-teal-200/50 via-slate-200/50 to-transparent dark:from-teal-700/30 dark:via-slate-700/30" />
+                  <div className="h-px flex-1 bg-zinc-200/70 dark:bg-white/10" />
                 </div>
 
-                {/* Timeline Items */}
-                <motion.div
-                  variants={containerVariants}
-                  initial="hidden"
-                  animate="visible"
-                  className="space-y-3 pl-2"
-                >
-                  {/* Timeline Line */}
-                  <div className="relative">
-                    <div className="absolute left-[21px] top-0 bottom-0 w-0.5 bg-gradient-to-b from-teal-300/50 via-slate-200/30 to-transparent dark:from-teal-600/30 dark:via-slate-700/30 rounded-full" />
-                    <div className="space-y-3">
-                      {dateEntries.map(entry => (
-                        <ActivityCard
-                          key={entry.id}
-                          entry={entry}
-                          onClick={() => setSelectedEntry(entry)}
-                          language={uiSettings.language}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                </motion.div>
-              </motion.div>
+                <div className="relative">
+                  <div className="absolute left-4 top-0 bottom-0 w-px bg-gradient-to-b from-blue-500/25 via-zinc-200/70 to-transparent dark:from-blue-400/25 dark:via-white/10" />
+                  <ol role="list" className="space-y-3">
+                    {group.items.map(item => (
+                      <li key={item.id} className="relative pl-8">
+                        <div className="pointer-events-none absolute left-4 top-[22px] h-2 w-2 -translate-x-1/2 rounded-full bg-blue-500 ring-4 ring-white/70 dark:ring-zinc-950/40" />
+
+                        {item.kind === 'activity' ? (
+                          <TimelineActivityCard
+                            entry={item.entry}
+                            onOpen={() => setSelectedEntry(item.entry)}
+                            locale={locale}
+                            t={t}
+                          />
+                        ) : (
+                          <TimelineChatCard
+                            session={item.session}
+                            onView={() => setSelectedChatSession(item.session.session_id)}
+                            onContinue={() => handleLoadChatSession(item.session.session_id)}
+                            isLoading={loadingSessionId === item.session.session_id}
+                            locale={locale}
+                            t={t}
+                          />
+                        )}
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              </motion.section>
             ))}
-          </div>
+          </motion.div>
         )}
-
-        {/* Chat Sessions Section */}
-        {!loading &&
-          filteredChatSessions.length > 0 &&
-          (filterType === 'all' || filterType === 'chat') && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-            >
-              {/* Section Header */}
-              <div className="flex items-center gap-3 mb-4">
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-200/30 dark:border-amber-700/30">
-                  <MessageSquare className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                  <span className="text-sm font-semibold text-amber-700 dark:text-amber-300">
-                    {t('Chat History')}
-                  </span>
-                  <span className="text-xs text-amber-500/70 dark:text-amber-400/70 ml-1">
-                    ({filteredChatSessions.length})
-                  </span>
-                </div>
-                <div className="flex-1 h-px bg-gradient-to-r from-amber-200/50 via-slate-200/50 to-transparent dark:from-amber-700/30 dark:via-slate-700/30" />
-              </div>
-
-              {/* Chat Session Cards */}
-              <motion.div
-                variants={containerVariants}
-                initial="hidden"
-                animate="visible"
-                className="space-y-3"
-              >
-                {filteredChatSessions.map(session => (
-                  <ChatSessionCard
-                    key={session.session_id}
-                    session={session}
-                    onView={() => setSelectedChatSession(session.session_id)}
-                    onContinue={() => handleLoadChatSession(session.session_id)}
-                    isLoading={loadingSessionId === session.session_id}
-                    language={uiSettings.language}
-                    t={t}
-                  />
-                ))}
-              </motion.div>
-            </motion.div>
-          )}
       </div>
 
       {/* Activity Detail Modal */}

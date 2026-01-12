@@ -1,109 +1,106 @@
 'use client'
 
-import { useState, useRef, useEffect, useCallback } from 'react'
-import { motion, AnimatePresence, type Variants } from 'framer-motion'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { AnimatePresence, motion, type Variants } from 'framer-motion'
 import {
-  Edit3,
-  Wand2,
-  Minimize2,
-  Maximize2,
-  Globe,
-  Database,
-  Loader2,
-  X,
-  History,
+  AlertCircle,
   Bold,
-  Italic,
-  Underline as UnderlineIcon,
-  Highlighter,
-  Strikethrough,
+  Book,
+  ChevronRight,
+  Clock,
   Code,
-  Heading1,
-  Heading2,
-  List,
-  ListOrdered,
-  Quote,
-  Link,
-  Image,
-  Minus,
+  Database,
   Download,
-  FileText,
-  PenTool,
-  Sparkles,
+  Edit3,
   Eye,
   EyeOff,
-  Wifi,
-  WifiOff,
-  AlertCircle,
-  Book,
-  Mic,
+  FileText,
+  Globe,
+  Heading1,
+  Heading2,
   Headphones,
-  Radio,
-  ChevronDown,
-  ChevronRight,
+  Highlighter,
+  History,
+  Image as ImageIcon,
   Import,
-  GripVertical,
-  Clock,
+  Italic,
+  Link,
+  List,
+  ListOrdered,
+  Loader2,
+  Maximize2,
+  Mic,
+  Minimize2,
+  Minus,
+  PenTool,
+  Quote,
+  Radio,
+  Sparkles,
+  Strikethrough,
+  Underline as UnderlineIcon,
+  Wand2,
+  WifiOff,
+  X,
   Zap,
 } from 'lucide-react'
-import AddToNotebookModal from '@/components/AddToNotebookModal'
-import NotebookImportModal from '@/components/NotebookImportModal'
-import { apiUrl } from '@/lib/api'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
 import rehypeRaw from 'rehype-raw'
 import 'katex/dist/katex.min.css'
+
+import AddToNotebookModal from '@/components/AddToNotebookModal'
+import NotebookImportModal from '@/components/NotebookImportModal'
+import PageWrapper, { PageHeader } from '@/components/ui/PageWrapper'
+import { Card, CardBody, CardFooter, CardHeader } from '@/components/ui/Card'
+import Button, { IconButton } from '@/components/ui/Button'
+import { Input, Textarea } from '@/components/ui/Input'
+import { Spinner } from '@/components/ui/LoadingState'
+import { useToast } from '@/components/ui/Toast'
+import { apiUrl } from '@/lib/api'
+import { parseKnowledgeBaseList } from '@/lib/knowledge'
 import { processLatexContent } from '@/lib/latex'
-import PageWrapper from '@/components/ui/PageWrapper'
-import { Card, CardHeader, CardBody, CardFooter } from '@/components/ui/Card'
-import Button from '@/components/ui/Button'
-import { Spinner, PulseDots } from '@/components/ui/LoadingState'
 
 // ============================================================================
 // Animation Variants
 // ============================================================================
 
 const fadeInUp: Variants = {
-  hidden: { opacity: 0, y: 20 },
+  hidden: { opacity: 0, y: 14 },
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] },
+    transition: { duration: 0.35, ease: [0.16, 1, 0.3, 1] },
   },
 }
 
 const slideInLeft: Variants = {
-  hidden: { opacity: 0, x: -20 },
+  hidden: { opacity: 0, x: -18 },
   visible: {
     opacity: 1,
     x: 0,
-    transition: { duration: 0.4, ease: 'easeOut' },
+    transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] },
   },
 }
 
 const slideInRight: Variants = {
-  hidden: { opacity: 0, x: 20 },
+  hidden: { opacity: 0, x: 18 },
   visible: {
     opacity: 1,
     x: 0,
-    transition: { duration: 0.4, ease: 'easeOut' },
+    transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] },
   },
 }
 
 const scaleIn: Variants = {
-  hidden: { opacity: 0, scale: 0.95 },
+  hidden: { opacity: 0, scale: 0.98 },
   visible: {
     opacity: 1,
     scale: 1,
-    transition: { type: 'spring' as const, stiffness: 300, damping: 25 },
+    transition: { type: 'spring' as const, stiffness: 320, damping: 24 },
   },
-  exit: {
-    opacity: 0,
-    scale: 0.95,
-    transition: { duration: 0.2 },
-  },
+  exit: { opacity: 0, scale: 0.98, transition: { duration: 0.15 } },
 }
 
 const staggerContainer: Variants = {
@@ -111,16 +108,30 @@ const staggerContainer: Variants = {
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.1,
-      delayChildren: 0.1,
+      staggerChildren: 0.08,
+      delayChildren: 0.06,
     },
   },
 }
 
-// AI Mark tag regex patterns
+// AI mark tag regex patterns
 const AI_MARK_REGEX = /<span\s+data-rough-notation="[^"]+">([^<]*)<\/span>/g
-const AI_MARK_OPEN_TAG = /<span\s+data-rough-notation="[^"]+">/g
-const AI_MARK_CLOSE_TAG = /<\/span>/g
+
+type WorkspaceView = 'split' | 'write' | 'preview'
+type CoWriterAction = 'rewrite' | 'shorten' | 'expand' | 'automark'
+type ContextSource = 'rag' | 'web' | null
+
+type TextSelection = {
+  start: number
+  end: number
+  text: string
+}
+
+const getErrorMessage = (error: unknown): string => {
+  if (error instanceof Error) return error.message
+  if (typeof error === 'string') return error
+  return 'Unknown error'
+}
 
 // ============================================================================
 // Toolbar Button Component
@@ -135,31 +146,28 @@ interface ToolbarButtonProps {
 
 function ToolbarButton({ icon, onClick, title, active }: ToolbarButtonProps) {
   return (
-    <motion.button
+    <IconButton
+      icon={icon}
+      aria-label={title}
       onClick={onClick}
       title={title}
-      className={`
-        p-2 rounded-xl transition-all
-        ${
-          active
-            ? 'bg-teal-100 dark:bg-teal-900/50 text-teal-700 dark:text-teal-300 shadow-sm'
-            : 'text-slate-500 dark:text-slate-400 hover:bg-white/60 dark:hover:bg-slate-700/60 hover:text-slate-700 dark:hover:text-slate-200'
-        }
-      `}
-      whileHover={{ scale: 1.05 }}
-      whileTap={{ scale: 0.95 }}
-    >
-      {icon}
-    </motion.button>
+      variant="ghost"
+      size="sm"
+      className={
+        active
+          ? 'rounded-xl bg-blue-100/80 text-blue-700 shadow-sm dark:bg-blue-900/40 dark:text-blue-300'
+          : 'rounded-xl text-zinc-500 hover:bg-white/60 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-zinc-100'
+      }
+    />
   )
 }
 
 function ToolbarDivider() {
-  return <div className="w-px h-6 bg-slate-200/60 dark:bg-slate-600/60 mx-1" />
+  return <div className="mx-1 h-6 w-px bg-zinc-200/70 dark:bg-white/10" />
 }
 
 // ============================================================================
-// Action Card Component (for AI actions popover)
+// Action Card Component
 // ============================================================================
 
 interface ActionCardProps {
@@ -167,50 +175,45 @@ interface ActionCardProps {
   label: string
   active: boolean
   onClick: () => void
-  colorScheme: 'teal' | 'amber' | 'blue' | 'emerald'
+  colorScheme: 'amber' | 'blue' | 'emerald'
 }
 
 function ActionCard({ icon, label, active, onClick, colorScheme }: ActionCardProps) {
   const colorClasses = {
-    teal: {
-      active:
-        'bg-teal-50 dark:bg-teal-900/40 border-teal-400 dark:border-teal-600 text-teal-600 dark:text-teal-300',
-      inactive:
-        'border-transparent text-slate-500 dark:text-slate-400 hover:bg-teal-50/50 dark:hover:bg-teal-900/20 hover:text-teal-600 dark:hover:text-teal-300',
-    },
     amber: {
       active:
-        'bg-amber-50 dark:bg-amber-900/40 border-amber-400 dark:border-amber-600 text-amber-600 dark:text-amber-300',
+        'bg-amber-50 dark:bg-amber-900/40 border-amber-300 dark:border-amber-600 text-amber-700 dark:text-amber-300',
       inactive:
-        'border-transparent text-slate-500 dark:text-slate-400 hover:bg-amber-50/50 dark:hover:bg-amber-900/20 hover:text-amber-600 dark:hover:text-amber-300',
+        'border-transparent text-zinc-500 dark:text-zinc-400 hover:bg-amber-50/60 dark:hover:bg-amber-900/20 hover:text-amber-700 dark:hover:text-amber-300',
     },
     blue: {
       active:
-        'bg-blue-50 dark:bg-blue-900/40 border-blue-400 dark:border-blue-600 text-blue-600 dark:text-blue-300',
+        'bg-blue-50 dark:bg-blue-900/35 border-blue-300 dark:border-blue-600 text-blue-700 dark:text-blue-300',
       inactive:
-        'border-transparent text-slate-500 dark:text-slate-400 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-300',
+        'border-transparent text-zinc-500 dark:text-zinc-400 hover:bg-blue-50/60 dark:hover:bg-blue-900/20 hover:text-blue-700 dark:hover:text-blue-300',
     },
     emerald: {
       active:
-        'bg-emerald-50 dark:bg-emerald-900/40 border-emerald-400 dark:border-emerald-600 text-emerald-600 dark:text-emerald-300',
+        'bg-emerald-50 dark:bg-emerald-900/35 border-emerald-300 dark:border-emerald-600 text-emerald-700 dark:text-emerald-300',
       inactive:
-        'border-transparent text-slate-500 dark:text-slate-400 hover:bg-emerald-50/50 dark:hover:bg-emerald-900/20 hover:text-emerald-600 dark:hover:text-emerald-300',
+        'border-transparent text-zinc-500 dark:text-zinc-400 hover:bg-emerald-50/60 dark:hover:bg-emerald-900/20 hover:text-emerald-700 dark:hover:text-emerald-300',
     },
-  }
+  } as const
 
   return (
-    <motion.button
+    <Button
       onClick={onClick}
-      className={`
-        flex flex-col items-center gap-1.5 p-3 rounded-xl transition-all text-xs font-medium border-2
-        ${active ? colorClasses[colorScheme].active : colorClasses[colorScheme].inactive}
-      `}
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
+      variant="ghost"
+      size="sm"
+      className={[
+        '!h-auto !px-3 !py-3 !rounded-xl !flex-col !items-center !justify-center',
+        'text-xs font-medium border transition-all',
+        active ? colorClasses[colorScheme].active : colorClasses[colorScheme].inactive,
+      ].join(' ')}
     >
-      {icon}
-      {label}
-    </motion.button>
+      <span className="flex items-center justify-center">{icon}</span>
+      <span>{label}</span>
+    </Button>
   )
 }
 
@@ -218,19 +221,21 @@ function ActionCard({ icon, label, active, onClick, colorScheme }: ActionCardPro
 // History Item Component
 // ============================================================================
 
+interface OperationHistoryItem {
+  id: string
+  action: string
+  timestamp: string
+  input?: { original_text?: string }
+  source?: string
+}
+
 interface HistoryItemProps {
-  operation: {
-    id: string
-    action: string
-    timestamp: string
-    input?: { original_text?: string }
-    source?: string
-  }
+  operation: OperationHistoryItem
 }
 
 function HistoryItem({ operation }: HistoryItemProps) {
   const actionColors: Record<string, string> = {
-    rewrite: 'bg-teal-100 dark:bg-teal-900/50 text-teal-700 dark:text-teal-300',
+    rewrite: 'bg-blue-100/80 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300',
     shorten: 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300',
     automark: 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300',
     expand: 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300',
@@ -239,29 +244,33 @@ function HistoryItem({ operation }: HistoryItemProps) {
   return (
     <motion.div
       variants={fadeInUp}
-      className="p-3 bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/40 dark:border-slate-700/40 rounded-xl hover:shadow-md transition-all cursor-pointer group"
+      className="cursor-pointer rounded-xl border border-white/40 bg-white/60 p-3 backdrop-blur-sm transition-all hover:shadow-md dark:border-white/10 dark:bg-white/5"
       whileHover={{ y: -2 }}
     >
-      <div className="flex items-center justify-between mb-1.5">
+      <div className="mb-1.5 flex items-center justify-between gap-3">
         <span
-          className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-lg ${actionColors[operation.action] || 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'}`}
+          className={[
+            'rounded-lg px-2 py-0.5 text-[10px] font-bold uppercase',
+            actionColors[operation.action] ||
+              'bg-zinc-100/80 dark:bg-white/10 text-zinc-700 dark:text-zinc-200',
+          ].join(' ')}
         >
           {operation.action}
         </span>
-        <span className="text-[10px] text-slate-400 dark:text-slate-500 flex items-center gap-1">
-          <Clock className="w-3 h-3" />
+        <span className="flex items-center gap-1 text-[10px] text-zinc-500 dark:text-zinc-400">
+          <Clock className="h-3 w-3" />
           {new Date(operation.timestamp).toLocaleTimeString()}
         </span>
       </div>
-      <div className="text-xs text-slate-600 dark:text-slate-400 truncate">
-        "{operation.input?.original_text?.substring(0, 40)}..."
+      <div className="truncate text-xs text-zinc-700 dark:text-zinc-300">
+        &quot;{operation.input?.original_text?.substring(0, 48)}...&quot;
       </div>
       {operation.source && (
-        <div className="flex items-center gap-1 mt-1.5 text-[10px] text-slate-400 dark:text-slate-500">
+        <div className="mt-1.5 flex items-center gap-1 text-[10px] text-zinc-500 dark:text-zinc-400">
           {operation.source === 'rag' ? (
-            <Database className="w-2.5 h-2.5" />
+            <Database className="h-2.5 w-2.5" />
           ) : (
-            <Globe className="w-2.5 h-2.5" />
+            <Globe className="h-2.5 w-2.5" />
           )}
           {operation.source.toUpperCase()}
         </div>
@@ -271,54 +280,47 @@ function HistoryItem({ operation }: HistoryItemProps) {
 }
 
 // ============================================================================
-// Main Co-Writer Page Component
+// Main Page Component
 // ============================================================================
 
 export default function CoWriterPage() {
-  // State
+  const toast = useToast()
+
+  // Core state
   const [content, setContent] = useState(
     '# Welcome to Co-Writer\n\nSelect text to see the magic happen.\n\n## Features\n\n- **Bold** text with Ctrl+B\n- *Italic* text with Ctrl+I\n- <u>Underline</u> with Ctrl+U\n- <mark>Highlight</mark> with Ctrl+H\n- AI-powered editing and auto-marking\n'
   )
-  const [selection, setSelection] = useState<{
-    start: number
-    end: number
-    text: string
-  } | null>(null)
-  const [popover, setPopover] = useState<{
-    visible: boolean
-    x: number
-    y: number
-  } | null>(null)
+  const [selection, setSelection] = useState<TextSelection | null>(null)
   const [instruction, setInstruction] = useState('')
-  const [selectedAction, setSelectedAction] = useState<
-    'rewrite' | 'shorten' | 'expand' | 'automark'
-  >('rewrite')
-  const [source, setSource] = useState<'rag' | 'web' | null>(null)
+  const [selectedAction, setSelectedAction] = useState<CoWriterAction>('rewrite')
+  const [source, setSource] = useState<ContextSource>(null)
   const [selectedKb, setSelectedKb] = useState('')
   const [kbs, setKbs] = useState<string[]>([])
-  const [isProcessing, setIsProcessing] = useState(false)
-  const [operationHistory, setOperationHistory] = useState<any[]>([])
-  const [showHistory, setShowHistory] = useState(false)
+  const [operationHistory, setOperationHistory] = useState<OperationHistoryItem[]>([])
+
+  // UI state
+  const [workspaceView, setWorkspaceView] = useState<WorkspaceView>('split')
   const [hideAiMarks, setHideAiMarks] = useState(false)
-  const [rawContent, setRawContent] = useState('')
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
   const [backendConnected, setBackendConnected] = useState<boolean | null>(null)
   const [showNotebookModal, setShowNotebookModal] = useState(false)
   const [showImportModal, setShowImportModal] = useState(false)
 
-  // Podcast / Narration states
+  // Podcast / narration state
   const [isPodcastExpanded, setIsPodcastExpanded] = useState(false)
   const [narrationStyle, setNarrationStyle] = useState<'friendly' | 'academic' | 'concise'>(
     'friendly'
   )
-  const [narrationScript, setNarrationScript] = useState<string>('')
+  const [narrationScript, setNarrationScript] = useState('')
   const [narrationKeyPoints, setNarrationKeyPoints] = useState<string[]>([])
-  const [narrationLoading, setNarrationLoading] = useState<boolean>(false)
+  const [narrationLoading, setNarrationLoading] = useState(false)
   const [narrationError, setNarrationError] = useState<string | null>(null)
   const [ttsAvailable, setTtsAvailable] = useState<boolean | null>(null)
-  const [ttsVoices, setTtsVoices] = useState<
-    Array<{ id: string; name: string; description?: string }>
-  >([])
-  const [selectedVoice, setSelectedVoice] = useState<string>('alloy')
+  const [ttsVoices, setTtsVoices] = useState<Array<{ id: string; name: string; description?: string }>>(
+    []
+  )
+  const [selectedVoice, setSelectedVoice] = useState('alloy')
   const [audioInfo, setAudioInfo] = useState<{
     audioUrl?: string
     audioId?: string
@@ -326,19 +328,31 @@ export default function CoWriterPage() {
   } | null>(null)
   const [showNarrationNotebookModal, setShowNarrationNotebookModal] = useState(false)
 
-  // Panel resize state
-  const [panelWidth, setPanelWidth] = useState(50) // percentage
-  const [isDragging, setIsDragging] = useState(false)
-
   // Refs
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const popoverRef = useRef<HTMLDivElement>(null)
   const previewRef = useRef<HTMLDivElement>(null)
   const editorContainerRef = useRef<HTMLDivElement>(null)
-  const containerRef = useRef<HTMLDivElement>(null)
   const isSyncingScroll = useRef(false)
 
-  // Check backend connection status
+  const fetchHistory = useCallback(() => {
+    fetch(apiUrl('/api/v1/co_writer/history'))
+      .then(res => {
+        if (res.ok) return res.json()
+        throw new Error(`HTTP ${res.status}`)
+      })
+      .then((data: { history?: unknown }) => {
+        const history = Array.isArray(data.history) ? (data.history as OperationHistoryItem[]) : []
+        setOperationHistory(history)
+        setBackendConnected(true)
+      })
+      .catch((err: unknown) => {
+        if (process.env.NODE_ENV === 'development') {
+          console.debug('Failed to fetch history:', getErrorMessage(err))
+        }
+        setBackendConnected(false)
+      })
+  }, [])
+
   const checkBackendConnection = useCallback(async (silent: boolean = false) => {
     try {
       const controller = new AbortController()
@@ -348,17 +362,19 @@ export default function CoWriterPage() {
         signal: controller.signal,
       })
       clearTimeout(timeoutId)
+
       if (response.ok) {
         setBackendConnected(true)
         return true
-      } else {
-        setBackendConnected(false)
-        return false
       }
-    } catch (error: any) {
+
       setBackendConnected(false)
-      if (!silent && error.name !== 'AbortError' && process.env.NODE_ENV === 'development') {
-        console.debug('Backend connection check failed:', error.message)
+      return false
+    } catch (error: unknown) {
+      setBackendConnected(false)
+      const errorName = error instanceof Error ? error.name : undefined
+      if (!silent && errorName !== 'AbortError' && process.env.NODE_ENV === 'development') {
+        console.debug('Backend connection check failed:', getErrorMessage(error))
       }
       return false
     }
@@ -381,77 +397,58 @@ export default function CoWriterPage() {
               const voicesData = await voicesRes.json()
               setTtsVoices(voicesData.voices || [])
             }
-          } else {
-            setTtsAvailable(false)
+            return
           }
-        } else {
-          setTtsAvailable(false)
         }
-      } catch (e) {
-        setTtsAvailable(false)
+      } catch {
+        // ignore
       }
+
+      setTtsAvailable(false)
+      setTtsVoices([])
     }
     fetchTtsConfig()
   }, [])
 
-  // Fetch KBs
+  // Fetch KBs and history
   useEffect(() => {
     const loadData = async () => {
       setBackendConnected(null)
       try {
         const isConnected = await checkBackendConnection(true)
-        if (isConnected) {
-          try {
-            const controller = new AbortController()
-            const timeoutId = setTimeout(() => controller.abort(), 5000)
-            const res = await fetch(apiUrl('/api/v1/knowledge/list'), {
-              signal: controller.signal,
-            })
-            clearTimeout(timeoutId)
-            if (res.ok) {
-              const data = await res.json()
-              setKbs(data.map((kb: any) => kb.name))
-              if (data.length > 0) setSelectedKb(data[0].name)
-            }
-          } catch (err: any) {
-            if (process.env.NODE_ENV === 'development') {
-              console.debug('Failed to fetch KBs:', err.message)
-            }
+        if (!isConnected) return
+
+        try {
+          const controller = new AbortController()
+          const timeoutId = setTimeout(() => controller.abort(), 5000)
+          const res = await fetch(apiUrl('/api/v1/knowledge/list'), { signal: controller.signal })
+          clearTimeout(timeoutId)
+          if (res.ok) {
+            const data = await res.json()
+            const names = parseKnowledgeBaseList(data).map(kb => kb.name)
+            setKbs(names)
+            if (names.length > 0) setSelectedKb(names[0])
           }
-          fetchHistory()
+        } catch (err: unknown) {
+          if (process.env.NODE_ENV === 'development') {
+            console.debug('Failed to fetch KBs:', getErrorMessage(err))
+          }
         }
-      } catch (error: any) {
+
+        fetchHistory()
+      } catch (error: unknown) {
         if (process.env.NODE_ENV === 'development') {
-          console.debug('Failed to initialize:', error.message)
+          console.debug('Failed to initialize:', getErrorMessage(error))
         }
       }
     }
-    loadData()
-  }, [checkBackendConnection])
 
-  const fetchHistory = () => {
-    fetch(apiUrl('/api/v1/co_writer/history'))
-      .then(res => {
-        if (res.ok) return res.json()
-        throw new Error(`HTTP ${res.status}`)
-      })
-      .then(data => {
-        setOperationHistory(data.history || [])
-        setBackendConnected(true)
-      })
-      .catch(err => {
-        if (process.env.NODE_ENV === 'development') {
-          console.debug('Failed to fetch history:', err.message)
-        }
-        setBackendConnected(false)
-      })
-  }
+    loadData()
+  }, [checkBackendConnection, fetchHistory])
 
   // Auto clear source when automark is selected
   useEffect(() => {
-    if (selectedAction === 'automark') {
-      setSource(null)
-    }
+    if (selectedAction === 'automark') setSource(null)
   }, [selectedAction])
 
   // Synchronized scroll
@@ -485,135 +482,116 @@ export default function CoWriterPage() {
     })
   }, [])
 
-  // Hide AI Marks
   const getDisplayContent = useCallback(() => {
     if (!hideAiMarks) return content
     return content.replace(AI_MARK_REGEX, '$1')
   }, [content, hideAiMarks])
 
-  useEffect(() => {
-    if (hideAiMarks && !rawContent) {
-      setRawContent(content)
-    } else if (!hideAiMarks && rawContent) {
-      setRawContent('')
+  // Smart AI mark protection while editing (hide marks mode)
+  const mergeEditWithMarks = useCallback((original: string, oldPlain: string, newPlain: string): string => {
+    interface MarkInfo {
+      tag: string
+      innerText: string
+      plainStart: number
+      plainEnd: number
     }
-  }, [hideAiMarks])
 
-  // Smart AI mark protection
-  const mergeEditWithMarks = useCallback(
-    (original: string, oldPlain: string, newPlain: string): string => {
-      interface MarkInfo {
-        tag: string
-        innerText: string
-        plainStart: number
-        plainEnd: number
+    const marks: MarkInfo[] = []
+    const regex = /<span\s+data-rough-notation="([^"]+)">([^<]*)<\/span>/g
+    let match
+
+    let plainOffset = 0
+    let lastIndex = 0
+
+    while ((match = regex.exec(original)) !== null) {
+      const tag = match[1]
+      const innerText = match[2]
+      const htmlStart = match.index
+      const htmlEnd = htmlStart + match[0].length
+
+      const textBefore = original.substring(lastIndex, htmlStart)
+      plainOffset += textBefore.length
+
+      marks.push({
+        tag,
+        innerText,
+        plainStart: plainOffset,
+        plainEnd: plainOffset + innerText.length,
+      })
+
+      plainOffset += innerText.length
+      lastIndex = htmlEnd
+    }
+
+    let diffStart = 0
+    let diffEndOld = oldPlain.length
+    let diffEndNew = newPlain.length
+
+    while (diffStart < oldPlain.length && diffStart < newPlain.length && oldPlain[diffStart] === newPlain[diffStart]) {
+      diffStart++
+    }
+
+    while (
+      diffEndOld > diffStart &&
+      diffEndNew > diffStart &&
+      oldPlain[diffEndOld - 1] === newPlain[diffEndNew - 1]
+    ) {
+      diffEndOld--
+      diffEndNew--
+    }
+
+    const marksToKeep: Array<{ mark: MarkInfo; newPosition: number }> = []
+
+    for (const mark of marks) {
+      const editStartsInsideMark = diffStart > mark.plainStart && diffStart < mark.plainEnd
+      const editEndsInsideMark = diffEndOld > mark.plainStart && diffEndOld < mark.plainEnd
+      const editCompletelyInsideMark = diffStart >= mark.plainStart && diffEndOld <= mark.plainEnd
+
+      if (editCompletelyInsideMark || editStartsInsideMark || editEndsInsideMark) {
+        continue
       }
 
-      const marks: MarkInfo[] = []
-      const regex = /<span\s+data-rough-notation="([^"]+)">([^<]*)<\/span>/g
-      let match
+      let newPosition = mark.plainStart
 
-      let plainOffset = 0
-      let lastIndex = 0
+      if (diffEndOld <= mark.plainStart) {
+        const editLengthDiff = diffEndNew - diffStart - (diffEndOld - diffStart)
+        newPosition = mark.plainStart + editLengthDiff
+      } else if (diffStart >= mark.plainEnd) {
+        newPosition = mark.plainStart
+      } else {
+        const searchRadius = 50
+        const searchStart = Math.max(0, mark.plainStart - searchRadius)
+        const searchEnd = Math.min(newPlain.length, mark.plainEnd + searchRadius)
+        const searchArea = newPlain.substring(searchStart, searchEnd)
+        const foundIndex = searchArea.indexOf(mark.innerText)
 
-      while ((match = regex.exec(original)) !== null) {
-        const tag = match[1]
-        const innerText = match[2]
-        const htmlStart = match.index
-        const htmlEnd = htmlStart + match[0].length
-
-        const textBefore = original.substring(lastIndex, htmlStart)
-        plainOffset += textBefore.length
-
-        marks.push({
-          tag,
-          innerText,
-          plainStart: plainOffset,
-          plainEnd: plainOffset + innerText.length,
-        })
-
-        plainOffset += innerText.length
-        lastIndex = htmlEnd
-      }
-
-      let diffStart = 0
-      let diffEndOld = oldPlain.length
-      let diffEndNew = newPlain.length
-
-      while (
-        diffStart < oldPlain.length &&
-        diffStart < newPlain.length &&
-        oldPlain[diffStart] === newPlain[diffStart]
-      ) {
-        diffStart++
-      }
-
-      while (
-        diffEndOld > diffStart &&
-        diffEndNew > diffStart &&
-        oldPlain[diffEndOld - 1] === newPlain[diffEndNew - 1]
-      ) {
-        diffEndOld--
-        diffEndNew--
-      }
-
-      const marksToKeep: Array<{ mark: MarkInfo; newPosition: number }> = []
-
-      for (const mark of marks) {
-        const editStartsInsideMark = diffStart > mark.plainStart && diffStart < mark.plainEnd
-        const editEndsInsideMark = diffEndOld > mark.plainStart && diffEndOld < mark.plainEnd
-        const editCompletelyInsideMark = diffStart >= mark.plainStart && diffEndOld <= mark.plainEnd
-
-        if (editCompletelyInsideMark || editStartsInsideMark || editEndsInsideMark) {
+        if (foundIndex !== -1) {
+          newPosition = searchStart + foundIndex
+        } else {
           continue
         }
-
-        let newPosition = mark.plainStart
-
-        if (diffEndOld <= mark.plainStart) {
-          const editLengthDiff = diffEndNew - diffStart - (diffEndOld - diffStart)
-          newPosition = mark.plainStart + editLengthDiff
-        } else if (diffStart >= mark.plainEnd) {
-          newPosition = mark.plainStart
-        } else {
-          const searchRadius = 50
-          const searchStart = Math.max(0, mark.plainStart - searchRadius)
-          const searchEnd = Math.min(newPlain.length, mark.plainEnd + searchRadius)
-          const searchArea = newPlain.substring(searchStart, searchEnd)
-          const foundIndex = searchArea.indexOf(mark.innerText)
-
-          if (foundIndex !== -1) {
-            newPosition = searchStart + foundIndex
-          } else {
-            continue
-          }
-        }
-
-        if (newPosition >= 0 && newPosition + mark.innerText.length <= newPlain.length) {
-          const textAtPosition = newPlain.substring(
-            newPosition,
-            newPosition + mark.innerText.length
-          )
-          if (textAtPosition === mark.innerText) {
-            marksToKeep.push({ mark, newPosition })
-          }
-        }
       }
 
-      marksToKeep.sort((a, b) => b.newPosition - a.newPosition)
-
-      let result = newPlain
-      for (const { mark, newPosition } of marksToKeep) {
-        const before = result.substring(0, newPosition)
-        const after = result.substring(newPosition + mark.innerText.length)
-        const markedText = `<span data-rough-notation="${mark.tag}">${mark.innerText}</span>`
-        result = before + markedText + after
+      if (newPosition >= 0 && newPosition + mark.innerText.length <= newPlain.length) {
+        const textAtPosition = newPlain.substring(newPosition, newPosition + mark.innerText.length)
+        if (textAtPosition === mark.innerText) {
+          marksToKeep.push({ mark, newPosition })
+        }
       }
+    }
 
-      return result
-    },
-    []
-  )
+    marksToKeep.sort((a, b) => b.newPosition - a.newPosition)
+
+    let result = newPlain
+    for (const { mark, newPosition } of marksToKeep) {
+      const before = result.substring(0, newPosition)
+      const after = result.substring(newPosition + mark.innerText.length)
+      const markedText = `<span data-rough-notation="${mark.tag}">${mark.innerText}</span>`
+      result = before + markedText + after
+    }
+
+    return result
+  }, [])
 
   const handleContentChange = useCallback(
     (newValue: string) => {
@@ -625,11 +603,7 @@ export default function CoWriterPage() {
       setContent(prevContent => {
         const oldDisplayContent = prevContent.replace(AI_MARK_REGEX, '$1')
         const newDisplayContent = newValue
-
-        if (oldDisplayContent === newDisplayContent) {
-          return prevContent
-        }
-
+        if (oldDisplayContent === newDisplayContent) return prevContent
         return mergeEditWithMarks(prevContent, oldDisplayContent, newDisplayContent)
       })
     },
@@ -644,41 +618,36 @@ export default function CoWriterPage() {
     const start = textarea.selectionStart
     const end = textarea.selectionEnd
     const selectedText = textarea.value.substring(start, end)
-
     if (selectedText.length === 0) return
 
     const textBefore = textarea.value.substring(Math.max(0, start - before.length), start)
     const textAfter = textarea.value.substring(end, end + after.length)
 
-    let newContent: string
+    let newDisplayContent: string
     let newStart: number
     let newEnd: number
 
     if (textBefore === before && textAfter === after) {
-      newContent =
+      newDisplayContent =
         textarea.value.substring(0, start - before.length) +
         selectedText +
         textarea.value.substring(end + after.length)
       newStart = start - before.length
       newEnd = end - before.length
     } else {
-      newContent =
-        textarea.value.substring(0, start) +
-        before +
-        selectedText +
-        after +
-        textarea.value.substring(end)
+      newDisplayContent =
+        textarea.value.substring(0, start) + before + selectedText + after + textarea.value.substring(end)
       newStart = start + before.length
       newEnd = end + before.length
     }
 
-    setContent(newContent)
+    handleContentChange(newDisplayContent)
 
     setTimeout(() => {
       textarea.focus()
       textarea.setSelectionRange(newStart, newEnd)
     }, 0)
-  }, [])
+  }, [handleContentChange])
 
   // Toggle line prefix
   const toggleLinePrefix = useCallback((prefix: string) => {
@@ -713,15 +682,11 @@ export default function CoWriterPage() {
     }
 
     for (let i = startLine; i <= endLine; i++) {
-      if (allHavePrefix) {
-        lines[i] = lines[i].substring(prefix.length)
-      } else {
-        lines[i] = prefix + lines[i]
-      }
+      lines[i] = allHavePrefix ? lines[i].substring(prefix.length) : prefix + lines[i]
     }
 
-    setContent(lines.join('\n'))
-  }, [])
+    handleContentChange(lines.join('\n'))
+  }, [handleContentChange])
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -760,58 +725,62 @@ export default function CoWriterPage() {
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [wrapSelection])
 
-  // Handle selection for popover
-  const handleMouseUp = (e: React.MouseEvent) => {
+  const mapPlainIndexToContentIndex = useCallback(
+    (plainIndex: number) => {
+      const openTagPrefix = '<span data-rough-notation="'
+      const closeTag = '</span>'
+
+      let contentIndex = 0
+      let plainOffset = 0
+
+      while (contentIndex < content.length && plainOffset < plainIndex) {
+        if (content.startsWith(openTagPrefix, contentIndex)) {
+          const tagEnd = content.indexOf('>', contentIndex)
+          if (tagEnd === -1) break
+          contentIndex = tagEnd + 1
+          continue
+        }
+
+        if (content.startsWith(closeTag, contentIndex)) {
+          contentIndex += closeTag.length
+          continue
+        }
+
+        contentIndex++
+        plainOffset++
+      }
+
+      return contentIndex
+    },
+    [content]
+  )
+
+  const updateSelectionFromTextarea = useCallback(() => {
     const textarea = textareaRef.current
     if (!textarea) return
 
-    const start = textarea.selectionStart
-    const end = textarea.selectionEnd
-    const text = textarea.value.substring(start, end)
+    const plainStart = textarea.selectionStart
+    const plainEnd = textarea.selectionEnd
+    const selectedPlainText = textarea.value.substring(plainStart, plainEnd)
 
-    if (text.trim().length > 0) {
-      const rect = textarea.getBoundingClientRect()
-      let x = e.clientX
-      let y = e.clientY + 10
-
-      setSelection({ start, end, text })
-      setPopover({ visible: true, x, y })
-      setInstruction('')
-      setSelectedAction('rewrite')
-      setSource(null)
-    } else {
-      setPopover(null)
+    if (selectedPlainText.trim().length === 0) {
       setSelection(null)
+      return
     }
-  }
 
-  // Close popover on click outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        popoverRef.current &&
-        !popoverRef.current.contains(event.target as Node) &&
-        textareaRef.current &&
-        !textareaRef.current.contains(event.target as Node)
-      ) {
-        setPopover(null)
-        setSelection(null)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
+    const start = hideAiMarks ? mapPlainIndexToContentIndex(plainStart) : plainStart
+    const end = hideAiMarks ? mapPlainIndexToContentIndex(plainEnd) : plainEnd
 
-  // Handle AI action
-  const handleAction = async (action: 'rewrite' | 'shorten' | 'expand' | 'automark') => {
+    setSelection({ start, end, text: selectedPlainText })
+  }, [hideAiMarks, mapPlainIndexToContentIndex])
+
+  const handleAction = async (action: CoWriterAction) => {
     if (!selection) return
 
     if (backendConnected === false) {
       const isConnected = await checkBackendConnection()
       if (!isConnected) {
-        alert(
-          `Backend service not connected\n\nPlease ensure the backend is running:\n${apiUrl('')}\n\nRun: python start.py`
-        )
+        toast.error('Backend service not connected. Run: python start.py', 'Backend offline')
         return
       }
     }
@@ -820,8 +789,7 @@ export default function CoWriterPage() {
 
     try {
       let editedText: string
-      const apiEndpoint =
-        action === 'automark' ? '/api/v1/co_writer/automark' : '/api/v1/co_writer/edit'
+      const apiEndpoint = action === 'automark' ? '/api/v1/co_writer/automark' : '/api/v1/co_writer/edit'
       const requestUrl = apiUrl(apiEndpoint)
 
       if (action === 'automark') {
@@ -837,12 +805,10 @@ export default function CoWriterPage() {
         }
 
         const data = await res.json()
-        if (!data.marked_text) {
-          throw new Error('Invalid response: missing marked_text field')
-        }
+        if (!data.marked_text) throw new Error('Invalid response: missing marked_text field')
         editedText = data.marked_text
       } else {
-        const requestBody: any = {
+        const requestBody: Record<string, unknown> = {
           text: selection.text,
           instruction: instruction || `Please ${action} this text.`,
           action,
@@ -867,39 +833,34 @@ export default function CoWriterPage() {
         }
 
         const data = await res.json()
-        if (!data.edited_text) {
-          throw new Error('Invalid response: missing edited_text field')
-        }
+        if (!data.edited_text) throw new Error('Invalid response: missing edited_text field')
         editedText = data.edited_text
       }
 
-      const newContent =
-        content.substring(0, selection.start) + editedText + content.substring(selection.end)
+      const newContent = content.substring(0, selection.start) + editedText + content.substring(selection.end)
       setContent(newContent)
-      setPopover(null)
       setSelection(null)
       fetchHistory()
-    } catch (error: any) {
-      console.error('Action error:', error)
+    } catch (error: unknown) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Action error:', error)
+      }
       setBackendConnected(false)
 
       let errorMessage = 'Error processing request'
-      if (
-        error instanceof TypeError &&
-        (error.message.includes('fetch') || error.message === 'Failed to fetch')
-      ) {
-        errorMessage = `Cannot connect to backend service\n\nRun: python start.py`
-      } else if (error.message) {
-        errorMessage = error.message
+      const resolvedMessage = getErrorMessage(error)
+      if (error instanceof TypeError && (resolvedMessage.includes('fetch') || resolvedMessage === 'Failed to fetch')) {
+        errorMessage = 'Cannot connect to backend service. Run: python start.py'
+      } else if (resolvedMessage) {
+        errorMessage = resolvedMessage
       }
 
-      alert(errorMessage)
+      toast.error(errorMessage, 'Request failed')
     } finally {
       setIsProcessing(false)
     }
   }
 
-  // Export functions
   const exportMarkdown = () => {
     const blob = new Blob([content], { type: 'text/markdown' })
     const url = URL.createObjectURL(blob)
@@ -911,9 +872,17 @@ export default function CoWriterPage() {
   }
 
   const exportPDF = async () => {
-    if (!previewRef.current) return
-    setIsProcessing(true)
+    const restoreView: WorkspaceView | null = previewRef.current ? null : workspaceView
 
+    if (!previewRef.current) {
+      setWorkspaceView('preview')
+      await new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
+      await new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
+    }
+
+    if (!previewRef.current) return
+
+    setIsExporting(true)
     try {
       const [{ default: jsPDF }, { default: html2canvas }] = await Promise.all([
         import('jspdf'),
@@ -951,781 +920,345 @@ export default function CoWriterPage() {
       }
 
       pdf.save('document.pdf')
-    } catch (e) {
-      console.error('PDF export error:', e)
-      alert('PDF export failed, please try again.')
+    } catch (e: unknown) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('PDF export error:', e)
+      }
+      toast.error('PDF export failed, please try again.', 'Export failed')
     } finally {
-      setIsProcessing(false)
+      setIsExporting(false)
+      if (restoreView) setWorkspaceView(restoreView)
     }
   }
 
-  // Handle panel resize
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    e.preventDefault()
-    setIsDragging(true)
-  }, [])
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!isDragging || !containerRef.current) return
-
-      const containerRect = containerRef.current.getBoundingClientRect()
-      const newWidth = ((e.clientX - containerRect.left) / containerRect.width) * 100
-      const clampedWidth = Math.max(30, Math.min(70, newWidth))
-      setPanelWidth(clampedWidth)
-    }
-
-    const handleMouseUp = () => {
-      setIsDragging(false)
-    }
-
-    if (isDragging) {
-      document.addEventListener('mousemove', handleMouseMove)
-      document.addEventListener('mouseup', handleMouseUp)
-      document.body.style.cursor = 'col-resize'
-      document.body.style.userSelect = 'none'
-    }
-
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove)
-      document.removeEventListener('mouseup', handleMouseUp)
-      document.body.style.cursor = ''
-      document.body.style.userSelect = ''
-    }
-  }, [isDragging])
-
-  // Generate narration
   const handleGenerateNarration = async () => {
     if (!content.trim()) {
       setNarrationError('Current note is empty, cannot generate narration.')
       return
     }
+
     setNarrationLoading(true)
     setNarrationError(null)
     try {
+      const requestBody: Record<string, unknown> = {
+        content,
+        style: narrationStyle,
+        skip_audio: ttsAvailable !== true,
+      }
+
+      if (ttsAvailable === true && selectedVoice) {
+        requestBody.voice = selectedVoice
+      }
+
       const res = await fetch(apiUrl('/api/v1/co_writer/narrate'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          content,
-          style: narrationStyle,
-          skip_audio: !ttsAvailable,
-        }),
+        body: JSON.stringify(requestBody),
       })
+
       if (!res.ok) {
         const detail = await res.text()
         throw new Error(detail || `HTTP ${res.status}`)
       }
+
       const data = await res.json()
       setNarrationScript(data.script || '')
       setNarrationKeyPoints(data.key_points || [])
+
       if (data.has_audio && data.audio_url) {
         const audioUrl = data.audio_url.startsWith('http') ? data.audio_url : apiUrl(data.audio_url)
         setAudioInfo({
-          audioUrl: audioUrl,
+          audioUrl,
           audioId: data.audio_id,
           voice: data.voice,
         })
       } else {
         setAudioInfo(null)
       }
-    } catch (e: any) {
-      setNarrationError(e?.message || 'Failed to generate narration, please try again.')
+    } catch (e: unknown) {
+      setNarrationError(getErrorMessage(e) || 'Failed to generate narration, please try again.')
     } finally {
       setNarrationLoading(false)
     }
   }
 
-  return (
-    <PageWrapper maxWidth="full" showPattern className="!p-0 h-screen overflow-hidden">
-      <motion.div
-        ref={containerRef}
-        className="h-full flex gap-0"
-        variants={staggerContainer}
-        initial="hidden"
-        animate="visible"
-      >
-        {/* LEFT PANEL - Editor */}
-        <motion.div
-          variants={slideInLeft}
-          className="flex flex-col overflow-hidden"
-          style={{ width: `${panelWidth}%` }}
-        >
-          <Card variant="glass" hoverEffect={false} className="h-full flex flex-col !rounded-none">
-            {/* Header */}
-            <div className="px-5 py-4 border-b border-white/20 dark:border-slate-700/30 flex items-center justify-between shrink-0">
-              <div className="flex items-center gap-3">
-                <motion.div
-                  className="w-10 h-10 rounded-2xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center shadow-lg shadow-teal-500/20"
-                  whileHover={{ scale: 1.05 }}
-                >
-                  <Edit3 className="w-5 h-5 text-white" />
-                </motion.div>
-                <div>
-                  <h1 className="text-lg font-bold text-slate-900 dark:text-slate-100">
-                    Co-Writer
-                  </h1>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    AI-powered markdown editor
-                  </p>
-                </div>
-              </div>
-
-              {/* Connection Status */}
-              {backendConnected !== null && (
-                <div
-                  className={`
-                    flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-xl transition-all
-                    ${
-                      backendConnected
-                        ? 'bg-emerald-50/80 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-700/60'
-                        : 'bg-red-50/80 dark:bg-red-900/30 text-red-700 dark:text-red-400 border border-red-200/60 dark:border-red-700/60'
-                    }
-                  `}
-                >
-                  {backendConnected ? (
-                    <>
-                      <motion.span
-                        className="w-2 h-2 bg-emerald-500 rounded-full"
-                        animate={{ scale: [1, 1.2, 1] }}
-                        transition={{ duration: 1.5, repeat: Infinity }}
-                      />
-                      <span className="font-medium">Connected</span>
-                    </>
-                  ) : (
-                    <>
-                      <WifiOff className="w-3.5 h-3.5" />
-                      <span className="font-medium">Offline</span>
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Toolbar */}
-            <div className="px-4 py-2 border-b border-white/20 dark:border-slate-700/30 bg-white/30 dark:bg-slate-800/30 flex items-center gap-1 flex-wrap shrink-0">
-              {/* Formatting */}
-              <div className="flex items-center gap-0.5">
-                <ToolbarButton
-                  icon={<Bold className="w-4 h-4" />}
-                  onClick={() => wrapSelection('**', '**')}
-                  title="Bold (Ctrl+B)"
-                />
-                <ToolbarButton
-                  icon={<Italic className="w-4 h-4" />}
-                  onClick={() => wrapSelection('*', '*')}
-                  title="Italic (Ctrl+I)"
-                />
-                <ToolbarButton
-                  icon={<UnderlineIcon className="w-4 h-4" />}
-                  onClick={() => wrapSelection('<u>', '</u>')}
-                  title="Underline (Ctrl+U)"
-                />
-                <ToolbarButton
-                  icon={<Highlighter className="w-4 h-4" />}
-                  onClick={() => wrapSelection('<mark>', '</mark>')}
-                  title="Highlight (Ctrl+H)"
-                />
-                <ToolbarButton
-                  icon={<Strikethrough className="w-4 h-4" />}
-                  onClick={() => wrapSelection('~~', '~~')}
-                  title="Strikethrough"
-                />
-                <ToolbarButton
-                  icon={<Code className="w-4 h-4" />}
-                  onClick={() => wrapSelection('`', '`')}
-                  title="Inline Code"
-                />
-              </div>
-
-              <ToolbarDivider />
-
-              {/* Headings & Lists */}
-              <div className="flex items-center gap-0.5">
-                <ToolbarButton
-                  icon={<Heading1 className="w-4 h-4" />}
-                  onClick={() => toggleLinePrefix('# ')}
-                  title="Heading 1"
-                />
-                <ToolbarButton
-                  icon={<Heading2 className="w-4 h-4" />}
-                  onClick={() => toggleLinePrefix('## ')}
-                  title="Heading 2"
-                />
-                <ToolbarButton
-                  icon={<List className="w-4 h-4" />}
-                  onClick={() => toggleLinePrefix('- ')}
-                  title="Bullet List"
-                />
-                <ToolbarButton
-                  icon={<ListOrdered className="w-4 h-4" />}
-                  onClick={() => toggleLinePrefix('1. ')}
-                  title="Numbered List"
-                />
-                <ToolbarButton
-                  icon={<Quote className="w-4 h-4" />}
-                  onClick={() => toggleLinePrefix('> ')}
-                  title="Quote"
-                />
-              </div>
-
-              <ToolbarDivider />
-
-              {/* Insert */}
-              <div className="flex items-center gap-0.5">
-                <ToolbarButton
-                  icon={<Link className="w-4 h-4" />}
-                  onClick={() => wrapSelection('[', '](url)')}
-                  title="Link"
-                />
-                <ToolbarButton
-                  icon={<Image className="w-4 h-4" />}
-                  onClick={() => wrapSelection('![', '](url)')}
-                  title="Image"
-                />
-                <ToolbarButton
-                  icon={<Minus className="w-4 h-4" />}
-                  onClick={() => {
-                    const textarea = textareaRef.current
-                    if (!textarea) return
-                    const pos = textarea.selectionStart
-                    setContent(content.substring(0, pos) + '\n\n---\n\n' + content.substring(pos))
-                  }}
-                  title="Horizontal Rule"
-                />
-              </div>
-
-              <ToolbarDivider />
-
-              {/* Import */}
-              <Button
-                variant="ghost"
-                size="sm"
-                iconLeft={<Import className="w-3.5 h-3.5" />}
-                onClick={() => setShowImportModal(true)}
-                className="text-blue-600 dark:text-blue-400"
-              >
-                Import
-              </Button>
-
-              <div className="flex-1" />
-
-              {/* Stats */}
-              <div className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
-                {content.length} chars | {content.split('\n').length} lines
-              </div>
-            </div>
-
-            {/* Editor Area */}
-            <div
-              ref={editorContainerRef}
-              className="flex-1 overflow-y-auto"
-              onScroll={handleEditorScroll}
-            >
-              <textarea
-                ref={textareaRef}
-                value={hideAiMarks ? getDisplayContent() : content}
-                onChange={e => handleContentChange(e.target.value)}
-                onMouseUp={handleMouseUp}
-                className="w-full h-full min-h-full p-6 resize-none outline-none font-mono text-sm leading-relaxed text-slate-800 dark:text-slate-200 bg-transparent placeholder-slate-400 dark:placeholder-slate-500"
-                placeholder="Start writing your markdown here..."
-                style={{ minHeight: '100%' }}
+  const previewMarkdown = (
+    <ReactMarkdown
+      remarkPlugins={[remarkGfm, remarkMath]}
+      rehypePlugins={[rehypeKatex, rehypeRaw]}
+      components={{
+        mark: ({ node, ...props }) => (
+          <mark className="bg-yellow-200/80 dark:bg-yellow-500/30 px-1 rounded" {...props} />
+        ),
+        u: ({ node, ...props }) => <u className="underline decoration-2 decoration-blue-400" {...props} />,
+        span: ({ node, ...props }) => {
+          const roughNotation = (props as { 'data-rough-notation'?: string })['data-rough-notation']
+          if (roughNotation) {
+            const styleClasses: Record<string, string> = {
+              circle: 'rough-circle',
+              highlight: 'rough-highlight',
+              box: 'rough-box',
+              underline: 'rough-underline',
+              bracket: 'rough-bracket',
+            }
+            return (
+              <span
+                className={`rough-notation ${styleClasses[roughNotation] || ''}`}
+                data-rough-notation={roughNotation}
+                {...props}
               />
-            </div>
-          </Card>
-        </motion.div>
-
-        {/* Resizable Divider */}
-        <div
-          className={`
-            relative w-1 cursor-col-resize z-20 shrink-0
-            bg-slate-200/60 dark:bg-slate-700/60
-            hover:bg-teal-400/60 dark:hover:bg-teal-500/60
-            transition-colors duration-200
-            ${isDragging ? 'bg-teal-400/60 dark:bg-teal-500/60' : ''}
-          `}
-          onMouseDown={handleMouseDown}
-        >
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-12 flex items-center justify-center">
-            <GripVertical className="w-4 h-4 text-slate-400 dark:text-slate-500" />
+            )
+          }
+          return <span {...props} />
+        },
+        table: ({ node, ...props }) => (
+          <div className="overflow-x-auto my-4">
+            <table className="min-w-full border-collapse" {...props} />
           </div>
-        </div>
+        ),
+        code: ({ node, className, children, ...props }) => {
+          const match = /language-(\w+)/.exec(className || '')
+          const isInline = !match && !className
 
-        {/* RIGHT PANEL - Preview & Suggestions */}
-        <motion.div
-          variants={slideInRight}
-          className="flex-1 flex flex-col overflow-hidden min-w-0"
+          if (isInline) {
+            return (
+              <code
+                className="bg-zinc-100/80 dark:bg-white/10 px-1.5 py-0.5 rounded text-sm font-mono text-pink-600 dark:text-pink-400"
+                {...props}
+              >
+                {children}
+              </code>
+            )
+          }
+
+          return (
+            <pre className="bg-zinc-950 text-zinc-50 p-4 rounded-xl overflow-x-auto my-4 shadow-xl">
+              <code className={className} {...props}>
+                {children}
+              </code>
+            </pre>
+          )
+        },
+        blockquote: ({ node, ...props }) => (
+          <blockquote
+            className="border-l-4 border-blue-500 pl-4 my-4 italic text-zinc-700 dark:text-zinc-300 bg-blue-50/50 dark:bg-blue-900/20 py-2 rounded-r-xl"
+            {...props}
+          />
+        ),
+      }}
+    >
+      {processLatexContent(content)}
+    </ReactMarkdown>
+  )
+
+  return (
+    <div className="relative min-h-dvh overflow-hidden bg-cloud dark:bg-zinc-950">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 opacity-30 [mask-image:radial-gradient(ellipse_at_top,black_35%,transparent_72%)] bg-[linear-gradient(to_right,rgba(24,24,27,0.07)_1px,transparent_1px),linear-gradient(to_bottom,rgba(24,24,27,0.07)_1px,transparent_1px)] bg-[length:56px_56px] dark:opacity-20 dark:bg-[linear-gradient(to_right,rgba(255,255,255,0.07)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.07)_1px,transparent_1px)]"
+      />
+
+      <motion.div
+        aria-hidden="true"
+        className="pointer-events-none absolute -top-48 left-1/2 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-blue-500/20 blur-3xl dark:bg-blue-500/15"
+        animate={{ y: [0, 18, 0], opacity: [0.35, 0.5, 0.35] }}
+        transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
+      />
+      <motion.div
+        aria-hidden="true"
+        className="pointer-events-none absolute -bottom-56 left-8 h-[520px] w-[520px] rounded-full bg-indigo-500/10 blur-3xl dark:bg-indigo-500/10"
+        animate={{ y: [0, -12, 0], opacity: [0.25, 0.4, 0.25] }}
+        transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
+      />
+
+      <PageWrapper maxWidth="full" showPattern={false} className="min-h-dvh px-0 py-0">
+        <motion.main
+          className="relative mx-auto flex min-h-dvh max-w-[1400px] flex-col px-6 pb-10 pt-10"
+          variants={staggerContainer}
+          initial="hidden"
+          animate="visible"
         >
-          <Card variant="glass" hoverEffect={false} className="h-full flex flex-col !rounded-none">
-            {/* Preview Header */}
-            <div className="px-5 py-4 border-b border-white/20 dark:border-slate-700/30 flex items-center justify-between shrink-0">
-              <div className="flex items-center gap-3">
-                <motion.div
-                  className="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20"
-                  whileHover={{ scale: 1.05 }}
-                >
-                  <Sparkles className="w-5 h-5 text-white" />
-                </motion.div>
-                <div>
-                  <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">Preview</h2>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Live preview | Synced scroll
-                  </p>
-                </div>
-              </div>
-
-              {/* Actions */}
+          <PageHeader
+            title="Co-Writer"
+            description="AI-powered markdown editor"
+            icon={<Edit3 className="h-5 w-5 text-blue-600 dark:text-blue-400" />}
+            className="mb-6"
+            actions={
               <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  iconLeft={
-                    hideAiMarks ? (
-                      <Eye className="w-3.5 h-3.5" />
+                {backendConnected !== null && (
+                  <div
+                    className={[
+                      'flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium shadow-sm backdrop-blur',
+                      backendConnected
+                        ? 'border-emerald-200/70 bg-emerald-50/70 text-emerald-700 dark:border-emerald-800/40 dark:bg-emerald-950/35 dark:text-emerald-300'
+                        : 'border-red-200/70 bg-red-50/70 text-red-700 dark:border-red-800/40 dark:bg-red-950/35 dark:text-red-300',
+                    ].join(' ')}
+                  >
+                    {backendConnected ? (
+                      <>
+                        <motion.span
+                          className="h-2 w-2 rounded-full bg-emerald-500"
+                          animate={{ scale: [1, 1.2, 1] }}
+                          transition={{ duration: 1.5, repeat: Infinity }}
+                        />
+                        Connected
+                      </>
                     ) : (
-                      <EyeOff className="w-3.5 h-3.5" />
-                    )
-                  }
-                  onClick={() => setHideAiMarks(!hideAiMarks)}
-                  className={hideAiMarks ? 'text-emerald-600 dark:text-emerald-400' : ''}
-                >
-                  {hideAiMarks ? 'Show Marks' : 'Hide Marks'}
-                </Button>
-
-                <ToolbarDivider />
-
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  iconLeft={<Book className="w-3.5 h-3.5" />}
-                  onClick={() => setShowNotebookModal(true)}
-                  className="text-indigo-600 dark:text-indigo-400"
-                >
-                  Save
-                </Button>
-
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  iconLeft={<FileText className="w-3.5 h-3.5" />}
-                  onClick={exportMarkdown}
-                >
-                  .md
-                </Button>
-
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  iconLeft={<Download className="w-3.5 h-3.5" />}
-                  onClick={exportPDF}
-                  loading={isProcessing}
-                >
-                  .pdf
-                </Button>
-
-                <ToolbarDivider />
-
-                <Button
-                  variant={showHistory ? 'secondary' : 'ghost'}
-                  size="sm"
-                  iconLeft={<History className="w-3.5 h-3.5" />}
-                  onClick={() => setShowHistory(!showHistory)}
-                >
-                  History
-                </Button>
-              </div>
-            </div>
-
-            {/* Preview Content */}
-            <div className="flex-1 flex min-h-0 relative">
-              {/* Main Preview */}
-              <div
-                ref={previewRef}
-                className="flex-1 overflow-y-auto p-6 prose prose-slate dark:prose-invert prose-sm max-w-none"
-                onScroll={handlePreviewScroll}
-              >
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm, remarkMath]}
-                  rehypePlugins={[rehypeKatex, rehypeRaw]}
-                  components={{
-                    mark: ({ node, ...props }) => (
-                      <mark
-                        className="bg-yellow-200/80 dark:bg-yellow-500/30 px-1 rounded"
-                        {...props}
-                      />
-                    ),
-                    u: ({ node, ...props }) => (
-                      <u className="underline decoration-2 decoration-teal-400" {...props} />
-                    ),
-                    span: ({ node, ...props }) => {
-                      const dataAttr = (props as any)['data-rough-notation']
-                      if (dataAttr) {
-                        const styleClasses: Record<string, string> = {
-                          circle: 'rough-circle',
-                          highlight: 'rough-highlight',
-                          box: 'rough-box',
-                          underline: 'rough-underline',
-                          bracket: 'rough-bracket',
-                        }
-                        return (
-                          <span
-                            className={`rough-notation ${styleClasses[dataAttr] || ''}`}
-                            data-rough-notation={dataAttr}
-                            {...props}
-                          />
-                        )
-                      }
-                      return <span {...props} />
-                    },
-                    table: ({ node, ...props }) => (
-                      <div className="overflow-x-auto my-4">
-                        <table className="min-w-full border-collapse" {...props} />
-                      </div>
-                    ),
-                    code: ({ node, className, children, ...props }) => {
-                      const match = /language-(\w+)/.exec(className || '')
-                      const isInline = !match && !className
-
-                      if (isInline) {
-                        return (
-                          <code
-                            className="bg-slate-100/80 dark:bg-slate-800/80 px-1.5 py-0.5 rounded text-sm font-mono text-pink-600 dark:text-pink-400"
-                            {...props}
-                          >
-                            {children}
-                          </code>
-                        )
-                      }
-
-                      return (
-                        <pre className="bg-slate-900 text-slate-100 p-4 rounded-xl overflow-x-auto my-4 shadow-xl">
-                          <code className={className} {...props}>
-                            {children}
-                          </code>
-                        </pre>
-                      )
-                    },
-                    blockquote: ({ node, ...props }) => (
-                      <blockquote
-                        className="border-l-4 border-teal-500 pl-4 my-4 italic text-slate-600 dark:text-slate-400 bg-teal-50/50 dark:bg-teal-900/20 py-2 rounded-r-xl"
-                        {...props}
-                      />
-                    ),
-                  }}
-                >
-                  {processLatexContent(content)}
-                </ReactMarkdown>
-              </div>
-
-              {/* History Panel Overlay */}
-              <AnimatePresence>
-                {showHistory && (
-                  <motion.div
-                    variants={scaleIn}
-                    initial="hidden"
-                    animate="visible"
-                    exit="exit"
-                    className="absolute right-0 top-0 bottom-0 w-80 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-l border-white/40 dark:border-slate-700/40 flex flex-col shadow-2xl z-10"
-                  >
-                    <div className="p-4 border-b border-slate-200/60 dark:border-slate-700/60 flex justify-between items-center">
-                      <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2">
-                        <Clock className="w-4 h-4 text-teal-500" />
-                        Version History
-                      </h3>
-                      <motion.button
-                        onClick={() => setShowHistory(false)}
-                        className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                      >
-                        <X className="w-4 h-4 text-slate-400" />
-                      </motion.button>
-                    </div>
-                    <div className="flex-1 overflow-y-auto p-3 space-y-2">
-                      {operationHistory.length === 0 ? (
-                        <div className="text-center py-12 text-slate-400 dark:text-slate-500 text-sm">
-                          <History className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                          No history available
-                        </div>
-                      ) : (
-                        [...operationHistory]
-                          .reverse()
-                          .map(op => <HistoryItem key={op.id} operation={op} />)
-                      )}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-
-            {/* Podcast Section (Collapsible) */}
-            <div className="border-t border-white/20 dark:border-slate-700/30 shrink-0">
-              <motion.button
-                className="w-full px-5 py-3 flex items-center justify-between hover:bg-white/20 dark:hover:bg-slate-800/20 transition-colors"
-                onClick={() => setIsPodcastExpanded(!isPodcastExpanded)}
-              >
-                <div className="flex items-center gap-2">
-                  <motion.div
-                    animate={{ rotate: isPodcastExpanded ? 90 : 0 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <ChevronRight className="w-4 h-4 text-slate-400" />
-                  </motion.div>
-                  <Radio className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                  <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">
-                    Podcast Narration
-                  </span>
-                  {ttsAvailable === false && (
-                    <span className="text-[10px] text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/40 px-2 py-0.5 rounded-full">
-                      Script only
-                    </span>
-                  )}
-                </div>
-              </motion.button>
-
-              <AnimatePresence>
-                {isPodcastExpanded && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="overflow-hidden"
-                  >
-                    <div className="px-5 pb-5 space-y-4">
-                      <div className="flex gap-3">
-                        <Button
-                          variant="primary"
-                          size="sm"
-                          iconLeft={
-                            narrationLoading ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <Mic className="w-4 h-4" />
-                            )
-                          }
-                          onClick={handleGenerateNarration}
-                          loading={narrationLoading}
-                        >
-                          {narrationLoading ? 'Generating...' : 'Generate Podcast'}
-                        </Button>
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          iconLeft={<Book className="w-4 h-4" />}
-                          onClick={() => setShowNarrationNotebookModal(true)}
-                          disabled={!narrationScript}
-                        >
-                          Save to Notebook
-                        </Button>
-                      </div>
-
-                      {narrationError && (
-                        <div className="flex items-center gap-2 text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-xl px-3 py-2">
-                          <AlertCircle className="w-4 h-4" />
-                          {narrationError}
-                        </div>
-                      )}
-
-                      <div className="grid grid-cols-2 gap-4">
-                        {/* Script */}
-                        <div className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/40 dark:border-slate-700/40 rounded-xl p-3 h-32 overflow-y-auto">
-                          <div className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase mb-2">
-                            Script
-                          </div>
-                          {narrationScript ? (
-                            <p className="text-xs text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">
-                              {narrationScript}
-                            </p>
-                          ) : (
-                            <p className="text-xs text-slate-400 dark:text-slate-500 italic">
-                              Generate to see script...
-                            </p>
-                          )}
-                        </div>
-
-                        {/* Key Points & Audio */}
-                        <div className="space-y-3">
-                          <div className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/40 dark:border-slate-700/40 rounded-xl p-3 h-20 overflow-y-auto">
-                            <div className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase mb-2 flex items-center gap-1">
-                              <Headphones className="w-3 h-3" />
-                              Key Points
-                            </div>
-                            {narrationKeyPoints.length > 0 ? (
-                              <ul className="list-disc pl-4 text-xs text-slate-700 dark:text-slate-300 space-y-0.5">
-                                {narrationKeyPoints.map((kp, idx) => (
-                                  <li key={idx}>{kp}</li>
-                                ))}
-                              </ul>
-                            ) : (
-                              <p className="text-xs text-slate-400 dark:text-slate-500 italic">
-                                Key points will appear here...
-                              </p>
-                            )}
-                          </div>
-
-                          {audioInfo?.audioUrl && (
-                            <audio
-                              controls
-                              className="w-full h-9 rounded-lg"
-                              style={{ borderRadius: '8px' }}
-                            >
-                              <source src={audioInfo.audioUrl} type="audio/mpeg" />
-                            </audio>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          </Card>
-        </motion.div>
-
-        {/* AI Edit Popover */}
-        <AnimatePresence>
-          {popover && (
-            <motion.div
-              ref={popoverRef}
-              variants={scaleIn}
-              initial="hidden"
-              animate="visible"
-              exit="exit"
-              style={{
-                position: 'fixed',
-                left: Math.min(window.innerWidth - 360, Math.max(20, popover.x - 170)),
-                top: Math.min(window.innerHeight - 500, popover.y),
-              }}
-              className="z-50 w-[340px]"
-            >
-              <Card
-                variant="glass"
-                hoverEffect={false}
-                className="shadow-2xl border border-white/40 dark:border-slate-600/40"
-              >
-                {/* Header */}
-                <div className="px-4 py-3 border-b border-white/20 dark:border-slate-700/30 bg-gradient-to-r from-teal-50/80 to-cyan-50/80 dark:from-teal-900/30 dark:to-cyan-900/30 flex justify-between items-center rounded-t-2xl">
-                  <div className="flex items-center gap-2 text-sm font-bold text-slate-700 dark:text-slate-200">
-                    <Sparkles className="w-4 h-4 text-teal-500" />
-                    AI Edit Assistant
+                      <>
+                        <WifiOff className="h-3.5 w-3.5" />
+                        Offline
+                      </>
+                    )}
                   </div>
-                  <motion.button
-                    onClick={() => setPopover(null)}
-                    className="p-1 hover:bg-white/50 dark:hover:bg-slate-700/50 rounded-lg"
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                  >
-                    <X className="w-4 h-4 text-slate-400" />
-                  </motion.button>
+                )}
+
+                <div className="flex items-center gap-2 md:hidden">
+                  <IconButton
+                    icon={<Book className="h-4 w-4" />}
+                    aria-label="Save to notebook"
+                    onClick={() => setShowNotebookModal(true)}
+                    variant="ghost"
+                    size="sm"
+                  />
+                  <IconButton
+                    icon={<Import className="h-4 w-4" />}
+                    aria-label="Import from notebook"
+                    onClick={() => setShowImportModal(true)}
+                    variant="ghost"
+                    size="sm"
+                  />
+                  <IconButton
+                    icon={<FileText className="h-4 w-4" />}
+                    aria-label="Export markdown"
+                    onClick={exportMarkdown}
+                    variant="ghost"
+                    size="sm"
+                  />
+                  <IconButton
+                    icon={<Download className="h-4 w-4" />}
+                    aria-label="Export PDF"
+                    onClick={exportPDF}
+                    variant="ghost"
+                    size="sm"
+                    disabled={isExporting}
+                  />
                 </div>
 
-                <CardBody className="space-y-4">
-                  {/* Selected Text Preview */}
-                  <div className="text-xs text-slate-500 dark:text-slate-400 bg-slate-50/80 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-200/60 dark:border-slate-700/60 line-clamp-2 italic">
-                    "{selection?.text}"
-                  </div>
+                <div className="hidden items-center gap-2 md:flex">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    iconLeft={<Book className="h-4 w-4" />}
+                    onClick={() => setShowNotebookModal(true)}
+                    className="text-blue-600 dark:text-blue-400"
+                  >
+                    Save
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    iconLeft={<Import className="h-4 w-4" />}
+                    onClick={() => setShowImportModal(true)}
+                  >
+                    Import
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    iconLeft={<FileText className="h-4 w-4" />}
+                    onClick={exportMarkdown}
+                  >
+                    .md
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    iconLeft={<Download className="h-4 w-4" />}
+                    onClick={exportPDF}
+                    loading={isExporting}
+                  >
+                    .pdf
+                  </Button>
+                </div>
+              </div>
+            }
+          />
 
-                  {/* Instruction Input */}
-                  <div>
-                    <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5 block">
-                      Instruction (Optional)
-                    </label>
-                    <input
-                      type="text"
-                      value={instruction}
-                      onChange={e => setInstruction(e.target.value)}
-                      placeholder="e.g. Make it more formal..."
-                      className="w-full px-3 py-2.5 text-sm bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-slate-200/60 dark:border-slate-700/60 rounded-xl outline-none focus:ring-2 focus:ring-teal-400/20 focus:border-teal-400/60 text-slate-800 dark:text-slate-200 placeholder-slate-400"
-                    />
-                  </div>
+          <div className="grid flex-1 min-h-0 gap-6 lg:grid-cols-[420px_minmax(0,1fr)]">
+            <motion.aside variants={slideInLeft} className="flex min-h-0 flex-col gap-6 lg:overflow-y-auto lg:pr-1">
+              <Card variant="glass" padding="none" interactive={false} className="relative overflow-hidden">
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.10),transparent_60%)]"
+                />
 
-                  {/* Source Selection */}
-                  {selectedAction !== 'automark' && (
-                    <div>
-                      <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5 block">
-                        Context Source
-                      </label>
-                      <div className="flex gap-2">
-                        <motion.button
-                          onClick={() => setSource(source === 'rag' ? null : 'rag')}
-                          className={`
-                            flex-1 flex items-center justify-center gap-2 py-2.5 text-xs border rounded-xl transition-all
-                            ${
-                              source === 'rag'
-                                ? 'bg-teal-50 dark:bg-teal-900/40 border-teal-300 dark:border-teal-600 text-teal-700 dark:text-teal-300'
-                                : 'bg-white/40 dark:bg-slate-800/40 border-slate-200/60 dark:border-slate-700/60 text-slate-600 dark:text-slate-300 hover:bg-white/60 dark:hover:bg-slate-700/60'
-                            }
-                          `}
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
-                        >
-                          <Database className="w-4 h-4" />
-                          RAG
-                        </motion.button>
-                        <motion.button
-                          onClick={() => setSource(source === 'web' ? null : 'web')}
-                          className={`
-                            flex-1 flex items-center justify-center gap-2 py-2.5 text-xs border rounded-xl transition-all
-                            ${
-                              source === 'web'
-                                ? 'bg-blue-50 dark:bg-blue-900/40 border-blue-300 dark:border-blue-600 text-blue-700 dark:text-blue-300'
-                                : 'bg-white/40 dark:bg-slate-800/40 border-slate-200/60 dark:border-slate-700/60 text-slate-600 dark:text-slate-300 hover:bg-white/60 dark:hover:bg-slate-700/60'
-                            }
-                          `}
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
-                        >
-                          <Globe className="w-4 h-4" />
-                          Web
-                        </motion.button>
+                <div className="relative flex flex-col">
+                  <CardHeader padding="sm" className="flex-row items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300">
+                        <Sparkles className="h-5 w-5" />
+                      </div>
+                      <div className="leading-tight">
+                        <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Assistant</div>
+                        <div className="text-xs text-zinc-500 dark:text-zinc-400">
+                          Edit highlighted text with AI
+                        </div>
                       </div>
                     </div>
-                  )}
 
-                  {/* KB Selector */}
-                  {source === 'rag' && kbs.length > 0 && (
-                    <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-                      <select
-                        value={selectedKb}
-                        onChange={e => setSelectedKb(e.target.value)}
-                        className="w-full px-3 py-2 text-sm bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-slate-200/60 dark:border-slate-700/60 rounded-xl outline-none text-slate-800 dark:text-slate-200"
-                      >
-                        {kbs.map(kb => (
-                          <option key={kb} value={kb}>
-                            {kb}
-                          </option>
-                        ))}
-                      </select>
-                    </motion.div>
-                  )}
+                    {selection ? (
+                      <Button variant="ghost" size="sm" iconLeft={<X className="h-4 w-4" />} onClick={() => setSelection(null)}>
+                        Clear
+                      </Button>
+                    ) : (
+                      <span className="text-xs text-zinc-500 dark:text-zinc-400">No selection</span>
+                    )}
+                  </CardHeader>
 
-                  {/* Actions */}
-                  <div className="pt-2 border-t border-slate-200/60 dark:border-slate-700/60 space-y-3">
+                  <CardBody className="space-y-4">
+                    {selection ? (
+                      <div className="rounded-xl border border-zinc-200/70 bg-white/70 p-3 text-xs text-zinc-700 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/5 dark:text-zinc-200">
+                        <div className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                          Selected
+                        </div>
+                        <p className="mt-2 line-clamp-4 italic">&quot;{selection.text}&quot;</p>
+                      </div>
+                    ) : (
+                      <div className="rounded-xl border border-zinc-200/70 bg-white/70 p-4 text-sm text-zinc-700 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/5 dark:text-zinc-200">
+                        <div className="flex items-center gap-2 font-medium">
+                          <Edit3 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                          Select text in the editor to enable actions.
+                        </div>
+                        <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                          Tip: Use the toolbar or shortcuts (Ctrl/Cmd + B, I, U, H).
+                        </p>
+                      </div>
+                    )}
+
                     <div className="grid grid-cols-4 gap-2">
                       <ActionCard
-                        icon={<Wand2 className="w-4 h-4" />}
+                        icon={<Wand2 className="h-4 w-4" />}
                         label="Rewrite"
                         active={selectedAction === 'rewrite'}
                         onClick={() => setSelectedAction('rewrite')}
-                        colorScheme="teal"
+                        colorScheme="blue"
                       />
                       <ActionCard
-                        icon={<Minimize2 className="w-4 h-4" />}
+                        icon={<Minimize2 className="h-4 w-4" />}
                         label="Shorten"
                         active={selectedAction === 'shorten'}
                         onClick={() => setSelectedAction('shorten')}
                         colorScheme="amber"
                       />
                       <ActionCard
-                        icon={<Maximize2 className="w-4 h-4" />}
+                        icon={<Maximize2 className="h-4 w-4" />}
                         label="Expand"
                         active={selectedAction === 'expand'}
                         onClick={() => setSelectedAction('expand')}
                         colorScheme="blue"
                       />
                       <ActionCard
-                        icon={<PenTool className="w-4 h-4" />}
+                        icon={<PenTool className="h-4 w-4" />}
                         label="AI Mark"
                         active={selectedAction === 'automark'}
                         onClick={() => setSelectedAction('automark')}
@@ -1733,82 +1266,491 @@ export default function CoWriterPage() {
                       />
                     </div>
 
+                    <Input
+                      label="Instruction (optional)"
+                      floatingLabel
+                      value={instruction}
+                      onChange={e => setInstruction(e.target.value)}
+                      placeholder="e.g. Make it more formal, clearer, and shorter..."
+                    />
+
+                    {selectedAction !== 'automark' && (
+                      <div className="space-y-2">
+                        <div className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                          Context
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <Button
+                            onClick={() => setSource(source === 'rag' ? null : 'rag')}
+                            variant="ghost"
+                            size="sm"
+                            className={
+                              source === 'rag'
+                                ? '!h-auto !rounded-xl border border-blue-300 bg-blue-50 py-2.5 text-xs text-blue-700 dark:border-blue-600 dark:bg-blue-900/35 dark:text-blue-300'
+                                : '!h-auto !rounded-xl border border-zinc-200/70 bg-white/50 py-2.5 text-xs text-zinc-700 hover:bg-white/70 dark:border-white/10 dark:bg-white/5 dark:text-zinc-300 dark:hover:bg-white/10'
+                            }
+                          >
+                            <Database className="h-4 w-4" />
+                            RAG
+                          </Button>
+                          <Button
+                            onClick={() => setSource(source === 'web' ? null : 'web')}
+                            variant="ghost"
+                            size="sm"
+                            className={
+                              source === 'web'
+                                ? '!h-auto !rounded-xl border border-blue-300 bg-blue-50 py-2.5 text-xs text-blue-700 dark:border-blue-600 dark:bg-blue-900/40 dark:text-blue-300'
+                                : '!h-auto !rounded-xl border border-zinc-200/70 bg-white/50 py-2.5 text-xs text-zinc-700 hover:bg-white/70 dark:border-white/10 dark:bg-white/5 dark:text-zinc-300 dark:hover:bg-white/10'
+                            }
+                          >
+                            <Globe className="h-4 w-4" />
+                            Web
+                          </Button>
+                        </div>
+
+                        {source === 'rag' && kbs.length > 0 && (
+                          <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}>
+                            <select
+                              value={selectedKb}
+                              onChange={e => setSelectedKb(e.target.value)}
+                              className="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-900 shadow-sm outline-none transition-[border-color,box-shadow] focus:border-zinc-400 focus:ring-2 focus:ring-blue-500/20 dark:border-white/10 dark:bg-white/5 dark:text-zinc-100"
+                            >
+                              {kbs.map(kb => (
+                                <option key={kb} value={kb}>
+                                  {kb}
+                                </option>
+                              ))}
+                            </select>
+                          </motion.div>
+                        )}
+                      </div>
+                    )}
+
                     <Button
                       variant="primary"
                       size="md"
                       onClick={() => handleAction(selectedAction)}
                       loading={isProcessing}
+                      disabled={!selection}
                       className="w-full"
-                      iconLeft={!isProcessing && <Zap className="w-4 h-4" />}
+                      iconLeft={!isProcessing && <Zap className="h-4 w-4" />}
                     >
                       {isProcessing
                         ? 'Processing...'
-                        : `Apply ${selectedAction === 'automark' ? 'AI Mark' : selectedAction.charAt(0).toUpperCase() + selectedAction.slice(1)}`}
+                        : `Apply ${
+                            selectedAction === 'automark'
+                              ? 'AI Mark'
+                              : selectedAction.charAt(0).toUpperCase() + selectedAction.slice(1)
+                          }`}
                     </Button>
+                  </CardBody>
+
+                  <CardFooter padding="sm" className="justify-between">
+                    <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                      {backendConnected === false ? 'Backend offline. Start it with python start.py.' : ' '}
+                    </span>
+                    <Button variant="ghost" size="sm" iconLeft={<History className="h-4 w-4" />} onClick={fetchHistory}>
+                      Refresh
+                    </Button>
+                  </CardFooter>
+                </div>
+              </Card>
+
+              <Card variant="glass" padding="none" interactive={false} className="overflow-hidden">
+                <CardHeader padding="sm" className="flex-row items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300">
+                      <Clock className="h-5 w-5" />
+                    </div>
+                    <div className="leading-tight">
+                      <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">History</div>
+                      <div className="text-xs text-zinc-500 dark:text-zinc-400">Recent backend edits</div>
+                    </div>
                   </div>
+                </CardHeader>
+
+                <CardBody className="space-y-2 max-h-72 overflow-y-auto">
+                  {operationHistory.length === 0 ? (
+                    <div className="py-10 text-center text-sm text-zinc-500 dark:text-zinc-400">
+                      <History className="mx-auto h-10 w-10 opacity-30" />
+                      <div className="mt-2">No history yet</div>
+                    </div>
+                  ) : (
+                    [...operationHistory]
+                      .reverse()
+                      .slice(0, 12)
+                      .map(op => <HistoryItem key={op.id} operation={op} />)
+                  )}
                 </CardBody>
               </Card>
-            </motion.div>
-          )}
-        </AnimatePresence>
 
-        {/* Global Loading Overlay */}
+              <Card variant="glass" padding="none" interactive={false} className="overflow-hidden">
+                <CardHeader padding="sm" className="flex-row items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300">
+                      <Radio className="h-5 w-5" />
+                    </div>
+                    <div className="leading-tight">
+                      <div className="flex items-center gap-2 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                        Podcast Narration
+                        {ttsAvailable === false && (
+                          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                            Script only
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-xs text-zinc-500 dark:text-zinc-400">
+                        Generate a narration script (and audio when available)
+                      </div>
+                    </div>
+                  </div>
+
+                  <IconButton
+                    icon={
+                      <motion.div animate={{ rotate: isPodcastExpanded ? 90 : 0 }} transition={{ duration: 0.2 }}>
+                        <ChevronRight className="h-4 w-4" />
+                      </motion.div>
+                    }
+                    aria-label={isPodcastExpanded ? 'Collapse podcast panel' : 'Expand podcast panel'}
+                    onClick={() => setIsPodcastExpanded(!isPodcastExpanded)}
+                    variant="ghost"
+                    size="sm"
+                    className="rounded-lg"
+                  />
+                </CardHeader>
+
+                <AnimatePresence initial={false}>
+                  {isPodcastExpanded && (
+                    <motion.div variants={scaleIn} initial="hidden" animate="visible" exit="exit" className="overflow-hidden">
+                      <CardBody className="space-y-4">
+                        <div className="space-y-2">
+                          <div className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                            Style
+                          </div>
+                          <div className="grid grid-cols-3 gap-2">
+                            {(['friendly', 'academic', 'concise'] as const).map(style => (
+                              <Button
+                                key={style}
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setNarrationStyle(style)}
+                                className={
+                                  narrationStyle === style
+                                    ? '!h-auto !rounded-xl border border-blue-300 bg-blue-50 py-2 text-xs text-blue-700 dark:border-blue-600 dark:bg-blue-900/35 dark:text-blue-300'
+                                    : '!h-auto !rounded-xl border border-zinc-200/70 bg-white/50 py-2 text-xs text-zinc-700 hover:bg-white/70 dark:border-white/10 dark:bg-white/5 dark:text-zinc-300 dark:hover:bg-white/10'
+                                }
+                              >
+                                {style.charAt(0).toUpperCase() + style.slice(1)}
+                              </Button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {ttsAvailable && ttsVoices.length > 0 && (
+                          <div className="space-y-2">
+                            <div className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                              Voice
+                            </div>
+                            <select
+                              value={selectedVoice}
+                              onChange={e => setSelectedVoice(e.target.value)}
+                              className="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-900 shadow-sm outline-none transition-[border-color,box-shadow] focus:border-zinc-400 focus:ring-2 focus:ring-blue-500/20 dark:border-white/10 dark:bg-white/5 dark:text-zinc-100"
+                            >
+                              {ttsVoices.map(v => (
+                                <option key={v.id} value={v.id}>
+                                  {v.name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+
+                        <div className="flex flex-wrap gap-2">
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            iconLeft={narrationLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mic className="h-4 w-4" />}
+                            onClick={handleGenerateNarration}
+                            loading={narrationLoading}
+                          >
+                            {narrationLoading ? 'Generating…' : 'Generate'}
+                          </Button>
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            iconLeft={<Book className="h-4 w-4" />}
+                            onClick={() => setShowNarrationNotebookModal(true)}
+                            disabled={!narrationScript}
+                          >
+                            Save to Notebook
+                          </Button>
+                        </div>
+
+                        {narrationError && (
+                          <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+                            <AlertCircle className="h-4 w-4" />
+                            {narrationError}
+                          </div>
+                        )}
+
+                        <div className="grid grid-cols-1 gap-3">
+                          <div className="rounded-xl border border-zinc-200/70 bg-white/70 p-3 text-xs text-zinc-800 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/5 dark:text-zinc-200">
+                            <div className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                              Script
+                            </div>
+                            <p className="mt-2 whitespace-pre-wrap leading-relaxed">
+                              {narrationScript || 'Generate to see a narration script…'}
+                            </p>
+                          </div>
+
+                          <div className="rounded-xl border border-zinc-200/70 bg-white/70 p-3 text-xs text-zinc-800 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/5 dark:text-zinc-200">
+                            <div className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                              <Headphones className="h-3.5 w-3.5" />
+                              Key points
+                            </div>
+                            {narrationKeyPoints.length > 0 ? (
+                              <ul className="mt-2 list-disc space-y-1 pl-4">
+                                {narrationKeyPoints.map((kp, idx) => (
+                                  <li key={idx}>{kp}</li>
+                                ))}
+                              </ul>
+                            ) : (
+                              <p className="mt-2 text-zinc-500 dark:text-zinc-400 italic">
+                                Key points will appear here…
+                              </p>
+                            )}
+                          </div>
+
+                          {audioInfo?.audioUrl && (
+                            <audio controls className="h-10 w-full rounded-lg">
+                              <source src={audioInfo.audioUrl} type="audio/mpeg" />
+                            </audio>
+                          )}
+                        </div>
+                      </CardBody>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </Card>
+            </motion.aside>
+
+            <motion.section variants={slideInRight} className="min-h-0">
+              <Card variant="glass" padding="none" interactive={false} className="relative h-full overflow-hidden">
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.10),transparent_60%)]"
+                />
+
+                <div className="relative flex h-full flex-col">
+                  <CardHeader padding="sm" className="flex-row items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300">
+                        <Edit3 className="h-5 w-5" />
+                      </div>
+                      <div className="leading-tight">
+                        <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Workspace</div>
+                        <div className="text-xs text-zinc-500 dark:text-zinc-400">
+                          Markdown editor · Live preview
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <div className="hidden sm:flex items-center rounded-xl border border-zinc-200/70 bg-white/70 p-1 text-xs shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/5">
+                        {([
+                          { key: 'write', label: 'Write' },
+                          { key: 'split', label: 'Split' },
+                          { key: 'preview', label: 'Preview' },
+                        ] as const).map(opt => (
+                          <button
+                            key={opt.key}
+                            type="button"
+                            onClick={() => setWorkspaceView(opt.key)}
+                            className={[
+                              'rounded-lg px-3 py-1.5 font-semibold transition-colors',
+                              workspaceView === opt.key
+                                ? 'bg-white text-zinc-900 shadow-sm dark:bg-white/10 dark:text-zinc-50'
+                                : 'text-zinc-500 hover:bg-white/60 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-white/5 dark:hover:text-zinc-50',
+                            ].join(' ')}
+                          >
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        iconLeft={hideAiMarks ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                        onClick={() => setHideAiMarks(!hideAiMarks)}
+                        className={hideAiMarks ? 'text-blue-600 dark:text-blue-400' : ''}
+                      >
+                        {hideAiMarks ? 'Show Marks' : 'Hide Marks'}
+                      </Button>
+
+                      <span className="hidden lg:inline text-[11px] font-medium tabular-nums text-zinc-500 dark:text-zinc-400">
+                        {content.length} chars · {content.split('\n').length} lines
+                      </span>
+                    </div>
+                  </CardHeader>
+
+                  <div className="flex flex-wrap items-center gap-1 border-b border-zinc-200/70 bg-white/40 px-4 py-3 dark:border-white/10 dark:bg-white/5">
+                    <div className="flex items-center gap-0.5">
+                      <ToolbarButton icon={<Bold className="h-4 w-4" />} onClick={() => wrapSelection('**', '**')} title="Bold (Ctrl+B)" />
+                      <ToolbarButton icon={<Italic className="h-4 w-4" />} onClick={() => wrapSelection('*', '*')} title="Italic (Ctrl+I)" />
+                      <ToolbarButton icon={<UnderlineIcon className="h-4 w-4" />} onClick={() => wrapSelection('<u>', '</u>')} title="Underline (Ctrl+U)" />
+                      <ToolbarButton icon={<Highlighter className="h-4 w-4" />} onClick={() => wrapSelection('<mark>', '</mark>')} title="Highlight (Ctrl+H)" />
+                      <ToolbarButton icon={<Strikethrough className="h-4 w-4" />} onClick={() => wrapSelection('~~', '~~')} title="Strikethrough" />
+                      <ToolbarButton icon={<Code className="h-4 w-4" />} onClick={() => wrapSelection('`', '`')} title="Inline code" />
+                    </div>
+
+                    <ToolbarDivider />
+
+                    <div className="flex items-center gap-0.5">
+                      <ToolbarButton icon={<Heading1 className="h-4 w-4" />} onClick={() => toggleLinePrefix('# ')} title="Heading 1" />
+                      <ToolbarButton icon={<Heading2 className="h-4 w-4" />} onClick={() => toggleLinePrefix('## ')} title="Heading 2" />
+                      <ToolbarButton icon={<List className="h-4 w-4" />} onClick={() => toggleLinePrefix('- ')} title="Bullet list" />
+                      <ToolbarButton icon={<ListOrdered className="h-4 w-4" />} onClick={() => toggleLinePrefix('1. ')} title="Numbered list" />
+                      <ToolbarButton icon={<Quote className="h-4 w-4" />} onClick={() => toggleLinePrefix('> ')} title="Quote" />
+                    </div>
+
+                    <ToolbarDivider />
+
+                    <div className="flex items-center gap-0.5">
+                      <ToolbarButton icon={<Link className="h-4 w-4" />} onClick={() => wrapSelection('[', '](url)')} title="Link" />
+                      <ToolbarButton icon={<ImageIcon className="h-4 w-4" />} onClick={() => wrapSelection('![', '](url)')} title="Image" />
+                      <ToolbarButton
+                        icon={<Minus className="h-4 w-4" />}
+                        onClick={() => {
+                          const textarea = textareaRef.current
+                          if (!textarea) return
+                          const pos = textarea.selectionStart
+                          setContent(content.substring(0, pos) + '\n\n---\n\n' + content.substring(pos))
+                        }}
+                        title="Horizontal rule"
+                      />
+                    </div>
+
+                    <div className="flex-1" />
+                  </div>
+
+                  <div className="flex-1 min-h-0">
+                    {workspaceView === 'split' && (
+                      <div className="grid h-full min-h-0 grid-cols-1 divide-y divide-zinc-200/70 dark:divide-white/10 lg:grid-cols-2 lg:divide-y-0 lg:divide-x">
+                        <div ref={editorContainerRef} className="min-h-0 overflow-y-auto" onScroll={handleEditorScroll}>
+                          <Textarea
+                            ref={textareaRef}
+                            value={hideAiMarks ? getDisplayContent() : content}
+                            onChange={e => handleContentChange(e.target.value)}
+                            onMouseUp={updateSelectionFromTextarea}
+                            onKeyUp={updateSelectionFromTextarea}
+                            onSelect={updateSelectionFromTextarea}
+                            minRows={24}
+                            wrapperClassName="h-full"
+                            className="h-full w-full resize-none !bg-transparent !border-0 !shadow-none !ring-0 !px-6 !py-6 font-mono text-sm leading-relaxed text-zinc-900 placeholder:text-zinc-400 focus:!border-transparent focus:!ring-0 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+                            placeholder="Start writing your markdown here…"
+                          />
+                        </div>
+
+                        <div
+                          ref={previewRef}
+                          className="min-h-0 overflow-y-auto p-6 prose prose-zinc prose-sm max-w-none dark:prose-invert"
+                          onScroll={handlePreviewScroll}
+                        >
+                          {previewMarkdown}
+                        </div>
+                      </div>
+                    )}
+
+                    {workspaceView === 'write' && (
+                      <div ref={editorContainerRef} className="h-full min-h-0 overflow-y-auto" onScroll={handleEditorScroll}>
+                        <Textarea
+                          ref={textareaRef}
+                          value={hideAiMarks ? getDisplayContent() : content}
+                          onChange={e => handleContentChange(e.target.value)}
+                          onMouseUp={updateSelectionFromTextarea}
+                          onKeyUp={updateSelectionFromTextarea}
+                          onSelect={updateSelectionFromTextarea}
+                          minRows={24}
+                          wrapperClassName="h-full"
+                          className="h-full w-full resize-none !bg-transparent !border-0 !shadow-none !ring-0 !px-6 !py-6 font-mono text-sm leading-relaxed text-zinc-900 placeholder:text-zinc-400 focus:!border-transparent focus:!ring-0 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+                          placeholder="Start writing your markdown here…"
+                        />
+                      </div>
+                    )}
+
+                    {workspaceView === 'preview' && (
+                      <div
+                        ref={previewRef}
+                        className="h-full min-h-0 overflow-y-auto p-6 prose prose-zinc prose-sm max-w-none dark:prose-invert"
+                        onScroll={handlePreviewScroll}
+                      >
+                        {previewMarkdown}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </Card>
+            </motion.section>
+          </div>
+        </motion.main>
+
         <AnimatePresence>
-          {isProcessing && !popover && (
+          {isExporting && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center"
+              className="fixed inset-0 z-50 flex items-center justify-center bg-white/80 backdrop-blur-sm dark:bg-zinc-950/80"
             >
-              <Card variant="glass" className="p-8 flex flex-col items-center gap-4">
+              <Card variant="glass" className="flex flex-col items-center gap-4 p-8">
                 <Spinner size="lg" />
-                <span className="font-medium text-slate-700 dark:text-slate-200">Exporting...</span>
+                <span className="font-medium text-zinc-800 dark:text-zinc-200">Exporting…</span>
               </Card>
             </motion.div>
           )}
         </AnimatePresence>
-      </motion.div>
 
-      {/* Modals */}
-      <AddToNotebookModal
-        isOpen={showNotebookModal}
-        onClose={() => setShowNotebookModal(false)}
-        recordType="co_writer"
-        title={`Co-Writer Document - ${new Date().toLocaleDateString()}`}
-        userQuery="Co-Writer edited document"
-        output={content}
-        metadata={{
-          char_count: content.length,
-          line_count: content.split('\n').length,
-        }}
-      />
+        {/* Modals */}
+        <AddToNotebookModal
+          isOpen={showNotebookModal}
+          onClose={() => setShowNotebookModal(false)}
+          recordType="co_writer"
+          title={`Co-Writer Document - ${new Date().toLocaleDateString()}`}
+          userQuery="Co-Writer edited document"
+          output={content}
+          metadata={{
+            char_count: content.length,
+            line_count: content.split('\n').length,
+          }}
+        />
 
-      <NotebookImportModal
-        isOpen={showImportModal}
-        onClose={() => setShowImportModal(false)}
-        onImport={importedContent => {
-          const newContent = content ? content + '\n\n' + importedContent : importedContent
-          setContent(newContent)
-        }}
-      />
+        <NotebookImportModal
+          isOpen={showImportModal}
+          onClose={() => setShowImportModal(false)}
+          onImport={importedContent => {
+            const newContent = content ? content + '\n\n' + importedContent : importedContent
+            setContent(newContent)
+          }}
+        />
 
-      <AddToNotebookModal
-        isOpen={showNarrationNotebookModal}
-        onClose={() => setShowNarrationNotebookModal(false)}
-        recordType="co_writer"
-        title={`Co-Writer Podcast - ${new Date().toLocaleDateString()}`}
-        userQuery={content.substring(0, 120)}
-        output={narrationScript}
-        metadata={{
-          char_count: narrationScript.length,
-          style: narrationStyle,
-          key_points: narrationKeyPoints,
-          audio_url: audioInfo?.audioUrl,
-          audio_id: audioInfo?.audioId,
-          voice: audioInfo?.voice,
-        }}
-      />
-    </PageWrapper>
+        <AddToNotebookModal
+          isOpen={showNarrationNotebookModal}
+          onClose={() => setShowNarrationNotebookModal(false)}
+          recordType="co_writer"
+          title={`Co-Writer Podcast - ${new Date().toLocaleDateString()}`}
+          userQuery={content.substring(0, 120)}
+          output={narrationScript}
+          metadata={{
+            char_count: narrationScript.length,
+            style: narrationStyle,
+            key_points: narrationKeyPoints,
+            audio_url: audioInfo?.audioUrl,
+            audio_id: audioInfo?.audioId,
+            voice: audioInfo?.voice,
+          }}
+        />
+      </PageWrapper>
+    </div>
   )
 }

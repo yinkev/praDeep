@@ -8,7 +8,7 @@ export { Card, CardHeader, CardBody, CardFooter } from './Card'
 export { Input, Textarea } from './Input'
 
 // Modal components
-export { default as Modal, ModalHeader, ModalBody, ModalFooter } from './Modal'
+export { default as Modal, ModalHeader, ModalContent, ModalBody, ModalFooter } from './Modal'
 
 // Page layout components
 export { default as PageWrapper, PageHeader } from './PageWrapper'

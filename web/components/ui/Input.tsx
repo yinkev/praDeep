@@ -1,13 +1,45 @@
 'use client'
 
-import React, { forwardRef, useState, useId } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import React, { forwardRef, useEffect, useId, useRef, useState } from 'react'
+
+import { cn } from '@/lib/utils'
 
 // ============================================================================
 // Types
 // ============================================================================
 
-type InputSize = 'sm' | 'md' | 'lg'
+export type InputSize = 'sm' | 'md' | 'lg'
+
+const hasNonEmptyValue = (value: unknown): boolean => {
+  if (value === null || value === undefined) return false
+  if (Array.isArray(value)) return value.length > 0
+  return String(value).length > 0
+}
+
+const useErrorShake = (error?: string, durationMs: number = 360): boolean => {
+  const [shouldShake, setShouldShake] = useState(false)
+  const rafRef = useRef<number | null>(null)
+  const timeoutRef = useRef<number | null>(null)
+
+  useEffect(() => {
+    if (!error) return
+
+    if (rafRef.current != null) cancelAnimationFrame(rafRef.current)
+    if (timeoutRef.current != null) window.clearTimeout(timeoutRef.current)
+
+    rafRef.current = requestAnimationFrame(() => setShouldShake(true))
+    timeoutRef.current = window.setTimeout(() => setShouldShake(false), durationMs)
+
+    return () => {
+      if (rafRef.current != null) cancelAnimationFrame(rafRef.current)
+      if (timeoutRef.current != null) window.clearTimeout(timeoutRef.current)
+      rafRef.current = null
+      timeoutRef.current = null
+    }
+  }, [durationMs, error])
+
+  return shouldShake
+}
 
 interface BaseInputProps {
   /** Label text for the input */
@@ -42,96 +74,50 @@ export interface TextareaProps
 }
 
 // ============================================================================
-// Styles
+// Styles - MICRO-INDUSTRIALISM
 // ============================================================================
 
 const sizeStyles: Record<InputSize, { input: string; label: string; icon: string }> = {
   sm: {
-    input: 'px-3 py-1.5 text-sm',
+    input: 'h-8 px-2.5 text-sm',
     label: 'text-xs',
     icon: 'w-4 h-4',
   },
   md: {
-    input: 'px-4 py-2.5 text-sm',
+    input: 'h-10 px-3 text-sm',
+    label: 'text-sm',
+    icon: 'w-4 h-4',
+  },
+  lg: {
+    input: 'h-12 px-4 text-base',
     label: 'text-sm',
     icon: 'w-5 h-5',
   },
-  lg: {
-    input: 'px-5 py-3.5 text-base',
-    label: 'text-base',
-    icon: 'w-6 h-6',
-  },
 }
 
-const baseInputStyles = `
-  w-full rounded-xl
-  bg-slate-50/80 dark:bg-slate-800/50
-  border border-slate-200/60 dark:border-slate-700/60
-  text-slate-900 dark:text-slate-100
-  placeholder:text-slate-400 dark:placeholder:text-slate-500
-  transition-all duration-300 ease-out
-  outline-none
-  backdrop-blur-sm
-`
+const baseInputStyles = cn(
+  'w-full',
+  'bg-surface-elevated',
+  'border border-border',
+  'rounded-md',
+  'text-text-primary placeholder:text-text-quaternary',
+  'shadow-none',
+  'outline-none',
+  'transition-[border-color,box-shadow] duration-200 ease-out'
+)
 
-const focusStyles = `
-  focus:border-teal-400/60 dark:focus:border-teal-500/60
-  focus:ring-2 focus:ring-teal-400/20 dark:focus:ring-teal-500/20
-  focus:bg-white dark:focus:bg-slate-800/80
-  focus:shadow-lg focus:shadow-teal-500/10
-`
+// Clean focus with accent color and subtle ring
+const focusStyles = cn('focus:border-accent-primary', 'focus:ring-2 focus:ring-accent-primary/10')
 
-const errorStyles = `
-  border-red-400/60 dark:border-red-500/60
-  focus:border-red-400 dark:focus:border-red-500
-  focus:ring-red-400/20 dark:focus:ring-red-500/20
-`
+const hoverStyles = cn('hover:border-border-hover')
 
-const disabledStyles = `
-  disabled:opacity-50 disabled:cursor-not-allowed
-  disabled:bg-slate-100 dark:disabled:bg-slate-800
-`
+const errorStyles = cn(
+  'border-semantic-error',
+  'focus:border-semantic-error',
+  'focus:ring-2 focus:ring-semantic-error/10'
+)
 
-// ============================================================================
-// Animations
-// ============================================================================
-
-const shakeAnimation = {
-  x: [0, -10, 10, -10, 10, -5, 5, -2, 2, 0],
-  transition: {
-    duration: 0.5,
-    ease: 'easeInOut' as const,
-  },
-}
-
-const floatingLabelVariants = {
-  default: {
-    y: 0,
-    scale: 1,
-    color: 'var(--label-color-default)',
-  },
-  focused: {
-    y: -24,
-    scale: 0.85,
-    color: 'var(--label-color-focused)',
-  },
-  filled: {
-    y: -24,
-    scale: 0.85,
-    color: 'var(--label-color-default)',
-  },
-}
-
-const errorMessageVariants = {
-  initial: { opacity: 0, y: -8, height: 0 },
-  animate: { opacity: 1, y: 0, height: 'auto' },
-  exit: { opacity: 0, y: -8, height: 0 },
-}
-
-const glowVariants = {
-  initial: { opacity: 0, scale: 0.95 },
-  focused: { opacity: 1, scale: 1 },
-}
+const disabledStyles = cn('disabled:opacity-50', 'disabled:cursor-not-allowed')
 
 // ============================================================================
 // Input Component
@@ -147,12 +133,13 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
       leftIcon,
       rightIcon,
       size = 'md',
-      wrapperClassName = '',
-      className = '',
+      wrapperClassName,
+      className,
       id,
       disabled,
       value,
       defaultValue,
+      onChange,
       onFocus,
       onBlur,
       ...props
@@ -161,8 +148,15 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
   ) => {
     const generatedId = useId()
     const inputId = id || generatedId
+    const describedById = `${inputId}-description`
     const [isFocused, setIsFocused] = useState(false)
-    const [hasValue, setHasValue] = useState(Boolean(value || defaultValue))
+    const isControlled = value !== undefined
+    const [uncontrolledHasValue, setUncontrolledHasValue] = useState(() =>
+      hasNonEmptyValue(defaultValue)
+    )
+    const valueHasValue = hasNonEmptyValue(value)
+    const hasValue = isControlled ? valueHasValue : uncontrolledHasValue
+    const shouldShake = useErrorShake(error)
 
     const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
       setIsFocused(true)
@@ -171,58 +165,48 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
 
     const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
       setIsFocused(false)
-      setHasValue(Boolean(e.target.value))
+      if (!isControlled) setUncontrolledHasValue(hasNonEmptyValue(e.target.value))
       onBlur?.(e)
+    }
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (!isControlled) setUncontrolledHasValue(hasNonEmptyValue(e.target.value))
+      onChange?.(e)
     }
 
     const styles = sizeStyles[size]
     const hasLeftIcon = Boolean(leftIcon)
     const hasRightIcon = Boolean(rightIcon)
 
-    const getLabelState = () => {
-      if (isFocused) return 'focused'
-      if (hasValue || value) return 'filled'
-      return 'default'
-    }
+    const isFloatingActive = isFocused || hasValue
 
     return (
-      <div className={`relative ${wrapperClassName}`}>
+      <div className={cn('relative', wrapperClassName)}>
         {/* Standard Label */}
         {label && !floatingLabel && (
           <label
             htmlFor={inputId}
-            className={`
-              block mb-1.5 font-medium text-slate-700 dark:text-slate-300
-              ${styles.label}
-              ${error ? 'text-red-500 dark:text-red-400' : ''}
-            `}
+            className={cn(
+              'mb-1.5 block font-medium text-text-secondary',
+              styles.label,
+              error && 'text-semantic-error'
+            )}
           >
             {label}
           </label>
         )}
 
         {/* Input Container */}
-        <motion.div className="relative" animate={error ? shakeAnimation : {}}>
-          {/* Glass Glow Effect */}
-          <motion.div
-            className="absolute inset-0 rounded-xl bg-gradient-to-r from-teal-400/20 to-cyan-400/20 blur-xl"
-            variants={glowVariants}
-            initial="initial"
-            animate={isFocused ? 'focused' : 'initial'}
-            transition={{ duration: 0.3 }}
-          />
-
+        <div className={cn('relative', shouldShake && 'motion-safe:animate-shake')}>
           {/* Left Icon */}
           {leftIcon && (
             <div
-              className={`
-                absolute left-3 top-1/2 -translate-y-1/2 z-10
-                text-slate-400 dark:text-slate-500
-                ${isFocused ? 'text-teal-500 dark:text-teal-400' : ''}
-                ${error ? 'text-red-400 dark:text-red-500' : ''}
-                transition-colors duration-200
-                ${styles.icon}
-              `}
+              className={cn(
+                'absolute left-3 top-1/2 z-10 -translate-y-1/2 text-text-tertiary transition-colors duration-200 ease-out',
+                isFocused && 'text-accent-primary',
+                error && 'text-semantic-error',
+                styles.icon
+              )}
             >
               {leftIcon}
             </div>
@@ -230,27 +214,21 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
 
           {/* Floating Label */}
           {label && floatingLabel && (
-            <motion.label
+            <label
               htmlFor={inputId}
-              className={`
-                absolute left-4 top-1/2 -translate-y-1/2 z-10
-                pointer-events-none origin-left
-                ${styles.label}
-                ${hasLeftIcon ? 'left-10' : ''}
-              `}
-              style={
-                {
-                  '--label-color-default': 'rgb(100 116 139)',
-                  '--label-color-focused': error ? 'rgb(239 68 68)' : 'rgb(20 184 166)',
-                } as React.CSSProperties
-              }
-              variants={floatingLabelVariants}
-              initial="default"
-              animate={getLabelState()}
-              transition={{ duration: 0.2, ease: 'easeOut' }}
+              className={cn(
+                'pointer-events-none absolute z-10 transition-all duration-150 ease-out',
+                hasLeftIcon ? 'left-10' : 'left-3',
+                isFloatingActive ? 'top-1 text-xs' : 'top-1/2 -translate-y-1/2 text-sm',
+                isFocused
+                  ? 'text-accent-primary'
+                  : error
+                    ? 'text-semantic-error'
+                    : 'text-text-tertiary'
+              )}
             >
               {label}
-            </motion.label>
+            </label>
           )}
 
           {/* Input Field */}
@@ -260,59 +238,57 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             disabled={disabled}
             value={value}
             defaultValue={defaultValue}
+            onChange={handleChange}
             onFocus={handleFocus}
             onBlur={handleBlur}
-            className={`
-              ${baseInputStyles}
-              ${focusStyles}
-              ${error ? errorStyles : ''}
-              ${disabledStyles}
-              ${styles.input}
-              ${hasLeftIcon ? 'pl-10' : ''}
-              ${hasRightIcon ? 'pr-10' : ''}
-              ${floatingLabel ? 'pt-4' : ''}
-              relative z-[1]
-              ${className}
-            `}
+            aria-invalid={Boolean(error) || undefined}
+            aria-describedby={error || helperText ? describedById : undefined}
+            className={cn(
+              baseInputStyles,
+              error ? errorStyles : cn(focusStyles, hoverStyles),
+              disabledStyles,
+              styles.input,
+              hasLeftIcon && 'pl-10',
+              hasRightIcon && 'pr-10',
+              floatingLabel && 'pt-5 pb-1',
+              className
+            )}
             {...props}
           />
 
           {/* Right Icon */}
           {rightIcon && (
             <div
-              className={`
-                absolute right-3 top-1/2 -translate-y-1/2 z-10
-                text-slate-400 dark:text-slate-500
-                ${isFocused ? 'text-teal-500 dark:text-teal-400' : ''}
-                ${error ? 'text-red-400 dark:text-red-500' : ''}
-                transition-colors duration-200
-                ${styles.icon}
-              `}
+              className={cn(
+                'absolute right-3 top-1/2 z-10 -translate-y-1/2 text-text-tertiary transition-colors duration-200 ease-out',
+                isFocused && 'text-accent-primary',
+                error && 'text-semantic-error',
+                styles.icon
+              )}
             >
               {rightIcon}
             </div>
           )}
-        </motion.div>
+        </div>
 
         {/* Error Message */}
-        <AnimatePresence>
-          {error && (
-            <motion.p
-              className="mt-1.5 text-xs text-red-500 dark:text-red-400"
-              variants={errorMessageVariants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              transition={{ duration: 0.2 }}
-            >
-              {error}
-            </motion.p>
-          )}
-        </AnimatePresence>
+        {error && (
+          <p
+            id={describedById}
+            className="mt-1.5 text-xs text-semantic-error motion-safe:animate-fade-in"
+          >
+            {error}
+          </p>
+        )}
 
         {/* Helper Text */}
         {helperText && !error && (
-          <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">{helperText}</p>
+          <p
+            id={describedById}
+            className="mt-1.5 text-xs text-text-tertiary motion-safe:animate-fade-in"
+          >
+            {helperText}
+          </p>
         )}
       </div>
     )
@@ -335,14 +311,15 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
       leftIcon,
       rightIcon,
       size = 'md',
-      wrapperClassName = '',
-      className = '',
+      wrapperClassName,
+      className,
       id,
       disabled,
       value,
       defaultValue,
       minRows = 3,
       maxRows,
+      onChange,
       onFocus,
       onBlur,
       ...props
@@ -351,8 +328,15 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
   ) => {
     const generatedId = useId()
     const inputId = id || generatedId
+    const describedById = `${inputId}-description`
     const [isFocused, setIsFocused] = useState(false)
-    const [hasValue, setHasValue] = useState(Boolean(value || defaultValue))
+    const isControlled = value !== undefined
+    const [uncontrolledHasValue, setUncontrolledHasValue] = useState(() =>
+      hasNonEmptyValue(defaultValue)
+    )
+    const valueHasValue = hasNonEmptyValue(value)
+    const hasValue = isControlled ? valueHasValue : uncontrolledHasValue
+    const shouldShake = useErrorShake(error)
 
     const handleFocus = (e: React.FocusEvent<HTMLTextAreaElement>) => {
       setIsFocused(true)
@@ -361,17 +345,20 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
 
     const handleBlur = (e: React.FocusEvent<HTMLTextAreaElement>) => {
       setIsFocused(false)
-      setHasValue(Boolean(e.target.value))
+      if (!isControlled) setUncontrolledHasValue(hasNonEmptyValue(e.target.value))
       onBlur?.(e)
+    }
+
+    const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      if (!isControlled) setUncontrolledHasValue(hasNonEmptyValue(e.target.value))
+      onChange?.(e)
     }
 
     const styles = sizeStyles[size]
 
-    const getLabelState = () => {
-      if (isFocused) return 'focused'
-      if (hasValue || value) return 'filled'
-      return 'default'
-    }
+    const isFloatingActive = isFocused || hasValue
+    const hasLeftIcon = Boolean(leftIcon)
+    const hasRightIcon = Boolean(rightIcon)
 
     // Calculate min/max height based on rows
     const lineHeight = size === 'sm' ? 20 : size === 'md' ? 22 : 26
@@ -379,58 +366,54 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
     const maxHeight = maxRows ? maxRows * lineHeight : undefined
 
     return (
-      <div className={`relative ${wrapperClassName}`}>
+      <div className={cn('relative', wrapperClassName)}>
         {/* Standard Label */}
         {label && !floatingLabel && (
           <label
             htmlFor={inputId}
-            className={`
-              block mb-1.5 font-medium text-slate-700 dark:text-slate-300
-              ${styles.label}
-              ${error ? 'text-red-500 dark:text-red-400' : ''}
-            `}
+            className={cn(
+              'mb-1.5 block font-medium text-text-secondary',
+              styles.label,
+              error && 'text-semantic-error'
+            )}
           >
             {label}
           </label>
         )}
 
-        {/* Input Container */}
-        <motion.div className="relative" animate={error ? shakeAnimation : {}}>
-          {/* Glass Glow Effect */}
-          <motion.div
-            className="absolute inset-0 rounded-xl bg-gradient-to-r from-teal-400/20 to-cyan-400/20 blur-xl"
-            variants={glowVariants}
-            initial="initial"
-            animate={isFocused ? 'focused' : 'initial'}
-            transition={{ duration: 0.3 }}
-          />
+        {/* Textarea Container */}
+        <div className={cn('relative', shouldShake && 'motion-safe:animate-shake')}>
+          {/* Left Icon */}
+          {leftIcon && (
+            <div
+              className={cn(
+                'absolute left-3 top-3 z-10 text-text-tertiary transition-colors duration-200 ease-out',
+                isFocused && 'text-accent-primary',
+                error && 'text-semantic-error',
+                styles.icon
+              )}
+            >
+              {leftIcon}
+            </div>
+          )}
 
           {/* Floating Label */}
           {label && floatingLabel && (
-            <motion.label
+            <label
               htmlFor={inputId}
-              className={`
-                absolute left-4 top-4 z-10
-                pointer-events-none origin-left
-                ${styles.label}
-              `}
-              style={
-                {
-                  '--label-color-default': 'rgb(100 116 139)',
-                  '--label-color-focused': error ? 'rgb(239 68 68)' : 'rgb(20 184 166)',
-                } as React.CSSProperties
-              }
-              variants={{
-                default: { y: 0, scale: 1, color: 'var(--label-color-default)' },
-                focused: { y: -12, scale: 0.85, color: 'var(--label-color-focused)' },
-                filled: { y: -12, scale: 0.85, color: 'var(--label-color-default)' },
-              }}
-              initial="default"
-              animate={getLabelState()}
-              transition={{ duration: 0.2, ease: 'easeOut' }}
+              className={cn(
+                'pointer-events-none absolute z-10 transition-all duration-150 ease-out',
+                hasLeftIcon ? 'left-10' : 'left-3',
+                isFloatingActive ? 'top-2 text-xs' : 'top-3 text-sm',
+                isFocused
+                  ? 'text-accent-primary'
+                  : error
+                    ? 'text-semantic-error'
+                    : 'text-text-tertiary'
+              )}
             >
               {label}
-            </motion.label>
+            </label>
           )}
 
           {/* Textarea Field */}
@@ -440,46 +423,62 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
             disabled={disabled}
             value={value}
             defaultValue={defaultValue}
+            onChange={handleChange}
             onFocus={handleFocus}
             onBlur={handleBlur}
             style={{
               minHeight: `${minHeight}px`,
               maxHeight: maxHeight ? `${maxHeight}px` : undefined,
             }}
-            className={`
-              ${baseInputStyles}
-              ${focusStyles}
-              ${error ? errorStyles : ''}
-              ${disabledStyles}
-              ${styles.input}
-              ${floatingLabel ? 'pt-6' : ''}
-              relative z-[1]
-              resize-y
-              ${className}
-            `}
+            aria-invalid={Boolean(error) || undefined}
+            aria-describedby={error || helperText ? describedById : undefined}
+            className={cn(
+              baseInputStyles,
+              error ? errorStyles : cn(focusStyles, hoverStyles),
+              disabledStyles,
+              'px-3 py-2.5 text-sm',
+              hasLeftIcon && 'pl-10',
+              hasRightIcon && 'pr-10',
+              floatingLabel && 'pt-6',
+              'resize-y',
+              className
+            )}
             {...props}
           />
-        </motion.div>
+
+          {/* Right Icon */}
+          {rightIcon && (
+            <div
+              className={cn(
+                'absolute right-3 top-3 z-10 text-text-tertiary transition-colors duration-200 ease-out',
+                isFocused && 'text-accent-primary',
+                error && 'text-semantic-error',
+                styles.icon
+              )}
+            >
+              {rightIcon}
+            </div>
+          )}
+        </div>
 
         {/* Error Message */}
-        <AnimatePresence>
-          {error && (
-            <motion.p
-              className="mt-1.5 text-xs text-red-500 dark:text-red-400"
-              variants={errorMessageVariants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              transition={{ duration: 0.2 }}
-            >
-              {error}
-            </motion.p>
-          )}
-        </AnimatePresence>
+        {error && (
+          <p
+            id={describedById}
+            className="mt-1.5 text-xs text-semantic-error motion-safe:animate-fade-in"
+          >
+            {error}
+          </p>
+        )}
 
         {/* Helper Text */}
         {helperText && !error && (
-          <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">{helperText}</p>
+          <p
+            id={describedById}
+            className="mt-1.5 text-xs text-text-tertiary motion-safe:animate-fade-in"
+          >
+            {helperText}
+          </p>
         )}
       </div>
     )

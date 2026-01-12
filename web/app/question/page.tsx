@@ -1,143 +1,85 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useEffect, useMemo, useState } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
 import {
-  PenTool,
-  CheckCircle2,
+  Activity,
   AlertCircle,
-  Loader2,
+  Book,
   BookOpen,
   BrainCircuit,
-  Sparkles,
-  RefreshCw,
-  FileText,
-  Book,
-  Upload,
+  CheckCircle2,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Database,
   FileQuestion,
-  Activity,
+  FileText,
+  Loader2,
+  PenTool,
+  RefreshCw,
+  Upload,
   Zap,
-  ChevronDown,
-  ChevronRight,
-  ChevronLeft,
-  Target,
-  Trophy,
-  Clock,
 } from 'lucide-react'
-import { useGlobal } from '@/context/GlobalContext'
 import ReactMarkdown from 'react-markdown'
 import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
 import 'katex/dist/katex.min.css'
+
+import { useGlobal } from '@/context/GlobalContext'
 import { apiUrl } from '@/lib/api'
+import { parseKnowledgeBaseList } from '@/lib/knowledge'
 import { processLatexContent } from '@/lib/latex'
+import { cn } from '@/lib/utils'
 import AddToNotebookModal from '@/components/AddToNotebookModal'
 import { QuestionDashboard } from '@/components/question/QuestionDashboard'
 import { useQuestionReducer } from '@/hooks/useQuestionReducer'
 import PageWrapper, { PageHeader } from '@/components/ui/PageWrapper'
-import { Card, CardHeader, CardBody, CardFooter } from '@/components/ui/Card'
+import { Card, CardBody, CardFooter, CardHeader } from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
-
-// ============================================================================
-// Animation Variants
-// ============================================================================
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-      delayChildren: 0.1,
-    },
-  },
-}
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      type: 'spring' as const,
-      stiffness: 300,
-      damping: 24,
-    },
-  },
-}
+import { Input, Textarea } from '@/components/ui/Input'
+import { useToast } from '@/components/ui/Toast'
+import type { GeneratedQuestion } from '@/types/question'
 
 const slideVariants = {
-  enter: (direction: number) => ({
-    x: direction > 0 ? 300 : -300,
-    opacity: 0,
-  }),
+  enter: (dir: number) => ({ opacity: 0, x: dir > 0 ? 24 : -24 }),
   center: {
-    x: 0,
     opacity: 1,
-    transition: {
-      type: 'spring' as const,
-      stiffness: 300,
-      damping: 30,
-    },
+    x: 0,
+    transition: { type: 'spring' as const, stiffness: 340, damping: 32 },
   },
-  exit: (direction: number) => ({
-    x: direction < 0 ? 300 : -300,
+  exit: (dir: number) => ({
     opacity: 0,
-    transition: {
-      type: 'spring' as const,
-      stiffness: 300,
-      damping: 30,
-    },
+    x: dir > 0 ? -24 : 24,
+    transition: { duration: 0.15 },
   }),
 }
 
-const optionVariants = {
-  idle: {
-    scale: 1,
-    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05)',
-  },
-  hover: {
-    scale: 1.02,
-    boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
-    transition: {
-      type: 'spring' as const,
-      stiffness: 400,
-      damping: 17,
-    },
-  },
-  tap: {
-    scale: 0.98,
-  },
-  selected: {
-    scale: 1,
-    boxShadow: '0 10px 25px -5px rgb(0 0 0 / 0.1)',
-  },
+const selectClassName = cn(
+  'h-10 px-3 text-sm',
+  'bg-white/70 dark:bg-white/5 backdrop-blur-md',
+  'border border-zinc-200/70 dark:border-white/10',
+  'rounded-lg',
+  'text-zinc-900 dark:text-zinc-50',
+  'outline-none',
+  'hover:border-zinc-300 dark:hover:border-white/20',
+  'focus:border-zinc-400 focus:ring-2 focus:ring-blue-500/20',
+  'disabled:opacity-50 disabled:cursor-not-allowed'
+)
+
+type QuestionKindSource = Pick<GeneratedQuestion, 'question_type' | 'type'> | null | undefined
+
+function getQuestionKind(question: QuestionKindSource) {
+  return (question?.question_type ?? question?.type ?? '').toString()
 }
 
-const progressPillVariants = {
-  inactive: {
-    scale: 1,
-    backgroundColor: 'rgb(226 232 240)',
-  },
-  active: {
-    scale: 1.15,
-    backgroundColor: 'rgb(20 184 166)',
-    transition: {
-      type: 'spring' as const,
-      stiffness: 400,
-      damping: 17,
-    },
-  },
-  completed: {
-    scale: 1,
-    backgroundColor: 'rgb(16 185 129)',
-  },
+function formatQuestionTypeLabel(question: QuestionKindSource) {
+  const kind = getQuestionKind(question)
+  if (!kind) return 'Question'
+  if (kind === 'choice') return 'Multiple Choice'
+  if (kind === 'written') return 'Written'
+  return kind
 }
-
-// ============================================================================
-// Component
-// ============================================================================
 
 export default function QuestionPage() {
   const {
@@ -148,52 +90,139 @@ export default function QuestionPage() {
     resetQuestionGen,
   } = useGlobal()
 
-  // Dashboard state for parallel generation
-  const [dashboardState, dispatchDashboard] = useQuestionReducer()
-  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
+  const toast = useToast()
 
-  // Tab state: "questions" shows the quiz, "process" shows the dashboard
+  const [dashboardState] = useQuestionReducer()
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'questions' | 'process'>('questions')
 
-  // Local interaction state
   const [kbs, setKbs] = useState<string[]>([])
 
-  // Answering state
   const [activeIdx, setActiveIdx] = useState(0)
-  const [direction, setDirection] = useState(0)
+  const [navDir, setNavDir] = useState(1)
   const [userAnswers, setUserAnswers] = useState<Record<number, string>>({})
   const [submittedMap, setSubmittedMap] = useState<Record<number, boolean>>({})
   const [showValidation, setShowValidation] = useState(false)
-
-  // Notebook modal state
   const [showNotebookModal, setShowNotebookModal] = useState(false)
 
-  // Check if generation is in progress
-  const isGenerating = questionState.step === 'generating' || questionState.step === 'result'
-  const isConfigMode = questionState.step === 'config'
+  const isConfig = questionState.step === 'config'
+  const isGenerating = questionState.step === 'generating'
+  const totalQuestions = questionState.results.length
+  const currentQuestion = questionState.results[activeIdx]
 
-  // Fetch KBs on mount only
+  const completedCount = useMemo(
+    () => Object.keys(submittedMap).filter(k => submittedMap[parseInt(k)]).length,
+    [submittedMap]
+  )
+  const extendedCount = useMemo(
+    () => questionState.results.filter((r: { extended?: boolean }) => Boolean(r.extended)).length,
+    [questionState.results]
+  )
+
+  const progressPct = useMemo(() => {
+    if (!totalQuestions) return 0
+    return Math.round((completedCount / totalQuestions) * 100)
+  }, [completedCount, totalQuestions])
+
+  const currentQuestionTypeLabel = useMemo(
+    () => formatQuestionTypeLabel(currentQuestion?.question),
+    [currentQuestion?.question]
+  )
+
+  const isChoiceQuestion = useMemo(() => {
+    const kind = getQuestionKind(currentQuestion?.question)
+    return kind === 'choice'
+  }, [currentQuestion?.question])
+
+  const correctAnswerKey = useMemo(() => {
+    const v = currentQuestion?.question?.correct_answer
+    if (v === null || v === undefined) return ''
+    return String(v)
+  }, [currentQuestion?.question?.correct_answer])
+
+  const selectedAnswerKey = userAnswers[activeIdx] ?? ''
+  const hasAnswer = Boolean(selectedAnswerKey.trim())
+  const isSubmitted = Boolean(submittedMap[activeIdx])
+  const isChoiceCorrect = isChoiceQuestion && isSubmitted ? selectedAnswerKey === correctAnswerKey : null
+
+  const sourceLabel =
+    questionState.mode === 'mimic'
+      ? questionState.uploadedFile?.name || questionState.paperPath || 'Mimic Exam'
+      : questionState.topic || 'Custom Mode'
+
+  // Fetch KBs on mount
   useEffect(() => {
     fetch(apiUrl('/api/v1/knowledge/list'))
       .then(res => res.json())
       .then(data => {
-        const names = data.map((kb: any) => kb.name)
+        const names = parseKnowledgeBaseList(data).map(kb => kb.name)
         setKbs(names)
-        if (!questionState.selectedKb && names.length > 0) {
-          setQuestionState(prev => ({ ...prev, selectedKb: names[0] }))
+        if (names.length > 0) {
+          setQuestionState(prev => (prev.selectedKb ? prev : { ...prev, selectedKb: names[0] }))
         }
       })
-      .catch(err => console.error('Failed to fetch KBs:', err))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+      .catch(err => {
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Failed to fetch KBs:', err)
+        }
+        toast.error('Failed to load knowledge bases', 'Network error')
+      })
+  }, [setQuestionState, toast])
 
-  const handleStart = () => {
+  // Keep activeIdx within bounds as results stream in/out
+  useEffect(() => {
+    if (totalQuestions === 0) return
+    if (activeIdx < totalQuestions) return
+    const nextIdx = Math.max(0, totalQuestions - 1)
+    const raf = requestAnimationFrame(() => setActiveIdx(nextIdx))
+    return () => cancelAnimationFrame(raf)
+  }, [activeIdx, totalQuestions])
+
+  // Auto-switch to questions when generation completes
+  useEffect(() => {
+    if (questionState.step === 'result' && totalQuestions > 0) {
+      const raf = requestAnimationFrame(() => setActiveTab('questions'))
+      return () => cancelAnimationFrame(raf)
+    }
+  }, [questionState.step, totalQuestions])
+
+  const navigateQuestion = (newIdx: number) => {
+    if (newIdx < 0 || newIdx >= totalQuestions) return
+    setNavDir(newIdx > activeIdx ? 1 : -1)
+    setActiveIdx(newIdx)
+    setShowValidation(false)
+  }
+
+  const handleAnswer = (value: string) => {
+    if (submittedMap[activeIdx]) return
+    setUserAnswers(prev => ({ ...prev, [activeIdx]: value }))
+  }
+
+  const handleSubmit = () => {
+    setSubmittedMap(prev => ({ ...prev, [activeIdx]: true }))
+  }
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null
+    if (file && file.type !== 'application/pdf') {
+      e.currentTarget.value = ''
+      toast.warning('Please upload a PDF exam paper')
+      return
+    }
+    setQuestionState(prev => ({
+      ...prev,
+      uploadedFile: file,
+      paperPath: file ? '' : prev.paperPath,
+    }))
+  }
+
+  const startGeneration = () => {
     if (questionState.mode === 'knowledge') {
       startQuestionGen(
         questionState.topic,
         questionState.difficulty,
         questionState.type,
-        questionState.count,
+        Math.max(1, questionState.count),
         questionState.selectedKb
       )
     } else {
@@ -204,6 +233,7 @@ export default function QuestionPage() {
         questionState.count > 0 ? questionState.count : undefined
       )
     }
+
     setUserAnswers({})
     setSubmittedMap({})
     setActiveIdx(0)
@@ -211,68 +241,56 @@ export default function QuestionPage() {
     setActiveTab('process')
   }
 
-  const handleAnswer = (val: string) => {
-    if (submittedMap[activeIdx]) return
-    setUserAnswers(prev => ({ ...prev, [activeIdx]: val }))
-  }
+  const canGenerate =
+    questionState.mode === 'knowledge'
+      ? Boolean(questionState.topic.trim())
+      : Boolean(questionState.uploadedFile || questionState.paperPath.trim())
 
-  const handleSubmit = () => {
-    setSubmittedMap(prev => ({ ...prev, [activeIdx]: true }))
-  }
+  const headerStatus = isConfig
+    ? 'Setup'
+    : isGenerating
+      ? 'Generating'
+      : questionState.step === 'result'
+        ? 'Ready'
+        : 'Session'
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] || null
-    if (file && file.type !== 'application/pdf') {
-      alert('Please upload a PDF exam paper')
-      return
-    }
-    setQuestionState(prev => ({
-      ...prev,
-      uploadedFile: file,
-      paperPath: file ? '' : prev.paperPath,
-    }))
-  }
-
-  const navigateQuestion = (newIdx: number) => {
-    setDirection(newIdx > activeIdx ? 1 : -1)
-    setActiveIdx(newIdx)
-    setShowValidation(false)
-  }
-
-  const currentQuestion = questionState.results[activeIdx]
-  const totalQuestions = questionState.results.length
-  const extendedCount = questionState.results.filter((r: any) => r.extended).length
-  const completedCount = Object.keys(submittedMap).filter(k => submittedMap[parseInt(k)]).length
-
-  // Auto-switch to questions tab when generation completes
-  useEffect(() => {
-    if (questionState.step === 'result' && totalQuestions > 0) {
-      setActiveTab('questions')
-    }
-  }, [questionState.step, totalQuestions])
+  const headerStatusTone = isGenerating
+    ? 'border-blue-200/70 bg-blue-50/70 text-blue-700 dark:border-blue-400/20 dark:bg-blue-500/10 dark:text-blue-200'
+    : 'border-white/60 bg-white/60 text-zinc-600 dark:border-white/10 dark:bg-white/5 dark:text-zinc-300'
 
   return (
-    <PageWrapper maxWidth="2xl" showPattern={true}>
-      {/* Header */}
+    <PageWrapper maxWidth="wide" showPattern>
       <PageHeader
         title="Question Generator"
-        description="Generate practice questions from your knowledge base or mimic exam papers"
-        icon={<PenTool className="w-5 h-5" />}
+        description="Generate premium practice questions and take a clean, focused quiz."
+        icon={<PenTool className="w-5 h-5 text-blue-600 dark:text-blue-400" />}
         actions={
-          <div className="flex items-center gap-3">
-            {/* Knowledge Base Selector */}
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <span
+              className={cn(
+                'hidden sm:inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs shadow-xs backdrop-blur-md',
+                headerStatusTone
+              )}
+            >
+              {isGenerating ? (
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-35" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-blue-500" />
+                </span>
+              ) : (
+                <span className="h-2 w-2 rounded-full bg-zinc-300 dark:bg-zinc-700" />
+              )}
+              {headerStatus}
+            </span>
+
             <div className="flex items-center gap-2">
-              <Database className="w-4 h-4 text-slate-400" />
+              <Database className="h-4 w-4 text-zinc-400 dark:text-zinc-500" />
               <select
                 value={questionState.selectedKb}
-                onChange={e =>
-                  setQuestionState(prev => ({
-                    ...prev,
-                    selectedKb: e.target.value,
-                  }))
-                }
-                disabled={isGenerating}
-                className="text-sm bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-white/50 dark:border-slate-700/50 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-teal-400/50 dark:text-slate-200 transition-all disabled:opacity-50"
+                onChange={e => setQuestionState(prev => ({ ...prev, selectedKb: e.target.value }))}
+                disabled={!isConfig || isGenerating}
+                aria-label="Knowledge base"
+                className={cn(selectClassName, 'w-44 sm:w-56')}
               >
                 {kbs.map(kb => (
                   <option key={kb} value={kb}>
@@ -282,671 +300,655 @@ export default function QuestionPage() {
               </select>
             </div>
 
-            {!isConfigMode && (
+            {!isConfig && (
               <Button
-                variant="ghost"
+                variant="secondary"
                 size="sm"
-                iconLeft={<RefreshCw className="w-4 h-4" />}
+                iconLeft={<RefreshCw className="h-4 w-4" />}
                 onClick={resetQuestionGen}
               >
-                New Session
+                New session
               </Button>
             )}
           </div>
         }
       />
 
-      {/* Mode and Tab Switcher */}
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-between mb-6"
-      >
-        {/* Mode Switching */}
-        <Card variant="glass" hoverEffect={false} className="p-1">
-          <div className="flex gap-1">
-            <motion.button
-              onClick={() =>
-                !isGenerating && setQuestionState(prev => ({ ...prev, mode: 'knowledge' }))
-              }
-              disabled={isGenerating}
-              whileHover={!isGenerating ? { scale: 1.02 } : undefined}
-              whileTap={!isGenerating ? { scale: 0.98 } : undefined}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-                questionState.mode === 'knowledge'
-                  ? 'bg-gradient-to-r from-teal-500 to-teal-600 text-white shadow-lg shadow-teal-500/25'
-                  : 'text-slate-600 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-700/50'
-              } ${isGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
-            >
-              <BrainCircuit className="w-4 h-4" />
-              Custom Mode
-            </motion.button>
-            <motion.button
-              onClick={() =>
-                !isGenerating && setQuestionState(prev => ({ ...prev, mode: 'mimic' }))
-              }
-              disabled={isGenerating}
-              whileHover={!isGenerating ? { scale: 1.02 } : undefined}
-              whileTap={!isGenerating ? { scale: 0.98 } : undefined}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-                questionState.mode === 'mimic'
-                  ? 'bg-gradient-to-r from-teal-500 to-teal-600 text-white shadow-lg shadow-teal-500/25'
-                  : 'text-slate-600 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-700/50'
-              } ${isGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
-            >
-              <FileText className="w-4 h-4" />
-              Mimic Exam
-            </motion.button>
-          </div>
-        </Card>
+      {/* Mode + Tabs */}
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="inline-flex items-center gap-2 rounded-full border border-white/60 bg-white/60 px-3 py-1 text-xs text-zinc-700 shadow-xs backdrop-blur-md dark:border-white/10 dark:bg-white/5 dark:text-zinc-200">
+            {questionState.mode === 'knowledge' ? (
+              <BrainCircuit className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+            ) : (
+              <FileText className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+            )}
+            <span className="font-medium">
+              {questionState.mode === 'knowledge' ? 'Custom' : 'Mimic'}
+            </span>
+            <span className="text-zinc-400 dark:text-zinc-500">•</span>
+            <span className="max-w-[260px] truncate text-zinc-600 dark:text-zinc-300">
+              {sourceLabel}
+            </span>
+          </span>
 
-        {/* Tab Switcher */}
-        {!isConfigMode && (
-          <Card variant="glass" hoverEffect={false} className="p-1">
+          {!isConfig && questionState.mode === 'knowledge' && (
+            <>
+              <span className="hidden sm:inline-flex items-center rounded-full border border-white/55 bg-white/55 px-3 py-1 text-xs text-zinc-600 shadow-xs backdrop-blur-md dark:border-white/10 dark:bg-white/5 dark:text-zinc-300">
+                {questionState.difficulty}
+              </span>
+              <span className="hidden sm:inline-flex items-center rounded-full border border-white/55 bg-white/55 px-3 py-1 text-xs text-zinc-600 shadow-xs backdrop-blur-md dark:border-white/10 dark:bg-white/5 dark:text-zinc-300">
+                {formatQuestionTypeLabel({ question_type: questionState.type })}
+              </span>
+            </>
+          )}
+        </div>
+
+        {!isConfig && (
+          <Card
+            variant="glass"
+            interactive={false}
+            padding="none"
+            className="rounded-2xl p-1 border-white/55 bg-white/55 dark:border-white/10 dark:bg-white/5"
+          >
             <div className="flex gap-1">
-              <motion.button
+              <Button
                 onClick={() => setActiveTab('questions')}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-                  activeTab === 'questions'
-                    ? 'bg-white dark:bg-slate-700 text-teal-700 dark:text-teal-400 shadow-md'
-                    : 'text-slate-600 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-700/50'
-                }`}
+                variant={activeTab === 'questions' ? 'secondary' : 'ghost'}
+                size="sm"
+                iconLeft={<FileQuestion className="h-4 w-4" />}
+                className="!rounded-xl"
               >
-                <FileQuestion className="w-4 h-4" />
-                Questions
-                {totalQuestions > 0 && (
-                  <span className="px-2 py-0.5 bg-teal-100 dark:bg-teal-900/50 text-teal-700 dark:text-teal-300 text-xs rounded-full font-semibold">
-                    {totalQuestions}
-                  </span>
-                )}
-              </motion.button>
-              <motion.button
+                Quiz
+              </Button>
+              <Button
                 onClick={() => setActiveTab('process')}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-                  activeTab === 'process'
-                    ? 'bg-white dark:bg-slate-700 text-teal-700 dark:text-teal-400 shadow-md'
-                    : 'text-slate-600 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-700/50'
-                }`}
+                variant={activeTab === 'process' ? 'secondary' : 'ghost'}
+                size="sm"
+                iconLeft={<Activity className="h-4 w-4" />}
+                iconRight={isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : undefined}
+                className="!rounded-xl"
               >
-                <Activity className="w-4 h-4" />
                 Process
-                {questionState.step === 'generating' && (
-                  <Loader2 className="w-3 h-3 animate-spin text-teal-500" />
-                )}
-              </motion.button>
+              </Button>
             </div>
           </Card>
         )}
-      </motion.div>
+      </div>
 
-      {/* Config Mode */}
       <AnimatePresence mode="wait">
-        {isConfigMode && (
+        {isConfig ? (
           <motion.div
             key="config"
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-            exit={{ opacity: 0, y: -20 }}
-            className="max-w-2xl mx-auto space-y-6"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="max-w-3xl mx-auto"
           >
-            {/* Mode Info Banner */}
-            <motion.div variants={itemVariants}>
-              <Card
-                variant="glass"
-                className={`border-l-4 ${
-                  questionState.mode === 'knowledge' ? 'border-l-teal-500' : 'border-l-blue-500'
-                }`}
-              >
-                <CardBody>
-                  <div className="flex items-center gap-4">
-                    <div
-                      className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                        questionState.mode === 'knowledge'
-                          ? 'bg-teal-100 dark:bg-teal-900/50 text-teal-600 dark:text-teal-400'
-                          : 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
-                      }`}
-                    >
-                      {questionState.mode === 'knowledge' ? (
-                        <BrainCircuit className="w-6 h-6" />
-                      ) : (
-                        <FileText className="w-6 h-6" />
-                      )}
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-slate-800 dark:text-slate-200">
-                        {questionState.mode === 'knowledge'
-                          ? 'Custom Mode'
-                          : 'Mimic Exam Paper Mode'}
-                      </h3>
-                      <p className="text-sm text-slate-500 dark:text-slate-400">
-                        {questionState.mode === 'knowledge'
-                          ? 'Generate questions based on knowledge base content'
-                          : 'Generate similar questions based on an exam paper'}
-                      </p>
-                    </div>
+            <Card
+              variant="glass"
+              interactive={false}
+              padding="none"
+              className="rounded-2xl overflow-hidden"
+            >
+              <CardHeader className="bg-white/50 dark:bg-white/5 backdrop-blur-xl">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="space-y-1">
+                    <h2 className="text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+                      Setup
+                    </h2>
+                    <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                      Choose a mode, tune the settings, then generate.
+                    </p>
                   </div>
-                </CardBody>
-              </Card>
-            </motion.div>
+                </div>
+              </CardHeader>
 
-            {/* Knowledge Base Mode Config */}
-            {questionState.mode === 'knowledge' && (
-              <>
-                {/* Question Count */}
-                <motion.div variants={itemVariants}>
-                  <Card variant="glass">
-                    <CardBody className="space-y-4">
-                      <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                        Question Count
-                      </label>
-                      <div className="flex items-center gap-6">
-                        <input
-                          type="range"
-                          min="1"
-                          max="10"
-                          step="1"
-                          value={Math.min(questionState.count, 10)}
-                          onChange={e =>
-                            setQuestionState(prev => ({
-                              ...prev,
-                              count: parseInt(e.target.value),
-                            }))
-                          }
-                          className="flex-1 accent-teal-500 h-2 bg-slate-200 dark:bg-slate-600 rounded-lg appearance-none cursor-pointer"
-                        />
-                        <motion.div
-                          key={questionState.count}
-                          initial={{ scale: 1.2 }}
-                          animate={{ scale: 1 }}
-                          className="w-16 h-12 flex items-center justify-center bg-gradient-to-r from-teal-500 to-teal-600 text-white font-bold text-xl rounded-xl shadow-lg shadow-teal-500/25"
-                        >
-                          {questionState.count}
-                        </motion.div>
-                      </div>
-                    </CardBody>
-                  </Card>
-                </motion.div>
-
-                {/* Topic Input */}
-                <motion.div variants={itemVariants}>
-                  <Card variant="glass">
-                    <CardBody className="space-y-3">
-                      <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                        Knowledge Point / Topic
-                      </label>
-                      <input
-                        type="text"
-                        value={questionState.topic}
-                        onChange={e =>
+              <CardBody padding="lg" className="space-y-7">
+                {/* Mode Selection */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {(
+                    [
+                      {
+                        id: 'knowledge',
+                        title: 'Custom Mode',
+                        description: 'Generate from your knowledge base.',
+                        icon: BrainCircuit,
+                      },
+                      {
+                        id: 'mimic',
+                        title: 'Mimic Exam',
+                        description: 'Generate similar questions from a paper.',
+                        icon: FileText,
+                      },
+                    ] as const
+                  ).map(mode => {
+                    const isActive = questionState.mode === mode.id
+                    const Icon = mode.icon
+                    return (
+                      <motion.button
+                        key={mode.id}
+                        type="button"
+                        whileHover={{ y: -1 }}
+                        whileTap={{ scale: 0.99 }}
+                        onClick={() => {
+                          if (isGenerating) return
                           setQuestionState(prev => ({
                             ...prev,
-                            topic: e.target.value,
+                            mode: mode.id,
+                            count: mode.id === 'knowledge' ? Math.max(1, prev.count) : prev.count,
                           }))
-                        }
-                        placeholder="e.g. Gradient Descent Optimization"
-                        className="w-full p-4 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-white/30 dark:border-slate-700/30 rounded-xl outline-none focus:ring-2 focus:ring-teal-400/50 transition-all text-lg text-slate-800 dark:text-slate-200 placeholder:text-slate-400"
-                      />
-                    </CardBody>
-                  </Card>
-                </motion.div>
-
-                {/* Difficulty and Type */}
-                <motion.div variants={itemVariants} className="grid grid-cols-2 gap-4">
-                  <Card variant="glass">
-                    <CardBody className="space-y-3">
-                      <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                        Difficulty
-                      </label>
-                      <div className="flex bg-white/30 dark:bg-slate-800/30 p-1 rounded-xl">
-                        {['easy', 'medium', 'hard'].map(lvl => (
-                          <motion.button
-                            key={lvl}
-                            onClick={() =>
-                              setQuestionState(prev => ({
-                                ...prev,
-                                difficulty: lvl,
-                              }))
-                            }
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            className={`flex-1 py-2.5 rounded-lg text-sm font-medium capitalize transition-all ${
-                              questionState.difficulty === lvl
-                                ? 'bg-white dark:bg-slate-700 text-teal-700 dark:text-teal-400 shadow-md'
-                                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
-                            }`}
+                        }}
+                        className={cn(
+                          'group rounded-2xl border p-4 text-left transition-[background-color,border-color,box-shadow,transform] shadow-xs',
+                          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-zinc-950',
+                          isActive
+                            ? 'border-blue-300/70 bg-blue-50/70 dark:border-blue-400/25 dark:bg-blue-500/10'
+                            : 'border-white/55 bg-white/55 hover:bg-white/70 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10'
+                        )}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div
+                            className={cn(
+                              'mt-0.5 flex h-10 w-10 items-center justify-center rounded-xl border shadow-xs',
+                              isActive
+                                ? 'border-blue-200/70 bg-white/70 text-blue-700 dark:border-blue-400/20 dark:bg-white/5 dark:text-blue-200'
+                                : 'border-white/60 bg-white/70 text-zinc-600 dark:border-white/10 dark:bg-white/5 dark:text-zinc-300'
+                            )}
                           >
-                            {lvl}
-                          </motion.button>
-                        ))}
-                      </div>
-                    </CardBody>
-                  </Card>
+                            <Icon className="h-5 w-5" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-semibold text-zinc-900 dark:text-zinc-50">
+                              {mode.title}
+                            </p>
+                            <p className="mt-0.5 text-sm text-zinc-500 dark:text-zinc-400">
+                              {mode.description}
+                            </p>
+                          </div>
+                        </div>
+                      </motion.button>
+                    )
+                  })}
+                </div>
 
-                  <Card variant="glass">
-                    <CardBody className="space-y-3">
-                      <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                        Type
-                      </label>
-                      <div className="flex bg-white/30 dark:bg-slate-800/30 p-1 rounded-xl">
-                        {[
-                          { id: 'choice', label: 'Multiple Choice' },
-                          { id: 'written', label: 'Written' },
-                        ].map(t => (
-                          <motion.button
-                            key={t.id}
-                            onClick={() =>
-                              setQuestionState(prev => ({
-                                ...prev,
-                                type: t.id,
-                              }))
-                            }
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                              questionState.type === t.id
-                                ? 'bg-white dark:bg-slate-700 text-teal-700 dark:text-teal-400 shadow-md'
-                                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
-                            }`}
-                          >
-                            {t.label}
-                          </motion.button>
-                        ))}
-                      </div>
-                    </CardBody>
-                  </Card>
-                </motion.div>
-              </>
-            )}
+                {/* Custom Mode */}
+                {questionState.mode === 'knowledge' && (
+                  <div className="space-y-5">
+                    <Input
+                      label="Topic"
+                      floatingLabel
+                      size="lg"
+                      value={questionState.topic}
+                      onChange={e => setQuestionState(prev => ({ ...prev, topic: e.target.value }))}
+                      placeholder="e.g. Gradient Descent Optimization"
+                      className="rounded-2xl"
+                    />
 
-            {/* Mimic Mode Config */}
-            {questionState.mode === 'mimic' && (
-              <>
-                {/* PDF Upload */}
-                <motion.div variants={itemVariants}>
-                  <Card variant="glass">
-                    <CardBody className="space-y-3">
-                      <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                        Upload Exam Paper (PDF)
-                      </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                          Difficulty
+                        </p>
+                        <div className="flex gap-1 rounded-2xl border border-white/55 bg-white/55 p-1 shadow-xs backdrop-blur-md dark:border-white/10 dark:bg-white/5">
+                          {(['easy', 'medium', 'hard'] as const).map(lvl => (
+                            <button
+                              key={lvl}
+                              type="button"
+                              onClick={() => setQuestionState(prev => ({ ...prev, difficulty: lvl }))}
+                              className={cn(
+                                'flex-1 rounded-xl px-3 py-2 text-sm font-medium capitalize transition-colors',
+                                questionState.difficulty === lvl
+                                  ? 'bg-white text-zinc-900 shadow-sm dark:bg-zinc-950/50 dark:text-zinc-50'
+                                  : 'text-zinc-600 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-50'
+                              )}
+                            >
+                              {lvl}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                          Type
+                        </p>
+                        <div className="flex gap-1 rounded-2xl border border-white/55 bg-white/55 p-1 shadow-xs backdrop-blur-md dark:border-white/10 dark:bg-white/5">
+                          {(
+                            [
+                              { id: 'choice', label: 'Multiple Choice' },
+                              { id: 'written', label: 'Written' },
+                            ] as const
+                          ).map(t => (
+                            <button
+                              key={t.id}
+                              type="button"
+                              onClick={() => setQuestionState(prev => ({ ...prev, type: t.id }))}
+                              className={cn(
+                                'flex-1 rounded-xl px-3 py-2 text-sm font-medium transition-colors',
+                                questionState.type === t.id
+                                  ? 'bg-white text-zinc-900 shadow-sm dark:bg-zinc-950/50 dark:text-zinc-50'
+                                  : 'text-zinc-600 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-50'
+                              )}
+                            >
+                              {t.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                          Question Count
+                        </p>
+                        <span className="inline-flex items-center rounded-full border border-white/55 bg-white/55 px-3 py-1 text-xs font-semibold text-zinc-700 shadow-xs backdrop-blur-md dark:border-white/10 dark:bg-white/5 dark:text-zinc-200">
+                          {Math.max(1, Math.min(10, questionState.count))}
+                        </span>
+                      </div>
                       <input
+                        type="range"
+                        min="1"
+                        max="10"
+                        step="1"
+                        value={Math.max(1, Math.min(10, questionState.count))}
+                        onChange={e =>
+                          setQuestionState(prev => ({ ...prev, count: parseInt(e.target.value) }))
+                        }
+                        className="w-full accent-blue-600 h-2 bg-zinc-200/70 dark:bg-white/10 rounded-lg appearance-none cursor-pointer"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Mimic Mode */}
+                {questionState.mode === 'mimic' && (
+                  <div className="space-y-5">
+                    <div className="space-y-2">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                        Upload Exam Paper (PDF)
+                      </p>
+
+                      <input
+                        id="pdf-upload"
                         type="file"
                         accept=".pdf"
                         onChange={handleFileUpload}
                         className="hidden"
-                        id="pdf-upload"
                       />
-                      <motion.label
+
+                      <label
                         htmlFor="pdf-upload"
-                        whileHover={{ scale: 1.01 }}
-                        whileTap={{ scale: 0.99 }}
-                        className="flex items-center justify-center gap-3 w-full p-8 border-2 border-dashed border-slate-300/50 dark:border-slate-600/50 rounded-xl cursor-pointer hover:border-teal-400 hover:bg-teal-50/20 dark:hover:bg-teal-900/10 transition-all"
+                        className={cn(
+                          'group flex items-center justify-between gap-4 rounded-2xl border border-dashed p-5 cursor-pointer',
+                          'bg-white/55 hover:bg-white/70 dark:bg-white/5 dark:hover:bg-white/10',
+                          'border-zinc-300/60 hover:border-blue-300/70 dark:border-white/15 dark:hover:border-blue-400/30',
+                          'transition-[background-color,border-color] shadow-xs backdrop-blur-md'
+                        )}
                       >
-                        {questionState.uploadedFile ? (
-                          <div className="flex items-center gap-4 text-teal-700 dark:text-teal-400">
-                            <div className="w-14 h-14 rounded-xl bg-teal-100 dark:bg-teal-900/50 flex items-center justify-center">
-                              <FileText className="w-7 h-7" />
-                            </div>
-                            <div>
-                              <p className="font-semibold">{questionState.uploadedFile.name}</p>
-                              <p className="text-sm text-slate-500 dark:text-slate-400">
-                                {(questionState.uploadedFile.size / 1024 / 1024).toFixed(2)} MB -
-                                Click to change
-                              </p>
-                            </div>
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/55 bg-white/60 text-blue-700 shadow-xs dark:border-white/10 dark:bg-white/5 dark:text-blue-200">
+                            {questionState.uploadedFile ? (
+                              <FileText className="h-5 w-5" />
+                            ) : (
+                              <Upload className="h-5 w-5" />
+                            )}
                           </div>
-                        ) : (
-                          <div className="text-center text-slate-500 dark:text-slate-400">
-                            <Upload className="w-10 h-10 mx-auto mb-3 opacity-50" />
-                            <p className="font-medium">Click to upload PDF exam paper</p>
-                            <p className="text-sm">
-                              The system will parse and generate similar questions
+
+                          <div className="min-w-0">
+                            <p className="font-semibold text-zinc-900 dark:text-zinc-50 truncate">
+                              {questionState.uploadedFile
+                                ? questionState.uploadedFile.name
+                                : 'Choose a PDF file'}
+                            </p>
+                            <p className="text-sm text-zinc-500 dark:text-zinc-400 truncate">
+                              {questionState.uploadedFile
+                                ? `${(questionState.uploadedFile.size / 1024 / 1024).toFixed(2)} MB • Click to change`
+                                : 'We will parse it and generate similar questions.'}
                             </p>
                           </div>
-                        )}
-                      </motion.label>
-                    </CardBody>
-                  </Card>
-                </motion.div>
+                        </div>
 
-                {/* Divider */}
-                <div className="flex items-center gap-4">
-                  <div className="flex-1 h-px bg-slate-200/50 dark:bg-slate-700/50" />
-                  <span className="text-xs text-slate-400 font-medium uppercase tracking-wider">
-                    Or
-                  </span>
-                  <div className="flex-1 h-px bg-slate-200/50 dark:bg-slate-700/50" />
-                </div>
-
-                {/* Pre-parsed Directory */}
-                <motion.div variants={itemVariants}>
-                  <Card variant="glass">
-                    <CardBody className="space-y-3">
-                      <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                        Pre-parsed Directory (Optional)
+                        <ChevronRight className="h-5 w-5 text-zinc-300 group-hover:text-blue-500 dark:text-zinc-700 dark:group-hover:text-blue-300" />
                       </label>
-                      <input
-                        type="text"
-                        value={questionState.paperPath}
-                        onChange={e =>
-                          setQuestionState(prev => ({
-                            ...prev,
-                            paperPath: e.target.value,
-                            uploadedFile: null,
-                          }))
-                        }
-                        placeholder="e.g. 2211asm1"
-                        className="w-full p-3 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-white/30 dark:border-slate-700/30 rounded-xl outline-none focus:ring-2 focus:ring-teal-400/50 transition-all text-slate-800 dark:text-slate-200 placeholder:text-slate-400"
-                      />
-                    </CardBody>
-                  </Card>
-                </motion.div>
+                    </div>
 
-                {/* Max Questions */}
-                <motion.div variants={itemVariants}>
-                  <Card variant="glass">
-                    <CardBody className="space-y-3">
-                      <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                        Max Questions (Optional)
-                      </label>
-                      <div className="flex items-center gap-4">
-                        <input
-                          type="number"
-                          min="1"
-                          max="20"
-                          placeholder="All"
-                          value={questionState.count || ''}
-                          onChange={e => {
-                            const val = e.target.value ? parseInt(e.target.value) : 0
-                            setQuestionState(prev => ({
-                              ...prev,
-                              count: val > 0 ? Math.min(20, val) : 0,
-                            }))
-                          }}
-                          className="w-24 p-3 text-center bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-white/30 dark:border-slate-700/30 rounded-xl outline-none focus:ring-2 focus:ring-teal-400/50 text-slate-800 dark:text-slate-200"
-                        />
-                        <span className="text-sm text-slate-500 dark:text-slate-400">
-                          Leave empty to generate all questions
-                        </span>
-                      </div>
-                    </CardBody>
-                  </Card>
-                </motion.div>
-              </>
-            )}
+                    <div className="flex items-center gap-4">
+                      <div className="h-px flex-1 bg-zinc-200/70 dark:bg-white/10" />
+                      <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+                        Or
+                      </span>
+                      <div className="h-px flex-1 bg-zinc-200/70 dark:bg-white/10" />
+                    </div>
 
-            {/* Generate Button */}
-            <motion.div variants={itemVariants}>
-              <Button
-                variant="primary"
-                size="lg"
-                iconLeft={<Sparkles className="w-5 h-5" />}
-                onClick={handleStart}
-                disabled={
-                  questionState.mode === 'knowledge'
-                    ? !questionState.topic.trim()
-                    : !questionState.uploadedFile && !questionState.paperPath.trim()
-                }
-                className="w-full py-4 text-lg"
-              >
-                Generate Questions
-              </Button>
-            </motion.div>
+                    <Input
+                      label="Pre-parsed Directory (optional)"
+                      floatingLabel
+                      value={questionState.paperPath}
+                      onChange={e =>
+                        setQuestionState(prev => ({
+                          ...prev,
+                          paperPath: e.target.value,
+                          uploadedFile: null,
+                        }))
+                      }
+                      placeholder="e.g. 2211asm1"
+                      className="rounded-2xl"
+                    />
+
+                    <Input
+                      label="Max Questions (optional)"
+                      floatingLabel
+                      type="number"
+                      min="1"
+                      max="20"
+                      value={questionState.count || ''}
+                      onChange={e => {
+                        const val = e.target.value ? parseInt(e.target.value) : 0
+                        setQuestionState(prev => ({ ...prev, count: val > 0 ? Math.min(20, val) : 0 }))
+                      }}
+                      helperText="Leave empty to generate all questions."
+                      className="rounded-2xl"
+                    />
+                  </div>
+                )}
+              </CardBody>
+
+              <CardFooter className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between bg-white/40 dark:bg-white/5">
+                <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                  Tip: For the cleanest quiz, use 5–10 questions.
+                </p>
+                <Button
+                  variant="primary"
+                  size="lg"
+                  iconLeft={<Zap className="h-5 w-5" />}
+                  onClick={startGeneration}
+                  disabled={!canGenerate}
+                  className="sm:w-auto w-full"
+                >
+                  Generate Questions
+                </Button>
+              </CardFooter>
+            </Card>
           </motion.div>
-        )}
-
-        {/* Questions Tab */}
-        {!isConfigMode && activeTab === 'questions' && (
+        ) : activeTab === 'questions' ? (
           <motion.div
             key="questions"
-            initial={{ opacity: 0, x: 20 }}
+            initial={{ opacity: 0, x: 16 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
+            exit={{ opacity: 0, x: -16 }}
             className="space-y-6"
           >
-            {/* Progress Overview */}
             {totalQuestions > 0 && (
-              <Card variant="glass" hoverEffect={false}>
-                <CardBody>
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-teal-500 to-teal-600 flex items-center justify-center text-white shadow-lg shadow-teal-500/25">
-                        <Target className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-slate-800 dark:text-slate-200">
-                          Progress
-                        </h3>
-                        <p className="text-sm text-slate-500 dark:text-slate-400">
-                          {completedCount} of {totalQuestions} completed
-                          {extendedCount > 0 && (
-                            <span className="ml-2 text-amber-600 dark:text-amber-400">
-                              ({extendedCount} extended)
-                            </span>
-                          )}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Trophy className="w-5 h-5 text-amber-500" />
-                      <span className="text-lg font-bold text-slate-800 dark:text-slate-200">
-                        {Math.round((completedCount / totalQuestions) * 100)}%
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Progress Pills */}
-                  <div className="flex flex-wrap gap-2">
-                    {questionState.results.map((result: any, idx: number) => (
-                      <motion.button
-                        key={idx}
-                        onClick={() => navigateQuestion(idx)}
-                        variants={progressPillVariants}
-                        initial="inactive"
-                        animate={
-                          activeIdx === idx
-                            ? 'active'
-                            : submittedMap[idx]
-                              ? 'completed'
-                              : 'inactive'
-                        }
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.95 }}
-                        className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm transition-all ${
-                          activeIdx === idx
-                            ? 'bg-gradient-to-r from-teal-500 to-teal-600 text-white shadow-lg shadow-teal-500/30'
-                            : result.extended
-                              ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-2 border-amber-300 dark:border-amber-600'
-                              : submittedMap[idx]
-                                ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'
-                                : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600'
-                        }`}
-                      >
-                        {submittedMap[idx] && activeIdx !== idx ? (
-                          <CheckCircle2 className="w-5 h-5" />
-                        ) : result.extended && activeIdx !== idx ? (
-                          <Zap className="w-4 h-4" />
-                        ) : (
-                          idx + 1
+              <Card
+                variant="glass"
+                interactive={false}
+                padding="none"
+                className="rounded-2xl border-white/55 bg-white/55 dark:border-white/10 dark:bg-white/5"
+              >
+                <CardBody padding="md" className="space-y-3">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                        Progress
+                      </p>
+                      <p className="mt-1 flex items-baseline gap-2">
+                        <span className="text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+                          {completedCount}/{totalQuestions}
+                        </span>
+                        <span className="text-sm text-zinc-500 dark:text-zinc-400">
+                          answered ({progressPct}%)
+                        </span>
+                        {extendedCount > 0 && (
+                          <span className="text-sm text-amber-600 dark:text-amber-400">
+                            • {extendedCount} extended
+                          </span>
                         )}
-                      </motion.button>
-                    ))}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-zinc-500 dark:text-zinc-400">Jump to</span>
+                      <select
+                        value={String(activeIdx)}
+                        onChange={e => navigateQuestion(parseInt(e.target.value))}
+                        className={cn(selectClassName, 'w-40')}
+                        aria-label="Jump to question"
+                      >
+                        {questionState.results.map((r: { extended?: boolean }, idx: number) => {
+                          const flags = [
+                            submittedMap[idx] ? 'done' : null,
+                            r.extended ? 'extended' : null,
+                          ].filter(Boolean)
+                          return (
+                            <option key={idx} value={idx}>
+                              Q{idx + 1}
+                              {flags.length ? ` (${flags.join(', ')})` : ''}
+                            </option>
+                          )
+                        })}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-200/70 dark:bg-white/10">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-blue-600 to-indigo-600"
+                      style={{ width: `${progressPct}%` }}
+                    />
                   </div>
                 </CardBody>
               </Card>
             )}
 
-            {/* Loading State */}
-            {totalQuestions === 0 && questionState.step === 'generating' && (
-              <Card variant="glass" className="py-16">
-                <CardBody className="flex flex-col items-center justify-center text-center">
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{
-                      duration: 2,
-                      repeat: Infinity,
-                      ease: 'linear' as const,
-                    }}
-                    className="w-16 h-16 rounded-full border-4 border-teal-200 border-t-teal-500 mb-6"
-                  />
-                  <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-2">
-                    Generating Questions
+            {totalQuestions === 0 && isGenerating && (
+              <Card variant="glass" interactive={false} className="rounded-2xl" padding="lg">
+                <div className="flex flex-col items-center text-center">
+                  <Loader2 className="h-7 w-7 animate-spin text-blue-600 dark:text-blue-400" />
+                  <h3 className="mt-4 text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+                    Generating questions…
                   </h3>
-                  <p className="text-slate-500 dark:text-slate-400">
-                    Switch to the Process tab to see detailed progress
+                  <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                    Open the Process tab for detailed progress.
                   </p>
-                </CardBody>
+                </div>
               </Card>
             )}
 
-            {/* Question Display */}
+            {totalQuestions === 0 && !isGenerating && (
+              <Card variant="glass" interactive={false} className="rounded-2xl" padding="lg">
+                <div className="flex flex-col items-center text-center">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/55 bg-white/60 text-blue-700 shadow-xs dark:border-white/10 dark:bg-white/5 dark:text-blue-200">
+                    <FileQuestion className="h-7 w-7" />
+                  </div>
+                  <h3 className="mt-4 text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+                    No questions yet
+                  </h3>
+                  <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                    Start a new session to generate questions.
+                  </p>
+                  <div className="mt-5">
+                    <Button
+                      variant="primary"
+                      size="md"
+                      iconLeft={<RefreshCw className="h-4 w-4" />}
+                      onClick={resetQuestionGen}
+                    >
+                      New session
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            )}
+
             {totalQuestions > 0 && currentQuestion && (
               <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-                {/* Question Card */}
                 <div className="lg:col-span-3">
-                  <AnimatePresence mode="wait" custom={direction}>
+                  <AnimatePresence mode="wait" custom={navDir}>
                     <motion.div
                       key={activeIdx}
-                      custom={direction}
+                      custom={navDir}
                       variants={slideVariants}
                       initial="enter"
                       animate="center"
                       exit="exit"
                     >
-                      <Card variant="glass" hoverEffect={false}>
-                        <CardHeader className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <span className="px-3 py-1 bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 text-xs font-bold uppercase rounded-full">
-                              {currentQuestion.question.type ||
-                                currentQuestion.question.question_type}
+                      <Card
+                        variant="glass"
+                        interactive={false}
+                        padding="none"
+                        className="rounded-2xl overflow-hidden"
+                      >
+                        <CardHeader className="flex-row items-center justify-between gap-3 bg-white/50 dark:bg-white/5 backdrop-blur-xl">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="inline-flex items-center rounded-full border border-blue-200/70 bg-blue-50/70 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-blue-700 dark:border-blue-400/20 dark:bg-blue-500/10 dark:text-blue-200">
+                              {currentQuestionTypeLabel}
                             </span>
                             {currentQuestion.extended && (
-                              <span className="px-3 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 text-xs font-bold uppercase rounded-full flex items-center gap-1">
-                                <Zap className="w-3 h-3" />
+                              <span className="inline-flex items-center gap-1 rounded-full border border-amber-200/70 bg-amber-100/70 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-amber-800 dark:border-amber-400/20 dark:bg-amber-500/10 dark:text-amber-300">
+                                <Zap className="h-3 w-3" />
                                 Extended
                               </span>
                             )}
+                            <span className="inline-flex items-center rounded-full border border-white/55 bg-white/55 px-3 py-1 text-[11px] font-semibold text-zinc-600 shadow-xs backdrop-blur-md dark:border-white/10 dark:bg-white/5 dark:text-zinc-300">
+                              Q{activeIdx + 1} / {totalQuestions}
+                            </span>
                           </div>
-                          <button
+
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            iconLeft={<Book className="h-4 w-4" />}
                             onClick={() => setShowNotebookModal(true)}
-                            className="text-xs font-medium text-indigo-500 dark:text-indigo-400 hover:text-indigo-600 flex items-center gap-1 px-2 py-1 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg transition-colors"
                           >
-                            <Book className="w-3 h-3" />
-                            Add to Notebook
-                          </button>
+                            Save
+                          </Button>
                         </CardHeader>
 
-                        <CardBody className="space-y-6">
-                          {/* Question Text */}
-                          <div className="prose prose-slate dark:prose-invert max-w-none">
-                            <ReactMarkdown
-                              remarkPlugins={[remarkMath]}
-                              rehypePlugins={[rehypeKatex]}
-                            >
+                        <CardBody padding="lg" className="space-y-6">
+                          <div className="prose prose-zinc dark:prose-invert max-w-none">
+                            <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
                               {processLatexContent(currentQuestion.question.question)}
                             </ReactMarkdown>
                           </div>
 
-                          {/* Options */}
-                          {(currentQuestion.question.question_type === 'choice' ||
-                            currentQuestion.question.type === 'choice') &&
-                          currentQuestion.question.options ? (
-                            <div className="space-y-3">
-                              {Object.entries(currentQuestion.question.options).map(
-                                ([key, val]) => (
+                          {isChoiceQuestion && currentQuestion.question.options ? (
+                            <div className="space-y-3" role="radiogroup" aria-label="Answer choices">
+                              {Object.entries(currentQuestion.question.options).map(([key, val]) => {
+                                const isSelected = selectedAnswerKey === key
+                                const isCorrect = isSubmitted && key === correctAnswerKey
+                                const isWrong = isSubmitted && isSelected && key !== correctAnswerKey
+                                const optionTone = isCorrect
+                                  ? 'border-emerald-200/80 bg-emerald-50/70 dark:border-emerald-400/20 dark:bg-emerald-500/10'
+                                  : isWrong
+                                    ? 'border-red-200/80 bg-red-50/70 dark:border-red-400/20 dark:bg-red-500/10'
+                                    : isSelected
+                                      ? 'border-blue-300/70 bg-blue-50/70 dark:border-blue-400/25 dark:bg-blue-500/10'
+                                      : 'border-white/55 bg-white/55 hover:bg-white/70 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10'
+
+                                return (
                                   <motion.button
                                     key={key}
+                                    type="button"
+                                    whileHover={!isSubmitted ? { y: -1 } : undefined}
+                                    whileTap={!isSubmitted ? { scale: 0.99 } : undefined}
                                     onClick={() => handleAnswer(key)}
-                                    disabled={submittedMap[activeIdx]}
-                                    variants={optionVariants}
-                                    initial="idle"
-                                    whileHover={!submittedMap[activeIdx] ? 'hover' : undefined}
-                                    whileTap={!submittedMap[activeIdx] ? 'tap' : undefined}
-                                    animate={userAnswers[activeIdx] === key ? 'selected' : 'idle'}
-                                    className={`w-full text-left p-4 rounded-xl border-2 transition-all flex items-start gap-4 ${
-                                      userAnswers[activeIdx] === key
-                                        ? submittedMap[activeIdx]
-                                          ? key === currentQuestion.question.correct_answer
-                                            ? 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-500 text-emerald-800 dark:text-emerald-200'
-                                            : 'bg-red-50 dark:bg-red-900/30 border-red-500 text-red-800 dark:text-red-200'
-                                          : 'bg-teal-50 dark:bg-teal-900/30 border-teal-500 text-teal-900 dark:text-teal-200'
-                                        : submittedMap[activeIdx] &&
-                                            key === currentQuestion.question.correct_answer
-                                          ? 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-300 dark:border-emerald-600 text-emerald-800 dark:text-emerald-200'
-                                          : 'bg-white/50 dark:bg-slate-800/50 border-slate-200/50 dark:border-slate-700/50 text-slate-700 dark:text-slate-200 hover:border-teal-300 dark:hover:border-teal-600'
-                                    }`}
+                                    disabled={isSubmitted}
+                                    role="radio"
+                                    aria-checked={isSelected}
+                                    className={cn(
+                                      'group w-full rounded-2xl border p-4 text-left shadow-xs backdrop-blur-md',
+                                      'transition-[background-color,border-color,transform] disabled:opacity-80 disabled:cursor-not-allowed',
+                                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/25 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-zinc-950',
+                                      optionTone
+                                    )}
                                   >
-                                    <span className="font-bold shrink-0 w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center">
-                                      {key}
-                                    </span>
-                                    <div className="flex-1 prose prose-sm dark:prose-invert max-w-none">
-                                      <ReactMarkdown
-                                        remarkPlugins={[remarkMath]}
-                                        rehypePlugins={[rehypeKatex]}
+                                    <div className="flex items-start gap-3">
+                                      <span
+                                        className={cn(
+                                          'mt-0.5 inline-flex h-8 w-8 items-center justify-center rounded-xl border text-sm font-semibold',
+                                          'bg-white/70 border-white/60 text-zinc-700 dark:bg-white/5 dark:border-white/10 dark:text-zinc-200',
+                                          isCorrect && 'text-emerald-700 dark:text-emerald-200',
+                                          isWrong && 'text-red-700 dark:text-red-200',
+                                          !isSubmitted && isSelected && 'text-blue-700 dark:text-blue-200'
+                                        )}
                                       >
-                                        {processLatexContent(String(val))}
-                                      </ReactMarkdown>
-                                    </div>
-                                    {submittedMap[activeIdx] &&
-                                      key === currentQuestion.question.correct_answer && (
-                                        <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                                        {key}
+                                      </span>
+
+                                      <div className="flex-1 min-w-0">
+                                        <div className="prose prose-sm prose-zinc dark:prose-invert max-w-none">
+                                          <ReactMarkdown
+                                            remarkPlugins={[remarkMath]}
+                                            rehypePlugins={[rehypeKatex]}
+                                          >
+                                            {processLatexContent(String(val))}
+                                          </ReactMarkdown>
+                                        </div>
+                                      </div>
+
+                                      {isCorrect && (
+                                        <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                                       )}
+                                    </div>
                                   </motion.button>
                                 )
-                              )}
+                              })}
                             </div>
                           ) : (
-                            <textarea
-                              value={userAnswers[activeIdx] || ''}
+                            <Textarea
+                              label="Your answer"
+                              floatingLabel
+                              size="lg"
+                              value={selectedAnswerKey}
                               onChange={e => handleAnswer(e.target.value)}
-                              disabled={submittedMap[activeIdx]}
-                              placeholder="Type your answer here..."
-                              className="w-full h-48 p-4 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-white/30 dark:border-slate-700/30 rounded-xl focus:ring-2 focus:ring-teal-400/50 outline-none resize-none text-slate-800 dark:text-slate-200 placeholder:text-slate-400"
+                              disabled={isSubmitted}
+                              placeholder="Type your answer here…"
+                              minRows={10}
+                              className="resize-none rounded-2xl"
                             />
                           )}
                         </CardBody>
 
-                        <CardFooter className="flex gap-3">
-                          <Button
-                            variant="ghost"
-                            size="md"
-                            iconLeft={<ChevronLeft className="w-4 h-4" />}
-                            onClick={() => activeIdx > 0 && navigateQuestion(activeIdx - 1)}
-                            disabled={activeIdx === 0}
-                          >
-                            Previous
-                          </Button>
+                        <CardFooter className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="secondary"
+                              size="md"
+                              iconLeft={<ChevronLeft className="h-4 w-4" />}
+                              onClick={() => navigateQuestion(activeIdx - 1)}
+                              disabled={activeIdx === 0}
+                            >
+                              Previous
+                            </Button>
+                            <Button
+                              variant="secondary"
+                              size="md"
+                              iconRight={<ChevronRight className="h-4 w-4" />}
+                              onClick={() => navigateQuestion(activeIdx + 1)}
+                              disabled={activeIdx >= totalQuestions - 1}
+                            >
+                              Next
+                            </Button>
+                          </div>
+
                           <div className="flex-1" />
-                          {!submittedMap[activeIdx] ? (
+
+                          {!isSubmitted ? (
                             <Button
                               variant="primary"
                               size="md"
                               onClick={handleSubmit}
-                              disabled={!userAnswers[activeIdx]}
+                              disabled={!hasAnswer}
                             >
-                              Submit Answer
+                              Submit
                             </Button>
                           ) : (
-                            <>
-                              <div className="flex items-center gap-2 px-4 py-2 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded-xl border border-emerald-200 dark:border-emerald-800">
-                                <CheckCircle2 className="w-4 h-4" />
-                                <span className="font-medium">Submitted</span>
-                              </div>
-                              {activeIdx < questionState.results.length - 1 && (
-                                <Button
-                                  variant="primary"
-                                  size="md"
-                                  iconRight={<ChevronRight className="w-4 h-4" />}
-                                  onClick={() => navigateQuestion(activeIdx + 1)}
-                                >
-                                  Next
-                                </Button>
-                              )}
-                            </>
+                            <span className="inline-flex items-center justify-center gap-2 rounded-2xl border border-emerald-200/70 bg-emerald-50/70 px-4 py-2 text-sm font-medium text-emerald-800 shadow-xs backdrop-blur-md dark:border-emerald-400/20 dark:bg-emerald-500/10 dark:text-emerald-200">
+                              <CheckCircle2 className="h-4 w-4" />
+                              Submitted
+                            </span>
                           )}
                         </CardFooter>
                       </Card>
@@ -954,43 +956,47 @@ export default function QuestionPage() {
                   </AnimatePresence>
                 </div>
 
-                {/* Answer & Validation Panel */}
                 <div className="lg:col-span-2 space-y-4">
                   <AnimatePresence mode="wait">
-                    {submittedMap[activeIdx] ? (
+                    {isSubmitted ? (
                       <motion.div
                         key="answer"
-                        initial={{ opacity: 0, x: 20 }}
+                        initial={{ opacity: 0, x: 16 }}
                         animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -20 }}
+                        exit={{ opacity: 0, x: -16 }}
                         className="space-y-4"
                       >
-                        {/* Validation Report */}
                         <Card
                           variant="glass"
-                          hoverEffect={false}
-                          className={`border-l-4 ${
-                            currentQuestion.extended ? 'border-l-amber-500' : 'border-l-emerald-500'
-                          }`}
+                          interactive={false}
+                          padding="none"
+                          className="rounded-2xl overflow-hidden"
                         >
-                          <motion.button
-                            onClick={() => setShowValidation(!showValidation)}
-                            className="w-full px-4 py-3 flex items-center justify-between"
-                          >
+                          <CardHeader className="flex-row items-center justify-between gap-3 bg-white/50 dark:bg-white/5 backdrop-blur-xl">
                             <div className="flex items-center gap-2">
-                              <AlertCircle className="w-4 h-4 text-slate-500" />
-                              <span className="font-medium text-slate-700 dark:text-slate-200">
-                                Validation Report
+                              <AlertCircle className="h-4 w-4 text-zinc-400 dark:text-zinc-500" />
+                              <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+                                Validation
                               </span>
-                              <span className="px-2 py-0.5 text-xs rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                              <span className="inline-flex items-center rounded-full border border-white/55 bg-white/55 px-2.5 py-0.5 text-[11px] font-semibold text-zinc-600 dark:border-white/10 dark:bg-white/5 dark:text-zinc-300">
                                 {currentQuestion.rounds || 1} round
                                 {(currentQuestion.rounds || 1) > 1 ? 's' : ''}
                               </span>
                             </div>
-                            <motion.div animate={{ rotate: showValidation ? 180 : 0 }}>
-                              <ChevronDown className="w-4 h-4 text-slate-500" />
-                            </motion.div>
-                          </motion.button>
+
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setShowValidation(v => !v)}
+                              iconRight={
+                                <motion.div animate={{ rotate: showValidation ? 180 : 0 }}>
+                                  <ChevronDown className="h-4 w-4" />
+                                </motion.div>
+                              }
+                            >
+                              {showValidation ? 'Hide' : 'Show'}
+                            </Button>
+                          </CardHeader>
 
                           <AnimatePresence>
                             {showValidation && (
@@ -1000,30 +1006,29 @@ export default function QuestionPage() {
                                 exit={{ height: 0, opacity: 0 }}
                                 className="overflow-hidden"
                               >
-                                <CardBody className="pt-0 text-sm space-y-3">
+                                <CardBody padding="md" className="space-y-4">
                                   {currentQuestion.validation?.kb_coverage && (
-                                    <div>
-                                      <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-1">
-                                        KB Coverage
+                                    <div className="space-y-2">
+                                      <p className="text-xs font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                                        KB coverage
                                       </p>
-                                      <div className="prose prose-xs dark:prose-invert max-w-none">
+                                      <div className="prose prose-sm prose-zinc dark:prose-invert max-w-none">
                                         <ReactMarkdown
                                           remarkPlugins={[remarkMath]}
                                           rehypePlugins={[rehypeKatex]}
                                         >
-                                          {processLatexContent(
-                                            currentQuestion.validation.kb_coverage
-                                          )}
+                                          {processLatexContent(currentQuestion.validation.kb_coverage)}
                                         </ReactMarkdown>
                                       </div>
                                     </div>
                                   )}
+
                                   {currentQuestion.validation?.extension_points && (
-                                    <div>
-                                      <p className="text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider mb-1">
-                                        Extension Points
+                                    <div className="space-y-2">
+                                      <p className="text-xs font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                                        Extension points
                                       </p>
-                                      <div className="prose prose-xs dark:prose-invert max-w-none">
+                                      <div className="prose prose-sm prose-zinc dark:prose-invert max-w-none">
                                         <ReactMarkdown
                                           remarkPlugins={[remarkMath]}
                                           rehypePlugins={[rehypeKatex]}
@@ -1041,36 +1046,62 @@ export default function QuestionPage() {
                           </AnimatePresence>
                         </Card>
 
-                        {/* Answer & Explanation */}
-                        <Card variant="glass" hoverEffect={false}>
-                          <CardHeader className="bg-emerald-50/50 dark:bg-emerald-900/20">
-                            <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-300 font-semibold">
-                              <BookOpen className="w-4 h-4" />
-                              Answer & Explanation
+                        <Card
+                          variant="glass"
+                          interactive={false}
+                          padding="none"
+                          className="rounded-2xl overflow-hidden"
+                        >
+                          <CardHeader className="bg-emerald-50/60 dark:bg-emerald-500/10">
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-200 font-semibold">
+                                <BookOpen className="h-4 w-4" />
+                                Answer & Explanation
+                              </div>
+
+                              {isChoiceCorrect !== null && (
+                                <span
+                                  className={cn(
+                                    'inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold',
+                                    isChoiceCorrect
+                                      ? 'border-emerald-200/70 bg-emerald-50/70 text-emerald-800 dark:border-emerald-400/20 dark:bg-emerald-500/10 dark:text-emerald-200'
+                                      : 'border-amber-200/70 bg-amber-100/70 text-amber-800 dark:border-amber-400/20 dark:bg-amber-500/10 dark:text-amber-200'
+                                  )}
+                                >
+                                  {isChoiceCorrect ? 'Correct' : 'Review'}
+                                </span>
+                              )}
                             </div>
                           </CardHeader>
-                          <CardBody className="space-y-4">
-                            <div className="p-3 bg-emerald-50 dark:bg-emerald-900/30 rounded-xl border border-emerald-100 dark:border-emerald-800">
-                              <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-1">
-                                Correct Answer
+
+                          <CardBody padding="lg" className="space-y-5">
+                            {isChoiceQuestion && (
+                              <div className="rounded-2xl border border-white/55 bg-white/55 p-4 shadow-xs backdrop-blur-md dark:border-white/10 dark:bg-white/5">
+                                <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                                  Your answer
+                                </p>
+                                <p className="mt-1 text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+                                  {selectedAnswerKey || '—'}
+                                </p>
+                              </div>
+                            )}
+
+                            <div className="rounded-2xl border border-emerald-200/70 bg-emerald-50/70 p-4 shadow-xs backdrop-blur-md dark:border-emerald-400/20 dark:bg-emerald-500/10">
+                              <p className="text-xs font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-200">
+                                Correct answer
                               </p>
-                              <div className="prose prose-emerald dark:prose-invert max-w-none">
+                              <div className="mt-2 prose prose-sm prose-zinc dark:prose-invert max-w-none">
                                 <ReactMarkdown
                                   remarkPlugins={[remarkMath]}
                                   rehypePlugins={[rehypeKatex]}
                                 >
-                                  {processLatexContent(
-                                    String(currentQuestion.question.correct_answer || '')
-                                  )}
+                                  {processLatexContent(String(currentQuestion.question.correct_answer || ''))}
                                 </ReactMarkdown>
                               </div>
                             </div>
 
-                            <div className="prose prose-sm prose-slate dark:prose-invert max-w-none">
-                              <ReactMarkdown
-                                remarkPlugins={[remarkMath]}
-                                rehypePlugins={[rehypeKatex]}
-                              >
+                            <div className="prose prose-sm prose-zinc dark:prose-invert max-w-none">
+                              <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
                                 {processLatexContent(currentQuestion.question.explanation)}
                               </ReactMarkdown>
                             </div>
@@ -1084,16 +1115,16 @@ export default function QuestionPage() {
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                       >
-                        <Card variant="glass" hoverEffect={false}>
-                          <CardBody className="py-16 text-center">
-                            <BookOpen className="w-12 h-12 mx-auto mb-4 text-slate-300 dark:text-slate-600" />
-                            <p className="font-medium text-slate-500 dark:text-slate-400">
-                              Answer Hidden
+                        <Card variant="glass" interactive={false} className="rounded-2xl" padding="lg">
+                          <div className="flex flex-col items-center text-center">
+                            <BookOpen className="h-10 w-10 text-zinc-300 dark:text-zinc-600" />
+                            <p className="mt-4 font-semibold text-zinc-900 dark:text-zinc-50">
+                              Answer hidden
                             </p>
-                            <p className="text-sm text-slate-400 dark:text-slate-500 mt-1">
-                              Submit your answer to reveal
+                            <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                              Submit to reveal the solution and explanation.
                             </p>
-                          </CardBody>
+                          </div>
                         </Card>
                       </motion.div>
                     )}
@@ -1102,15 +1133,12 @@ export default function QuestionPage() {
               </div>
             )}
           </motion.div>
-        )}
-
-        {/* Process Tab */}
-        {!isConfigMode && activeTab === 'process' && (
+        ) : (
           <motion.div
             key="process"
-            initial={{ opacity: 0, x: 20 }}
+            initial={{ opacity: 0, x: 16 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
+            exit={{ opacity: 0, x: -16 }}
           >
             <QuestionDashboard
               state={dashboardState}
@@ -1131,14 +1159,17 @@ export default function QuestionPage() {
         )}
       </AnimatePresence>
 
-      {/* Add to Notebook Modal */}
       {currentQuestion && (
         <AddToNotebookModal
           isOpen={showNotebookModal}
           onClose={() => setShowNotebookModal(false)}
           recordType="question"
-          title={`${questionState.topic} - ${currentQuestion.question.type || currentQuestion.question.question_type}`}
-          userQuery={`Topic: ${questionState.topic}\nDifficulty: ${questionState.difficulty}\nType: ${questionState.type}`}
+          title={`${sourceLabel} - ${currentQuestionTypeLabel}`}
+          userQuery={
+            questionState.mode === 'knowledge'
+              ? `Topic: ${questionState.topic}\nDifficulty: ${questionState.difficulty}\nType: ${questionState.type}`
+              : `Source: ${sourceLabel}\nMode: mimic`
+          }
           output={`**Question:**\n${currentQuestion.question.question}\n\n**Options:**\n${
             currentQuestion.question.options
               ? Object.entries(currentQuestion.question.options)
@@ -1147,8 +1178,9 @@ export default function QuestionPage() {
               : 'N/A'
           }\n\n**Correct Answer:** ${currentQuestion.question.correct_answer}\n\n**Explanation:**\n${currentQuestion.question.explanation}`}
           metadata={{
+            mode: questionState.mode,
             difficulty: questionState.difficulty,
-            question_type: questionState.type,
+            question_type: getQuestionKind(currentQuestion.question),
             validation_rounds: currentQuestion.rounds,
             extended: currentQuestion.extended,
           }}

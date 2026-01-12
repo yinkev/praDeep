@@ -1,17 +1,23 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { usePathname } from 'next/navigation'
+import {
+  isValidElement,
+  use,
+  useEffect,
+  useState,
+  type ComponentPropsWithoutRef,
+  type ReactElement,
+  type ReactNode,
+} from 'react'
 import Link from 'next/link'
 import { motion, AnimatePresence, type Variants } from 'framer-motion'
-import ReactMarkdown from 'react-markdown'
+import ReactMarkdown, { type Components, type ExtraProps } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
 import {
   BookOpen,
   ChevronRight,
-  ChevronDown,
   FileText,
   Home,
   Search,
@@ -20,13 +26,43 @@ import {
   ExternalLink,
   ArrowUp,
   Clock,
-  Folder,
+  Copy,
+  Check,
 } from 'lucide-react'
 import 'katex/dist/katex.min.css'
 
 import PageWrapper from '@/components/ui/PageWrapper'
 import { Card, CardBody } from '@/components/ui/Card'
 import { apiUrl } from '@/lib/api'
+
+// ============================================================================
+// Helpers
+// ============================================================================
+
+function getNodeText(node: ReactNode): string {
+  if (node == null) return ''
+  if (typeof node === 'string' || typeof node === 'number') return String(node)
+  if (Array.isArray(node)) return node.map(getNodeText).join('')
+  if (isValidElement<{ children?: ReactNode }>(node)) return getNodeText(node.props.children)
+  return ''
+}
+
+function slugifyHeading(text: string) {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+}
+
+function getScrollContainer(): HTMLElement | null {
+  const container = document.querySelector<HTMLElement>('main.overflow-y-auto')
+  if (container) return container
+
+  const scrollingElement = document.scrollingElement
+  return scrollingElement instanceof HTMLElement ? scrollingElement : null
+}
 
 // ============================================================================
 // Types
@@ -194,13 +230,8 @@ function NavItemComponent({ item, currentSlug, depth = 0 }: NavItemComponentProp
   const [expanded, setExpanded] = useState(false)
   const hasChildren = item.children && item.children.length > 0
   const isActive = currentSlug === item.slug
-
-  // Auto-expand if any child is active
-  useEffect(() => {
-    if (hasChildren && item.children?.some(child => currentSlug === child.slug)) {
-      setExpanded(true)
-    }
-  }, [currentSlug, hasChildren, item.children])
+  const isChildActive = Boolean(hasChildren && item.children?.some(child => currentSlug === child.slug))
+  const isExpanded = expanded || isChildActive
 
   return (
     <motion.div variants={navItemVariants}>
@@ -213,15 +244,15 @@ function NavItemComponent({ item, currentSlug, depth = 0 }: NavItemComponentProp
             ${depth > 0 ? 'ml-4' : ''}
             ${
               isActive
-                ? 'bg-gradient-to-r from-teal-500/10 to-cyan-500/10 text-teal-700 dark:text-teal-300 font-medium'
-                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100/60 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-200'
+                ? 'bg-white/75 dark:bg-zinc-950/40 border border-white/55 dark:border-white/10 text-blue-600 dark:text-blue-400 font-medium shadow-glass-sm backdrop-blur-md'
+                : 'text-zinc-600 dark:text-zinc-400 hover:bg-white/55 dark:hover:bg-zinc-950/25 hover:text-zinc-900 dark:hover:text-zinc-100'
             }
           `}
           onClick={
             hasChildren
               ? e => {
                   e.preventDefault()
-                  setExpanded(!expanded)
+                  setExpanded(prev => !prev)
                 }
               : undefined
           }
@@ -230,7 +261,7 @@ function NavItemComponent({ item, currentSlug, depth = 0 }: NavItemComponentProp
           {isActive && (
             <motion.div
               layoutId="activeDocIndicator"
-              className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-full bg-gradient-to-b from-teal-400 to-cyan-500"
+              className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-full bg-gradient-to-b from-blue-500 to-indigo-500"
               transition={{ type: 'spring' as const, stiffness: 400, damping: 30 }}
             />
           )}
@@ -238,15 +269,15 @@ function NavItemComponent({ item, currentSlug, depth = 0 }: NavItemComponentProp
           <span className="flex-1 truncate">{item.title}</span>
 
           {hasChildren && (
-            <motion.div animate={{ rotate: expanded ? 90 : 0 }} transition={{ duration: 0.2 }}>
-              <ChevronRight className="w-4 h-4 text-slate-400" />
+            <motion.div animate={{ rotate: isExpanded ? 90 : 0 }} transition={{ duration: 0.2 }}>
+              <ChevronRight className="w-4 h-4 text-zinc-400" />
             </motion.div>
           )}
         </Link>
 
         {/* Children */}
         <AnimatePresence>
-          {hasChildren && expanded && (
+          {hasChildren && isExpanded && (
             <motion.div
               variants={expandVariants}
               initial="collapsed"
@@ -254,7 +285,7 @@ function NavItemComponent({ item, currentSlug, depth = 0 }: NavItemComponentProp
               exit="collapsed"
               className="overflow-hidden"
             >
-              <div className="py-1 pl-2 border-l-2 border-slate-200 dark:border-slate-700 ml-4">
+              <div className="py-1 pl-2 border-l-2 border-zinc-200/70 dark:border-white/10 ml-4">
                 {item.children!.map(child => (
                   <NavItemComponent
                     key={child.slug}
@@ -291,12 +322,12 @@ function TableOfContents({ items, activeId }: TableOfContentsProps) {
       animate="visible"
       className="hidden xl:block"
     >
-      <Card variant="glass" hoverEffect={false} className="sticky top-24">
+      <Card variant="glass" interactive={false} className="sticky top-24">
         <CardBody className="py-4">
-          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3">
+          <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-3">
             On this page
           </h4>
-          <nav className="space-y-1">
+          <nav className="space-y-1" aria-label="Table of contents">
             {items.map(item => (
               <a
                 key={item.id}
@@ -306,8 +337,8 @@ function TableOfContents({ items, activeId }: TableOfContentsProps) {
                   ${item.level === 2 ? 'pl-0' : item.level === 3 ? 'pl-3' : 'pl-6'}
                   ${
                     activeId === item.id
-                      ? 'text-teal-600 dark:text-teal-400 font-medium'
-                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+                      ? 'text-blue-600 dark:text-blue-400 font-medium'
+                      : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200'
                   }
                 `}
               >
@@ -325,55 +356,147 @@ function TableOfContents({ items, activeId }: TableOfContentsProps) {
 // Markdown Components for Styling
 // ============================================================================
 
-const markdownComponents = {
-  h1: ({ children, ...props }: any) => (
+type CodeElement = ReactElement<{ children?: ReactNode; className?: string }>
+
+const isCodeElement = (value: unknown): value is CodeElement => isValidElement(value) && value.type === 'code'
+
+function CodeBlock({ node, children, ...props }: ComponentPropsWithoutRef<'pre'> & ExtraProps) {
+  const [copied, setCopied] = useState(false)
+
+  const codeChild = Array.isArray(children)
+    ? children.find(isCodeElement)
+    : isCodeElement(children)
+      ? children
+      : null
+
+  const rawCode =
+    codeChild ? getNodeText(codeChild.props.children) : getNodeText(children)
+
+  const languageMatch =
+    codeChild ? String(codeChild.props.className ?? '').match(/language-([a-z0-9_-]+)/i) : null
+
+  const language = languageMatch?.[1]?.toLowerCase()
+
+  const { className, ...restPreProps } = props
+
+  const onCopy = async () => {
+    const textToCopy = rawCode.replace(/\n$/, '')
+    if (!textToCopy) return
+
+    try {
+      await navigator.clipboard.writeText(textToCopy)
+      setCopied(true)
+      window.setTimeout(() => setCopied(false), 1500)
+    } catch {
+      try {
+        const textarea = document.createElement('textarea')
+        textarea.value = textToCopy
+        textarea.style.position = 'fixed'
+        textarea.style.opacity = '0'
+        document.body.appendChild(textarea)
+        textarea.select()
+        document.execCommand('copy')
+        document.body.removeChild(textarea)
+        setCopied(true)
+        window.setTimeout(() => setCopied(false), 1500)
+      } catch {
+        // ignore
+      }
+    }
+  }
+
+  return (
+    <div className="my-6 rounded-xl border border-white/55 dark:border-white/10 bg-zinc-950 shadow-glass-sm overflow-hidden">
+      <div className="flex items-center justify-between gap-3 px-3 py-2 border-b border-white/10 bg-white/5">
+        <div className="flex items-center gap-2 min-w-0">
+          {language ? (
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-300/90 truncate">
+              {language}
+            </span>
+          ) : (
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400/80">
+              Code
+            </span>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={onCopy}
+          disabled={!rawCode.trim()}
+          className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-medium text-zinc-200 hover:bg-white/10 disabled:opacity-50 disabled:hover:bg-transparent"
+          aria-label={copied ? 'Copied' : 'Copy code'}
+        >
+          {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+          {copied ? 'Copied' : 'Copy'}
+        </button>
+      </div>
+      <pre
+        {...restPreProps}
+        className={['overflow-x-auto p-4', className].filter(Boolean).join(' ')}
+      >
+        {children}
+      </pre>
+    </div>
+  )
+}
+
+const markdownComponents: Components = {
+  h1: ({ node, children, ...props }) => (
     <h1
-      className="text-3xl font-bold text-slate-900 dark:text-slate-100 mt-8 mb-4 pb-2 border-b border-slate-200 dark:border-slate-700"
+      id={slugifyHeading(getNodeText(children))}
+      className="type-page-title mt-10 mb-5 pb-3 border-b border-zinc-200/70 dark:border-white/10 scroll-mt-24"
       {...props}
     >
       {children}
     </h1>
   ),
-  h2: ({ children, ...props }: any) => {
-    const id = typeof children === 'string' ? children.toLowerCase().replace(/\s+/g, '-') : ''
+  h2: ({ node, children, ...props }) => {
+    const id = slugifyHeading(getNodeText(children))
     return (
       <h2
         id={id}
-        className="text-2xl font-bold text-slate-900 dark:text-slate-100 mt-8 mb-4 scroll-mt-20"
+        className="type-section-title mt-10 mb-4 scroll-mt-24"
         {...props}
       >
         {children}
       </h2>
     )
   },
-  h3: ({ children, ...props }: any) => {
-    const id = typeof children === 'string' ? children.toLowerCase().replace(/\s+/g, '-') : ''
+  h3: ({ node, children, ...props }) => {
+    const id = slugifyHeading(getNodeText(children))
     return (
       <h3
         id={id}
-        className="text-xl font-semibold text-slate-900 dark:text-slate-100 mt-6 mb-3 scroll-mt-20"
+        className="mt-8 mb-3 scroll-mt-24"
         {...props}
       >
         {children}
       </h3>
     )
   },
-  h4: ({ children, ...props }: any) => (
-    <h4 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mt-4 mb-2" {...props}>
-      {children}
-    </h4>
-  ),
-  p: ({ children, ...props }: any) => (
-    <p className="text-slate-600 dark:text-slate-300 leading-relaxed mb-4" {...props}>
+  h4: ({ node, children, ...props }) => {
+    const id = slugifyHeading(getNodeText(children))
+    return (
+      <h4
+        id={id}
+        className="text-lg font-subhead text-zinc-900 dark:text-zinc-50 mt-6 mb-2 scroll-mt-24"
+        {...props}
+      >
+        {children}
+      </h4>
+    )
+  },
+  p: ({ node, children, ...props }) => (
+    <p className="type-body mb-4" {...props}>
       {children}
     </p>
   ),
-  a: ({ href, children, ...props }: any) => {
+  a: ({ node, href, children, ...props }) => {
     const isExternal = href?.startsWith('http')
     return (
       <a
         href={href}
-        className="text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 underline decoration-teal-500/30 hover:decoration-teal-500/60 transition-colors inline-flex items-center gap-1"
+        className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 underline decoration-blue-500/30 hover:decoration-blue-500/60 transition-colors inline-flex items-center gap-1"
         target={isExternal ? '_blank' : undefined}
         rel={isExternal ? 'noopener noreferrer' : undefined}
         {...props}
@@ -383,40 +506,44 @@ const markdownComponents = {
       </a>
     )
   },
-  ul: ({ children, ...props }: any) => (
+  ul: ({ node, children, ...props }) => (
     <ul
-      className="list-disc list-inside text-slate-600 dark:text-slate-300 space-y-2 mb-4 ml-2"
+      className="list-disc list-inside space-y-2 mb-4 ml-2 type-body"
       {...props}
     >
       {children}
     </ul>
   ),
-  ol: ({ children, ...props }: any) => (
+  ol: ({ node, children, ...props }) => (
     <ol
-      className="list-decimal list-inside text-slate-600 dark:text-slate-300 space-y-2 mb-4 ml-2"
+      className="list-decimal list-inside space-y-2 mb-4 ml-2 type-body"
       {...props}
     >
       {children}
     </ol>
   ),
-  li: ({ children, ...props }: any) => (
-    <li className="text-slate-600 dark:text-slate-300 leading-relaxed" {...props}>
+  li: ({ node, children, ...props }) => (
+    <li className="type-body" {...props}>
       {children}
     </li>
   ),
-  blockquote: ({ children, ...props }: any) => (
+  blockquote: ({ node, children, ...props }) => (
     <blockquote
-      className="border-l-4 border-teal-500 pl-4 py-2 my-4 bg-teal-50/50 dark:bg-teal-900/20 rounded-r-lg italic text-slate-600 dark:text-slate-300"
+      className="border-l-4 border-blue-500 pl-4 py-2 my-5 bg-blue-50/60 dark:bg-blue-900/20 rounded-r-xl italic text-zinc-500 dark:text-zinc-300"
       {...props}
     >
       {children}
     </blockquote>
   ),
-  code: ({ inline, className, children, ...props }: any) => {
+  code: rawProps => {
+    const { node, inline, className, children, ...props } = rawProps as ComponentPropsWithoutRef<'code'> &
+      ExtraProps & {
+        inline?: boolean
+      }
     if (inline) {
       return (
         <code
-          className="px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-teal-600 dark:text-teal-400 text-sm font-mono"
+          className="px-1.5 py-0.5 rounded-md bg-zinc-100/80 dark:bg-white/10 text-zinc-800 dark:text-zinc-200 text-sm font-mono"
           {...props}
         >
           {children}
@@ -425,63 +552,63 @@ const markdownComponents = {
     }
     return (
       <code
-        className={`${className} block p-4 rounded-xl bg-slate-900 dark:bg-slate-950 text-slate-100 text-sm font-mono overflow-x-auto`}
+        className={`${className} block text-sm font-mono text-zinc-50`}
         {...props}
       >
         {children}
       </code>
     )
   },
-  pre: ({ children, ...props }: any) => (
-    <pre className="my-4 rounded-xl overflow-hidden shadow-lg" {...props}>
-      {children}
-    </pre>
-  ),
-  table: ({ children, ...props }: any) => (
-    <div className="overflow-x-auto my-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+  pre: CodeBlock,
+  table: ({ node, children, ...props }) => (
+    <div className="overflow-x-auto my-6 rounded-xl border border-zinc-200/70 dark:border-white/10 shadow-sm">
       <table
-        className="min-w-full divide-y divide-slate-200 dark:divide-slate-700 text-sm"
+        className="min-w-full divide-y divide-zinc-200/70 dark:divide-white/10 text-sm"
         {...props}
       >
         {children}
       </table>
     </div>
   ),
-  thead: ({ children, ...props }: any) => (
-    <thead className="bg-slate-50 dark:bg-slate-800" {...props}>
+  thead: ({ node, children, ...props }) => (
+    <thead className="bg-zinc-50 dark:bg-white/5" {...props}>
       {children}
     </thead>
   ),
-  th: ({ children, ...props }: any) => (
+  th: ({ node, children, ...props }) => (
     <th
-      className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap"
+      className="px-4 py-3 text-left font-semibold text-zinc-700 dark:text-zinc-200 whitespace-nowrap"
       {...props}
     >
       {children}
     </th>
   ),
-  tbody: ({ children, ...props }: any) => (
+  tbody: ({ node, children, ...props }) => (
     <tbody
-      className="divide-y divide-slate-100 dark:divide-slate-700 bg-white dark:bg-slate-900"
+      className="divide-y divide-zinc-100 dark:divide-white/10 bg-white dark:bg-zinc-950/40"
       {...props}
     >
       {children}
     </tbody>
   ),
-  td: ({ children, ...props }: any) => (
-    <td className="px-4 py-3 text-slate-600 dark:text-slate-400" {...props}>
+  td: ({ node, children, ...props }) => (
+    <td className="px-4 py-3 text-zinc-500 dark:text-zinc-300" {...props}>
       {children}
     </td>
   ),
-  tr: ({ children, ...props }: any) => (
-    <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors" {...props}>
+  tr: ({ node, children, ...props }) => (
+    <tr className="hover:bg-zinc-50/70 dark:hover:bg-white/5 transition-colors" {...props}>
       {children}
     </tr>
   ),
-  hr: (props: any) => <hr className="my-8 border-slate-200 dark:border-slate-700" {...props} />,
-  img: ({ src, alt, ...props }: any) => (
-    <img src={src} alt={alt} className="rounded-xl shadow-lg my-4 max-w-full" {...props} />
+  hr: ({ node, ...props }) => (
+    <hr className="my-10 border-zinc-200/70 dark:border-white/10" {...props} />
   ),
+  img: ({ node, src, alt, ...props }) => {
+    // Rendering markdown images via <img> is intentional (unknown dimensions / external URLs).
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={src} alt={alt} className="rounded-xl shadow-lg my-4 max-w-full" {...props} />
+  },
 }
 
 // ============================================================================
@@ -489,24 +616,25 @@ const markdownComponents = {
 // ============================================================================
 
 interface DocsPageProps {
-  params: {
+  params: Promise<{
     slug?: string[]
-  }
+  }>
 }
 
 export default function DocsPage({ params }: DocsPageProps) {
-  const pathname = usePathname()
+  const { slug } = use(params)
   const [content, setContent] = useState<string>('')
   const [title, setTitle] = useState<string>('Documentation')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [lastModified, setLastModified] = useState<string | null>(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [toc, setToc] = useState<TableOfContentsItem[]>([])
   const [activeTocId, setActiveTocId] = useState('')
   const [showScrollTop, setShowScrollTop] = useState(false)
 
-  const currentSlug = params.slug?.join('/') || ''
+  const currentSlug = slug?.join('/') || ''
 
   // Fetch document content
   useEffect(() => {
@@ -531,20 +659,23 @@ export default function DocsPage({ params }: DocsPageProps) {
         const data = await res.json()
         setContent(data.content || '')
         setTitle(data.title || 'Documentation')
+        setLastModified(res.headers.get('last-modified'))
 
         // Extract table of contents from content
         const headings: TableOfContentsItem[] = []
-        const headingRegex = /^#{2,4}\s+(.+)$/gm
+        const headingRegex = /^(#{2,4})\s+(.+)$/gm
         let match
         while ((match = headingRegex.exec(data.content || '')) !== null) {
-          const level = match[0].indexOf(' ')
-          const text = match[1].trim()
-          const id = text.toLowerCase().replace(/\s+/g, '-')
+          const level = match[1].length
+          const text = match[2].trim()
+          const id = slugifyHeading(text)
           headings.push({ id, text, level })
         }
         setToc(headings)
       } catch (err) {
-        console.error('Failed to fetch doc:', err)
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Failed to fetch doc:', err)
+        }
         setError('Failed to load document')
       } finally {
         setLoading(false)
@@ -556,8 +687,11 @@ export default function DocsPage({ params }: DocsPageProps) {
 
   // Track scroll position for TOC highlighting and scroll-to-top button
   useEffect(() => {
+    const scrollContainer = getScrollContainer()
+    if (!scrollContainer) return
+
     const handleScroll = () => {
-      setShowScrollTop(window.scrollY > 400)
+      setShowScrollTop(scrollContainer.scrollTop > 400)
 
       // Update active TOC item
       const headings = document.querySelectorAll('h2[id], h3[id], h4[id]')
@@ -573,8 +707,9 @@ export default function DocsPage({ params }: DocsPageProps) {
       setActiveTocId(currentId)
     }
 
-    window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
+    handleScroll()
+    scrollContainer.addEventListener('scroll', handleScroll, { passive: true })
+    return () => scrollContainer.removeEventListener('scroll', handleScroll)
   }, [])
 
   // Filter navigation based on search
@@ -587,13 +722,37 @@ export default function DocsPage({ params }: DocsPageProps) {
     }))
     .filter(section => section.items.length > 0)
 
+  const lastModifiedLabel =
+    lastModified && !Number.isNaN(new Date(lastModified).getTime())
+      ? new Date(lastModified).toLocaleDateString()
+      : null
+
   const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    const scrollContainer = getScrollContainer()
+    if (!scrollContainer) return
+    scrollContainer.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
+  const formatSlugSegment = (segment: string) =>
+    segment.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+
+  const breadcrumbs = [
+    { label: 'Home', href: '/' },
+    { label: 'Docs', href: '/docs' },
+    ...(slug && slug.length > 0
+      ? slug.map((segment, index) => {
+          const isLast = index === slug.length - 1
+          return {
+            label: isLast ? title : formatSlugSegment(segment),
+            href: isLast ? undefined : `/docs/${slug.slice(0, index + 1).join('/')}`,
+          }
+        })
+      : [{ label: title }]),
+  ]
+
   return (
-    <PageWrapper maxWidth="full" showPattern={false} className="!p-0">
-      <div className="min-h-screen flex">
+    <PageWrapper maxWidth="full" showPattern breadcrumbs={breadcrumbs}>
+      <div className="min-h-screen flex gap-6">
         {/* Mobile Sidebar Overlay */}
         <AnimatePresence>
           {sidebarOpen && (
@@ -619,58 +778,39 @@ export default function DocsPage({ params }: DocsPageProps) {
             ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
           `}
         >
-          <div className="h-full flex flex-col">
-            {/* Glassmorphism Background */}
-            <div className="absolute inset-0 bg-gradient-to-b from-white/90 via-white/80 to-slate-50/90 dark:from-slate-900/90 dark:via-slate-800/80 dark:to-slate-900/90 backdrop-blur-xl" />
-
-            {/* Teal Accent Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-br from-teal-500/5 via-transparent to-cyan-500/5 dark:from-teal-400/10 dark:via-transparent dark:to-cyan-400/10 pointer-events-none" />
-
-            {/* Glass Border */}
-            <div className="absolute inset-y-0 right-0 w-px bg-gradient-to-b from-slate-200/50 via-slate-300/30 to-slate-200/50 dark:from-slate-700/50 dark:via-slate-600/30 dark:to-slate-700/50" />
-
-            {/* Content */}
-            <div className="relative z-10 flex flex-col h-full overflow-hidden">
+          <div className="h-full flex flex-col bg-white/70 dark:bg-zinc-950/25 backdrop-blur-xl border-r border-zinc-200/70 dark:border-white/10">
+            <div className="flex flex-col h-full overflow-hidden">
               {/* Header */}
-              <div className="px-4 py-4 border-b border-slate-200/50 dark:border-slate-700/50">
+              <div className="px-4 py-4 border-b border-zinc-200/70 dark:border-white/10">
                 <div className="flex items-center justify-between mb-4">
                   <Link href="/docs" className="flex items-center gap-2">
-                    <motion.div
-                      className="w-9 h-9 rounded-xl bg-gradient-to-br from-teal-500 to-cyan-500 p-0.5 shadow-lg shadow-teal-500/20"
-                      whileHover={{ scale: 1.05, rotate: 2 }}
-                    >
-                      <div className="w-full h-full rounded-[10px] bg-white dark:bg-slate-900 flex items-center justify-center">
-                        <BookOpen className="w-4 h-4 text-teal-600 dark:text-teal-400" />
-                      </div>
-                    </motion.div>
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/60 dark:bg-zinc-950/40 shadow-glass-sm ring-1 ring-white/60 dark:ring-white/10 backdrop-blur-md">
+                      <BookOpen className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                    </div>
                     <div>
-                      <h1 className="font-bold text-slate-900 dark:text-slate-100">
-                        Documentation
-                      </h1>
-                      <span className="text-[10px] text-slate-500 dark:text-slate-400">
-                        praDeep Docs
-                      </span>
+                      <h1 className="font-semibold text-zinc-900 dark:text-zinc-100">Docs</h1>
+                      <span className="text-[10px] text-zinc-500 dark:text-zinc-400">praDeep</span>
                     </div>
                   </Link>
 
                   {/* Mobile close button */}
                   <button
                     onClick={() => setSidebarOpen(false)}
-                    className="lg:hidden p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                    className="lg:hidden p-2 rounded-lg hover:bg-zinc-100/80 dark:hover:bg-white/10 transition-colors"
                   >
-                    <X className="w-5 h-5 text-slate-500" />
+                    <X className="w-5 h-5 text-zinc-500 dark:text-zinc-400" />
                   </button>
                 </div>
 
                 {/* Search */}
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
                   <input
                     type="text"
                     placeholder="Search docs..."
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200/50 dark:border-slate-700/50 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500/50 transition-all"
+                    className="w-full pl-9 pr-4 py-2 rounded-xl bg-white/60 dark:bg-zinc-950/40 border border-white/55 dark:border-white/10 text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-500/40 shadow-glass-sm backdrop-blur-md transition-all"
                   />
                 </div>
               </div>
@@ -685,7 +825,7 @@ export default function DocsPage({ params }: DocsPageProps) {
                 >
                   {filteredSections.map((section, sectionIdx) => (
                     <div key={sectionIdx}>
-                      <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 px-3 mb-2">
+                      <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500 px-3 mb-2">
                         {section.name}
                       </h3>
                       <div className="space-y-0.5">
@@ -699,10 +839,10 @@ export default function DocsPage({ params }: DocsPageProps) {
               </nav>
 
               {/* Footer */}
-              <div className="px-4 py-3 border-t border-slate-200/50 dark:border-slate-700/50 bg-gradient-to-t from-slate-100/50 to-transparent dark:from-slate-800/50">
+              <div className="px-4 py-3 border-t border-zinc-200/70 dark:border-white/10 bg-white/30 dark:bg-zinc-950/10">
                 <Link
                   href="/"
-                  className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-100/80 dark:hover:bg-slate-800/80 hover:text-slate-900 dark:hover:text-slate-200 transition-colors"
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-zinc-600 dark:text-zinc-400 hover:bg-white/55 dark:hover:bg-white/10 hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors"
                 >
                   <Home className="w-4 h-4" />
                   <span>Back to App</span>
@@ -713,85 +853,59 @@ export default function DocsPage({ params }: DocsPageProps) {
         </motion.aside>
 
         {/* Main Content */}
-        <main className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0">
           {/* Mobile Header */}
-          <div className="sticky top-0 z-30 lg:hidden bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-b border-slate-200/50 dark:border-slate-700/50">
+          <div className="sticky top-0 z-30 lg:hidden bg-white/70 dark:bg-zinc-950/25 backdrop-blur-xl border-b border-zinc-200/70 dark:border-white/10">
             <div className="flex items-center gap-3 px-4 py-3">
               <button
                 onClick={() => setSidebarOpen(true)}
-                className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                className="p-2 rounded-lg hover:bg-zinc-100/80 dark:hover:bg-white/10 transition-colors"
               >
-                <Menu className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+                <Menu className="w-5 h-5 text-zinc-600 dark:text-zinc-300" />
               </button>
-              <h1 className="font-semibold text-slate-900 dark:text-slate-100 truncate">{title}</h1>
+              <h1 className="font-semibold text-zinc-900 dark:text-zinc-100 truncate">{title}</h1>
             </div>
           </div>
 
           {/* Content Area */}
-          <div className="max-w-4xl mx-auto px-6 py-8 lg:py-12">
+          <div className="max-w-4xl mx-auto px-2 py-6 lg:py-10">
             <motion.div variants={fadeInUp} initial="hidden" animate="visible">
-              {/* Breadcrumb */}
-              <nav className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 mb-6">
-                <Link
-                  href="/docs"
-                  className="hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
-                >
-                  Docs
-                </Link>
-                {params.slug?.map((segment, index) => (
-                  <span key={index} className="flex items-center gap-2">
-                    <ChevronRight className="w-4 h-4" />
-                    <span
-                      className={
-                        index === (params.slug?.length || 0) - 1
-                          ? 'text-slate-700 dark:text-slate-300'
-                          : ''
-                      }
-                    >
-                      {segment.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
-                    </span>
-                  </span>
-                ))}
-              </nav>
-
               {/* Document Content */}
-              <Card variant="glass" hoverEffect={false} className="overflow-hidden">
+              <Card variant="glass" interactive={false} className="overflow-hidden">
                 <CardBody className="p-8 lg:p-12">
                   {loading ? (
                     <div className="flex flex-col items-center justify-center py-16">
                       <motion.div
-                        className="w-12 h-12 rounded-full border-2 border-teal-500 border-t-transparent"
+                        className="w-12 h-12 rounded-full border-2 border-blue-500 border-t-transparent"
                         animate={{ rotate: 360 }}
                         transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
                       />
-                      <p className="mt-4 text-slate-500 dark:text-slate-400">
-                        Loading documentation...
-                      </p>
+                      <p className="mt-4 text-zinc-500 dark:text-zinc-400">Loading documentation...</p>
                     </div>
                   ) : error ? (
                     <div className="flex flex-col items-center justify-center py-16 text-center">
                       <div className="w-16 h-16 rounded-2xl bg-red-100 dark:bg-red-900/30 flex items-center justify-center mb-4">
                         <FileText className="w-8 h-8 text-red-500" />
                       </div>
-                      <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-2">
+                      <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100 mb-2">
                         {error}
                       </h2>
-                      <p className="text-slate-500 dark:text-slate-400 mb-6">
+                      <p className="text-zinc-500 dark:text-zinc-400 mb-6">
                         The document you are looking for might have been moved or does not exist.
                       </p>
                       <Link
                         href="/docs"
-                        className="px-4 py-2 rounded-xl bg-teal-500 text-white font-medium hover:bg-teal-600 transition-colors"
+                        className="px-4 py-2 rounded-xl bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors"
                       >
                         Back to Documentation
                       </Link>
                     </div>
                   ) : (
-                    <article className="prose prose-slate dark:prose-invert prose-lg max-w-none">
+                    <article className="prose prose-zinc dark:prose-invert prose-lg max-w-none">
                       <ReactMarkdown
                         remarkPlugins={[remarkGfm, remarkMath]}
                         rehypePlugins={[rehypeKatex]}
-                        components={markdownComponents as any}
+                        components={markdownComponents}
                       >
                         {content}
                       </ReactMarkdown>
@@ -804,18 +918,22 @@ export default function DocsPage({ params }: DocsPageProps) {
               {!loading && !error && (
                 <motion.div
                   variants={fadeInUp}
-                  className="mt-8 pt-8 border-t border-slate-200 dark:border-slate-700"
+                  className="mt-8 pt-8 border-t border-zinc-200/70 dark:border-white/10"
                 >
-                  <div className="flex items-center justify-between text-sm text-slate-500 dark:text-slate-400">
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4" />
-                      <span>Last updated recently</span>
-                    </div>
+                  <div className="flex items-center justify-between text-sm text-zinc-500 dark:text-zinc-400">
+                    {lastModifiedLabel ? (
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-4 h-4" />
+                        <span>Last updated {lastModifiedLabel}</span>
+                      </div>
+                    ) : (
+                      <span />
+                    )}
                     <a
                       href={`https://github.com/HKUDS/praDeep/edit/main/docs/${currentSlug || 'index'}.md`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-1 hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
+                      className="flex items-center gap-1 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                     >
                       Edit this page
                       <ExternalLink className="w-3 h-3" />
@@ -825,7 +943,7 @@ export default function DocsPage({ params }: DocsPageProps) {
               )}
             </motion.div>
           </div>
-        </main>
+        </div>
 
         {/* Table of Contents (Desktop) */}
         <div className="hidden xl:block w-64 shrink-0 px-4 py-12">
@@ -840,7 +958,7 @@ export default function DocsPage({ params }: DocsPageProps) {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.8 }}
               onClick={scrollToTop}
-              className="fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full bg-teal-500 text-white shadow-lg shadow-teal-500/30 flex items-center justify-center hover:bg-teal-600 transition-colors"
+              className="fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full bg-blue-600 text-white shadow-lg shadow-blue-500/30 flex items-center justify-center hover:bg-blue-700 transition-colors"
             >
               <ArrowUp className="w-5 h-5" />
             </motion.button>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Settings as SettingsIcon,
@@ -9,13 +9,11 @@ import {
   Globe,
   Save,
   RotateCcw,
-  Loader2,
   Check,
   Server,
   AlertCircle,
   Database,
   Search,
-  MessageSquare,
   Volume2,
   Cpu,
   Key,
@@ -25,7 +23,6 @@ import {
   RefreshCw,
   CheckCircle,
   XCircle,
-  Info,
   Sliders,
   Plus,
   Trash2,
@@ -36,14 +33,16 @@ import { apiUrl } from '@/lib/api'
 import { getTranslation } from '@/lib/i18n'
 import { setTheme } from '@/lib/theme'
 import { debounce } from '@/lib/debounce'
+import { cn } from '@/lib/utils'
 
 import { useGlobal } from '@/context/GlobalContext'
 import PageWrapper, { PageHeader } from '@/components/ui/PageWrapper'
-import { Card, CardHeader, CardBody, CardFooter } from '@/components/ui/Card'
+import { Card, CardBody, CardHeader } from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import Modal, { ModalBody, ModalFooter } from '@/components/ui/Modal'
+import Modal from '@/components/ui/Modal'
 import { Spinner, FullPageLoading } from '@/components/ui/LoadingState'
+import { useToast } from '@/components/ui/Toast'
 
 // --- Types matching backend ---
 
@@ -61,13 +60,13 @@ interface EnvInfo {
 interface ConfigData {
   system?: {
     language?: string
-    [key: string]: any
+    [key: string]: unknown
   }
   tools?: {
     rag_tool?: {
       kb_base_dir?: string
       default_kb?: string
-      [key: string]: any
+      [key: string]: unknown
     }
     run_code?: {
       workspace?: string
@@ -75,25 +74,25 @@ interface ConfigData {
       language?: string
       timeout?: number
       sandbox?: boolean
-      [key: string]: any
+      [key: string]: unknown
     }
     web_search?: {
       enabled?: boolean
       max_results?: number
-      [key: string]: any
+      [key: string]: unknown
     }
-    [key: string]: any
+    [key: string]: unknown
   }
   logging?: {
     level?: string
-    [key: string]: any
+    [key: string]: unknown
   }
   tts?: {
     default_voice?: string
     default_language?: string
-    [key: string]: any
+    [key: string]: unknown
   }
-  [key: string]: any
+  [key: string]: unknown
 }
 
 interface FullSettingsResponse {
@@ -123,6 +122,12 @@ interface EnvCategoryInfo {
 interface EnvConfigResponse {
   variables: EnvVarInfo[]
   categories: EnvCategoryInfo[]
+}
+
+const getErrorMessage = (error: unknown): string => {
+  if (error instanceof Error) return error.message
+  if (typeof error === 'string') return error
+  return 'Unknown error'
 }
 
 interface TestResults {
@@ -156,7 +161,7 @@ interface LLMModeInfo {
 
 type SettingsTab = 'general' | 'environment' | 'local_models'
 
-// --- Toggle Switch Component ---
+// --- Toggle Switch Component (2026 Modern Theme) ---
 interface ToggleSwitchProps {
   checked: boolean
   onChange: (checked: boolean) => void
@@ -171,15 +176,18 @@ function ToggleSwitch({ checked, onChange, disabled }: ToggleSwitchProps) {
       aria-checked={checked}
       disabled={disabled}
       onClick={() => onChange(!checked)}
-      className={`
-        relative inline-flex h-6 w-11 items-center rounded-full transition-all duration-300
-        ${checked ? 'bg-teal-500' : 'bg-slate-300 dark:bg-slate-600'}
-        ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-        focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:ring-offset-2
-      `}
+      className={cn(
+        'relative inline-flex h-6 w-11 items-center rounded-full transition-all duration-300',
+        'ring-1 ring-black/5 dark:ring-white/10',
+        checked
+          ? 'bg-gradient-to-b from-blue-500 to-blue-600 shadow-sm shadow-blue-600/10'
+          : 'bg-zinc-200/80 dark:bg-white/10',
+        disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/35 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-zinc-950'
+      )}
     >
       <motion.span
-        className="inline-block h-4 w-4 transform rounded-full bg-white shadow-lg"
+        className="inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-1 ring-black/5 dark:bg-zinc-50 dark:ring-white/10"
         initial={false}
         animate={{
           x: checked ? 24 : 4,
@@ -194,7 +202,7 @@ function ToggleSwitch({ checked, onChange, disabled }: ToggleSwitchProps) {
   )
 }
 
-// --- Tab Navigation with Animated Indicator ---
+// --- Tab Navigation with Animated Indicator (2026 Modern Theme) ---
 interface TabItem {
   id: SettingsTab
   label: string
@@ -224,31 +232,19 @@ function TabNavigation({ tabs, activeTab, onTabChange }: TabNavigationProps) {
   }, [activeTab, tabs])
 
   return (
-    <div className="relative">
-      <div className="flex items-center gap-1 p-1 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-slate-200/50 dark:border-slate-700/50 rounded-2xl">
-        {tabs.map((tab, index) => (
-          <button
-            key={tab.id}
-            ref={el => {
-              tabRefs.current[index] = el
-            }}
-            onClick={() => onTabChange(tab.id)}
-            className={`
-              relative flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-medium transition-colors duration-200 z-10
-              ${
-                activeTab === tab.id
-                  ? 'text-teal-700 dark:text-teal-300'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-              }
-            `}
-          >
-            {tab.icon}
-            <span className="hidden sm:inline">{tab.label}</span>
-            {tab.badge}
-          </button>
-        ))}
+    <Card variant="glass" padding="none" interactive={false} className="p-1">
+      <div
+        role="tablist"
+        aria-label="Settings navigation"
+        className="relative flex items-center gap-1"
+      >
         <motion.div
-          className="absolute top-1 bottom-1 bg-white dark:bg-slate-700 rounded-xl shadow-sm border border-slate-200/50 dark:border-slate-600/50"
+          aria-hidden="true"
+          className={cn(
+            'absolute top-0 bottom-0 rounded-xl shadow-sm border',
+            'bg-white/80 border-zinc-200/70',
+            'dark:bg-zinc-950/60 dark:border-white/10'
+          )}
           initial={false}
           animate={{
             left: indicatorStyle.left,
@@ -256,16 +252,40 @@ function TabNavigation({ tabs, activeTab, onTabChange }: TabNavigationProps) {
           }}
           transition={{
             type: 'spring' as const,
-            stiffness: 400,
-            damping: 30,
+            stiffness: 420,
+            damping: 34,
           }}
         />
+
+        {tabs.map((tab, index) => (
+          <button
+            key={tab.id}
+            ref={el => {
+              tabRefs.current[index] = el
+            }}
+            role="tab"
+            aria-selected={activeTab === tab.id}
+            onClick={() => onTabChange(tab.id)}
+            className={cn(
+              'relative z-10 flex flex-1 items-center justify-center gap-2',
+              'px-4 py-3 rounded-xl text-sm font-medium tracking-tight',
+              'transition-colors duration-200',
+              activeTab === tab.id
+                ? 'text-blue-700 dark:text-blue-300'
+                : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'
+            )}
+          >
+            {tab.icon}
+            <span className="hidden sm:inline">{tab.label}</span>
+            {tab.badge}
+          </button>
+        ))}
       </div>
-    </div>
+    </Card>
   )
 }
 
-// --- Status Card Component ---
+// --- Status Card Component (2026 Modern Theme) ---
 interface StatusCardProps {
   title: string
   icon: React.ReactNode
@@ -294,58 +314,77 @@ function StatusCard({
   accentColor,
 }: StatusCardProps) {
   const statusColors = {
-    success: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800',
-    error: 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800',
-    pending: 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800',
-    unknown: 'bg-slate-50 dark:bg-slate-700/50 border-slate-200 dark:border-slate-600',
+    success:
+      'border-emerald-200/70 hover:border-emerald-300/80 dark:border-emerald-500/20 dark:hover:border-emerald-500/30 ring-1 ring-emerald-500/10',
+    error:
+      'border-red-200/70 hover:border-red-300/80 dark:border-red-500/20 dark:hover:border-red-500/30 ring-1 ring-red-500/10',
+    pending:
+      'border-blue-200/70 hover:border-blue-300/80 dark:border-blue-500/20 dark:hover:border-blue-500/30 ring-1 ring-blue-500/10',
+    unknown:
+      'border-zinc-200/70 hover:border-zinc-300/80 dark:border-white/10 dark:hover:border-white/15',
   }
 
   return (
     <motion.div
-      className={`p-4 rounded-xl border transition-all ${statusColors[status]}`}
+      className="h-full"
       whileHover={{ y: -2 }}
       transition={{ type: 'spring' as const, stiffness: 400, damping: 25 }}
     >
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <div className={accentColor}>{icon}</div>
-          <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">{title}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          {responseTime && <span className="text-[10px] text-slate-400">{responseTime}ms</span>}
-          {status === 'success' && <CheckCircle className="w-4 h-4 text-emerald-500" />}
-          {status === 'error' && <XCircle className="w-4 h-4 text-red-500" />}
-          {status === 'pending' && <AlertCircle className="w-4 h-4 text-amber-500" />}
-        </div>
-      </div>
-
-      <p className="text-xs text-slate-600 dark:text-slate-400 font-mono truncate mb-1">
-        {model || 'Not configured'}
-      </p>
-      <p className="text-[10px] text-slate-500 truncate mb-2">{endpoint || 'No endpoint'}</p>
-
-      {message && (
-        <p className="text-[10px] text-emerald-600 dark:text-emerald-400 truncate mb-2">
-          {message}
-        </p>
-      )}
-      {error && <p className="text-[10px] text-red-600 dark:text-red-400 truncate mb-2">{error}</p>}
-
-      <Button
-        variant="secondary"
-        size="sm"
-        onClick={onTest}
-        loading={testing}
-        iconLeft={<RefreshCw className="w-3 h-3" />}
-        className="w-full"
+      <Card
+        variant="glass"
+        padding="none"
+        interactive={false}
+        className={cn('h-full border', statusColors[status])}
       >
-        {testing ? 'Testing...' : `Test ${title}`}
-      </Button>
+        <CardBody padding="sm" className="h-full flex flex-col gap-3">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className={cn('shrink-0', accentColor)}>{icon}</div>
+              <div className="min-w-0">
+                <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-50 truncate">
+                  {title}
+                </div>
+                <div className="mt-0.5 text-[10px] text-zinc-500 dark:text-zinc-400 truncate">
+                  {endpoint || 'No endpoint'}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              {responseTime && <span className="text-[10px] text-zinc-400">{responseTime}ms</span>}
+              {status === 'success' && <CheckCircle className="w-4 h-4 text-emerald-500" />}
+              {status === 'error' && <XCircle className="w-4 h-4 text-red-500" />}
+              {status === 'pending' && <AlertCircle className="w-4 h-4 text-blue-500" />}
+            </div>
+          </div>
+
+          <div className="min-w-0">
+            <div className="text-xs text-zinc-700 dark:text-zinc-200 font-mono truncate">
+              {model || 'Not configured'}
+            </div>
+            {message && <div className="mt-1 text-[10px] text-emerald-600 truncate">{message}</div>}
+            {error && <div className="mt-1 text-[10px] text-red-600 truncate">{error}</div>}
+          </div>
+
+          <div className="mt-auto">
+            <Button
+              onClick={onTest}
+              loading={testing}
+              variant="secondary"
+              size="sm"
+              className="w-full"
+              iconLeft={testing ? undefined : <RefreshCw className="w-3.5 h-3.5" />}
+            >
+              {testing ? 'Testing…' : `Test ${title}`}
+            </Button>
+          </div>
+        </CardBody>
+      </Card>
     </motion.div>
   )
 }
 
-// --- Provider Card Component ---
+// --- Provider Card Component (2026 Modern Theme) ---
 interface ProviderCardProps {
   provider: LLMProvider
   onActivate: () => void
@@ -358,101 +397,111 @@ function ProviderCard({ provider, onActivate, onEdit, onDelete, onTest }: Provid
   return (
     <Card
       variant="glass"
-      hoverEffect
-      className={`${provider.is_active ? 'ring-2 ring-teal-500/50 border-teal-500/30' : ''}`}
+      padding="none"
+      interactive
+      className={cn(
+        'overflow-hidden',
+        provider.is_active
+          ? 'ring-2 ring-blue-500/35 border-blue-200/70 hover:border-blue-300/80 dark:border-blue-500/20 dark:hover:border-blue-500/30'
+          : 'border-white/55 hover:border-white/70 dark:border-white/10 dark:hover:border-white/15'
+      )}
     >
-      <CardBody className="py-4">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-3 min-w-0 flex-1">
-            <div
-              className={`p-2 rounded-xl flex-shrink-0 ${
-                provider.is_active
-                  ? 'bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400'
-                  : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
-              }`}
-            >
-              <Server className="w-5 h-5" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="font-semibold text-slate-900 dark:text-slate-100">
-                  {provider.name}
-                </h3>
-                {provider.is_active && (
-                  <span className="px-2 py-0.5 bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 text-[10px] rounded-full font-medium flex items-center gap-1">
-                    <Zap className="w-3 h-3" />
-                    Active
-                  </span>
-                )}
-                <span
-                  className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
-                    provider.provider_type === 'api'
-                      ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                      : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'
-                  }`}
-                >
-                  {provider.provider_type === 'api' ? 'Cloud' : 'Local'}
-                </span>
-              </div>
-              <div className="flex items-center gap-2 mt-1 text-xs text-slate-500 dark:text-slate-400">
-                <span className="font-medium text-slate-600 dark:text-slate-300">
-                  {provider.model}
-                </span>
-                <span className="text-slate-300 dark:text-slate-600">|</span>
-                <span className="font-mono truncate text-[10px]">{provider.base_url}</span>
-              </div>
-            </div>
-          </div>
-          <div className="flex items-center gap-1 flex-shrink-0 ml-2">
-            {!provider.is_active && (
-              <motion.button
-                onClick={onActivate}
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                className="p-2 text-slate-400 hover:text-teal-600 hover:bg-teal-50 dark:hover:bg-teal-900/20 rounded-lg transition-colors"
-                title="Set as Active"
-              >
-                <CheckCircle className="w-4 h-4" />
-              </motion.button>
+      <CardBody padding="sm" className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          <div
+            className={cn(
+              'flex h-10 w-10 items-center justify-center rounded-xl flex-shrink-0',
+              provider.is_active
+                ? 'bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300'
+                : 'bg-zinc-100 text-zinc-600 dark:bg-white/10 dark:text-zinc-300'
             )}
-            <motion.button
-              onClick={onTest}
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg transition-colors"
-              title="Test Connection"
-            >
-              <RefreshCw className="w-4 h-4" />
-            </motion.button>
-            <motion.button
-              onClick={onEdit}
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              className="p-2 text-slate-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors"
-              title="Edit"
-            >
-              <Edit3 className="w-4 h-4" />
-            </motion.button>
-            <motion.button
-              onClick={onDelete}
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-              title="Delete"
-            >
-              <Trash2 className="w-4 h-4" />
-            </motion.button>
+          >
+            <Server className="w-5 h-5" />
           </div>
+
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="font-semibold text-zinc-900 dark:text-zinc-50 truncate">
+                {provider.name}
+              </h3>
+              {provider.is_active && (
+                <span className="px-2 py-0.5 bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-200 text-[10px] rounded-full font-medium flex items-center gap-1">
+                  <Zap className="w-3 h-3" />
+                  Active
+                </span>
+              )}
+              <span
+                className={cn(
+                  'text-[10px] px-2 py-0.5 rounded-full font-medium',
+                  provider.provider_type === 'api'
+                    ? 'bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-200'
+                    : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-200'
+                )}
+              >
+                {provider.provider_type === 'api' ? 'Cloud' : 'Local'}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2 mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+              <span className="font-medium text-zinc-900 dark:text-zinc-100 truncate">
+                {provider.model}
+              </span>
+              <span className="text-zinc-300 dark:text-zinc-700">•</span>
+              <span className="font-mono truncate text-[10px]">{provider.base_url}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-1 flex-shrink-0">
+          {!provider.is_active && (
+            <motion.button
+              onClick={onActivate}
+              whileHover={{ scale: 1.08 }}
+              whileTap={{ scale: 0.94 }}
+              className="p-2 text-zinc-400 hover:text-blue-600 hover:bg-blue-50 dark:text-zinc-500 dark:hover:text-blue-300 dark:hover:bg-blue-500/10 rounded-lg transition-colors"
+              title="Set as Active"
+            >
+              <CheckCircle className="w-4 h-4" />
+            </motion.button>
+          )}
+          <motion.button
+            onClick={onTest}
+            whileHover={{ scale: 1.08 }}
+            whileTap={{ scale: 0.94 }}
+            className="p-2 text-zinc-400 hover:text-emerald-600 hover:bg-emerald-50 dark:text-zinc-500 dark:hover:text-emerald-300 dark:hover:bg-emerald-500/10 rounded-lg transition-colors"
+            title="Test Connection"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </motion.button>
+          <motion.button
+            onClick={onEdit}
+            whileHover={{ scale: 1.08 }}
+            whileTap={{ scale: 0.94 }}
+            className="p-2 text-zinc-400 hover:text-blue-600 hover:bg-blue-50 dark:text-zinc-500 dark:hover:text-blue-300 dark:hover:bg-blue-500/10 rounded-lg transition-colors"
+            title="Edit"
+          >
+            <Edit3 className="w-4 h-4" />
+          </motion.button>
+          <motion.button
+            onClick={onDelete}
+            whileHover={{ scale: 1.08 }}
+            whileTap={{ scale: 0.94 }}
+            className="p-2 text-zinc-400 hover:text-red-600 hover:bg-red-50 dark:text-zinc-500 dark:hover:text-red-300 dark:hover:bg-red-500/10 rounded-lg transition-colors"
+            title="Delete"
+          >
+            <Trash2 className="w-4 h-4" />
+          </motion.button>
         </div>
       </CardBody>
     </Card>
   )
 }
 
-// --- Main Settings Page ---
+// --- Main Settings Page (2026 Modern Theme) ---
 export default function SettingsPage() {
   const { uiSettings, refreshSettings } = useGlobal()
   const t = (key: string) => getTranslation(uiSettings.language, key)
+  const toast = useToast()
   const [activeTab, setActiveTab] = useState<SettingsTab>('general')
   const [data, setData] = useState<FullSettingsResponse | null>(null)
   const [loading, setLoading] = useState(true)
@@ -594,15 +643,6 @@ export default function SettingsPage() {
     }, 500)
   ).current
 
-  const [ragProviders, setRagProviders] = useState<
-    Array<{
-      id: string
-      name: string
-      description: string
-      supported_modes: string[]
-    }>
-  >([])
-  const [currentRagProvider, setCurrentRagProvider] = useState<string>('raganything')
   const [loadingRagProviders, setLoadingRagProviders] = useState(false)
 
   useEffect(() => {
@@ -613,6 +653,8 @@ export default function SettingsPage() {
     if (activeTab === 'local_models') {
       fetchProviders()
     }
+    // The fetch* functions are intentionally not included as deps to avoid refetch loops from unstable identities.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [uiSettings, activeTab])
 
   const fetchLLMMode = async () => {
@@ -622,8 +664,10 @@ export default function SettingsPage() {
         const data = await res.json()
         setLlmModeInfo(data)
       }
-    } catch (err) {
-      console.error('Failed to fetch LLM mode:', err)
+    } catch (err: unknown) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to fetch LLM mode:', err)
+      }
     }
   }
 
@@ -635,8 +679,10 @@ export default function SettingsPage() {
         const data = await res.json()
         setProviders(data)
       }
-    } catch (err) {
-      console.error('Failed to fetch providers:', err)
+    } catch (err: unknown) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to fetch providers:', err)
+      }
     } finally {
       setLoadingProviders(false)
     }
@@ -647,12 +693,12 @@ export default function SettingsPage() {
     try {
       const res = await fetch(apiUrl('/api/v1/settings/rag/providers'))
       if (res.ok) {
-        const data = await res.json()
-        setRagProviders(data.providers || [])
-        setCurrentRagProvider(data.current || 'lightrag')
+        // Just fetch - we don't need to store as it's read-only display
       }
-    } catch (err) {
-      console.error('Failed to fetch RAG providers:', err)
+    } catch (err: unknown) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to fetch RAG providers:', err)
+      }
     } finally {
       setLoadingRagProviders(false)
     }
@@ -681,19 +727,23 @@ export default function SettingsPage() {
         if (preset && preset.models.length > 0) {
           setFetchedModels(preset.models)
           if (!data.success) {
-            console.warn('Backend model fetch failed, using presets:', data.message)
+            if (process.env.NODE_ENV === 'development') {
+              console.warn('Backend model fetch failed, using presets:', data.message)
+            }
           }
         } else {
-          alert(`No models found. ${data.message || ''}`)
+          toast.warning(`No models found. ${data.message || ''}`)
         }
       }
-    } catch (err) {
-      console.error(err)
+    } catch (err: unknown) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error(err)
+      }
       const preset = PROVIDER_PRESETS.find(p => p.id === selectedPresetId)
       if (preset && preset.models.length > 0) {
         setFetchedModels(preset.models)
       } else {
-        alert('Failed to connect to backend for model fetching.')
+        toast.error('Failed to connect to backend for model fetching.')
       }
     } finally {
       setFetchingModels(false)
@@ -739,10 +789,14 @@ export default function SettingsPage() {
             isModelValid = true
           }
         } else {
-          console.warn('Model validation failed:', modelData.message)
+          if (process.env.NODE_ENV === 'development') {
+            console.warn('Model validation failed:', modelData.message)
+          }
         }
-      } catch (validationErr) {
-        console.warn('Model validation error:', validationErr)
+      } catch (validationErr: unknown) {
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('Model validation error:', validationErr)
+        }
       }
 
       setProviderError(isModelValid ? 'Model verified. Saving...' : 'Saving...')
@@ -768,9 +822,11 @@ export default function SettingsPage() {
         const err = await res.json()
         setProviderError(err.detail || 'Failed to save provider')
       }
-    } catch (err) {
-      console.error(err)
-      setProviderError('An error occurred: ' + (err as any).message)
+    } catch (err: unknown) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error(err)
+      }
+      setProviderError('An error occurred: ' + getErrorMessage(err))
     } finally {
       setSavingProvider(false)
     }
@@ -793,11 +849,13 @@ export default function SettingsPage() {
         fetchProviders()
       } else {
         const err = await res.json()
-        alert(`Failed to delete provider: ${err.detail || res.statusText}`)
+        toast.error(`Failed to delete provider: ${err.detail || res.statusText}`)
       }
-    } catch (err) {
-      console.error(err)
-      alert('Failed to delete provider: ' + (err as any).message)
+    } catch (err: unknown) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error(err)
+      }
+      toast.error('Failed to delete provider: ' + getErrorMessage(err))
     }
   }
 
@@ -809,8 +867,10 @@ export default function SettingsPage() {
         body: JSON.stringify({ name }),
       })
       if (res.ok) fetchProviders()
-    } catch (err) {
-      console.error(err)
+    } catch (err: unknown) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error(err)
+      }
     }
   }
 
@@ -921,8 +981,8 @@ export default function SettingsPage() {
 
       await fetchEnvConfig()
       await testEnvConfig()
-    } catch (err: any) {
-      setEnvError(err.message || 'Failed to save environment variables')
+    } catch (err: unknown) {
+      setEnvError(getErrorMessage(err) || 'Failed to save environment variables')
     } finally {
       setEnvSaving(false)
     }
@@ -938,8 +998,10 @@ export default function SettingsPage() {
         const results = await res.json()
         setTestResults(results)
       }
-    } catch (err) {
-      console.error('Failed to test env config:', err)
+    } catch (err: unknown) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to test env config:', err)
+      }
     } finally {
       setTesting(false)
     }
@@ -967,8 +1029,10 @@ export default function SettingsPage() {
             : null
         )
       }
-    } catch (err) {
-      console.error(`Failed to test ${service}:`, err)
+    } catch (err: unknown) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error(`Failed to test ${service}:`, err)
+      }
       setServiceTestResults(prev => ({
         ...prev,
         [service]: {
@@ -1068,37 +1132,50 @@ export default function SettingsPage() {
 
       setSaveSuccess(true)
       setTimeout(() => setSaveSuccess(false), 2000)
-    } catch (err: any) {
-      setError(err.message || 'Failed to save settings')
+    } catch (err: unknown) {
+      setError(getErrorMessage(err) || 'Failed to save settings')
     } finally {
       setSaving(false)
     }
   }
 
-  const handleConfigChange = (section: string, key: string, value: any, subSection?: string) => {
+  const ensureRecord = (value: unknown): Record<string, unknown> => {
+    if (typeof value !== 'object' || value == null || Array.isArray(value)) return {}
+    return value as Record<string, unknown>
+  }
+
+  const handleConfigChange = (
+    section: string,
+    key: string,
+    value: unknown,
+    subSection?: string
+  ) => {
     setEditedConfig(prev => {
       if (!prev) return null
-      const newConfig = { ...prev }
+
+      const config = prev as Record<string, unknown>
+      const sectionValue = ensureRecord(config[section])
 
       if (subSection) {
-        if (!newConfig[section]) newConfig[section] = {}
-        if (!newConfig[section][subSection]) newConfig[section][subSection] = {}
-        newConfig[section][subSection][key] = value
-      } else {
-        if (!newConfig[section]) newConfig[section] = {}
-        newConfig[section][key] = value
+        const subSectionValue = ensureRecord(sectionValue[subSection])
+        const nextSubSectionValue = { ...subSectionValue, [key]: value }
+        const nextSectionValue = { ...sectionValue, [subSection]: nextSubSectionValue }
+        return { ...config, [section]: nextSectionValue } as ConfigData
       }
-      return newConfig
+
+      const nextSectionValue = { ...sectionValue, [key]: value }
+      return { ...config, [section]: nextSectionValue } as ConfigData
     })
   }
 
-  const handleUIChange = (key: keyof UISettings, value: any) => {
+  const handleUIChange = <K extends keyof UISettings>(key: K, value: UISettings[K]) => {
     setEditedUI(prev => {
       if (!prev) return null
       const newUI = { ...prev, [key]: value }
       if (key === 'theme') {
-        applyTheme(value)
-        debouncedSaveTheme(value, newUI)
+        const theme = value as UISettings['theme']
+        applyTheme(theme)
+        debouncedSaveTheme(theme, newUI)
       }
       return newUI
     })
@@ -1125,14 +1202,16 @@ export default function SettingsPage() {
       id: 'environment',
       label: t('Environment Variables'),
       icon: <Key className="w-4 h-4" />,
-      badge: testResults && (
+      badge: (testing || testResults) && (
         <span
           className={`ml-1 w-2 h-2 rounded-full ${
-            Object.values(testResults).every(r => r.status === 'configured')
-              ? 'bg-emerald-500'
-              : Object.values(testResults).some(r => r.status === 'error')
-                ? 'bg-red-500'
-                : 'bg-amber-500'
+            testing
+              ? 'bg-blue-500 animate-pulse'
+              : testResults && Object.values(testResults).every(r => r.status === 'configured')
+                ? 'bg-emerald-500'
+                : testResults && Object.values(testResults).some(r => r.status === 'error')
+                  ? 'bg-red-500'
+                  : 'bg-blue-500'
           }`}
         />
       ),
@@ -1145,10 +1224,10 @@ export default function SettingsPage() {
         <span
           className={`ml-1 px-1.5 py-0.5 text-[9px] rounded font-medium ${
             llmModeInfo.mode === 'hybrid'
-              ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
+              ? 'bg-violet-100 text-violet-600'
               : llmModeInfo.mode === 'api'
-                ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'
+                ? 'bg-sky-100 text-sky-600'
+                : 'bg-emerald-100 text-emerald-600'
           }`}
         >
           {llmModeInfo.mode.toUpperCase()}
@@ -1163,1022 +1242,1185 @@ export default function SettingsPage() {
 
   if (!editedConfig || !editedUI) {
     return (
-      <PageWrapper>
-        <div className="p-8 text-red-500 dark:text-red-400">Error loading data</div>
+      <PageWrapper maxWidth="wide" showPattern breadcrumbs={[{ label: t('Settings') }]}>
+        <Card variant="glass" padding="none" interactive={false}>
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-950/60 dark:ring-white/10">
+                <SettingsIcon className="w-5 h-5 text-blue-600" />
+              </div>
+              <div>
+                <h1 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
+                  {t('System Settings')}
+                </h1>
+                <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                  {t('Error loading data')}
+                </p>
+              </div>
+            </div>
+          </CardHeader>
+          <CardBody>
+            <p className="text-sm text-red-600">{t('Error loading data')}</p>
+          </CardBody>
+        </Card>
       </PageWrapper>
     )
   }
 
+  const selectClassName = cn(
+    'w-full h-10 px-3 text-sm',
+    'bg-white dark:bg-zinc-950/40',
+    'border border-zinc-200 dark:border-white/10',
+    'rounded-lg',
+    'text-zinc-900 dark:text-zinc-50',
+    'outline-none',
+    'hover:border-zinc-300 dark:hover:border-white/20',
+    'focus:border-zinc-400 focus:ring-2 focus:ring-blue-500/20'
+  )
+
+  const resetEdits = () => {
+    if (data) {
+      setEditedConfig(JSON.parse(JSON.stringify(data.config)))
+
+      const uiData = JSON.parse(JSON.stringify(data.ui))
+      const storedTheme = localStorage.getItem('deeptutor-theme')
+      if (storedTheme === 'light' || storedTheme === 'dark') {
+        uiData.theme = storedTheme
+      }
+
+      setEditedUI(uiData)
+      applyTheme(uiData.theme)
+    }
+
+    if (envConfig) {
+      const initialValues: Record<string, string> = {}
+      envConfig.variables.forEach(v => {
+        initialValues[v.key] = v.value
+      })
+      setEditedEnvVars(initialValues)
+    }
+
+    setShowSensitive({})
+    setError('')
+    setEnvError('')
+    setProviderError(null)
+  }
+
   return (
-    <PageWrapper maxWidth="xl">
-      {/* Page Header with Save Button */}
+    <PageWrapper maxWidth="wide" showPattern breadcrumbs={[{ label: t('Settings') }]}>
       <PageHeader
-        title={t('System Settings')}
-        description={t('Manage system configuration and preferences')}
-        icon={<SettingsIcon className="w-5 h-5" />}
-        actions={
-          <Button
-            variant={saveSuccess ? 'secondary' : 'primary'}
-            onClick={handleSave}
-            loading={saving}
-            iconLeft={saveSuccess ? <Check className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+        title={
+          <span className="block">
+            <span className="block text-xs font-semibold uppercase tracking-[0.34em] text-zinc-500 dark:text-zinc-400">
+              {t('Settings')}
+            </span>
+            <motion.span
+              initial={{ opacity: 0, y: 10, clipPath: 'inset(0 0 100% 0)' }}
+              animate={{ opacity: 1, y: 0, clipPath: 'inset(0 0 0% 0)' }}
+              transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+              className="mt-1 block text-[clamp(1.75rem,2.6vw,2.25rem)] font-black tracking-[-0.045em] bg-gradient-to-r from-blue-600 via-indigo-600 to-fuchsia-600 bg-clip-text text-transparent dark:from-blue-400 dark:via-indigo-400 dark:to-fuchsia-400"
+            >
+              {t('System Settings')}
+            </motion.span>
+          </span>
+        }
+        titleClassName="leading-[1.05]"
+        description={
+          <motion.span
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1], delay: 0.08 }}
+            className="inline-block"
           >
-            {saving ? t('Saving...') : saveSuccess ? t('Saved!') : t('Save All Changes')}
-          </Button>
+            {t('Manage system configuration and preferences')}
+          </motion.span>
+        }
+        descriptionClassName="tracking-[-0.01em]"
+        icon={<SettingsIcon className="w-5 h-5 text-blue-600" />}
+        actions={
+          <div className="flex items-center gap-2">
+            <Button
+              variant="secondary"
+              onClick={resetEdits}
+              disabled={saving}
+              iconLeft={<RotateCcw className="w-4 h-4" />}
+            >
+              {t('Cancel')}
+            </Button>
+            <Button
+              onClick={handleSave}
+              loading={saving}
+              variant={saveSuccess ? 'secondary' : 'primary'}
+              iconLeft={saveSuccess ? <Check className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+            >
+              {saving ? t('Saving...') : saveSuccess ? t('Saved!') : t('Save')}
+            </Button>
+          </div>
         }
       />
 
-      {/* Tab Navigation */}
-      <div className="mb-6">
+      <div className="space-y-8">
         <TabNavigation tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
-      </div>
 
-      {/* Configuration Status Panel */}
-      <Card variant="glass" hoverEffect={false} className="mb-6">
-        <CardHeader className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Cpu className="w-4 h-4 text-teal-500" />
-            <h2 className="font-semibold text-slate-900 dark:text-slate-100">
-              {t('Configuration Status')}
-            </h2>
-          </div>
-          <span className="text-[10px] text-slate-500 dark:text-slate-400">
-            {t('Click each card to test')}
-          </span>
-        </CardHeader>
-        <CardBody>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <StatusCard
-              title="LLM"
-              icon={<Brain className="w-4 h-4" />}
-              status={getServiceStatus('llm')}
-              model={
-                serviceTestResults.llm?.model ||
-                testResults?.llm?.model ||
-                editedEnvVars['LLM_MODEL']
-              }
-              endpoint={editedEnvVars['LLM_HOST']}
-              message={serviceTestResults.llm?.message}
-              error={serviceTestResults.llm?.error || testResults?.llm?.error}
-              responseTime={serviceTestResults.llm?.response_time_ms}
-              onTest={() => testSingleService('llm')}
-              testing={testingService.llm || false}
-              accentColor="text-purple-500"
-            />
-            <StatusCard
-              title="Embedding"
-              icon={<Database className="w-4 h-4" />}
-              status={getServiceStatus('embedding')}
-              model={
-                serviceTestResults.embedding?.model ||
-                testResults?.embedding?.model ||
-                editedEnvVars['EMBEDDING_MODEL']
-              }
-              endpoint={editedEnvVars['EMBEDDING_HOST']}
-              message={serviceTestResults.embedding?.message}
-              error={serviceTestResults.embedding?.error || testResults?.embedding?.error}
-              responseTime={serviceTestResults.embedding?.response_time_ms}
-              onTest={() => testSingleService('embedding')}
-              testing={testingService.embedding || false}
-              accentColor="text-indigo-500"
-            />
-            <StatusCard
-              title="TTS"
-              icon={<Volume2 className="w-4 h-4" />}
-              status={getServiceStatus('tts')}
-              model={
-                serviceTestResults.tts?.model ||
-                testResults?.tts?.model ||
-                editedEnvVars['TTS_MODEL']
-              }
-              endpoint={editedEnvVars['TTS_URL']}
-              message={serviceTestResults.tts?.message}
-              error={serviceTestResults.tts?.error || testResults?.tts?.error}
-              responseTime={serviceTestResults.tts?.response_time_ms}
-              onTest={() => testSingleService('tts')}
-              testing={testingService.tts || false}
-              accentColor="text-rose-500"
-            />
-          </div>
-        </CardBody>
-      </Card>
+        <Card variant="glass" padding="none" interactive={false}>
+          <CardHeader className="flex-row items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Cpu className="w-4 h-4 text-blue-600" />
+              <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
+                {t('Configuration Status')}
+              </h2>
+            </div>
+            <span className="text-xs text-zinc-500 dark:text-zinc-400">
+              {t('Click each card to test')}
+            </span>
+          </CardHeader>
+          <CardBody>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <StatusCard
+                title="LLM"
+                icon={<Brain className="w-4 h-4" />}
+                status={getServiceStatus('llm')}
+                model={
+                  serviceTestResults.llm?.model ||
+                  testResults?.llm?.model ||
+                  editedEnvVars['LLM_MODEL']
+                }
+                endpoint={editedEnvVars['LLM_HOST']}
+                message={serviceTestResults.llm?.message}
+                error={serviceTestResults.llm?.error || testResults?.llm?.error}
+                responseTime={serviceTestResults.llm?.response_time_ms}
+                onTest={() => testSingleService('llm')}
+                testing={testingService.llm || false}
+                accentColor="text-violet-500"
+              />
+              <StatusCard
+                title="Embedding"
+                icon={<Database className="w-4 h-4" />}
+                status={getServiceStatus('embedding')}
+                model={
+                  serviceTestResults.embedding?.model ||
+                  testResults?.embedding?.model ||
+                  editedEnvVars['EMBEDDING_MODEL']
+                }
+                endpoint={editedEnvVars['EMBEDDING_HOST']}
+                message={serviceTestResults.embedding?.message}
+                error={serviceTestResults.embedding?.error || testResults?.embedding?.error}
+                responseTime={serviceTestResults.embedding?.response_time_ms}
+                onTest={() => testSingleService('embedding')}
+                testing={testingService.embedding || false}
+                accentColor="text-sky-500"
+              />
+              <StatusCard
+                title="TTS"
+                icon={<Volume2 className="w-4 h-4" />}
+                status={getServiceStatus('tts')}
+                model={
+                  serviceTestResults.tts?.model ||
+                  testResults?.tts?.model ||
+                  editedEnvVars['TTS_MODEL']
+                }
+                endpoint={editedEnvVars['TTS_URL']}
+                message={serviceTestResults.tts?.message}
+                error={serviceTestResults.tts?.error || testResults?.tts?.error}
+                responseTime={serviceTestResults.tts?.response_time_ms}
+                onTest={() => testSingleService('tts')}
+                testing={testingService.tts || false}
+                accentColor="text-rose-500"
+              />
+            </div>
+          </CardBody>
+        </Card>
 
-      {error && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl flex items-center gap-3 text-red-700 dark:text-red-400 font-medium"
-        >
-          <AlertCircle className="w-5 h-5" />
-          <span>{error}</span>
-        </motion.div>
-      )}
-
-      {/* Tab Content with AnimatePresence */}
-      <AnimatePresence mode="wait">
-        {/* General Settings Tab */}
-        {activeTab === 'general' && (
+        {error && (
           <motion.div
-            key="general"
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
-            className="space-y-6"
+            className="mb-6"
           >
-            {/* Row 1: Interface + System Language + Active Model */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              {/* Interface Settings */}
-              <Card variant="glass">
-                <CardHeader>
-                  <div className="flex items-center gap-2">
-                    <Globe className="w-4 h-4 text-teal-500" />
-                    <h2 className="font-semibold text-slate-900 dark:text-slate-100">
-                      {t('Interface Preferences')}
-                    </h2>
-                  </div>
-                </CardHeader>
-                <CardBody className="space-y-4">
-                  {/* Theme Mode */}
-                  <div>
-                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-3">
-                      {t('Theme')}
-                    </label>
-                    <div className="flex bg-slate-100/80 dark:bg-slate-700/50 p-1 rounded-xl">
-                      {(['light', 'dark'] as const).map(themeOption => (
-                        <motion.button
-                          key={themeOption}
-                          onClick={() => handleUIChange('theme', themeOption)}
-                          className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
-                            editedUI.theme === themeOption
-                              ? 'bg-white dark:bg-slate-600 text-teal-600 dark:text-teal-400 shadow-sm'
-                              : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
-                          }`}
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
-                        >
-                          {themeOption === 'light' ? (
-                            <Sun className="w-4 h-4" />
-                          ) : (
-                            <Moon className="w-4 h-4" />
-                          )}
-                          <span>{themeOption === 'light' ? t('Light') : t('Dark')}</span>
-                        </motion.button>
-                      ))}
-                    </div>
-                  </div>
-                  {/* Interface Language */}
-                  <div>
-                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">
-                      {t('Language')}
-                    </label>
-                    <select
-                      value={editedUI.language}
-                      onChange={e => handleUIChange('language', e.target.value)}
-                      className="w-full p-2.5 bg-white/80 dark:bg-slate-700/80 border border-slate-200/60 dark:border-slate-600/60 rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none backdrop-blur-sm transition-all"
-                    >
-                      <option value="en">{t('English')}</option>
-                      <option value="zh">{t('Chinese')}</option>
-                    </select>
-                  </div>
-                </CardBody>
-              </Card>
+            <Card
+              variant="glass"
+              padding="none"
+              interactive={false}
+              className="border-red-200/70 dark:border-red-500/20 ring-1 ring-red-500/10"
+            >
+              <CardBody
+                padding="sm"
+                className="flex items-center gap-3 text-red-700 dark:text-red-200 font-medium"
+              >
+                <AlertCircle className="w-5 h-5" />
+                <span>{error}</span>
+              </CardBody>
+            </Card>
+          </motion.div>
+        )}
 
-              {/* System Language */}
-              <Card variant="glass">
+        {/* Tab Content with AnimatePresence */}
+        <AnimatePresence mode="wait">
+          {/* General Settings Tab */}
+          {activeTab === 'general' && (
+            <motion.div
+              key="general"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+              className="space-y-6"
+            >
+              {/* Row 1: Interface + System Language + Active Model */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                {/* Interface Settings */}
+                <Card variant="glass" padding="none" interactive={false}>
+                  <CardHeader>
+                    <div className="flex items-center gap-2">
+                      <Globe className="w-4 h-4 text-blue-600" />
+                      <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
+                        {t('Interface Preferences')}
+                      </h2>
+                    </div>
+                  </CardHeader>
+                  <CardBody className="space-y-4">
+                    {/* Theme Mode */}
+                    <div>
+                      <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-3">
+                        {t('Theme')}
+                      </label>
+                      <div className="flex bg-zinc-100/80 dark:bg-white/10 p-1 rounded-lg">
+                        {(['light', 'dark'] as const).map(themeOption => (
+                          <motion.button
+                            key={themeOption}
+                            onClick={() => handleUIChange('theme', themeOption)}
+                            className={`flex-1 py-2 px-3 rounded-md text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
+                              editedUI.theme === themeOption
+                                ? 'bg-white/90 dark:bg-zinc-950/60 text-blue-600 dark:text-blue-400 shadow-sm'
+                                : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'
+                            }`}
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                          >
+                            {themeOption === 'light' ? (
+                              <Sun className="w-4 h-4" />
+                            ) : (
+                              <Moon className="w-4 h-4" />
+                            )}
+                            <span>{themeOption === 'light' ? t('Light') : t('Dark')}</span>
+                          </motion.button>
+                        ))}
+                      </div>
+                    </div>
+                    {/* Interface Language */}
+                    <div>
+                      <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-2">
+                        {t('Language')}
+                      </label>
+                      <select
+                        value={editedUI.language}
+                        onChange={e =>
+                          handleUIChange(
+                            'language',
+                            e.target.value === 'en' || e.target.value === 'zh'
+                              ? e.target.value
+                              : 'en'
+                          )
+                        }
+                        className={selectClassName}
+                      >
+                        <option value="en">{t('English')}</option>
+                        <option value="zh">{t('Chinese')}</option>
+                      </select>
+                    </div>
+                  </CardBody>
+                </Card>
+
+                {/* System Language */}
+                <Card variant="glass" padding="none" interactive={false}>
+                  <CardHeader>
+                    <div className="flex items-center gap-2">
+                      <Server className="w-4 h-4 text-violet-500" />
+                      <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
+                        {t('System Configuration')}
+                      </h2>
+                    </div>
+                  </CardHeader>
+                  <CardBody>
+                    <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">
+                      {t('System Language')}
+                    </label>
+                    <p className="text-xs text-zinc-500 mb-3">
+                      {t('Default language for system operations')}
+                    </p>
+                    <select
+                      value={editedConfig.system?.language || 'en'}
+                      onChange={e => handleConfigChange('system', 'language', e.target.value)}
+                      className={selectClassName}
+                    >
+                      <option value="en">English</option>
+                      <option value="zh">Chinese</option>
+                    </select>
+                  </CardBody>
+                </Card>
+
+                {/* Active Models Status */}
+                {data?.env && (
+                  <Card variant="glass" padding="none" interactive={false}>
+                    <CardHeader>
+                      <div className="flex items-center justify-between w-full">
+                        <div className="flex items-center gap-2">
+                          <Cpu className="w-4 h-4 text-emerald-500" />
+                          <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
+                            {t('Active Models')}
+                          </h2>
+                        </div>
+                        <span className="text-[10px] bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300 px-2 py-0.5 rounded-full font-medium">
+                          {t('Status')}
+                        </span>
+                      </div>
+                    </CardHeader>
+                    <CardBody>
+                      <Card
+                        variant="glass"
+                        padding="sm"
+                        interactive={false}
+                        className="rounded-xl border-emerald-200/70 dark:border-emerald-500/20 ring-1 ring-emerald-500/10 flex items-center gap-3"
+                      >
+                        <div className="p-2 bg-white dark:bg-zinc-950/60 rounded-lg shadow-sm ring-1 ring-zinc-200/60 dark:ring-white/10">
+                          <Server className="w-5 h-5 text-emerald-500" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs text-emerald-600 font-medium">
+                            {t('Active LLM Model')}
+                          </p>
+                          <p className="text-sm font-bold text-zinc-900 dark:text-zinc-50 font-mono truncate">
+                            {data.env.model || t('Not configured')}
+                          </p>
+                        </div>
+                      </Card>
+                    </CardBody>
+                  </Card>
+                )}
+              </div>
+
+              {/* RAG Provider */}
+              <Card variant="glass" padding="none" interactive={false}>
                 <CardHeader>
                   <div className="flex items-center gap-2">
-                    <Server className="w-4 h-4 text-purple-500" />
-                    <h2 className="font-semibold text-slate-900 dark:text-slate-100">
-                      {t('System Configuration')}
+                    <Database className="w-4 h-4 text-sky-500" />
+                    <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
+                      {t('RAG Provider')}
                     </h2>
                   </div>
                 </CardHeader>
                 <CardBody>
-                  <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
-                    {t('System Language')}
-                  </label>
-                  <p className="text-[10px] text-slate-400 dark:text-slate-500 mb-3">
-                    {t('Default language for system operations')}
-                  </p>
-                  <select
-                    value={editedConfig.system?.language || 'en'}
-                    onChange={e => handleConfigChange('system', 'language', e.target.value)}
-                    className="w-full p-2.5 bg-white/80 dark:bg-slate-700/80 border border-slate-200/60 dark:border-slate-600/60 rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none backdrop-blur-sm transition-all"
-                  >
-                    <option value="en">English</option>
-                    <option value="zh">Chinese</option>
-                  </select>
+                  <div className="flex flex-col lg:flex-row lg:items-start gap-4">
+                    <div className="flex-1">
+                      <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">
+                        {t('Active RAG System')}
+                      </label>
+                      <p className="text-xs text-zinc-500 mb-3">
+                        {t(
+                          'RAG-Anything provides end-to-end academic document processing with MinerU and LightRAG'
+                        )}
+                      </p>
+                      {loadingRagProviders ? (
+                        <div className="flex items-center gap-2 text-sm text-zinc-500">
+                          <Spinner size="sm" />
+                          <span>Loading providers...</span>
+                        </div>
+                      ) : (
+                        <Card
+                          variant="glass"
+                          padding="sm"
+                          interactive={false}
+                          className="rounded-xl border-white/55 dark:border-white/10 flex items-center justify-between gap-3"
+                        >
+                          <span className="text-sm text-zinc-600 dark:text-zinc-300">
+                            RAG-Anything - End-to-end academic document processing (MinerU +
+                            LightRAG)
+                          </span>
+                          <span className="shrink-0 text-[10px] px-2 py-0.5 bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-200 rounded-full font-medium">
+                            Default
+                          </span>
+                        </Card>
+                      )}
+                    </div>
+                    <Card
+                      variant="glass"
+                      padding="sm"
+                      interactive={false}
+                      className="lg:w-1/2 rounded-xl border-white/55 dark:border-white/10"
+                    >
+                      <div className="text-xs text-zinc-500 dark:text-zinc-400">
+                        <p>
+                          RAG-Anything combines MinerU for multimodal PDF parsing (images, tables,
+                          equations) with LightRAG for knowledge graph construction.
+                        </p>
+                        <p className="mt-2">
+                          <span className="font-medium text-zinc-900 dark:text-zinc-50">
+                            Supported modes:
+                          </span>{' '}
+                          hybrid, local, global, naive
+                        </p>
+                      </div>
+                    </Card>
+                  </div>
                 </CardBody>
               </Card>
 
-              {/* Active Models Status */}
-              {data?.env && (
-                <Card variant="glass">
+              {/* Research Tools & TTS */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {/* Research Tools */}
+                <Card variant="glass" padding="none" interactive={false}>
                   <CardHeader>
-                    <div className="flex items-center justify-between w-full">
-                      <div className="flex items-center gap-2">
-                        <Cpu className="w-4 h-4 text-emerald-500" />
-                        <h2 className="font-semibold text-slate-900 dark:text-slate-100">
-                          {t('Active Models')}
-                        </h2>
-                      </div>
-                      <span className="text-[10px] bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-full font-medium">
-                        {t('Status')}
-                      </span>
+                    <div className="flex items-center gap-2">
+                      <Search className="w-4 h-4 text-blue-500" />
+                      <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
+                        {t('Research Tools')}
+                      </h2>
                     </div>
                   </CardHeader>
                   <CardBody>
-                    <div className="flex items-center gap-3 p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-100 dark:border-emerald-800">
-                      <div className="p-2 bg-white dark:bg-slate-700 rounded-lg shadow-sm">
-                        <Server className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                    <div className="grid grid-cols-2 gap-4">
+                      {/* Web Search */}
+                      <Card
+                        variant="glass"
+                        padding="sm"
+                        interactive={false}
+                        className="rounded-xl border-white/55 dark:border-white/10"
+                      >
+                        <div className="flex items-center justify-between mb-4">
+                          <span className="text-xs font-medium text-zinc-900 dark:text-zinc-50 flex items-center gap-2">
+                            <Globe className="w-4 h-4 text-sky-500" />
+                            {t('Web Search')}
+                          </span>
+                          <ToggleSwitch
+                            checked={editedConfig.tools?.web_search?.enabled ?? true}
+                            onChange={checked =>
+                              handleConfigChange('tools', 'enabled', checked, 'web_search')
+                            }
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-2">
+                            {t('Max Results')}
+                          </label>
+                          <Input
+                            type="number"
+                            value={editedConfig.tools?.web_search?.max_results || 5}
+                            onChange={e =>
+                              handleConfigChange(
+                                'tools',
+                                'max_results',
+                                parseInt(e.target.value),
+                                'web_search'
+                              )
+                            }
+                          />
+                        </div>
+                      </Card>
+
+                      {/* Knowledge Base */}
+                      <Card
+                        variant="glass"
+                        padding="sm"
+                        interactive={false}
+                        className="rounded-xl border-white/55 dark:border-white/10"
+                      >
+                        <div className="flex items-center mb-4">
+                          <span className="text-xs font-medium text-zinc-900 dark:text-zinc-50 flex items-center gap-2">
+                            <Database className="w-4 h-4 text-violet-500" />
+                            {t('Knowledge Base')}
+                          </span>
+                        </div>
+                        <div className="space-y-3">
+                          <div>
+                            <label className="block text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-2">
+                              {t('Default KB')}
+                            </label>
+                            <Input
+                              type="text"
+                              value={editedConfig.tools?.rag_tool?.default_kb || ''}
+                              onChange={e =>
+                                handleConfigChange(
+                                  'tools',
+                                  'default_kb',
+                                  e.target.value,
+                                  'rag_tool'
+                                )
+                              }
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-2">
+                              {t('Base Directory')}
+                            </label>
+                            <Input
+                              type="text"
+                              value={editedConfig.tools?.rag_tool?.kb_base_dir || ''}
+                              onChange={e =>
+                                handleConfigChange(
+                                  'tools',
+                                  'kb_base_dir',
+                                  e.target.value,
+                                  'rag_tool'
+                                )
+                              }
+                              className="font-mono"
+                            />
+                          </div>
+                        </div>
+                      </Card>
+                    </div>
+                  </CardBody>
+                </Card>
+
+                {/* TTS Settings */}
+                <Card variant="glass" padding="none" interactive={false}>
+                  <CardHeader>
+                    <div className="flex items-center gap-2">
+                      <Volume2 className="w-4 h-4 text-rose-500" />
+                      <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
+                        {t('Text-to-Speech')}
+                      </h2>
+                    </div>
+                  </CardHeader>
+                  <CardBody>
+                    <div className="grid grid-cols-2 gap-4">
+                      <Input
+                        label={t('Default Voice')}
+                        value={editedConfig.tts?.default_voice || 'Cherry'}
+                        onChange={e => handleConfigChange('tts', 'default_voice', e.target.value)}
+                      />
+                      <Input
+                        label={t('Default Language')}
+                        value={editedConfig.tts?.default_language || 'English'}
+                        onChange={e =>
+                          handleConfigChange('tts', 'default_language', e.target.value)
+                        }
+                      />
+                    </div>
+                  </CardBody>
+                </Card>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Environment Variables Tab */}
+          {activeTab === 'environment' && envConfig && (
+            <motion.div
+              key="environment"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+              className="space-y-6"
+            >
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {envConfig.categories.map(category => {
+                  const categoryVars = envConfig.variables.filter(v => v.category === category.id)
+                  if (categoryVars.length === 0) return null
+
+                  return (
+                    <Card key={category.id} variant="glass" padding="none" interactive={false}>
+                      <CardHeader>
+                        <div className="flex items-center gap-2">
+                          <div className="text-blue-500">{getCategoryIcon(category.icon)}</div>
+                          <div>
+                            <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
+                              {category.name}
+                            </h2>
+                            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                              {category.description}
+                            </p>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardBody className="space-y-4">
+                        {categoryVars.map(envVar => (
+                          <div key={envVar.key} className="space-y-1">
+                            <div className="flex items-center justify-between">
+                              <label className="text-xs font-medium text-zinc-900 dark:text-zinc-50 flex items-center gap-2">
+                                <code className="bg-zinc-100 dark:bg-white/10 px-1.5 py-0.5 rounded text-zinc-900 dark:text-zinc-50 text-[10px]">
+                                  {envVar.key}
+                                </code>
+                                {envVar.required && (
+                                  <span className="text-red-500 text-[9px] font-semibold">
+                                    REQUIRED
+                                  </span>
+                                )}
+                                {envVar.is_set && (
+                                  <CheckCircle className="w-3 h-3 text-emerald-500" />
+                                )}
+                              </label>
+                              {envVar.sensitive && (
+                                <button
+                                  onClick={() => toggleSensitiveVisibility(envVar.key)}
+                                  className="text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300 p-0.5"
+                                >
+                                  {showSensitive[envVar.key] ? (
+                                    <EyeOff className="w-3.5 h-3.5" />
+                                  ) : (
+                                    <Eye className="w-3.5 h-3.5" />
+                                  )}
+                                </button>
+                              )}
+                            </div>
+                            <p className="text-[10px] text-zinc-400 dark:text-zinc-500 line-clamp-1">
+                              {envVar.description}
+                            </p>
+                            <Input
+                              type={
+                                envVar.sensitive && !showSensitive[envVar.key] ? 'password' : 'text'
+                              }
+                              value={editedEnvVars[envVar.key] || ''}
+                              onChange={e => handleEnvVarChange(envVar.key, e.target.value)}
+                              placeholder={envVar.default || `Enter ${envVar.key}`}
+                              className="font-mono"
+                            />
+                          </div>
+                        ))}
+                      </CardBody>
+                    </Card>
+                  )
+                })}
+              </div>
+
+              {/* Save Environment Variables */}
+              <Card variant="glass" padding="none" interactive={false}>
+                <CardBody padding="sm" className="space-y-3">
+                  {envError && (
+                    <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
+                      <Card
+                        variant="glass"
+                        padding="none"
+                        interactive={false}
+                        className="border-red-200/70 dark:border-red-500/20 ring-1 ring-red-500/10"
+                      >
+                        <CardBody
+                          padding="sm"
+                          className="flex items-center gap-2 text-red-700 dark:text-red-200 text-sm"
+                        >
+                          <AlertCircle className="w-4 h-4" />
+                          <span>{envError}</span>
+                        </CardBody>
+                      </Card>
+                    </motion.div>
+                  )}
+
+                  <Button
+                    onClick={handleEnvSave}
+                    loading={envSaving}
+                    variant={envSaveSuccess ? 'secondary' : 'primary'}
+                    className="w-full"
+                    iconLeft={
+                      envSaveSuccess ? <Check className="w-5 h-5" /> : <Key className="w-5 h-5" />
+                    }
+                  >
+                    {envSaveSuccess ? t('Environment Updated!') : t('Apply Environment Changes')}
+                  </Button>
+                </CardBody>
+              </Card>
+            </motion.div>
+          )}
+
+          {/* LLM Providers Tab */}
+          {activeTab === 'local_models' && (
+            <motion.div
+              key="local_models"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+              className="space-y-6"
+            >
+              {/* LLM Mode Status Banner */}
+              {llmModeInfo && (
+                <Card
+                  variant="glass"
+                  padding="none"
+                  interactive={false}
+                  className={cn(
+                    llmModeInfo.mode === 'hybrid'
+                      ? 'border-violet-200/70 hover:border-violet-300/80 dark:border-violet-500/20 dark:hover:border-violet-500/30 ring-1 ring-violet-500/10'
+                      : llmModeInfo.mode === 'api'
+                        ? 'border-sky-200/70 hover:border-sky-300/80 dark:border-sky-500/20 dark:hover:border-sky-500/30 ring-1 ring-sky-500/10'
+                        : 'border-emerald-200/70 hover:border-emerald-300/80 dark:border-emerald-500/20 dark:hover:border-emerald-500/30 ring-1 ring-emerald-500/10'
+                  )}
+                >
+                  <CardBody padding="md">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`p-2 rounded-lg ${
+                            llmModeInfo.mode === 'hybrid'
+                              ? 'bg-violet-50 dark:bg-violet-500/10'
+                              : llmModeInfo.mode === 'api'
+                                ? 'bg-sky-50 dark:bg-sky-500/10'
+                                : 'bg-emerald-50 dark:bg-emerald-500/10'
+                          }`}
+                        >
+                          <Cpu
+                            className={`w-5 h-5 ${
+                              llmModeInfo.mode === 'hybrid'
+                                ? 'text-violet-500'
+                                : llmModeInfo.mode === 'api'
+                                  ? 'text-sky-500'
+                                  : 'text-emerald-500'
+                            }`}
+                          />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+                              {t('LLM Mode')}: <span className="uppercase">{llmModeInfo.mode}</span>
+                            </h3>
+                            <span
+                              className={`px-2 py-0.5 text-[10px] rounded-full font-medium ${
+                                llmModeInfo.effective_source === 'provider'
+                                  ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300'
+                                  : 'bg-zinc-100 text-zinc-600 dark:bg-white/10 dark:text-zinc-300'
+                              }`}
+                            >
+                              {llmModeInfo.effective_source === 'provider'
+                                ? t('Using Provider')
+                                : t('Using ENV')}
+                            </span>
+                          </div>
+                          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                            {llmModeInfo.mode === 'hybrid'
+                              ? t(
+                                  'Both API and Local providers available. Active provider takes priority.'
+                                )
+                              : llmModeInfo.mode === 'api'
+                                ? t('Only API (cloud) providers are used.')
+                                : t('Only Local (self-hosted) providers are used.')}
+                          </p>
+                        </div>
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs text-emerald-700 dark:text-emerald-300 font-medium">
-                          {t('Active LLM Model')}
-                        </p>
-                        <p className="text-sm font-bold text-emerald-900 dark:text-emerald-200 font-mono truncate">
-                          {data.env.model || t('Not configured')}
-                        </p>
-                      </div>
+                      {llmModeInfo.active_provider && (
+                        <div className="text-right">
+                          <p className="text-[10px] text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                            {t('Active')}
+                          </p>
+                          <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+                            {llmModeInfo.active_provider.name}
+                          </p>
+                          <p className="text-xs text-zinc-500 dark:text-zinc-400 font-mono">
+                            {llmModeInfo.active_provider.model}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </CardBody>
                 </Card>
               )}
-            </div>
 
-            {/* RAG Provider */}
-            <Card variant="glass">
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <Database className="w-4 h-4 text-indigo-500" />
-                  <h2 className="font-semibold text-slate-900 dark:text-slate-100">
-                    {t('RAG Provider')}
-                  </h2>
-                </div>
-              </CardHeader>
-              <CardBody>
-                <div className="flex flex-col lg:flex-row lg:items-start gap-4">
-                  <div className="flex-1">
-                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
-                      {t('Active RAG System')}
-                    </label>
-                    <p className="text-[10px] text-slate-400 dark:text-slate-500 mb-3">
+              {/* Header & Add Button */}
+              <Card variant="glass" padding="none" interactive={false}>
+                <CardBody className="flex justify-between items-center">
+                  <div>
+                    <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
+                      {t('LLM Providers')}
+                    </h2>
+                    <p className="text-xs text-zinc-500">
                       {t(
-                        'RAG-Anything provides end-to-end academic document processing with MinerU and LightRAG'
+                        'Manage both API and Local LLM providers. Set LLM_MODE in Environment Variables to control which type is used.'
                       )}
                     </p>
-                    {loadingRagProviders ? (
-                      <div className="flex items-center gap-2 text-sm text-slate-500">
-                        <Spinner size="sm" />
-                        <span>Loading providers...</span>
-                      </div>
-                    ) : (
-                      <div className="w-full p-3 bg-slate-100/80 dark:bg-slate-700/50 border border-slate-200/60 dark:border-slate-600/60 rounded-xl text-sm text-slate-700 dark:text-slate-300 flex items-center justify-between backdrop-blur-sm">
-                        <span>
-                          RAG-Anything - End-to-end academic document processing (MinerU + LightRAG)
-                        </span>
-                        <span className="text-[10px] px-2 py-0.5 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-full">
-                          Default
-                        </span>
-                      </div>
-                    )}
                   </div>
-                  <div className="lg:w-1/2 text-xs text-slate-500 dark:text-slate-400 bg-slate-50/80 dark:bg-slate-700/30 p-4 rounded-xl border border-slate-100/60 dark:border-slate-600/40 backdrop-blur-sm">
-                    <p>
-                      RAG-Anything combines MinerU for multimodal PDF parsing (images, tables,
-                      equations) with LightRAG for knowledge graph construction.
-                    </p>
-                    <p className="mt-2">
-                      <span className="font-medium text-slate-600 dark:text-slate-300">
-                        Supported modes:
-                      </span>{' '}
-                      hybrid, local, global, naive
-                    </p>
-                  </div>
-                </div>
-              </CardBody>
-            </Card>
-
-            {/* Research Tools & TTS */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {/* Research Tools */}
-              <Card variant="glass">
-                <CardHeader>
-                  <div className="flex items-center gap-2">
-                    <Search className="w-4 h-4 text-amber-500" />
-                    <h2 className="font-semibold text-slate-900 dark:text-slate-100">
-                      {t('Research Tools')}
-                    </h2>
-                  </div>
-                </CardHeader>
-                <CardBody>
-                  <div className="grid grid-cols-2 gap-4">
-                    {/* Web Search */}
-                    <div className="p-4 bg-slate-50/80 dark:bg-slate-700/30 rounded-xl border border-slate-100/60 dark:border-slate-600/40 backdrop-blur-sm">
-                      <div className="flex items-center justify-between mb-4">
-                        <span className="text-xs font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                          <Globe className="w-4 h-4 text-blue-500" />
-                          {t('Web Search')}
-                        </span>
-                        <ToggleSwitch
-                          checked={editedConfig.tools?.web_search?.enabled ?? true}
-                          onChange={checked =>
-                            handleConfigChange('tools', 'enabled', checked, 'web_search')
-                          }
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
-                          {t('Max Results')}
-                        </label>
-                        <Input
-                          type="number"
-                          size="sm"
-                          value={editedConfig.tools?.web_search?.max_results || 5}
-                          onChange={e =>
-                            handleConfigChange(
-                              'tools',
-                              'max_results',
-                              parseInt(e.target.value),
-                              'web_search'
-                            )
-                          }
-                        />
-                      </div>
-                    </div>
-
-                    {/* Knowledge Base */}
-                    <div className="p-4 bg-slate-50/80 dark:bg-slate-700/30 rounded-xl border border-slate-100/60 dark:border-slate-600/40 backdrop-blur-sm">
-                      <div className="flex items-center mb-4">
-                        <span className="text-xs font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                          <Database className="w-4 h-4 text-purple-500" />
-                          {t('Knowledge Base')}
-                        </span>
-                      </div>
-                      <div className="space-y-3">
-                        <div>
-                          <label className="block text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
-                            {t('Default KB')}
-                          </label>
-                          <Input
-                            type="text"
-                            size="sm"
-                            value={editedConfig.tools?.rag_tool?.default_kb || ''}
-                            onChange={e =>
-                              handleConfigChange('tools', 'default_kb', e.target.value, 'rag_tool')
-                            }
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
-                            {t('Base Directory')}
-                          </label>
-                          <Input
-                            type="text"
-                            size="sm"
-                            value={editedConfig.tools?.rag_tool?.kb_base_dir || ''}
-                            onChange={e =>
-                              handleConfigChange('tools', 'kb_base_dir', e.target.value, 'rag_tool')
-                            }
-                            className="font-mono"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </CardBody>
-              </Card>
-
-              {/* TTS Settings */}
-              <Card variant="glass">
-                <CardHeader>
-                  <div className="flex items-center gap-2">
-                    <Volume2 className="w-4 h-4 text-rose-500" />
-                    <h2 className="font-semibold text-slate-900 dark:text-slate-100">
-                      {t('Text-to-Speech')}
-                    </h2>
-                  </div>
-                </CardHeader>
-                <CardBody>
-                  <div className="grid grid-cols-2 gap-4">
-                    <Input
-                      label={t('Default Voice')}
-                      value={editedConfig.tts?.default_voice || 'Cherry'}
-                      onChange={e => handleConfigChange('tts', 'default_voice', e.target.value)}
-                    />
-                    <Input
-                      label={t('Default Language')}
-                      value={editedConfig.tts?.default_language || 'English'}
-                      onChange={e => handleConfigChange('tts', 'default_language', e.target.value)}
-                    />
-                  </div>
-                </CardBody>
-              </Card>
-            </div>
-          </motion.div>
-        )}
-
-        {/* Environment Variables Tab */}
-        {activeTab === 'environment' && envConfig && (
-          <motion.div
-            key="environment"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
-            className="space-y-6"
-          >
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {envConfig.categories.map(category => {
-                const categoryVars = envConfig.variables.filter(v => v.category === category.id)
-                if (categoryVars.length === 0) return null
-
-                return (
-                  <Card key={category.id} variant="glass">
-                    <CardHeader>
-                      <div className="flex items-center gap-2">
-                        <div className="text-teal-500">{getCategoryIcon(category.icon)}</div>
-                        <div>
-                          <h2 className="font-semibold text-slate-900 dark:text-slate-100">
-                            {category.name}
-                          </h2>
-                          <p className="text-[10px] text-slate-500 dark:text-slate-400">
-                            {category.description}
-                          </p>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardBody className="space-y-4">
-                      {categoryVars.map(envVar => (
-                        <div key={envVar.key} className="space-y-1">
-                          <div className="flex items-center justify-between">
-                            <label className="text-xs font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                              <code className="bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded text-slate-800 dark:text-slate-200 text-[10px]">
-                                {envVar.key}
-                              </code>
-                              {envVar.required && (
-                                <span className="text-red-500 text-[9px] font-semibold">
-                                  REQUIRED
-                                </span>
-                              )}
-                              {envVar.is_set && (
-                                <CheckCircle className="w-3 h-3 text-emerald-500" />
-                              )}
-                            </label>
-                            {envVar.sensitive && (
-                              <button
-                                onClick={() => toggleSensitiveVisibility(envVar.key)}
-                                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-0.5"
-                              >
-                                {showSensitive[envVar.key] ? (
-                                  <EyeOff className="w-3.5 h-3.5" />
-                                ) : (
-                                  <Eye className="w-3.5 h-3.5" />
-                                )}
-                              </button>
-                            )}
-                          </div>
-                          <p className="text-[10px] text-slate-500 dark:text-slate-400 line-clamp-1">
-                            {envVar.description}
-                          </p>
-                          <Input
-                            type={
-                              envVar.sensitive && !showSensitive[envVar.key] ? 'password' : 'text'
-                            }
-                            size="sm"
-                            value={editedEnvVars[envVar.key] || ''}
-                            onChange={e => handleEnvVarChange(envVar.key, e.target.value)}
-                            placeholder={envVar.default || `Enter ${envVar.key}`}
-                            className="font-mono"
-                          />
-                        </div>
-                      ))}
-                    </CardBody>
-                  </Card>
-                )
-              })}
-            </div>
-
-            {/* Save Environment Variables */}
-            <div className="pt-2">
-              {envError && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl flex items-center gap-2 text-red-700 dark:text-red-400 text-sm"
-                >
-                  <AlertCircle className="w-4 h-4" />
-                  <span>{envError}</span>
-                </motion.div>
-              )}
-              <Button
-                variant={envSaveSuccess ? 'secondary' : 'primary'}
-                size="lg"
-                onClick={handleEnvSave}
-                loading={envSaving}
-                iconLeft={
-                  envSaveSuccess ? <Check className="w-5 h-5" /> : <Key className="w-5 h-5" />
-                }
-                className="w-full"
-              >
-                {envSaveSuccess ? t('Environment Updated!') : t('Apply Environment Changes')}
-              </Button>
-            </div>
-          </motion.div>
-        )}
-
-        {/* LLM Providers Tab */}
-        {activeTab === 'local_models' && (
-          <motion.div
-            key="local_models"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
-            className="space-y-6"
-          >
-            {/* LLM Mode Status Banner */}
-            {llmModeInfo && (
-              <Card
-                variant="glass"
-                hoverEffect={false}
-                className={`${
-                  llmModeInfo.mode === 'hybrid'
-                    ? 'border-purple-300/50 dark:border-purple-700/50'
-                    : llmModeInfo.mode === 'api'
-                      ? 'border-blue-300/50 dark:border-blue-700/50'
-                      : 'border-emerald-300/50 dark:border-emerald-700/50'
-                }`}
-              >
-                <CardBody>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={`p-2 rounded-xl ${
-                          llmModeInfo.mode === 'hybrid'
-                            ? 'bg-purple-100 dark:bg-purple-800/30'
-                            : llmModeInfo.mode === 'api'
-                              ? 'bg-blue-100 dark:bg-blue-800/30'
-                              : 'bg-emerald-100 dark:bg-emerald-800/30'
-                        }`}
-                      >
-                        <Cpu
-                          className={`w-5 h-5 ${
-                            llmModeInfo.mode === 'hybrid'
-                              ? 'text-purple-600 dark:text-purple-400'
-                              : llmModeInfo.mode === 'api'
-                                ? 'text-blue-600 dark:text-blue-400'
-                                : 'text-emerald-600 dark:text-emerald-400'
-                          }`}
-                        />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                            {t('LLM Mode')}: <span className="uppercase">{llmModeInfo.mode}</span>
-                          </h3>
-                          <span
-                            className={`px-2 py-0.5 text-[10px] rounded-full font-medium ${
-                              llmModeInfo.effective_source === 'provider'
-                                ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
-                                : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400'
-                            }`}
-                          >
-                            {llmModeInfo.effective_source === 'provider'
-                              ? t('Using Provider')
-                              : t('Using ENV')}
-                          </span>
-                        </div>
-                        <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
-                          {llmModeInfo.mode === 'hybrid'
-                            ? t(
-                                'Both API and Local providers available. Active provider takes priority.'
-                              )
-                            : llmModeInfo.mode === 'api'
-                              ? t('Only API (cloud) providers are used.')
-                              : t('Only Local (self-hosted) providers are used.')}
-                        </p>
-                      </div>
-                    </div>
-                    {llmModeInfo.active_provider && (
-                      <div className="text-right">
-                        <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                          {t('Active')}
-                        </p>
-                        <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                          {llmModeInfo.active_provider.name}
-                        </p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">
-                          {llmModeInfo.active_provider.model}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </CardBody>
-              </Card>
-            )}
-
-            {/* Header & Add Button */}
-            <Card variant="glass" hoverEffect={false}>
-              <CardBody className="flex justify-between items-center">
-                <div>
-                  <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                    {t('LLM Providers')}
-                  </h2>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    {t(
-                      'Manage both API and Local LLM providers. Set LLM_MODE in Environment Variables to control which type is used.'
-                    )}
-                  </p>
-                </div>
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={() => {
-                    const defaultPreset = PROVIDER_PRESETS[0]
-                    setEditingProvider({
-                      name: '',
-                      binding: defaultPreset.binding,
-                      base_url: defaultPreset.base_url || '',
-                      api_key: '',
-                      model: defaultPreset.default_model,
-                      is_active: false,
-                      provider_type: 'local',
-                      requires_key: defaultPreset.requires_key,
-                    })
-                    setOriginalProviderName(null)
-                    setSelectedPresetId(defaultPreset.id)
-                    setFetchedModels([])
-                    setShowProviderForm(true)
-                    setTestProviderResult(null)
-                  }}
-                  iconLeft={<Plus className="w-4 h-4" />}
-                >
-                  {t('Add Provider')}
-                </Button>
-              </CardBody>
-            </Card>
-
-            {/* Provider Type Filter */}
-            <div className="flex items-center gap-2 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm px-4 py-3 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
-              <span className="text-xs text-slate-500 dark:text-slate-400">{t('Filter')}:</span>
-              <div className="flex bg-slate-100/80 dark:bg-slate-700/50 p-0.5 rounded-lg">
-                {(['all', 'api', 'local'] as const).map(filter => (
-                  <button
-                    key={filter}
-                    onClick={() => setProviderTypeFilter(filter)}
-                    className={`px-4 py-1.5 rounded-md text-xs font-medium transition-all ${
-                      providerTypeFilter === filter
-                        ? 'bg-white dark:bg-slate-600 text-teal-600 dark:text-teal-400 shadow-sm'
-                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
-                    }`}
-                  >
-                    {filter === 'all' ? t('All') : filter === 'api' ? t('API (Cloud)') : t('Local')}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Provider List */}
-            {loadingProviders ? (
-              <div className="flex justify-center p-8">
-                <Spinner size="lg" label={t('Loading providers...')} />
-              </div>
-            ) : providers.filter(
-                p => providerTypeFilter === 'all' || p.provider_type === providerTypeFilter
-              ).length === 0 ? (
-              <Card variant="outlined" className="border-dashed">
-                <CardBody className="text-center py-12">
-                  <Server className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-                  <p className="text-sm text-slate-500 dark:text-slate-400">
-                    {providerTypeFilter === 'all'
-                      ? t('No providers configured yet.')
-                      : providerTypeFilter === 'api'
-                        ? t('No API providers configured.')
-                        : t('No local providers configured.')}
-                  </p>
-                  <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
-                    {t('Add providers to manage your LLM configurations.')}
-                  </p>
-                </CardBody>
-              </Card>
-            ) : (
-              <div className="grid gap-3">
-                {providers
-                  .filter(
-                    p => providerTypeFilter === 'all' || p.provider_type === providerTypeFilter
-                  )
-                  .map(provider => (
-                    <ProviderCard
-                      key={provider.name}
-                      provider={provider}
-                      onActivate={() => handleActivateProvider(provider.name)}
-                      onEdit={() => {
-                        setEditingProvider({ ...provider })
-                        setOriginalProviderName(provider.name)
-                        const preset =
-                          PROVIDER_PRESETS.find(
-                            p => p.base_url && provider.base_url.includes(p.base_url)
-                          ) || PROVIDER_PRESETS.find(p => p.id === 'custom')
-                        if (preset) setSelectedPresetId(preset.id)
-                        setFetchedModels([])
-                        setShowProviderForm(true)
-                        setTestProviderResult(null)
-                      }}
-                      onDelete={() => handleDeleteProvider(provider.name)}
-                      onTest={() => handleTestProvider(provider)}
-                    />
-                  ))}
-              </div>
-            )}
-
-            {/* Edit/Add Provider Modal */}
-            <Modal
-              isOpen={showProviderForm && editingProvider !== null}
-              onClose={() => setShowProviderForm(false)}
-              title={editingProvider?.name ? t('Edit Provider') : t('Add Provider')}
-              size="lg"
-            >
-              <ModalBody className="space-y-4">
-                {/* Provider Type Selection */}
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-2">
-                    {t('Provider Type')}
-                  </label>
-                  <div className="flex bg-slate-100/80 dark:bg-slate-700/50 p-1 rounded-xl">
-                    <motion.button
-                      type="button"
-                      onClick={() =>
-                        setEditingProvider(prev =>
-                          prev
-                            ? {
-                                ...prev,
-                                provider_type: 'local',
-                                requires_key: false,
-                              }
-                            : null
-                        )
-                      }
-                      className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
-                        editingProvider?.provider_type === 'local'
-                          ? 'bg-white dark:bg-slate-600 text-emerald-600 dark:text-emerald-400 shadow-sm'
-                          : 'text-slate-500 dark:text-slate-400'
-                      }`}
-                      whileHover={{ scale: 1.01 }}
-                      whileTap={{ scale: 0.99 }}
-                    >
-                      <Server className="w-4 h-4" />
-                      {t('Local')}
-                    </motion.button>
-                    <motion.button
-                      type="button"
-                      onClick={() =>
-                        setEditingProvider(prev =>
-                          prev
-                            ? {
-                                ...prev,
-                                provider_type: 'api',
-                                requires_key: true,
-                              }
-                            : null
-                        )
-                      }
-                      className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
-                        editingProvider?.provider_type === 'api'
-                          ? 'bg-white dark:bg-slate-600 text-blue-600 dark:text-blue-400 shadow-sm'
-                          : 'text-slate-500 dark:text-slate-400'
-                      }`}
-                      whileHover={{ scale: 1.01 }}
-                      whileTap={{ scale: 0.99 }}
-                    >
-                      <Globe className="w-4 h-4" />
-                      {t('API (Cloud)')}
-                    </motion.button>
-                  </div>
-                  <p className="mt-2 text-[11px] text-slate-500 dark:text-slate-400">
-                    {editingProvider?.provider_type === 'local'
-                      ? t('Local servers (Ollama, LM Studio, vLLM) running on your machine.')
-                      : t('Cloud API providers (OpenAI, Anthropic, DeepSeek, etc.).')}
-                  </p>
-                </div>
-
-                {/* Server Preset */}
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-2">
-                    {t('Server Preset')}
-                  </label>
-                  <select
-                    value={selectedPresetId}
-                    onChange={e => {
-                      const newId = e.target.value
-                      setSelectedPresetId(newId)
-                      const preset = PROVIDER_PRESETS.find(p => p.id === newId)
-                      if (preset && editingProvider) {
-                        setEditingProvider({
-                          ...editingProvider,
-                          binding: preset.binding,
-                          base_url: preset.base_url || editingProvider.base_url,
-                          model: preset.default_model || editingProvider.model,
-                          requires_key: preset.requires_key,
-                        })
-                        setCustomModelInput(preset.models.length === 0)
-                        setFetchedModels([])
-                      }
+                  <Button
+                    onClick={() => {
+                      const defaultPreset = PROVIDER_PRESETS[0]
+                      setEditingProvider({
+                        name: '',
+                        binding: defaultPreset.binding,
+                        base_url: defaultPreset.base_url || '',
+                        api_key: '',
+                        model: defaultPreset.default_model,
+                        is_active: false,
+                        provider_type: 'local',
+                        requires_key: defaultPreset.requires_key,
+                      })
+                      setOriginalProviderName(null)
+                      setSelectedPresetId(defaultPreset.id)
+                      setFetchedModels([])
+                      setShowProviderForm(true)
+                      setTestProviderResult(null)
                     }}
-                    className="w-full p-2.5 bg-white/80 dark:bg-slate-700/80 border border-slate-200/60 dark:border-slate-600/60 rounded-xl text-sm backdrop-blur-sm"
+                    iconLeft={<Plus className="w-4 h-4" />}
                   >
-                    {PROVIDER_PRESETS.map(preset => (
-                      <option key={preset.id} value={preset.id}>
-                        {preset.name}
-                      </option>
-                    ))}
-                  </select>
-                  {PROVIDER_PRESETS.find(p => p.id === selectedPresetId)?.help_text && (
-                    <p className="mt-1 text-[10px] text-slate-500 dark:text-slate-400">
-                      {PROVIDER_PRESETS.find(p => p.id === selectedPresetId)?.help_text}
-                    </p>
-                  )}
-                </div>
+                    {t('Add Provider')}
+                  </Button>
+                </CardBody>
+              </Card>
 
-                {/* Name & Binding */}
-                <div className="grid grid-cols-2 gap-4">
-                  <Input
-                    label="Name"
-                    value={editingProvider?.name || ''}
-                    onChange={e =>
-                      setEditingProvider(prev => (prev ? { ...prev, name: e.target.value } : null))
-                    }
-                    placeholder="My Provider"
-                    disabled={
-                      !!providers.find(p => p.name === editingProvider?.name && p.name !== '')
-                    }
-                  />
-                  <Input label="Binding" value={editingProvider?.binding || ''} disabled />
-                </div>
-
-                {/* Base URL */}
-                <Input
-                  label="Base URL"
-                  value={editingProvider?.base_url || ''}
-                  onChange={e =>
-                    setEditingProvider(prev =>
-                      prev ? { ...prev, base_url: e.target.value } : null
-                    )
-                  }
-                  placeholder="http://localhost:11434/v1"
-                  error={
-                    editingProvider?.base_url?.includes('/chat/completions') ||
-                    editingProvider?.base_url?.includes('/models/')
-                      ? "Base URL should NOT include '/chat/completions' or '/models/'"
-                      : undefined
-                  }
-                  helperText={
-                    !editingProvider?.base_url?.includes('/chat/completions') &&
-                    !editingProvider?.base_url?.includes('/models/')
-                      ? "Only enter the base URL. '/chat/completions' will be appended automatically."
-                      : undefined
-                  }
-                  className="font-mono"
-                />
-
-                {/* API Key */}
-                {PROVIDER_PRESETS.find(p => p.id === selectedPresetId)?.requires_key && (
-                  <Input
-                    type="password"
-                    label={`${t('API Key')} (${t('optional for local')})`}
-                    value={editingProvider?.api_key || ''}
-                    onChange={e =>
-                      setEditingProvider(prev =>
-                        prev ? { ...prev, api_key: e.target.value } : null
-                      )
-                    }
-                    placeholder={t('Usually not required for local servers')}
-                    className="font-mono"
-                  />
-                )}
-
-                {/* Model */}
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
-                      Model
-                    </label>
-                    {(PROVIDER_PRESETS.find(p => p.id === selectedPresetId)?.models.length ?? 0) >
-                      0 && (
+              {/* Provider Type Filter */}
+              <Card variant="glass" padding="none" interactive={false}>
+                <CardBody padding="sm" className="flex items-center gap-3">
+                  <span className="text-xs text-zinc-500 dark:text-zinc-400">{t('Filter')}:</span>
+                  <div className="flex bg-zinc-100/80 dark:bg-white/10 p-0.5 rounded-xl">
+                    {(['all', 'api', 'local'] as const).map(filter => (
                       <button
-                        onClick={() => setCustomModelInput(!customModelInput)}
-                        className="text-[10px] text-teal-600 hover:underline"
+                        key={filter}
+                        onClick={() => setProviderTypeFilter(filter)}
+                        className={cn(
+                          'px-4 py-1.5 rounded-lg text-xs font-medium transition-all',
+                          providerTypeFilter === filter
+                            ? 'bg-white/90 dark:bg-zinc-950/60 text-blue-600 dark:text-blue-300 shadow-sm'
+                            : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'
+                        )}
                       >
-                        {customModelInput ? 'Select from list' : 'Enter custom'}
+                        {filter === 'all'
+                          ? t('All')
+                          : filter === 'api'
+                            ? t('API (Cloud)')
+                            : t('Local')}
                       </button>
-                    )}
+                    ))}
                   </div>
-                  <div className="flex gap-2">
-                    {!customModelInput &&
-                    (fetchedModels.length > 0 ||
-                      (PROVIDER_PRESETS.find(p => p.id === selectedPresetId)?.models.length ?? 0) >
-                        0) ? (
-                      <select
-                        value={editingProvider?.model || ''}
-                        onChange={e =>
+                </CardBody>
+              </Card>
+
+              {/* Provider List */}
+              {loadingProviders ? (
+                <div className="flex justify-center p-8">
+                  <Spinner size="lg" label={t('Loading providers...')} />
+                </div>
+              ) : providers.filter(
+                  p => providerTypeFilter === 'all' || p.provider_type === providerTypeFilter
+                ).length === 0 ? (
+                <Card
+                  variant="glass"
+                  padding="none"
+                  interactive={false}
+                  className="border-dashed border-zinc-300/70 dark:border-white/10"
+                >
+                  <CardBody padding="lg" className="text-center">
+                    <Server className="w-12 h-12 text-zinc-300 dark:text-zinc-700 mx-auto mb-3" />
+                    <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                      {providerTypeFilter === 'all'
+                        ? t('No providers configured yet.')
+                        : providerTypeFilter === 'api'
+                          ? t('No API providers configured.')
+                          : t('No local providers configured.')}
+                    </p>
+                    <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-1">
+                      {t('Add providers to manage your LLM configurations.')}
+                    </p>
+                  </CardBody>
+                </Card>
+              ) : (
+                <div className="grid gap-3">
+                  {providers
+                    .filter(
+                      p => providerTypeFilter === 'all' || p.provider_type === providerTypeFilter
+                    )
+                    .map(provider => (
+                      <ProviderCard
+                        key={provider.name}
+                        provider={provider}
+                        onActivate={() => handleActivateProvider(provider.name)}
+                        onEdit={() => {
+                          setEditingProvider({ ...provider })
+                          setOriginalProviderName(provider.name)
+                          const preset =
+                            PROVIDER_PRESETS.find(
+                              p => p.base_url && provider.base_url.includes(p.base_url)
+                            ) || PROVIDER_PRESETS.find(p => p.id === 'custom')
+                          if (preset) setSelectedPresetId(preset.id)
+                          setFetchedModels([])
+                          setShowProviderForm(true)
+                          setTestProviderResult(null)
+                        }}
+                        onDelete={() => handleDeleteProvider(provider.name)}
+                        onTest={() => handleTestProvider(provider)}
+                      />
+                    ))}
+                </div>
+              )}
+
+              {/* Edit/Add Provider Modal */}
+              <Modal
+                isOpen={showProviderForm && editingProvider !== null}
+                onClose={() => setShowProviderForm(false)}
+                title={editingProvider?.name ? t('Edit Provider') : t('Add Provider')}
+                size="lg"
+              >
+                <Modal.Body className="space-y-4">
+                  {/* Provider Type Selection */}
+                  <div>
+                    <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-200 mb-2">
+                      {t('Provider Type')}
+                    </label>
+                    <div className="flex bg-zinc-100 dark:bg-white/10 p-1 rounded-lg">
+                      <motion.button
+                        type="button"
+                        onClick={() =>
                           setEditingProvider(prev =>
-                            prev ? { ...prev, model: e.target.value } : null
+                            prev
+                              ? {
+                                  ...prev,
+                                  provider_type: 'local',
+                                  requires_key: false,
+                                }
+                              : null
                           )
                         }
-                        className="flex-1 p-2.5 bg-white/80 dark:bg-slate-700/80 border border-slate-200/60 dark:border-slate-600/60 rounded-xl text-sm backdrop-blur-sm"
+                        className={`flex-1 py-2 px-4 rounded-md text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
+                          editingProvider?.provider_type === 'local'
+                            ? 'bg-white dark:bg-zinc-950/60 text-emerald-600 dark:text-emerald-300 shadow-sm'
+                            : 'text-zinc-500 dark:text-zinc-400'
+                        }`}
+                        whileHover={{ scale: 1.01 }}
+                        whileTap={{ scale: 0.99 }}
                       >
-                        {fetchedModels.length > 0 ? (
-                          <>
-                            <option value="" disabled>
-                              Select a fetched model
-                            </option>
-                            {fetchedModels.map(m => (
+                        <Server className="w-4 h-4" />
+                        {t('Local')}
+                      </motion.button>
+                      <motion.button
+                        type="button"
+                        onClick={() =>
+                          setEditingProvider(prev =>
+                            prev
+                              ? {
+                                  ...prev,
+                                  provider_type: 'api',
+                                  requires_key: true,
+                                }
+                              : null
+                          )
+                        }
+                        className={`flex-1 py-2 px-4 rounded-md text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
+                          editingProvider?.provider_type === 'api'
+                            ? 'bg-white dark:bg-zinc-950/60 text-sky-600 dark:text-sky-300 shadow-sm'
+                            : 'text-zinc-500 dark:text-zinc-400'
+                        }`}
+                        whileHover={{ scale: 1.01 }}
+                        whileTap={{ scale: 0.99 }}
+                      >
+                        <Globe className="w-4 h-4" />
+                        {t('API (Cloud)')}
+                      </motion.button>
+                    </div>
+                    <p className="mt-2 text-[11px] text-zinc-400 dark:text-zinc-500">
+                      {editingProvider?.provider_type === 'local'
+                        ? t('Local servers (Ollama, LM Studio, vLLM) running on your machine.')
+                        : t('Cloud API providers (OpenAI, Anthropic, DeepSeek, etc.).')}
+                    </p>
+                  </div>
+
+                  {/* Server Preset */}
+                  <div>
+                    <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-200 mb-2">
+                      {t('Server Preset')}
+                    </label>
+                    <select
+                      value={selectedPresetId}
+                      onChange={e => {
+                        const newId = e.target.value
+                        setSelectedPresetId(newId)
+                        const preset = PROVIDER_PRESETS.find(p => p.id === newId)
+                        if (preset && editingProvider) {
+                          setEditingProvider({
+                            ...editingProvider,
+                            binding: preset.binding,
+                            base_url: preset.base_url || editingProvider.base_url,
+                            model: preset.default_model || editingProvider.model,
+                            requires_key: preset.requires_key,
+                          })
+                          setCustomModelInput(preset.models.length === 0)
+                          setFetchedModels([])
+                        }
+                      }}
+                      className={selectClassName}
+                    >
+                      {PROVIDER_PRESETS.map(preset => (
+                        <option key={preset.id} value={preset.id}>
+                          {preset.name}
+                        </option>
+                      ))}
+                    </select>
+                    {PROVIDER_PRESETS.find(p => p.id === selectedPresetId)?.help_text && (
+                      <p className="mt-1 text-[10px] text-zinc-400 dark:text-zinc-500">
+                        {PROVIDER_PRESETS.find(p => p.id === selectedPresetId)?.help_text}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Name & Binding */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <Input
+                      label="Name"
+                      value={editingProvider?.name || ''}
+                      onChange={e =>
+                        setEditingProvider(prev =>
+                          prev ? { ...prev, name: e.target.value } : null
+                        )
+                      }
+                      placeholder="My Provider"
+                      disabled={
+                        !!providers.find(p => p.name === editingProvider?.name && p.name !== '')
+                      }
+                    />
+                    <Input label="Binding" value={editingProvider?.binding || ''} disabled />
+                  </div>
+
+                  {/* Base URL */}
+                  <Input
+                    label="Base URL"
+                    value={editingProvider?.base_url || ''}
+                    onChange={e =>
+                      setEditingProvider(prev =>
+                        prev ? { ...prev, base_url: e.target.value } : null
+                      )
+                    }
+                    placeholder="http://localhost:11434/v1"
+                    error={
+                      editingProvider?.base_url?.includes('/chat/completions') ||
+                      editingProvider?.base_url?.includes('/models/')
+                        ? "Base URL should NOT include '/chat/completions' or '/models/'"
+                        : undefined
+                    }
+                    helperText={
+                      !editingProvider?.base_url?.includes('/chat/completions') &&
+                      !editingProvider?.base_url?.includes('/models/')
+                        ? "Only enter the base URL. '/chat/completions' will be appended automatically."
+                        : undefined
+                    }
+                    className="font-mono"
+                  />
+
+                  {/* API Key */}
+                  {PROVIDER_PRESETS.find(p => p.id === selectedPresetId)?.requires_key && (
+                    <Input
+                      type="password"
+                      label={`${t('API Key')} (${t('optional for local')})`}
+                      value={editingProvider?.api_key || ''}
+                      onChange={e =>
+                        setEditingProvider(prev =>
+                          prev ? { ...prev, api_key: e.target.value } : null
+                        )
+                      }
+                      placeholder={t('Usually not required for local servers')}
+                      className="font-mono"
+                    />
+                  )}
+
+                  {/* Model */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-xs font-medium text-zinc-700">Model</label>
+                      {(PROVIDER_PRESETS.find(p => p.id === selectedPresetId)?.models.length ?? 0) >
+                        0 && (
+                        <button
+                          onClick={() => setCustomModelInput(!customModelInput)}
+                          className="text-[10px] text-blue-500 hover:underline"
+                        >
+                          {customModelInput ? 'Select from list' : 'Enter custom'}
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      {!customModelInput &&
+                      (fetchedModels.length > 0 ||
+                        (PROVIDER_PRESETS.find(p => p.id === selectedPresetId)?.models.length ??
+                          0) > 0) ? (
+                        <select
+                          value={editingProvider?.model || ''}
+                          onChange={e =>
+                            setEditingProvider(prev =>
+                              prev ? { ...prev, model: e.target.value } : null
+                            )
+                          }
+                          className={cn(selectClassName, 'flex-1')}
+                        >
+                          {fetchedModels.length > 0 ? (
+                            <>
+                              <option value="" disabled>
+                                Select a fetched model
+                              </option>
+                              {fetchedModels.map(m => (
+                                <option key={m} value={m}>
+                                  {m}
+                                </option>
+                              ))}
+                            </>
+                          ) : (
+                            PROVIDER_PRESETS.find(p => p.id === selectedPresetId)?.models.map(m => (
                               <option key={m} value={m}>
                                 {m}
                               </option>
-                            ))}
-                          </>
-                        ) : (
-                          PROVIDER_PRESETS.find(p => p.id === selectedPresetId)?.models.map(m => (
-                            <option key={m} value={m}>
-                              {m}
-                            </option>
-                          ))
-                        )}
-                      </select>
-                    ) : (
-                      <Input
-                        value={editingProvider?.model || ''}
-                        onChange={e =>
-                          setEditingProvider(prev =>
-                            prev ? { ...prev, model: e.target.value } : null
-                          )
-                        }
-                        placeholder="gpt-4o-mini"
-                        wrapperClassName="flex-1"
-                      />
-                    )}
-                    <Button
-                      variant="secondary"
-                      size="md"
-                      onClick={fetchModels}
-                      loading={fetchingModels}
-                      disabled={!editingProvider?.base_url}
-                      iconLeft={<RotateCcw className="w-4 h-4" />}
-                    >
-                      {fetchingModels ? '' : ''}
-                    </Button>
+                            ))
+                          )}
+                        </select>
+                      ) : (
+                        <Input
+                          value={editingProvider?.model || ''}
+                          onChange={e =>
+                            setEditingProvider(prev =>
+                              prev ? { ...prev, model: e.target.value } : null
+                            )
+                          }
+                          placeholder="gpt-4o-mini"
+                          wrapperClassName="flex-1"
+                        />
+                      )}
+                      <button
+                        onClick={fetchModels}
+                        disabled={fetchingModels || !editingProvider?.base_url}
+                        className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-white/5 border border-zinc-200 dark:border-white/10 rounded-lg text-sm font-medium text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-white/10 transition-colors disabled:opacity-50"
+                      >
+                        {fetchingModels ? <Spinner size="sm" /> : <RotateCcw className="w-4 h-4" />}
+                      </button>
+                    </div>
                   </div>
-                </div>
 
-                {/* Test Connection */}
-                <div className="flex items-center justify-between pt-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => editingProvider && handleTestProvider(editingProvider)}
-                    loading={testingProvider}
-                    iconLeft={<RefreshCw className="w-3 h-3" />}
-                  >
-                    Test Connection
-                  </Button>
-                  {testProviderResult && (
-                    <span
-                      className={`text-[10px] px-2 py-1 rounded-full ${
-                        testProviderResult.success
-                          ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
-                          : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
-                      }`}
+                  {/* Test Connection */}
+                  <div className="flex items-center justify-between pt-2">
+                    <button
+                      onClick={() => editingProvider && handleTestProvider(editingProvider)}
+                      disabled={testingProvider}
+                      className="flex items-center gap-2 px-3 py-1.5 text-sm text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors disabled:opacity-50"
                     >
-                      {testProviderResult.success
-                        ? 'Success!'
-                        : `Failed: ${testProviderResult.message}`}
-                    </span>
-                  )}
-                </div>
-              </ModalBody>
-              <ModalFooter>
-                {providerError && (
-                  <div className="flex-1 p-2 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg text-red-600 dark:text-red-400 text-xs mr-4">
-                    {providerError}
+                      {testingProvider ? <Spinner size="sm" /> : <RefreshCw className="w-3 h-3" />}
+                      Test Connection
+                    </button>
+                    {testProviderResult && (
+                      <span
+                        className={`text-[10px] px-2 py-1 rounded-full ${
+                          testProviderResult.success
+                            ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300'
+                            : 'bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-300'
+                        }`}
+                      >
+                        {testProviderResult.success
+                          ? 'Success!'
+                          : `Failed: ${testProviderResult.message}`}
+                      </span>
+                    )}
                   </div>
-                )}
-                <Button variant="ghost" onClick={() => setShowProviderForm(false)}>
-                  Cancel
-                </Button>
-                <Button
-                  variant="primary"
-                  onClick={() => editingProvider && handleProviderSave(editingProvider)}
-                  loading={savingProvider}
-                >
-                  {savingProvider ? t('Saving...') : t('Save Provider')}
-                </Button>
-              </ModalFooter>
-            </Modal>
-          </motion.div>
-        )}
-      </AnimatePresence>
+                </Modal.Body>
+
+                <Modal.Footer>
+                  {providerError && (
+                    <div className="flex-1 p-2 bg-red-50 border border-red-200 dark:bg-red-950/30 dark:border-red-900/50 rounded-lg text-red-600 dark:text-red-200 text-xs mr-4">
+                      {providerError}
+                    </div>
+                  )}
+                  <Button variant="secondary" onClick={() => setShowProviderForm(false)}>
+                    {t('Cancel')}
+                  </Button>
+                  <Button
+                    onClick={() => editingProvider && handleProviderSave(editingProvider)}
+                    loading={savingProvider}
+                    iconLeft={<Save className="w-4 h-4" />}
+                  >
+                    {t('Save Provider')}
+                  </Button>
+                </Modal.Footer>
+              </Modal>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     </PageWrapper>
   )
 }

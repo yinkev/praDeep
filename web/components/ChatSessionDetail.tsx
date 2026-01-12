@@ -167,7 +167,7 @@ export default function ChatSessionDetail({
         >
           <Card
             variant="glass"
-            hoverEffect={false}
+            interactive={false}
             className="w-full max-h-[85vh] flex flex-col bg-[#F7F4EC]/90 dark:bg-slate-900/80 backdrop-blur-2xl shadow-2xl shadow-black/10"
           >
             {/* Header */}

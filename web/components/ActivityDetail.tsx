@@ -120,7 +120,7 @@ export default function ActivityDetail({ activity, onClose }: ActivityDetailProp
         >
           <Card
             variant="glass"
-            hoverEffect={false}
+            interactive={false}
             className="w-full max-h-[85vh] flex flex-col overflow-hidden !bg-white/70 dark:!bg-slate-900/70 !backdrop-blur-2xl !border-white/40 dark:!border-slate-700/40"
           >
             {/* Header */}

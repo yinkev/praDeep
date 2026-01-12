@@ -1,14 +1,22 @@
 'use client'
 
-import React, { useEffect, useCallback } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import {
+  useEffect,
+  useId,
+  useRef,
+  type MouseEvent as ReactMouseEvent,
+  type ReactElement,
+  type ReactNode,
+} from 'react'
+import { AnimatePresence, motion, useReducedMotion, type Variants } from 'framer-motion'
 import { X } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 // ============================================================================
 // Types
 // ============================================================================
 
-type ModalSize = 'sm' | 'md' | 'lg' | 'full'
+type ModalSize = 'sm' | 'md' | 'lg' | 'full' | 'xl'
 
 interface ModalProps {
   /** Controls modal visibility */
@@ -18,7 +26,7 @@ interface ModalProps {
   /** Modal title displayed in header */
   title?: string
   /** Modal content */
-  children: React.ReactNode
+  children: ReactNode
   /** Modal width preset */
   size?: ModalSize
   /** Show/hide the close button */
@@ -28,56 +36,31 @@ interface ModalProps {
 }
 
 interface ModalHeaderProps {
-  children: React.ReactNode
+  children: ReactNode
   className?: string
 }
 
 interface ModalBodyProps {
-  children: React.ReactNode
+  children: ReactNode
   className?: string
 }
 
 interface ModalFooterProps {
-  children: React.ReactNode
+  children: ReactNode
   className?: string
-}
-
-// ============================================================================
-// Design System - Cloud Dancer Palette with Teal Accents
-// ============================================================================
-
-const colors = {
-  // Cloud Dancer - soft whites and creams
-  cloudDancer: {
-    50: '#FAFBFC',
-    100: '#F5F7F9',
-    200: '#E8ECF0',
-    300: '#D1D9E0',
-  },
-  // Teal accents
-  teal: {
-    400: '#2DD4BF',
-    500: '#14B8A6',
-    600: '#0D9488',
-  },
-  // Dark mode variants
-  dark: {
-    800: '#1E293B',
-    900: '#0F172A',
-    950: '#020617',
-  },
 }
 
 // ============================================================================
 // Size Configurations
 // ============================================================================
 
-const sizeStyles: Record<ModalSize, string> = {
-  sm: 'max-w-sm',
-  md: 'max-w-md',
-  lg: 'max-w-2xl',
-  full: 'max-w-[90vw] max-h-[90vh]',
-}
+const sizeStyles = {
+  sm: 'w-full max-w-[420px]',
+  md: 'w-full max-w-[560px]',
+  lg: 'w-full max-w-[760px]',
+  xl: 'w-full max-w-[920px]',
+  full: 'w-[calc(100vw-2rem)] h-[calc(100vh-2rem)]',
+} satisfies Record<ModalSize, string>
 
 // ============================================================================
 // Animation Variants
@@ -87,58 +70,53 @@ const backdropVariants = {
   hidden: { opacity: 0 },
   visible: { opacity: 1 },
   exit: { opacity: 0 },
-}
+} satisfies Variants
 
 const modalVariants = {
   hidden: {
     opacity: 0,
     scale: 0.95,
-    y: 10,
   },
   visible: {
     opacity: 1,
     scale: 1,
-    y: 0,
     transition: {
-      type: 'spring' as const,
-      stiffness: 300,
-      damping: 25,
+      duration: 0.2,
+      ease: [0.16, 1, 0.3, 1] as const, // out-expo
     },
   },
   exit: {
     opacity: 0,
     scale: 0.95,
-    y: 10,
     transition: {
       duration: 0.15,
+      ease: [0.16, 1, 0.3, 1] as const, // out-expo
     },
   },
-}
-
-const closeButtonVariants = {
-  initial: { scale: 1 },
-  hover: {
-    scale: 1.1,
-    backgroundColor: 'rgba(20, 184, 166, 0.15)', // teal-500 with opacity
-  },
-  tap: { scale: 0.95 },
-}
+} satisfies Variants
 
 // ============================================================================
 // Sub-components
 // ============================================================================
 
 /**
- * Modal Header - displays title and optional actions
+ * Modal Header - 24px padding, border-bottom
  */
-export function ModalHeader({ children, className = '' }: ModalHeaderProps) {
+export function ModalHeader({ children, className }: ModalHeaderProps) {
+  return <div className={cn('px-6 py-5 border-b border-border/50', className)}>{children}</div>
+}
+
+/**
+ * Modal Content - scrollable flex area
+ */
+export function ModalContent({ children, className }: ModalBodyProps) {
   return (
     <div
-      className={`
-        px-6 py-4 border-b
-        border-slate-200/50 dark:border-slate-700/50
-        ${className}
-      `}
+      className={cn(
+        'min-h-0 flex-1 overflow-y-auto px-6 py-5',
+        'text-text-secondary dark:text-text-secondary',
+        className
+      )}
     >
       {children}
     </div>
@@ -146,44 +124,37 @@ export function ModalHeader({ children, className = '' }: ModalHeaderProps) {
 }
 
 /**
- * Modal Body - main content area with scroll support
+ * Modal Footer - 16px/24px padding, bg-surface-secondary, bottom radius
  */
-export function ModalBody({ children, className = '' }: ModalBodyProps) {
+export function ModalFooter({ children, className }: ModalFooterProps) {
   return (
     <div
-      className={`
-        px-6 py-4 overflow-y-auto max-h-[60vh]
-        ${className}
-      `}
+      className={cn(
+        'px-6 py-4 border-t border-border/50',
+        'bg-surface-secondary/50',
+        'flex items-center justify-end gap-3',
+        className
+      )}
     >
       {children}
     </div>
   )
 }
 
-/**
- * Modal Footer - action buttons area
- */
-export function ModalFooter({ children, className = '' }: ModalFooterProps) {
-  return (
-    <div
-      className={`
-        px-6 py-4 border-t
-        border-slate-200/50 dark:border-slate-700/50
-        flex items-center justify-end gap-3
-        ${className}
-      `}
-    >
-      {children}
-    </div>
-  )
-}
+export const ModalBody = ModalContent
 
 // ============================================================================
 // Main Modal Component
 // ============================================================================
 
-export default function Modal({
+export type ModalComponent = ((props: ModalProps) => ReactElement) & {
+  Header: typeof ModalHeader
+  Content: typeof ModalContent
+  Body: typeof ModalContent
+  Footer: typeof ModalFooter
+}
+
+function ModalBase({
   isOpen,
   onClose,
   title,
@@ -191,141 +162,165 @@ export default function Modal({
   size = 'md',
   showCloseButton = true,
   className = '',
-}: ModalProps) {
-  // Handle escape key press
-  const handleEscape = useCallback(
-    (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose()
-      }
-    },
-    [onClose]
-  )
+}: ModalProps): ReactElement {
+  const titleId = useId()
+  const reduceMotion = useReducedMotion()
+  const panelRef = useRef<HTMLDivElement>(null)
+  const previouslyFocusedRef = useRef<HTMLElement | null>(null)
 
   // Handle click outside modal
-  const handleBackdropClick = useCallback(
-    (e: React.MouseEvent<HTMLDivElement>) => {
-      if (e.target === e.currentTarget) {
-        onClose()
-      }
-    },
-    [onClose]
-  )
+  const handleBackdropClick = (e: ReactMouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      onClose()
+    }
+  }
 
   // Set up keyboard listener and body scroll lock
   useEffect(() => {
-    if (isOpen) {
-      document.addEventListener('keydown', handleEscape)
-      document.body.style.overflow = 'hidden'
+    if (!isOpen) return
+
+    previouslyFocusedRef.current = document.activeElement as HTMLElement | null
+
+    const getFocusableElements = () => {
+      if (!panelRef.current) return []
+      const selector =
+        'a[href],area[href],input:not([disabled]):not([type="hidden"]),select:not([disabled]),textarea:not([disabled]),button:not([disabled]),iframe,object,embed,[contenteditable],[tabindex]:not([tabindex="-1"])'
+      const elements = Array.from(panelRef.current.querySelectorAll<HTMLElement>(selector))
+      return elements.filter(el => el.tabIndex !== -1 && !el.hasAttribute('disabled'))
     }
 
-    return () => {
-      document.removeEventListener('keydown', handleEscape)
-      document.body.style.overflow = 'unset'
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+      if (e.key !== 'Tab') return
+
+      const panel = panelRef.current
+      if (!panel) return
+
+      const focusable = getFocusableElements()
+      if (focusable.length === 0) {
+        e.preventDefault()
+        panel.focus()
+        return
+      }
+
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      const active = document.activeElement as HTMLElement | null
+      const isInside = active ? panel.contains(active) : false
+
+      if (e.shiftKey) {
+        if (!isInside || active === first) {
+          e.preventDefault()
+          last.focus()
+        }
+        return
+      }
+
+      if (!isInside || active === last) {
+        e.preventDefault()
+        first.focus()
+      }
     }
-  }, [isOpen, handleEscape])
+
+    const previousBodyOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    document.addEventListener('keydown', onKeyDown, true)
+
+    const raf = requestAnimationFrame(() => {
+      const focusable = getFocusableElements()
+      if (focusable.length > 0) focusable[0].focus()
+      else panelRef.current?.focus()
+    })
+
+    return () => {
+      cancelAnimationFrame(raf)
+      document.removeEventListener('keydown', onKeyDown, true)
+      document.body.style.overflow = previousBodyOverflow
+      const prev = previouslyFocusedRef.current
+      if (prev && document.contains(prev)) prev.focus()
+    }
+  }, [isOpen, onClose])
+
+  const resolvedModalVariants: Variants = reduceMotion
+    ? {
+        hidden: { opacity: 0 },
+        visible: { opacity: 1, transition: { duration: 0.12 } },
+        exit: { opacity: 0, transition: { duration: 0.1 } },
+      }
+    : modalVariants
 
   return (
     <AnimatePresence mode="wait">
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          {/* Backdrop with blur */}
+        <div className="fixed inset-0 z-50 grid place-items-center p-4">
+          {/* Backdrop */}
           <motion.div
-            className="absolute inset-0 bg-slate-900/40 dark:bg-slate-950/60 backdrop-blur-sm"
+            className={cn('absolute inset-0 backdrop-blur-sm', 'bg-black/40 dark:bg-black/60')}
             variants={backdropVariants}
             initial="hidden"
             animate="visible"
             exit="exit"
-            transition={{ duration: 0.2 }}
+            transition={{ duration: reduceMotion ? 0.12 : 0.2 }}
             onClick={handleBackdropClick}
           />
 
-          {/* Modal Panel - Glassmorphism */}
+          {/* Modal Panel */}
           <motion.div
-            className={`
-              relative w-full mx-4
-              ${sizeStyles[size]}
-
-              /* Glassmorphism effect */
-              bg-white/80 dark:bg-slate-800/80
-              backdrop-blur-xl backdrop-saturate-150
-
-              /* Border with subtle glow */
-              border border-white/40 dark:border-slate-700/40
-
-              /* Shadow with teal accent glow */
-              shadow-2xl shadow-slate-900/10 dark:shadow-teal-500/5
-
-              /* Rounded corners */
-              rounded-2xl
-
-              /* Overflow handling */
-              overflow-hidden
-
-              ${className}
-            `}
-            variants={modalVariants}
+            ref={panelRef}
+            tabIndex={-1}
+            className={cn('relative outline-none', sizeStyles[size], className)}
+            variants={resolvedModalVariants}
             initial="hidden"
             animate="visible"
             exit="exit"
             role="dialog"
             aria-modal="true"
-            aria-labelledby={title ? 'modal-title' : undefined}
+            aria-labelledby={title ? titleId : undefined}
           >
-            {/* Gradient overlay for extra depth */}
             <div
-              className="
-                absolute inset-0 pointer-events-none
-                bg-gradient-to-br from-white/20 via-transparent to-teal-500/5
-                dark:from-slate-700/20 dark:via-transparent dark:to-teal-500/10
-              "
-            />
+              className={cn(
+                'ui-frame relative w-full h-full max-h-[calc(100vh-2rem)] flex flex-col overflow-hidden',
+                'rounded-xl border border-border/60',
+                'bg-surface-elevated text-text-primary',
+                'shadow-2xl shadow-black/10 dark:shadow-black/30',
+                'dark:text-text-primary'
+              )}
+            >
+              {showCloseButton && (
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className={cn(
+                    'absolute right-4 top-4 z-10',
+                    'inline-flex h-9 w-9 items-center justify-center',
+                    'rounded-lg',
+                    'text-text-secondary hover:text-text-primary',
+                    'hover:bg-surface-secondary/80',
+                    'focus-visible:outline-none focus-visible:ring-2',
+                    'focus-visible:ring-primary/20 focus-visible:ring-offset-2',
+                    'focus-visible:ring-offset-surface-elevated',
+                    'active:scale-95',
+                    'transition-all duration-150 ease-out'
+                  )}
+                  aria-label="Close modal"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
 
-            {/* Header with title and close button */}
-            {(title || showCloseButton) && (
-              <div
-                className="
-                  relative flex items-center justify-between
-                  px-6 py-4 border-b
-                  border-slate-200/50 dark:border-slate-700/50
-                "
-              >
-                {title && (
-                  <h3
-                    id="modal-title"
-                    className="
-                      font-semibold text-lg
-                      text-slate-800 dark:text-slate-100
-                    "
+              {title && (
+                <ModalHeader className="pr-14">
+                  <h2
+                    id={titleId}
+                    className="text-[15px] font-semibold tracking-tight text-text-primary"
                   >
                     {title}
-                  </h3>
-                )}
+                  </h2>
+                </ModalHeader>
+              )}
 
-                {showCloseButton && (
-                  <motion.button
-                    onClick={onClose}
-                    className="
-                      ml-auto p-2 rounded-lg
-                      text-slate-500 dark:text-slate-400
-                      hover:text-teal-600 dark:hover:text-teal-400
-                      focus:outline-none focus:ring-2 focus:ring-teal-500/50
-                      transition-colors
-                    "
-                    variants={closeButtonVariants}
-                    initial="initial"
-                    whileHover="hover"
-                    whileTap="tap"
-                    aria-label="Close modal"
-                  >
-                    <X className="w-5 h-5" />
-                  </motion.button>
-                )}
-              </div>
-            )}
-
-            {/* Content area */}
-            <div className="relative">{children}</div>
+              <div className="relative min-h-0 flex-1 flex flex-col">{children}</div>
+            </div>
           </motion.div>
         </div>
       )}
@@ -337,6 +332,11 @@ export default function Modal({
 // Compound Component Exports
 // ============================================================================
 
-Modal.Header = ModalHeader
-Modal.Body = ModalBody
-Modal.Footer = ModalFooter
+const Modal = Object.assign(ModalBase, {
+  Header: ModalHeader,
+  Content: ModalContent,
+  Body: ModalContent,
+  Footer: ModalFooter,
+}) as ModalComponent
+
+export default Modal

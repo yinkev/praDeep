@@ -24,7 +24,7 @@ import {
   Target,
   Zap,
 } from 'lucide-react'
-import ReactMarkdown from 'react-markdown'
+import ReactMarkdown, { type Components } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
@@ -384,7 +384,7 @@ function Message({ message }: MessageProps) {
   const isSystem = message.role === 'system'
   const isLoading = isSystem && message.content.includes('\u23F3')
 
-  const markdownComponents = {
+  const markdownComponents: Components = {
     table: ({ ...props }) => (
       <div className="overflow-x-auto my-4 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm">
         <table
@@ -429,8 +429,8 @@ function Message({ message }: MessageProps) {
     >
       <div className={`max-w-[85%] ${isUser ? 'order-2' : 'order-1'}`}>
         <Card
-          variant={isUser ? 'solid' : isLoading ? 'outlined' : 'glass'}
-          hoverEffect={false}
+          variant={isUser ? 'default' : isLoading ? 'outlined' : 'glass'}
+          interactive={false}
           className={`
             ${isUser ? 'rounded-tr-sm' : 'rounded-tl-sm'}
             ${isLoading ? 'border-amber-300/50 dark:border-amber-600/50 bg-amber-50/30 dark:bg-amber-900/20' : ''}
@@ -442,7 +442,7 @@ function Message({ message }: MessageProps) {
               <ReactMarkdown
                 remarkPlugins={[remarkGfm, remarkMath]}
                 rehypePlugins={[rehypeKatex]}
-                components={markdownComponents as any}
+                components={markdownComponents}
               >
                 {processLatexContent(message.content)}
               </ReactMarkdown>
@@ -1159,7 +1159,7 @@ ${html}
                 >
                   <Card
                     variant="glass"
-                    hoverEffect={false}
+                    interactive={false}
                     className="m-4 flex-1 flex flex-col overflow-hidden"
                   >
                     <CardHeader className="flex items-center justify-between">
@@ -1381,7 +1381,7 @@ ${html}
               >
                 {/* Progress Bar */}
                 <div className="px-4 py-3 shrink-0">
-                  <Card variant="glass" hoverEffect={false}>
+                  <Card variant="glass" interactive={false}>
                     <CardBody className="py-3">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
@@ -1470,7 +1470,7 @@ ${html}
                 {/* Chat Interface */}
                 <Card
                   variant="glass"
-                  hoverEffect={false}
+                  interactive={false}
                   className="mx-4 mb-4 flex-1 flex flex-col overflow-hidden"
                 >
                   <CardHeader className="flex items-center gap-2 py-2">
@@ -1580,7 +1580,7 @@ ${html}
               </h3>
               <p className="text-slate-500 dark:text-slate-400 max-w-md leading-relaxed mb-8">
                 Select materials from your notebooks, and the system will generate a personalized
-                learning plan. Through interactive pages and intelligent Q&A, you'll master all the
+                learning plan. Through interactive pages and intelligent Q&A, you&apos;ll master all the
                 content step by step.
               </p>
               <div className="flex items-center gap-6 text-sm text-slate-400 dark:text-slate-500">
@@ -1627,7 +1627,7 @@ ${html}
                 </div>
               </div>
               <div className="flex-1 overflow-y-auto p-8">
-                <Card variant="glass" hoverEffect={false}>
+                <Card variant="glass" interactive={false}>
                   <CardBody>
                     <div className="prose prose-slate dark:prose-invert prose-headings:font-bold prose-h1:text-2xl prose-h2:text-xl max-w-none">
                       <ReactMarkdown
@@ -1697,7 +1697,7 @@ ${html}
                 exit="exit"
                 className="w-full max-w-md"
               >
-                <Card variant="solid" hoverEffect={false}>
+                <Card variant="default" interactive={false}>
                   <CardHeader className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Bug className="w-5 h-5 text-amber-600 dark:text-amber-400" />

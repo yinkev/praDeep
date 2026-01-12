@@ -15,7 +15,6 @@ import {
   PenTool,
   ChevronRight,
   ChevronLeft,
-  X,
   Check,
   FolderOpen,
   Database,
@@ -29,9 +28,9 @@ import rehypeKatex from 'rehype-katex'
 import 'katex/dist/katex.min.css'
 import { apiUrl } from '@/lib/api'
 import { processLatexContent } from '@/lib/latex'
-import PageWrapper from '@/components/ui/PageWrapper'
+import PageWrapper, { PageHeader } from '@/components/ui/PageWrapper'
 import Button from '@/components/ui/Button'
-import { Card, CardHeader, CardBody, CardFooter } from '@/components/ui/Card'
+import { Card, CardHeader, CardBody } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
 import Modal, { ModalBody, ModalFooter } from '@/components/ui/Modal'
 import { Spinner } from '@/components/ui/LoadingState'
@@ -46,7 +45,7 @@ interface NotebookRecord {
   title: string
   user_query: string
   output: string
-  metadata: Record<string, any>
+  metadata: Record<string, unknown>
   created_at: number
   kb_name?: string
 }
@@ -158,13 +157,13 @@ const listItem: Variants = {
 // ============================================================================
 
 const COLORS = [
-  '#14B8A6', // teal (primary)
-  '#3B82F6', // blue
+  '#3B82F6', // blue (primary)
+  '#14B8A6', // teal
   '#8B5CF6', // purple
   '#EC4899', // pink
   '#EF4444', // red
   '#F97316', // orange
-  '#EAB308', // yellow
+  '#3B82F6', // blue (replacing yellow)
   '#22C55E', // green
   '#06B6D4', // cyan
   '#6366F1', // indigo
@@ -226,15 +225,15 @@ const getRecordStyles = (type: string) => {
       }
     case 'co_writer':
       return {
-        bg: 'bg-amber-500/10 dark:bg-amber-500/20',
-        text: 'text-amber-600 dark:text-amber-400',
-        border: 'border-amber-400/30 dark:border-amber-500/30',
+        bg: 'bg-blue-500/10 dark:bg-blue-500/20',
+        text: 'text-blue-600 dark:text-blue-400',
+        border: 'border-blue-400/30 dark:border-blue-500/30',
       }
     default:
       return {
-        bg: 'bg-slate-500/10 dark:bg-slate-500/20',
-        text: 'text-slate-600 dark:text-slate-400',
-        border: 'border-slate-400/30 dark:border-slate-500/30',
+        bg: 'bg-zinc-500/10 dark:bg-zinc-500/20',
+        text: 'text-zinc-600 dark:text-zinc-400',
+        border: 'border-zinc-400/30 dark:border-zinc-500/30',
       }
   }
 }
@@ -256,15 +255,23 @@ function NotebookCard({ notebook, isSelected, onClick, onEdit, onDelete }: Noteb
     <motion.div variants={listItem} layout>
       <Card
         variant="glass"
-        hoverEffect
-        className={`
-          cursor-pointer transition-all duration-200
-          ${
-            isSelected
-              ? 'ring-2 ring-teal-400/60 dark:ring-teal-500/60 shadow-lg shadow-teal-500/10'
-              : ''
+        padding="none"
+        interactive
+        role="button"
+        tabIndex={0}
+        aria-label={`Open notebook: ${notebook.name}`}
+        aria-pressed={isSelected}
+        onKeyDown={e => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            onClick()
           }
-        `}
+        }}
+        className={`group cursor-pointer transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/25 dark:focus-visible:ring-blue-400/25 ${
+          isSelected
+            ? 'ring-2 ring-blue-500/35 dark:ring-blue-400/35 shadow-lg shadow-blue-500/10'
+            : ''
+        }`}
         onClick={onClick}
       >
         <CardBody className="py-3 px-4">
@@ -282,7 +289,7 @@ function NotebookCard({ notebook, isSelected, onClick, onEdit, onDelete }: Noteb
             </motion.div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between mb-1">
-                <h3 className="font-semibold text-slate-800 dark:text-slate-100 truncate text-sm">
+                <h3 className="font-semibold text-zinc-900 dark:text-zinc-50 truncate text-sm">
                   {notebook.name}
                 </h3>
                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -291,11 +298,11 @@ function NotebookCard({ notebook, isSelected, onClick, onEdit, onDelete }: Noteb
                       e.stopPropagation()
                       onEdit()
                     }}
-                    className="p-1.5 rounded-lg hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors"
+                    className="p-1.5 rounded-lg hover:bg-zinc-100/80 dark:hover:bg-white/5 transition-colors"
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
                   >
-                    <Edit3 className="w-3 h-3 text-slate-500 dark:text-slate-400" />
+                    <Edit3 className="w-3 h-3 text-zinc-500 dark:text-zinc-400" />
                   </motion.button>
                   <motion.button
                     onClick={e => {
@@ -311,11 +318,11 @@ function NotebookCard({ notebook, isSelected, onClick, onEdit, onDelete }: Noteb
                 </div>
               </div>
               {notebook.description && (
-                <p className="text-xs text-slate-500 dark:text-slate-400 truncate mb-2">
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate mb-2">
                   {notebook.description}
                 </p>
               )}
-              <div className="flex items-center gap-3 text-[10px] text-slate-400 dark:text-slate-500">
+              <div className="flex items-center gap-3 text-[10px] text-zinc-400 dark:text-zinc-500">
                 <span className="flex items-center gap-1">
                   <FileText className="w-3 h-3" />
                   {notebook.record_count} records
@@ -351,15 +358,23 @@ function RecordCard({ record, isSelected, onClick, onDelete }: RecordCardProps) 
     <motion.div variants={listItem} layout>
       <Card
         variant="glass"
-        hoverEffect
-        className={`
-          cursor-pointer transition-all duration-200 group
-          ${
-            isSelected
-              ? 'ring-2 ring-teal-400/60 dark:ring-teal-500/60 shadow-lg shadow-teal-500/10'
-              : ''
+        padding="none"
+        interactive
+        role="button"
+        tabIndex={0}
+        aria-label={`Open record: ${record.title}`}
+        aria-pressed={isSelected}
+        onKeyDown={e => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            onClick()
           }
-        `}
+        }}
+        className={`cursor-pointer transition-all duration-200 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/25 dark:focus-visible:ring-blue-400/25 ${
+          isSelected
+            ? 'ring-2 ring-blue-500/35 dark:ring-blue-400/35 shadow-lg shadow-blue-500/10'
+            : ''
+        }`}
         onClick={onClick}
       >
         <CardBody className="py-3 px-4">
@@ -378,20 +393,20 @@ function RecordCard({ record, isSelected, onClick, onDelete }: RecordCardProps) 
                   {getRecordLabel(record.type)}
                 </span>
                 {record.kb_name && (
-                  <span className="text-[10px] text-slate-400 dark:text-slate-500 flex items-center gap-0.5">
+                  <span className="text-[10px] text-zinc-400 dark:text-zinc-500 flex items-center gap-0.5">
                     <Database className="w-3 h-3" />
                     {record.kb_name}
                   </span>
                 )}
               </div>
-              <h4 className="text-sm font-medium text-slate-800 dark:text-slate-100 line-clamp-1 mb-1">
+              <h4 className="text-sm font-medium text-zinc-900 dark:text-zinc-50 line-clamp-1 mb-1">
                 {record.title}
               </h4>
-              <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 line-clamp-2">
                 {record.user_query}
               </p>
               <div className="flex items-center justify-between mt-2">
-                <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                <span className="text-[10px] text-zinc-400 dark:text-zinc-500">
                   {new Date(record.created_at * 1000).toLocaleString()}
                 </span>
                 <motion.button
@@ -432,7 +447,7 @@ function ColorPicker({ value, onChange }: ColorPickerProps) {
           onClick={() => onChange(color)}
           className={`w-8 h-8 rounded-xl transition-all ${
             value === color
-              ? 'ring-2 ring-offset-2 ring-slate-400 dark:ring-slate-500 dark:ring-offset-slate-800 scale-110'
+              ? 'ring-2 ring-blue-500/60 ring-offset-2 ring-offset-white dark:ring-blue-400/60 dark:ring-offset-zinc-950 scale-110'
               : 'hover:scale-105'
           }`}
           style={{ backgroundColor: color }}
@@ -464,14 +479,14 @@ function EmptyState({ icon, title, description, action }: EmptyStateProps) {
       className="flex flex-col items-center justify-center h-full text-center p-8"
     >
       <motion.div
-        className="w-16 h-16 rounded-2xl bg-slate-100/80 dark:bg-slate-800/50 flex items-center justify-center mb-4 text-slate-300 dark:text-slate-600"
+        className="w-16 h-16 rounded-2xl bg-zinc-100/80 dark:bg-white/5 flex items-center justify-center mb-4 text-zinc-300 dark:text-zinc-600"
         animate={{ y: [0, -5, 0] }}
         transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
       >
         {icon}
       </motion.div>
-      <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-1">{title}</h3>
-      <p className="text-sm text-slate-500 dark:text-slate-400 mb-4 max-w-xs">{description}</p>
+      <h3 className="text-lg font-semibold text-zinc-800 dark:text-zinc-200 mb-1">{title}</h3>
+      <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-4 max-w-xs">{description}</p>
       {action}
     </motion.div>
   )
@@ -504,7 +519,7 @@ export default function NotebookPage() {
   const [newNotebook, setNewNotebook] = useState({
     name: '',
     description: '',
-    color: '#14B8A6',
+    color: '#3B82F6',
   })
   const [editingNotebook, setEditingNotebook] = useState<{
     id: string
@@ -568,7 +583,7 @@ export default function NotebookPage() {
       if (data.success) {
         fetchNotebooks()
         setShowCreateModal(false)
-        setNewNotebook({ name: '', description: '', color: '#14B8A6' })
+        setNewNotebook({ name: '', description: '', color: '#3B82F6' })
       }
     } catch (err) {
       console.error('Failed to create notebook:', err)
@@ -804,702 +819,841 @@ export default function NotebookPage() {
   // ============================================================================
 
   return (
-    <PageWrapper maxWidth="full" showPattern className="!p-0 h-screen overflow-hidden">
-      <div className="h-full flex">
-        {/* Left Panel: Notebook List */}
-        <AnimatePresence mode="wait">
-          {!leftCollapsed && (
-            <motion.div
-              variants={slideInLeft}
-              initial="hidden"
-              animate="visible"
-              exit="exit"
-              className="w-72 flex-shrink-0 flex flex-col bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border-r border-slate-200/60 dark:border-slate-700/60"
-            >
-              {/* Header */}
-              <div className="p-4 border-b border-slate-200/60 dark:border-slate-700/60">
-                <div className="flex items-center justify-between mb-4">
+    <div className="relative h-dvh overflow-hidden bg-cloud dark:bg-zinc-950">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 opacity-30 [mask-image:radial-gradient(ellipse_at_top,black_40%,transparent_75%)] bg-[linear-gradient(to_right,rgba(24,24,27,0.06)_1px,transparent_1px),linear-gradient(to_bottom,rgba(24,24,27,0.06)_1px,transparent_1px)] bg-[length:56px_56px] dark:opacity-20 dark:bg-[linear-gradient(to_right,rgba(255,255,255,0.06)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.06)_1px,transparent_1px)]"
+      />
+      <motion.div
+        aria-hidden="true"
+        className="pointer-events-none absolute -top-56 left-1/2 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-blue-500/20 blur-3xl dark:bg-blue-500/15"
+        animate={{ y: [0, 18, 0], opacity: [0.35, 0.5, 0.35] }}
+        transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
+      />
+      <motion.div
+        aria-hidden="true"
+        className="pointer-events-none absolute -bottom-64 left-8 h-[520px] w-[520px] rounded-full bg-indigo-500/10 blur-3xl dark:bg-indigo-500/10"
+        animate={{ y: [0, -12, 0], opacity: [0.25, 0.4, 0.25] }}
+        transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
+      />
+
+      <PageWrapper maxWidth="full" showPattern={false} className="h-dvh px-0 py-0">
+        <div className="relative flex h-dvh flex-col">
+          <div className="shrink-0 border-b border-white/55 bg-white/70 backdrop-blur-xl dark:border-white/10 dark:bg-zinc-950/60">
+            <div className="px-6 py-5">
+              <PageHeader
+                title="Notebook"
+                description="Organize work across Solver, Question, Research, and Co-Writer"
+                icon={<BookOpen className="w-5 h-5 text-blue-600 dark:text-blue-400" />}
+                className="mb-0"
+                actions={
                   <div className="flex items-center gap-2">
-                    <motion.div
-                      className="w-9 h-9 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center shadow-lg shadow-teal-500/20"
-                      whileHover={{ scale: 1.05, rotate: 3 }}
-                    >
-                      <BookOpen className="w-5 h-5 text-white" />
-                    </motion.div>
-                    <h1 className="text-lg font-bold text-slate-800 dark:text-slate-100">
-                      Notebooks
-                    </h1>
-                  </div>
-                  <div className="flex items-center gap-1">
                     <Button
                       variant="primary"
                       size="sm"
                       iconLeft={<Plus className="w-4 h-4" />}
                       onClick={() => setShowCreateModal(true)}
                     >
-                      New
+                      New Notebook
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      iconLeft={<ChevronLeft className="w-4 h-4" />}
-                      onClick={() => setLeftCollapsed(true)}
-                      aria-label="Collapse panel"
-                    />
                   </div>
-                </div>
+                }
+              />
+            </div>
+          </div>
 
-                {/* Search */}
-                <Input
-                  placeholder="Search notebooks..."
-                  value={searchTerm}
-                  onChange={e => setSearchTerm(e.target.value)}
-                  leftIcon={<Search className="w-4 h-4" />}
-                  size="sm"
-                />
-              </div>
-
-              {/* Notebook List */}
-              <div className="flex-1 overflow-y-auto p-3">
-                {loading ? (
-                  <div className="flex items-center justify-center h-32">
-                    <Spinner size="md" label="Loading notebooks..." />
-                  </div>
-                ) : filteredNotebooks.length === 0 ? (
-                  <EmptyState
-                    icon={<FolderOpen className="w-8 h-8" />}
-                    title="No notebooks yet"
-                    description="Create your first notebook to start organizing your learning"
-                    action={
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        iconLeft={<Plus className="w-4 h-4" />}
-                        onClick={() => setShowCreateModal(true)}
-                      >
-                        Create Notebook
-                      </Button>
-                    }
-                  />
-                ) : (
+          <div className="flex-1 min-h-0 px-6 pb-6 pt-6">
+            <div className="h-full min-h-0 flex gap-4">
+              {/* Left Panel: Notebook List */}
+              <AnimatePresence mode="wait" initial={false}>
+                {leftCollapsed ? (
                   <motion.div
-                    variants={staggerContainer}
+                    key="left-rail"
+                    variants={scaleIn}
                     initial="hidden"
                     animate="visible"
-                    className="space-y-2"
+                    exit="exit"
+                    className="flex-shrink-0 h-full"
                   >
-                    {filteredNotebooks.map(nb => (
-                      <NotebookCard
-                        key={nb.id}
-                        notebook={nb}
-                        isSelected={selectedNotebook?.id === nb.id}
-                        onClick={() => fetchNotebookDetail(nb.id)}
-                        onEdit={() => {
-                          setEditingNotebook({
-                            id: nb.id,
-                            name: nb.name,
-                            description: nb.description,
-                            color: nb.color,
-                          })
-                          setShowEditModal(true)
-                        }}
-                        onDelete={() => setShowDeleteConfirm(nb.id)}
-                      />
-                    ))}
-                  </motion.div>
-                )}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Left Panel Collapsed Button */}
-        {leftCollapsed && (
-          <motion.button
-            variants={scaleIn}
-            initial="hidden"
-            animate="visible"
-            onClick={() => setLeftCollapsed(false)}
-            className="absolute left-2 top-4 z-10 p-2 bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-xl border border-slate-200/60 dark:border-slate-700/60 shadow-lg hover:shadow-xl transition-all"
-          >
-            <ChevronRight className="w-4 h-4 text-slate-600 dark:text-slate-300" />
-          </motion.button>
-        )}
-
-        {/* Middle Panel: Records List */}
-        <AnimatePresence mode="wait">
-          {!middleCollapsed && (
-            <motion.div
-              variants={fadeInUp}
-              initial="hidden"
-              animate="visible"
-              exit="exit"
-              className="w-80 flex-shrink-0 flex flex-col bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl border-r border-slate-200/60 dark:border-slate-700/60"
-            >
-              {/* Header */}
-              <div
-                className="p-4 border-b border-slate-200/60 dark:border-slate-700/60"
-                style={{
-                  backgroundColor: selectedNotebook ? `${selectedNotebook.color}10` : 'transparent',
-                }}
-              >
-                <div className="flex items-center justify-between gap-3">
-                  {selectedNotebook ? (
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <motion.div
-                        className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 shadow-md"
-                        style={{
-                          background: `linear-gradient(135deg, ${selectedNotebook.color}20, ${selectedNotebook.color}40)`,
-                          color: selectedNotebook.color,
-                        }}
-                        whileHover={{ scale: 1.05 }}
-                      >
-                        <BookOpen className="w-6 h-6" />
-                      </motion.div>
-                      <div className="flex-1 min-w-0">
-                        <h2 className="font-bold text-slate-800 dark:text-slate-100 truncate">
-                          {selectedNotebook.name}
-                        </h2>
-                        {selectedNotebook.description && (
-                          <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
-                            {selectedNotebook.description}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex-1" />
-                  )}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    iconLeft={<ChevronLeft className="w-4 h-4" />}
-                    onClick={() => setMiddleCollapsed(true)}
-                    aria-label="Collapse panel"
-                  />
-                </div>
-              </div>
-
-              {/* Records List */}
-              <div className="flex-1 overflow-y-auto p-3">
-                {selectedNotebook ? (
-                  selectedNotebook.records.length === 0 ? (
-                    <EmptyState
-                      icon={<FileText className="w-8 h-8" />}
-                      title="No records yet"
-                      description="Add records from Solver, Question, Research, or Co-Writer"
-                    />
-                  ) : (
-                    <motion.div
-                      variants={staggerContainer}
-                      initial="hidden"
-                      animate="visible"
-                      className="space-y-2"
+                    <Card
+                      variant="glass"
+                      interactive={false}
+                      padding="none"
+                      className="h-full w-14 rounded-2xl flex items-center justify-center"
                     >
-                      {selectedNotebook.records.map(record => (
-                        <RecordCard
-                          key={record.id}
-                          record={record}
-                          isSelected={selectedRecord?.id === record.id}
-                          onClick={() => setSelectedRecord(record)}
-                          onDelete={() => handleDeleteRecord(record.id)}
-                        />
-                      ))}
-                    </motion.div>
-                  )
+                      <motion.button
+                        onClick={() => setLeftCollapsed(false)}
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/60 bg-white/60 text-zinc-700 shadow-sm backdrop-blur-md hover:bg-white/75 dark:border-white/10 dark:bg-white/5 dark:text-zinc-200 dark:hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/25"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.97 }}
+                        aria-label="Expand notebooks panel"
+                        aria-expanded={!leftCollapsed}
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </motion.button>
+                    </Card>
+                  </motion.div>
                 ) : (
-                  <EmptyState
-                    icon={<BookOpen className="w-8 h-8" />}
-                    title="Select a notebook"
-                    description="Choose a notebook from the list to view its records"
-                  />
-                )}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Middle Panel Collapsed Button */}
-        {middleCollapsed && (
-          <motion.button
-            variants={scaleIn}
-            initial="hidden"
-            animate="visible"
-            onClick={() => setMiddleCollapsed(false)}
-            className={`absolute ${leftCollapsed ? 'left-12' : 'left-[296px]'} top-4 z-10 p-2 bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-xl border border-slate-200/60 dark:border-slate-700/60 shadow-lg hover:shadow-xl transition-all`}
-          >
-            <ChevronRight className="w-4 h-4 text-slate-600 dark:text-slate-300" />
-          </motion.button>
-        )}
-
-        {/* Right Panel: Record Detail */}
-        <AnimatePresence mode="wait">
-          {!rightCollapsed && (
-            <motion.div
-              variants={slideInRight}
-              initial="hidden"
-              animate="visible"
-              exit="exit"
-              className="flex-1 flex flex-col bg-white/30 dark:bg-slate-900/30 backdrop-blur-xl overflow-hidden"
-            >
-              {/* Header */}
-              <div className="p-4 border-b border-slate-200/60 dark:border-slate-700/60 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl shrink-0">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      iconLeft={<ChevronRight className="w-4 h-4" />}
-                      onClick={() => setRightCollapsed(true)}
-                      aria-label="Collapse panel"
-                    />
-                    {selectedRecord && (
-                      <>
-                        <motion.div
-                          className={`p-2 rounded-xl ${getRecordStyles(selectedRecord.type).bg} ${getRecordStyles(selectedRecord.type).text} border ${getRecordStyles(selectedRecord.type).border}`}
-                          whileHover={{ scale: 1.05 }}
-                        >
-                          {getRecordIcon(selectedRecord.type)}
-                        </motion.div>
-                        <div className="flex-1 min-w-0">
-                          <h2 className="font-bold text-slate-800 dark:text-slate-100 truncate">
-                            {selectedRecord.title}
-                          </h2>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            <span
-                              className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${getRecordStyles(selectedRecord.type).bg} ${getRecordStyles(selectedRecord.type).text}`}
+                  <motion.div
+                    key="left-panel"
+                    variants={slideInLeft}
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
+                    className="flex-shrink-0 h-full"
+                  >
+                    <Card
+                      variant="glass"
+                      interactive={false}
+                      padding="none"
+                      className="h-full w-80 rounded-2xl flex flex-col min-h-0"
+                    >
+                      <CardHeader padding="md" className="bg-white/40 dark:bg-white/5">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/70 shadow-sm ring-1 ring-black/5 dark:bg-white/5 dark:ring-white/10">
+                              <BookOpen className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                            </div>
+                            <div className="min-w-0">
+                              <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+                                Notebooks
+                              </h2>
+                              <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                                {loading ? 'Loading…' : `${filteredNotebooks.length} notebooks`}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              iconLeft={<Plus className="w-4 h-4" />}
+                              onClick={() => setShowCreateModal(true)}
                             >
-                              {getRecordLabel(selectedRecord.type)}
-                            </span>
-                            <span className="text-xs text-slate-400 dark:text-slate-500">
-                              {new Date(selectedRecord.created_at * 1000).toLocaleString()}
-                            </span>
+                              New
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              iconLeft={<ChevronLeft className="w-4 h-4" />}
+                              onClick={() => setLeftCollapsed(true)}
+                              aria-label="Collapse notebooks panel"
+                            />
                           </div>
                         </div>
-                      </>
-                    )}
-                  </div>
 
-                  {/* Action Buttons */}
-                  {selectedRecord && (
-                    <div className="flex items-center gap-2 shrink-0">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        iconLeft={<Download className="w-3.5 h-3.5" />}
-                        onClick={exportAsMarkdown}
-                      >
-                        .md
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        iconLeft={<Download className="w-3.5 h-3.5" />}
-                        onClick={exportAsPDF}
-                      >
-                        .pdf
-                      </Button>
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        iconLeft={<Upload className="w-3.5 h-3.5" />}
-                        onClick={openImportModal}
-                      >
-                        Import
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              </div>
+                        <div className="mt-4">
+                          <Input
+                            placeholder="Search notebooks..."
+                            value={searchTerm}
+                            onChange={e => setSearchTerm(e.target.value)}
+                            leftIcon={<Search className="w-4 h-4" />}
+                            size="sm"
+                          />
+                        </div>
+                      </CardHeader>
 
-              {/* Content */}
-              <div className="flex-1 overflow-y-auto p-6">
-                {selectedRecord ? (
+                      <CardBody padding="none" className="flex-1 min-h-0 overflow-y-auto p-3">
+                        {loading ? (
+                          <div className="flex items-center justify-center h-32">
+                            <Spinner size="md" label="Loading notebooks..." />
+                          </div>
+                        ) : filteredNotebooks.length === 0 ? (
+                          <EmptyState
+                            icon={<FolderOpen className="w-8 h-8" />}
+                            title="No notebooks yet"
+                            description="Create your first notebook to start organizing your learning"
+                            action={
+                              <Button
+                                variant="primary"
+                                size="sm"
+                                iconLeft={<Plus className="w-4 h-4" />}
+                                onClick={() => setShowCreateModal(true)}
+                              >
+                                Create Notebook
+                              </Button>
+                            }
+                          />
+                        ) : (
+                          <motion.div
+                            variants={staggerContainer}
+                            initial="hidden"
+                            animate="visible"
+                            className="space-y-2"
+                          >
+                            {filteredNotebooks.map(nb => (
+                              <NotebookCard
+                                key={nb.id}
+                                notebook={nb}
+                                isSelected={selectedNotebook?.id === nb.id}
+                                onClick={() => fetchNotebookDetail(nb.id)}
+                                onEdit={() => {
+                                  setEditingNotebook({
+                                    id: nb.id,
+                                    name: nb.name,
+                                    description: nb.description,
+                                    color: nb.color,
+                                  })
+                                  setShowEditModal(true)
+                                }}
+                                onDelete={() => setShowDeleteConfirm(nb.id)}
+                              />
+                            ))}
+                          </motion.div>
+                        )}
+                      </CardBody>
+                    </Card>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Middle Panel: Records List */}
+              <AnimatePresence mode="wait" initial={false}>
+                {middleCollapsed ? (
                   <motion.div
+                    key="middle-rail"
+                    variants={scaleIn}
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
+                    className="flex-shrink-0 h-full"
+                  >
+                    <Card
+                      variant="glass"
+                      interactive={false}
+                      padding="none"
+                      className="h-full w-14 rounded-2xl flex items-center justify-center"
+                    >
+                      <motion.button
+                        onClick={() => setMiddleCollapsed(false)}
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/60 bg-white/60 text-zinc-700 shadow-sm backdrop-blur-md hover:bg-white/75 dark:border-white/10 dark:bg-white/5 dark:text-zinc-200 dark:hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/25"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.97 }}
+                        aria-label="Expand records panel"
+                        aria-expanded={!middleCollapsed}
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </motion.button>
+                    </Card>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="middle-panel"
                     variants={fadeInUp}
                     initial="hidden"
                     animate="visible"
-                    className="space-y-6 max-w-4xl mx-auto"
+                    exit="exit"
+                    className="flex-shrink-0 h-full"
                   >
-                    {/* User Query */}
-                    <Card variant="glass" hoverEffect={false}>
-                      <CardHeader className="py-3">
-                        <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                          User Query
-                        </h3>
-                      </CardHeader>
-                      <CardBody className="bg-teal-50/30 dark:bg-teal-900/20">
-                        <p className="text-slate-700 dark:text-slate-200">
-                          {selectedRecord.user_query}
-                        </p>
-                      </CardBody>
-                    </Card>
-
-                    {/* Output */}
-                    <Card variant="glass" hoverEffect={false}>
-                      <CardHeader className="py-3">
-                        <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-2">
-                          <Sparkles className="w-4 h-4 text-teal-500" />
-                          Output
-                        </h3>
-                      </CardHeader>
-                      <CardBody>
-                        <div className="prose prose-slate dark:prose-invert max-w-none prose-sm">
-                          <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                            {processLatexContent(selectedRecord.output)}
-                          </ReactMarkdown>
+                    <Card
+                      variant="glass"
+                      interactive={false}
+                      padding="none"
+                      className="h-full w-[360px] rounded-2xl flex flex-col min-h-0"
+                    >
+                      <CardHeader
+                        padding="md"
+                        className="bg-white/35 dark:bg-white/5"
+                        style={{
+                          backgroundColor: selectedNotebook
+                            ? `${selectedNotebook.color}10`
+                            : undefined,
+                        }}
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          {selectedNotebook ? (
+                            <div className="flex items-center gap-3 flex-1 min-w-0">
+                              <motion.div
+                                className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 shadow-md"
+                                style={{
+                                  background: `linear-gradient(135deg, ${selectedNotebook.color}20, ${selectedNotebook.color}40)`,
+                                  color: selectedNotebook.color,
+                                }}
+                                whileHover={{ scale: 1.05 }}
+                              >
+                                <BookOpen className="w-6 h-6" />
+                              </motion.div>
+                              <div className="flex-1 min-w-0">
+                                <h2 className="font-semibold text-zinc-900 dark:text-zinc-50 truncate">
+                                  {selectedNotebook.name}
+                                </h2>
+                                <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate">
+                                  {selectedNotebook.records.length} records
+                                  {selectedNotebook.description
+                                    ? ` • ${selectedNotebook.description}`
+                                    : ''}
+                                </p>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-3 flex-1 min-w-0">
+                              <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 bg-white/70 shadow-sm ring-1 ring-black/5 dark:bg-white/5 dark:ring-white/10">
+                                <FileText className="w-6 h-6 text-zinc-400 dark:text-zinc-500" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <h2 className="font-semibold text-zinc-900 dark:text-zinc-50 truncate">
+                                  Records
+                                </h2>
+                                <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate">
+                                  Select a notebook to view entries
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            iconLeft={<ChevronLeft className="w-4 h-4" />}
+                            onClick={() => setMiddleCollapsed(true)}
+                            aria-label="Collapse records panel"
+                          />
                         </div>
+                      </CardHeader>
+
+                      <CardBody padding="none" className="flex-1 min-h-0 overflow-y-auto p-3">
+                        {selectedNotebook ? (
+                          selectedNotebook.records.length === 0 ? (
+                            <EmptyState
+                              icon={<FileText className="w-8 h-8" />}
+                              title="No records yet"
+                              description="Add records from Solver, Question, Research, or Co-Writer"
+                            />
+                          ) : (
+                            <motion.div
+                              variants={staggerContainer}
+                              initial="hidden"
+                              animate="visible"
+                              className="space-y-2"
+                            >
+                              {selectedNotebook.records.map(record => (
+                                <RecordCard
+                                  key={record.id}
+                                  record={record}
+                                  isSelected={selectedRecord?.id === record.id}
+                                  onClick={() => setSelectedRecord(record)}
+                                  onDelete={() => handleDeleteRecord(record.id)}
+                                />
+                              ))}
+                            </motion.div>
+                          )
+                        ) : (
+                          <EmptyState
+                            icon={<BookOpen className="w-8 h-8" />}
+                            title="Select a notebook"
+                            description="Choose a notebook from the list to view its records"
+                          />
+                        )}
                       </CardBody>
                     </Card>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
-                    {/* Metadata */}
-                    {Object.keys(selectedRecord.metadata).length > 0 && (
-                      <Card variant="outlined" hoverEffect={false}>
-                        <CardHeader className="py-3">
-                          <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                            Metadata
-                          </h3>
-                        </CardHeader>
-                        <CardBody>
-                          <pre className="text-xs text-slate-600 dark:text-slate-300 overflow-x-auto bg-slate-50/50 dark:bg-slate-800/30 p-3 rounded-lg">
-                            {JSON.stringify(selectedRecord.metadata, null, 2)}
-                          </pre>
-                        </CardBody>
-                      </Card>
-                    )}
+              {/* Right Panel: Record Detail */}
+              <AnimatePresence mode="wait" initial={false}>
+                {rightCollapsed ? (
+                  <motion.div
+                    key="right-rail"
+                    variants={scaleIn}
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
+                    className="flex-shrink-0 h-full"
+                  >
+                    <Card
+                      variant="glass"
+                      interactive={false}
+                      padding="none"
+                      className="h-full w-14 rounded-2xl flex items-center justify-center"
+                    >
+                      <motion.button
+                        onClick={() => setRightCollapsed(false)}
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/60 bg-white/60 text-zinc-700 shadow-sm backdrop-blur-md hover:bg-white/75 dark:border-white/10 dark:bg-white/5 dark:text-zinc-200 dark:hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/25"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.97 }}
+                        aria-label="Expand detail panel"
+                        aria-expanded={!rightCollapsed}
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </motion.button>
+                    </Card>
                   </motion.div>
                 ) : (
-                  <EmptyState
-                    icon={<FileText className="w-8 h-8" />}
-                    title="Select a record"
-                    description="Choose a record from the list to view its details"
-                  />
+                  <motion.div
+                    key="right-panel"
+                    variants={slideInRight}
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
+                    className="flex-1 min-w-0 h-full"
+                  >
+                    <Card
+                      variant="glass"
+                      interactive={false}
+                      padding="none"
+                      className="h-full rounded-2xl flex flex-col min-h-0"
+                    >
+                      <CardHeader padding="md" className="bg-white/35 dark:bg-white/5">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              iconLeft={<ChevronRight className="w-4 h-4" />}
+                              onClick={() => setRightCollapsed(true)}
+                              aria-label="Collapse detail panel"
+                            />
+
+                            {selectedRecord ? (
+                              <>
+                                <motion.div
+                                  className={`p-2 rounded-xl ${getRecordStyles(selectedRecord.type).bg} ${getRecordStyles(selectedRecord.type).text} border ${getRecordStyles(selectedRecord.type).border}`}
+                                  whileHover={{ scale: 1.05 }}
+                                >
+                                  {getRecordIcon(selectedRecord.type)}
+                                </motion.div>
+                                <div className="flex-1 min-w-0">
+                                  <h2 className="font-semibold text-zinc-900 dark:text-zinc-50 truncate">
+                                    {selectedRecord.title}
+                                  </h2>
+                                  <div className="flex items-center gap-2 mt-0.5">
+                                    <span
+                                      className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${getRecordStyles(selectedRecord.type).bg} ${getRecordStyles(selectedRecord.type).text}`}
+                                    >
+                                      {getRecordLabel(selectedRecord.type)}
+                                    </span>
+                                    <span className="text-xs text-zinc-400 dark:text-zinc-500">
+                                      {new Date(selectedRecord.created_at * 1000).toLocaleString()}
+                                    </span>
+                                  </div>
+                                </div>
+                              </>
+                            ) : (
+                              <div className="flex-1 min-w-0">
+                                <h2 className="font-semibold text-zinc-900 dark:text-zinc-50 truncate">
+                                  Details
+                                </h2>
+                                <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate">
+                                  Select a record to view output
+                                </p>
+                              </div>
+                            )}
+                          </div>
+
+                          {selectedRecord && (
+                            <div className="flex items-center gap-2 shrink-0">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                iconLeft={<Download className="w-3.5 h-3.5" />}
+                                onClick={exportAsMarkdown}
+                              >
+                                .md
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                iconLeft={<Download className="w-3.5 h-3.5" />}
+                                onClick={exportAsPDF}
+                              >
+                                .pdf
+                              </Button>
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                iconLeft={<Upload className="w-3.5 h-3.5" />}
+                                onClick={openImportModal}
+                              >
+                                Import
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      </CardHeader>
+
+                      <CardBody padding="none" className="flex-1 min-h-0 overflow-y-auto p-6">
+                        {selectedRecord ? (
+                          <motion.div
+                            variants={fadeInUp}
+                            initial="hidden"
+                            animate="visible"
+                            className="space-y-6 max-w-4xl mx-auto"
+                          >
+                            {/* User Query */}
+                            <Card variant="glass" interactive={false} padding="none">
+                              <CardHeader className="py-3">
+                                <h3 className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                                  User Query
+                                </h3>
+                              </CardHeader>
+                              <CardBody className="bg-blue-50/40 dark:bg-blue-950/20">
+                                <p className="text-zinc-700 dark:text-zinc-200">
+                                  {selectedRecord.user_query}
+                                </p>
+                              </CardBody>
+                            </Card>
+
+                            {/* Output */}
+                            <Card variant="glass" interactive={false} padding="none">
+                              <CardHeader className="py-3">
+                                <h3 className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider flex items-center gap-2">
+                                  <Sparkles className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                                  Output
+                                </h3>
+                              </CardHeader>
+                              <CardBody>
+                                <div className="prose prose-zinc dark:prose-invert max-w-none prose-sm">
+                                  <ReactMarkdown
+                                    remarkPlugins={[remarkMath]}
+                                    rehypePlugins={[rehypeKatex]}
+                                  >
+                                    {processLatexContent(selectedRecord.output)}
+                                  </ReactMarkdown>
+                                </div>
+                              </CardBody>
+                            </Card>
+
+                            {/* Metadata */}
+                            {Object.keys(selectedRecord.metadata).length > 0 && (
+                              <Card variant="outlined" interactive={false} padding="none">
+                                <CardHeader className="py-3">
+                                  <h3 className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                                    Metadata
+                                  </h3>
+                                </CardHeader>
+                                <CardBody>
+                                  <pre className="text-xs text-zinc-700 dark:text-zinc-300 overflow-x-auto bg-zinc-50/60 dark:bg-white/5 p-3 rounded-lg">
+                                    {JSON.stringify(selectedRecord.metadata, null, 2)}
+                                  </pre>
+                                </CardBody>
+                              </Card>
+                            )}
+                          </motion.div>
+                        ) : (
+                          <EmptyState
+                            icon={<FileText className="w-8 h-8" />}
+                            title="Select a record"
+                            description="Choose a record from the list to view its details"
+                          />
+                        )}
+                      </CardBody>
+                    </Card>
+                  </motion.div>
                 )}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Right Panel Collapsed Button */}
-        {rightCollapsed && (
-          <motion.button
-            variants={scaleIn}
-            initial="hidden"
-            animate="visible"
-            onClick={() => setRightCollapsed(false)}
-            className="absolute right-2 top-4 z-10 p-2 bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-xl border border-slate-200/60 dark:border-slate-700/60 shadow-lg hover:shadow-xl transition-all"
-          >
-            <ChevronLeft className="w-4 h-4 text-slate-600 dark:text-slate-300" />
-          </motion.button>
-        )}
-      </div>
-
-      {/* Create Notebook Modal */}
-      <Modal
-        isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        title="Create New Notebook"
-        size="md"
-      >
-        <ModalBody>
-          <div className="space-y-4">
-            <Input
-              label="Name"
-              placeholder="My Notebook"
-              value={newNotebook.name}
-              onChange={e => setNewNotebook(prev => ({ ...prev, name: e.target.value }))}
-            />
-            <div>
-              <label className="block mb-1.5 text-sm font-medium text-slate-700 dark:text-slate-300">
-                Description (Optional)
-              </label>
-              <textarea
-                value={newNotebook.description}
-                onChange={e =>
-                  setNewNotebook(prev => ({
-                    ...prev,
-                    description: e.target.value,
-                  }))
-                }
-                placeholder="Notes about machine learning..."
-                rows={3}
-                className="w-full px-4 py-2.5 bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl focus:ring-2 focus:ring-teal-400/20 focus:border-teal-400/60 outline-none resize-none text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-all"
-              />
-            </div>
-            <div>
-              <label className="block mb-2 text-sm font-medium text-slate-700 dark:text-slate-300">
-                Color
-              </label>
-              <ColorPicker
-                value={newNotebook.color}
-                onChange={color => setNewNotebook(prev => ({ ...prev, color }))}
-              />
+              </AnimatePresence>
             </div>
           </div>
-        </ModalBody>
-        <ModalFooter>
-          <Button variant="ghost" onClick={() => setShowCreateModal(false)}>
-            Cancel
-          </Button>
-          <Button
-            variant="primary"
-            iconLeft={<Plus className="w-4 h-4" />}
-            onClick={handleCreateNotebook}
-            disabled={!newNotebook.name.trim()}
-          >
-            Create
-          </Button>
-        </ModalFooter>
-      </Modal>
+        </div>
 
-      {/* Edit Notebook Modal */}
-      <Modal
-        isOpen={showEditModal && !!editingNotebook}
-        onClose={() => {
-          setShowEditModal(false)
-          setEditingNotebook(null)
-        }}
-        title="Edit Notebook"
-        size="md"
-      >
-        <ModalBody>
-          <div className="space-y-4">
-            <Input
-              label="Name"
-              value={editingNotebook?.name || ''}
-              onChange={e =>
-                setEditingNotebook(prev => (prev ? { ...prev, name: e.target.value } : null))
-              }
-            />
-            <div>
-              <label className="block mb-1.5 text-sm font-medium text-slate-700 dark:text-slate-300">
-                Description
-              </label>
-              <textarea
-                value={editingNotebook?.description || ''}
-                onChange={e =>
-                  setEditingNotebook(prev =>
-                    prev ? { ...prev, description: e.target.value } : null
-                  )
-                }
-                rows={3}
-                className="w-full px-4 py-2.5 bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl focus:ring-2 focus:ring-teal-400/20 focus:border-teal-400/60 outline-none resize-none text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-all"
+        {/* Create Notebook Modal */}
+        <Modal
+          isOpen={showCreateModal}
+          onClose={() => setShowCreateModal(false)}
+          title="Create New Notebook"
+          size="md"
+        >
+          <ModalBody>
+            <div className="space-y-4">
+              <Input
+                label="Name"
+                placeholder="My Notebook"
+                value={newNotebook.name}
+                onChange={e => setNewNotebook(prev => ({ ...prev, name: e.target.value }))}
               />
-            </div>
-            <div>
-              <label className="block mb-2 text-sm font-medium text-slate-700 dark:text-slate-300">
-                Color
-              </label>
-              <ColorPicker
-                value={editingNotebook?.color || '#14B8A6'}
-                onChange={color => setEditingNotebook(prev => (prev ? { ...prev, color } : null))}
-              />
-            </div>
-          </div>
-        </ModalBody>
-        <ModalFooter>
-          <Button
-            variant="ghost"
-            onClick={() => {
-              setShowEditModal(false)
-              setEditingNotebook(null)
-            }}
-          >
-            Cancel
-          </Button>
-          <Button
-            variant="primary"
-            iconLeft={<Check className="w-4 h-4" />}
-            onClick={handleUpdateNotebook}
-            disabled={!editingNotebook?.name.trim()}
-          >
-            Save Changes
-          </Button>
-        </ModalFooter>
-      </Modal>
-
-      {/* Delete Confirmation Modal */}
-      <Modal
-        isOpen={!!showDeleteConfirm}
-        onClose={() => setShowDeleteConfirm(null)}
-        title="Delete Notebook?"
-        size="sm"
-      >
-        <ModalBody>
-          <div className="text-center">
-            <motion.div
-              className="w-12 h-12 bg-red-100 dark:bg-red-900/40 rounded-2xl flex items-center justify-center mx-auto mb-4"
-              animate={{ scale: [1, 1.05, 1] }}
-              transition={{ duration: 1.5, repeat: Infinity }}
-            >
-              <Trash2 className="w-6 h-6 text-red-600 dark:text-red-400" />
-            </motion.div>
-            <p className="text-sm text-slate-600 dark:text-slate-400">
-              This action cannot be undone. All records in this notebook will be permanently
-              deleted.
-            </p>
-          </div>
-        </ModalBody>
-        <ModalFooter className="justify-center">
-          <Button variant="ghost" onClick={() => setShowDeleteConfirm(null)}>
-            Cancel
-          </Button>
-          <Button
-            variant="destructive"
-            iconLeft={<Trash2 className="w-4 h-4" />}
-            onClick={() => showDeleteConfirm && handleDeleteNotebook(showDeleteConfirm)}
-          >
-            Delete
-          </Button>
-        </ModalFooter>
-      </Modal>
-
-      {/* Import Records Modal */}
-      <Modal
-        isOpen={showImportModal}
-        onClose={() => {
-          setShowImportModal(false)
-          setImportSourceNotebook('')
-          setImportSourceRecords([])
-          setSelectedImportRecords(new Set())
-        }}
-        title="Import Records"
-        size="lg"
-      >
-        <ModalBody>
-          <div className="space-y-4">
-            {/* Source Notebook Selection */}
-            <div>
-              <label className="block mb-1.5 text-sm font-medium text-slate-700 dark:text-slate-300">
-                Source Notebook
-              </label>
-              <select
-                value={importSourceNotebook}
-                onChange={e => loadImportSourceRecords(e.target.value)}
-                className="w-full px-4 py-2.5 bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl focus:ring-2 focus:ring-teal-400/20 focus:border-teal-400/60 outline-none text-slate-900 dark:text-slate-100 transition-all"
-              >
-                <option value="">Select a notebook...</option>
-                {availableNotebooks.map(nb => (
-                  <option key={nb.id} value={nb.id}>
-                    {nb.name} ({nb.record_count} records)
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Records Selection */}
-            {importSourceNotebook && (
               <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                    Select Records ({selectedImportRecords.size} selected)
-                  </label>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() =>
-                        setSelectedImportRecords(new Set(importSourceRecords.map(r => r.id)))
-                      }
-                      className="text-xs text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 font-medium"
-                    >
-                      Select All
-                    </button>
-                    <button
-                      onClick={() => setSelectedImportRecords(new Set())}
-                      className="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 font-medium"
-                    >
-                      Clear
-                    </button>
-                  </div>
-                </div>
+                <label className="block mb-1.5 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                  Description (Optional)
+                </label>
+                <textarea
+                  value={newNotebook.description}
+                  onChange={e =>
+                    setNewNotebook(prev => ({
+                      ...prev,
+                      description: e.target.value,
+                    }))
+                  }
+                  placeholder="Notes about machine learning..."
+                  rows={3}
+                  className="w-full px-4 py-2.5 bg-zinc-50/80 dark:bg-white/5 border border-zinc-200/70 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/60 outline-none resize-none text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 transition-all"
+                />
+              </div>
+              <div>
+                <label className="block mb-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                  Color
+                </label>
+                <ColorPicker
+                  value={newNotebook.color}
+                  onChange={color => setNewNotebook(prev => ({ ...prev, color }))}
+                />
+              </div>
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="ghost" onClick={() => setShowCreateModal(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              iconLeft={<Plus className="w-4 h-4" />}
+              onClick={handleCreateNotebook}
+              disabled={!newNotebook.name.trim()}
+            >
+              Create
+            </Button>
+          </ModalFooter>
+        </Modal>
 
-                {loadingImport ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Spinner size="md" label="Loading records..." />
+        {/* Edit Notebook Modal */}
+        <Modal
+          isOpen={showEditModal && !!editingNotebook}
+          onClose={() => {
+            setShowEditModal(false)
+            setEditingNotebook(null)
+          }}
+          title="Edit Notebook"
+          size="md"
+        >
+          <ModalBody>
+            <div className="space-y-4">
+              <Input
+                label="Name"
+                value={editingNotebook?.name || ''}
+                onChange={e =>
+                  setEditingNotebook(prev => (prev ? { ...prev, name: e.target.value } : null))
+                }
+              />
+              <div>
+                <label className="block mb-1.5 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                  Description
+                </label>
+                <textarea
+                  value={editingNotebook?.description || ''}
+                  onChange={e =>
+                    setEditingNotebook(prev =>
+                      prev ? { ...prev, description: e.target.value } : null
+                    )
+                  }
+                  rows={3}
+                  className="w-full px-4 py-2.5 bg-zinc-50/80 dark:bg-white/5 border border-zinc-200/70 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/60 outline-none resize-none text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 transition-all"
+                />
+              </div>
+              <div>
+                <label className="block mb-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                  Color
+                </label>
+                <ColorPicker
+                  value={editingNotebook?.color || '#14B8A6'}
+                  onChange={color => setEditingNotebook(prev => (prev ? { ...prev, color } : null))}
+                />
+              </div>
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setShowEditModal(false)
+                setEditingNotebook(null)
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              iconLeft={<Check className="w-4 h-4" />}
+              onClick={handleUpdateNotebook}
+              disabled={!editingNotebook?.name.trim()}
+            >
+              Save Changes
+            </Button>
+          </ModalFooter>
+        </Modal>
+
+        {/* Delete Confirmation Modal */}
+        <Modal
+          isOpen={!!showDeleteConfirm}
+          onClose={() => setShowDeleteConfirm(null)}
+          title="Delete Notebook?"
+          size="sm"
+        >
+          <ModalBody>
+            <div className="text-center">
+              <motion.div
+                className="w-12 h-12 bg-red-100 dark:bg-red-900/40 rounded-2xl flex items-center justify-center mx-auto mb-4"
+                animate={{ scale: [1, 1.05, 1] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+              >
+                <Trash2 className="w-6 h-6 text-red-600 dark:text-red-400" />
+              </motion.div>
+              <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                This action cannot be undone. All records in this notebook will be permanently
+                deleted.
+              </p>
+            </div>
+          </ModalBody>
+          <ModalFooter className="justify-center">
+            <Button variant="ghost" onClick={() => setShowDeleteConfirm(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              iconLeft={<Trash2 className="w-4 h-4" />}
+              onClick={() => showDeleteConfirm && handleDeleteNotebook(showDeleteConfirm)}
+            >
+              Delete
+            </Button>
+          </ModalFooter>
+        </Modal>
+
+        {/* Import Records Modal */}
+        <Modal
+          isOpen={showImportModal}
+          onClose={() => {
+            setShowImportModal(false)
+            setImportSourceNotebook('')
+            setImportSourceRecords([])
+            setSelectedImportRecords(new Set())
+          }}
+          title="Import Records"
+          size="lg"
+        >
+          <ModalBody>
+            <div className="space-y-4">
+              {/* Source Notebook Selection */}
+              <div>
+                <label className="block mb-1.5 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                  Source Notebook
+                </label>
+                <select
+                  value={importSourceNotebook}
+                  onChange={e => loadImportSourceRecords(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-zinc-50/80 dark:bg-white/5 border border-zinc-200/70 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/60 outline-none text-zinc-900 dark:text-zinc-100 transition-all"
+                >
+                  <option value="">Select a notebook...</option>
+                  {availableNotebooks.map(nb => (
+                    <option key={nb.id} value={nb.id}>
+                      {nb.name} ({nb.record_count} records)
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Records Selection */}
+              {importSourceNotebook && (
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                      Select Records ({selectedImportRecords.size} selected)
+                    </label>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() =>
+                          setSelectedImportRecords(new Set(importSourceRecords.map(r => r.id)))
+                        }
+                        className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
+                      >
+                        Select All
+                      </button>
+                      <button
+                        onClick={() => setSelectedImportRecords(new Set())}
+                        className="text-xs text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 font-medium"
+                      >
+                        Clear
+                      </button>
+                    </div>
                   </div>
-                ) : importSourceRecords.length === 0 ? (
-                  <div className="py-8 text-center text-slate-400 dark:text-slate-500">
-                    No records in this notebook
-                  </div>
-                ) : (
-                  <div className="space-y-2 max-h-64 overflow-y-auto">
-                    {importSourceRecords.map(record => (
-                      <motion.div
-                        key={record.id}
-                        onClick={() => toggleImportRecord(record.id)}
-                        className={`
+
+                  {loadingImport ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Spinner size="md" label="Loading records..." />
+                    </div>
+                  ) : importSourceRecords.length === 0 ? (
+                    <div className="py-8 text-center text-zinc-400 dark:text-zinc-500">
+                      No records in this notebook
+                    </div>
+                  ) : (
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                      {importSourceRecords.map(record => (
+                        <motion.div
+                          key={record.id}
+                          onClick={() => toggleImportRecord(record.id)}
+                          className={`
                           p-3 rounded-xl cursor-pointer transition-all border
                           ${
                             selectedImportRecords.has(record.id)
-                              ? 'bg-teal-50/50 dark:bg-teal-900/20 border-teal-400/50 dark:border-teal-500/50'
-                              : 'bg-white/50 dark:bg-slate-800/50 border-slate-200/50 dark:border-slate-700/50 hover:border-teal-300 dark:hover:border-teal-600'
+                              ? 'bg-blue-50/60 dark:bg-blue-950/20 border-blue-500/30 dark:border-blue-400/30'
+                              : 'bg-white/60 dark:bg-white/5 border-zinc-200/70 dark:border-white/10 hover:border-blue-300/60 dark:hover:border-blue-400/40'
                           }
                         `}
-                        whileHover={{ scale: 1.01 }}
-                        whileTap={{ scale: 0.99 }}
-                      >
-                        <div className="flex items-center gap-3">
-                          <motion.div
-                            className={`
+                          whileHover={{ scale: 1.01 }}
+                          whileTap={{ scale: 0.99 }}
+                        >
+                          <div className="flex items-center gap-3">
+                            <motion.div
+                              className={`
                               w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all
                               ${
                                 selectedImportRecords.has(record.id)
-                                  ? 'bg-teal-500 border-teal-500 text-white'
-                                  : 'border-slate-300 dark:border-slate-500'
+                                  ? 'bg-blue-600 border-blue-600 text-white'
+                                  : 'border-zinc-300 dark:border-zinc-600'
                               }
                             `}
-                            animate={{
-                              scale: selectedImportRecords.has(record.id) ? [1, 1.1, 1] : 1,
-                            }}
-                          >
-                            {selectedImportRecords.has(record.id) && <Check className="w-3 h-3" />}
-                          </motion.div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span
-                                className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded ${getRecordStyles(record.type).bg} ${getRecordStyles(record.type).text}`}
-                              >
-                                {record.type}
-                              </span>
-                              <span className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate">
-                                {record.title}
-                              </span>
+                              animate={{
+                                scale: selectedImportRecords.has(record.id) ? [1, 1.1, 1] : 1,
+                              }}
+                            >
+                              {selectedImportRecords.has(record.id) && (
+                                <Check className="w-3 h-3" />
+                              )}
+                            </motion.div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span
+                                  className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded ${getRecordStyles(record.type).bg} ${getRecordStyles(record.type).text}`}
+                                >
+                                  {record.type}
+                                </span>
+                                <span className="text-sm font-medium text-zinc-900 dark:text-zinc-50 truncate">
+                                  {record.title}
+                                </span>
+                              </div>
+                              <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate mt-1">
+                                {record.user_query}
+                              </p>
                             </div>
-                            <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-1">
-                              {record.user_query}
-                            </p>
                           </div>
-                        </div>
-                      </motion.div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </ModalBody>
-        <ModalFooter>
-          <Button
-            variant="ghost"
-            onClick={() => {
-              setShowImportModal(false)
-              setImportSourceNotebook('')
-              setImportSourceRecords([])
-              setSelectedImportRecords(new Set())
-            }}
-          >
-            Cancel
-          </Button>
-          <Button
-            variant="primary"
-            iconLeft={<Upload className="w-4 h-4" />}
-            onClick={handleImportRecords}
-            disabled={selectedImportRecords.size === 0 || loadingImport}
-            loading={loadingImport}
-          >
-            Import {selectedImportRecords.size > 0 && `(${selectedImportRecords.size})`}
-          </Button>
-        </ModalFooter>
-      </Modal>
-    </PageWrapper>
+                        </motion.div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setShowImportModal(false)
+                setImportSourceNotebook('')
+                setImportSourceRecords([])
+                setSelectedImportRecords(new Set())
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              iconLeft={<Upload className="w-4 h-4" />}
+              onClick={handleImportRecords}
+              disabled={selectedImportRecords.size === 0 || loadingImport}
+              loading={loadingImport}
+            >
+              Import {selectedImportRecords.size > 0 && `(${selectedImportRecords.size})`}
+            </Button>
+          </ModalFooter>
+        </Modal>
+      </PageWrapper>
+    </div>
   )
 }

@@ -1,135 +1,187 @@
 'use client'
 
-import React from 'react'
-import { motion, HTMLMotionProps } from 'framer-motion'
+import * as React from 'react'
+import { cn } from '@/lib/utils'
 
-// Cloud Dancer palette - soft off-white tones
-const cloudDancer = {
-  base: '#F0EAD6',
-  light: '#F7F4EC',
-  lighter: '#FDFCFA',
-  border: '#E8E2D0',
-  borderLight: '#F0EAD680',
-}
+/**
+ * Card Component - Liquid Cloud Design System
+ * Clean, elevated surfaces with Notion/Linear aesthetics
+ */
 
-type CardVariant = 'glass' | 'solid' | 'outlined'
+export type CardVariant = 'default' | 'elevated' | 'glass' | 'outlined'
+export type CardPadding = 'none' | 'sm' | 'md' | 'lg'
 
-interface CardProps extends Omit<HTMLMotionProps<'div'>, 'children'> {
+type DivProps = React.ComponentPropsWithoutRef<'div'>
+
+export interface CardProps extends Omit<DivProps, 'title'> {
   variant?: CardVariant
-  children?: React.ReactNode
-  className?: string
-  hoverEffect?: boolean
+  interactive?: boolean
+  padding?: CardPadding
+  border?: boolean
+  title?: React.ReactNode
+  description?: React.ReactNode
 }
 
-interface CardHeaderProps {
-  children: React.ReactNode
-  className?: string
+export interface CardSectionProps extends DivProps {
+  padding?: CardPadding
 }
 
-interface CardBodyProps {
-  children: React.ReactNode
-  className?: string
+const paddingStyles: Record<CardPadding, string> = {
+  none: '',
+  sm: 'p-4',
+  md: 'p-6',
+  lg: 'p-8',
 }
 
-interface CardFooterProps {
-  children: React.ReactNode
-  className?: string
+const headerPaddingStyles: Record<CardPadding, string> = {
+  none: '',
+  sm: 'px-4 py-3',
+  md: 'px-6 py-4',
+  lg: 'px-8 py-5',
+}
+
+const footerPaddingStyles: Record<CardPadding, string> = {
+  none: '',
+  sm: 'px-4 py-3',
+  md: 'px-6 py-4',
+  lg: 'px-8 py-5',
 }
 
 const variantStyles: Record<CardVariant, string> = {
-  glass: `
-    bg-white/40 dark:bg-slate-900/40
-    backdrop-blur-xl
-    border border-white/30 dark:border-slate-700/30
-    shadow-lg shadow-black/5
-  `,
-  solid: `
-    bg-[#F7F4EC] dark:bg-slate-800
-    border border-[#E8E2D0] dark:border-slate-700
-    shadow-md
-  `,
-  outlined: `
-    bg-transparent
-    border-2 border-[#E8E2D0] dark:border-slate-600
-  `,
+  default: cn('bg-surface-elevated', 'text-text-primary', 'shadow-sm'),
+  elevated: cn('bg-surface-elevated', 'text-text-primary', 'shadow-md'),
+  glass: cn(
+    'bg-white/80 dark:bg-zinc-950/80',
+    'backdrop-blur-sm',
+    'text-text-primary',
+    'shadow-sm'
+  ),
+  outlined: cn('bg-transparent', 'text-text-primary'),
 }
 
-const hoverVariants = {
-  initial: {
-    y: 0,
-    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05)',
-  },
-  hover: {
-    y: -4,
-    boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.08), 0 8px 10px -6px rgb(0 0 0 / 0.05)',
-    transition: {
-      type: 'spring' as const,
-      stiffness: 400,
-      damping: 25,
+const borderStyles: Record<CardVariant, string> = {
+  default: 'border-border',
+  elevated: 'border-border',
+  glass: 'border-border/50',
+  outlined: 'border-border',
+}
+
+const CardRoot = React.forwardRef<HTMLDivElement, CardProps>(
+  (
+    {
+      variant = 'default',
+      interactive = false,
+      padding = 'md',
+      border = true,
+      title,
+      description,
+      className,
+      children,
+      ...props
     },
-  },
-}
+    ref
+  ) => {
+    const hasHeader = title || description
 
-export function Card({
-  variant = 'glass',
-  children,
-  className = '',
-  hoverEffect = true,
-  ...props
-}: CardProps) {
-  return (
-    <motion.div
-      className={`
-        rounded-2xl overflow-hidden
-        ${variantStyles[variant]}
-        ${className}
-      `}
-      initial="initial"
-      whileHover={hoverEffect ? 'hover' : undefined}
-      variants={hoverEffect ? hoverVariants : undefined}
-      {...props}
-    >
-      {children}
-    </motion.div>
-  )
-}
+    return (
+      <div
+        ref={ref}
+        className={cn(
+          // Base - rounded-lg (12px) for card aesthetic
+          'relative overflow-hidden rounded-lg',
+          // Variant styles
+          variantStyles[variant],
+          // Border
+          border && 'border',
+          border && borderStyles[variant],
+          // Padding - only apply if no header (header has its own padding)
+          !hasHeader && paddingStyles[padding],
+          // Interactive hover effects - subtle lift and shadow enhancement
+          interactive && [
+            'transition-all duration-200 ease-out',
+            'hover:shadow-md hover:-translate-y-0.5',
+            'hover:border-zinc-300 dark:hover:border-zinc-700',
+          ],
+          className
+        )}
+        {...props}
+      >
+        {hasHeader && (
+          <CardHeader padding={padding}>
+            {title && (
+              <h3 className="text-lg font-semibold leading-none tracking-tight">{title}</h3>
+            )}
+            {description && <p className="text-sm text-text-secondary">{description}</p>}
+          </CardHeader>
+        )}
+        {hasHeader ? <CardContent padding={padding}>{children}</CardContent> : children}
+      </div>
+    )
+  }
+)
+CardRoot.displayName = 'Card'
 
-export function CardHeader({ children, className = '' }: CardHeaderProps) {
-  return (
-    <div
-      className={`
-        px-6 py-4
-        border-b border-[#E8E2D080] dark:border-slate-700/50
-        ${className}
-      `}
-    >
-      {children}
-    </div>
-  )
-}
+/**
+ * CardHeader - Top section with bottom border
+ */
+export const CardHeader = React.forwardRef<HTMLDivElement, CardSectionProps>(
+  ({ padding = 'md', className, ...props }, ref) => {
+    return (
+      <div
+        ref={ref}
+        className={cn(
+          'flex flex-col gap-1',
+          'border-b border-border',
+          headerPaddingStyles[padding],
+          className
+        )}
+        {...props}
+      />
+    )
+  }
+)
+CardHeader.displayName = 'CardHeader'
 
-export function CardBody({ children, className = '' }: CardBodyProps) {
-  return <div className={`px-6 py-4 ${className}`}>{children}</div>
-}
+/**
+ * CardContent - Main content area
+ */
+export const CardContent = React.forwardRef<HTMLDivElement, CardSectionProps>(
+  ({ padding = 'md', className, ...props }, ref) => {
+    return <div ref={ref} className={cn(paddingStyles[padding], className)} {...props} />
+  }
+)
+CardContent.displayName = 'CardContent'
 
-export function CardFooter({ children, className = '' }: CardFooterProps) {
-  return (
-    <div
-      className={`
-        px-6 py-4
-        border-t border-[#E8E2D080] dark:border-slate-700/50
-        bg-[#F0EAD620] dark:bg-slate-800/30
-        ${className}
-      `}
-    >
-      {children}
-    </div>
-  )
-}
+/**
+ * CardFooter - Bottom section with top border
+ */
+export const CardFooter = React.forwardRef<HTMLDivElement, CardSectionProps>(
+  ({ padding = 'md', className, ...props }, ref) => {
+    return (
+      <div
+        ref={ref}
+        className={cn(
+          'flex items-center',
+          'border-t border-border',
+          'bg-surface-muted',
+          footerPaddingStyles[padding],
+          className
+        )}
+        {...props}
+      />
+    )
+  }
+)
+CardFooter.displayName = 'CardFooter'
 
-// Compound component pattern - attach subcomponents
-Card.Header = CardHeader
-Card.Body = CardBody
-Card.Footer = CardFooter
+// Backwards compatibility
+export const CardBody = CardContent
+
+export const Card = Object.assign(CardRoot, {
+  Header: CardHeader,
+  Content: CardContent,
+  Body: CardContent,
+  Footer: CardFooter,
+})
 
 export default Card

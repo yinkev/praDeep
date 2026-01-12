@@ -1,31 +1,27 @@
 'use client'
 
-import React, { useState, useRef } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import ReactMarkdown from 'react-markdown'
 import {
-  Search,
   BookOpen,
-  ExternalLink,
-  Filter,
-  Calendar,
-  Star,
-  Quote,
   BookmarkPlus,
+  Check,
   ChevronDown,
   ChevronUp,
-  Sparkles,
+  ExternalLink,
   RefreshCw,
+  Search,
   SlidersHorizontal,
-  X,
+  Sparkles,
   TrendingUp,
+  X,
 } from 'lucide-react'
-import ReactMarkdown from 'react-markdown'
-import { useGlobal } from '@/context/GlobalContext'
 import { apiUrl, wsUrl } from '@/lib/api'
 import PageWrapper, { PageHeader } from '@/components/ui/PageWrapper'
-import { Card, CardBody, CardFooter } from '@/components/ui/Card'
+import { Card, CardBody, CardHeader } from '@/components/ui/Card'
 import Button, { IconButton } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { cn } from '@/lib/utils'
 
 // ============================================================================
 // Types
@@ -61,92 +57,15 @@ interface RecommendationResult {
   related_topics?: string
 }
 
-// ============================================================================
-// Animation Variants
-// ============================================================================
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.08,
-      delayChildren: 0.1,
-    },
-  },
-}
-
-const cardVariants = {
-  hidden: {
-    opacity: 0,
-    y: 20,
-    scale: 0.95,
-  },
-  visible: {
-    opacity: 1,
-    y: 0,
-    scale: 1,
-    transition: {
-      type: 'spring' as const,
-      stiffness: 300,
-      damping: 24,
-    },
-  },
-}
-
-const filterPanelVariants = {
-  hidden: {
-    opacity: 0,
-    height: 0,
-    marginTop: 0,
-  },
-  visible: {
-    opacity: 1,
-    height: 'auto',
-    marginTop: 16,
-    transition: {
-      type: 'spring' as const,
-      stiffness: 300,
-      damping: 30,
-    },
-  },
-}
-
-const progressVariants = {
-  initial: { opacity: 0, y: -10 },
-  animate: { opacity: 1, y: 0 },
-  exit: { opacity: 0, y: -10 },
-}
-
-const insightsPanelVariants = {
-  hidden: { opacity: 0, x: 20 },
-  visible: {
-    opacity: 1,
-    x: 0,
-    transition: {
-      type: 'spring' as const,
-      stiffness: 300,
-      damping: 25,
-    },
-  },
-}
+type RecommendationType = 'hybrid' | 'semantic' | 'citation'
 
 // ============================================================================
-// Helper Functions
+// Helpers
 // ============================================================================
 
-const getSourceBadgeStyle = (source: string) => {
-  switch (source) {
-    case 'arxiv':
-      return 'bg-red-100/80 text-red-700 dark:bg-red-900/40 dark:text-red-300 border-red-200/50 dark:border-red-700/50'
-    case 'semantic_scholar':
-      return 'bg-blue-100/80 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 border-blue-200/50 dark:border-blue-700/50'
-    case 'openalex':
-      return 'bg-emerald-100/80 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 border-emerald-200/50 dark:border-emerald-700/50'
-    default:
-      return 'bg-slate-100/80 text-slate-700 dark:bg-slate-800/40 dark:text-slate-300 border-slate-200/50 dark:border-slate-700/50'
-  }
-}
+const clamp01 = (value: number) => Math.min(1, Math.max(0, value))
+
+const formatPercent = (value: number) => `${Math.round(clamp01(value) * 100)}%`
 
 const formatAuthors = (authors: string[], max: number = 3) => {
   if (authors.length <= max) return authors.join(', ')
@@ -164,46 +83,101 @@ const getSourceLabel = (source: string) => {
   }
 }
 
+const getSourceBadgeStyle = (source: string) => {
+  switch (source) {
+    case 'arxiv':
+      return 'border-red-500/15 bg-red-500/10 text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300'
+    case 'semantic_scholar':
+      return 'border-blue-500/15 bg-blue-500/10 text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300'
+    case 'openalex':
+      return 'border-emerald-500/15 bg-emerald-500/10 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300'
+    default:
+      return 'border-zinc-200/70 bg-zinc-100/70 text-zinc-700 dark:border-white/10 dark:bg-white/5 dark:text-zinc-300'
+  }
+}
+
+const glassFieldClassName =
+  'bg-white/70 border-white/60 shadow-glass-sm backdrop-blur-md dark:bg-white/5 dark:border-white/10'
+
+const selectClassName = cn(
+  'h-10 w-full rounded-lg px-3 text-sm outline-none',
+  'border border-white/60 bg-white/70 text-zinc-900 shadow-glass-sm backdrop-blur-md',
+  'transition-[border-color,box-shadow,background-color] duration-200 ease-out-expo',
+  'hover:border-white/80 focus:border-zinc-400 focus:ring-2 focus:ring-blue-500/20 focus:shadow-glow-blue',
+  'dark:border-white/10 dark:bg-white/5 dark:text-zinc-50 dark:hover:border-white/15 dark:focus:border-white/20'
+)
+
+function openExternal(url: string) {
+  if (!url) return
+  window.open(url, '_blank', 'noopener,noreferrer')
+}
+
 // ============================================================================
-// Main Component
+// Component
 // ============================================================================
 
 export default function RecommendationPage() {
-  const { uiSettings } = useGlobal()
-
-  // Search state
   const [query, setQuery] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [result, setResult] = useState<RecommendationResult | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  // Filter state
-  const [recommendationType, setRecommendationType] = useState('hybrid')
+  // Filters
+  const [recommendationType, setRecommendationType] = useState<RecommendationType>('hybrid')
   const [yearStart, setYearStart] = useState<number | undefined>(undefined)
   const [yearEnd, setYearEnd] = useState<number | undefined>(undefined)
   const [maxResults, setMaxResults] = useState(10)
   const [generateExplanation, setGenerateExplanation] = useState(true)
   const [suggestTopics, setSuggestTopics] = useState(false)
-  const [showFilters, setShowFilters] = useState(false)
 
-  // Expanded paper state
+  // UI state
   const [expandedPapers, setExpandedPapers] = useState<Set<string>>(new Set())
   const [savedPapers, setSavedPapers] = useState<Set<string>>(new Set())
-
-  // Progress state for WebSocket
   const [progress, setProgress] = useState<string | null>(null)
+
   const wsRef = useRef<WebSocket | null>(null)
+
+  useEffect(() => {
+    return () => {
+      wsRef.current?.close()
+      wsRef.current = null
+    }
+  }, [])
+
+  const hasActiveFilters = useMemo(() => {
+    return (
+      recommendationType !== 'hybrid' ||
+      yearStart !== undefined ||
+      yearEnd !== undefined ||
+      maxResults !== 10 ||
+      generateExplanation !== true ||
+      suggestTopics !== false
+    )
+  }, [generateExplanation, maxResults, recommendationType, suggestTopics, yearEnd, yearStart])
 
   const togglePaperExpand = (paperId: string) => {
     setExpandedPapers(prev => {
       const next = new Set(prev)
-      if (next.has(paperId)) {
-        next.delete(paperId)
-      } else {
-        next.add(paperId)
-      }
+      if (next.has(paperId)) next.delete(paperId)
+      else next.add(paperId)
       return next
     })
+  }
+
+  const resetFilters = () => {
+    setRecommendationType('hybrid')
+    setYearStart(undefined)
+    setYearEnd(undefined)
+    setMaxResults(10)
+    setGenerateExplanation(true)
+    setSuggestTopics(false)
+  }
+
+  const clearResults = () => {
+    setResult(null)
+    setError(null)
+    setProgress(null)
+    setExpandedPapers(new Set())
   }
 
   const savePaper = async (paper: Paper) => {
@@ -219,75 +193,6 @@ export default function RecommendationPage() {
       setSavedPapers(prev => new Set(prev).add(paper.paper_id))
     } catch (err) {
       console.error('Failed to save paper:', err)
-    }
-  }
-
-  const searchPapers = async () => {
-    if (!query.trim()) return
-
-    setIsLoading(true)
-    setError(null)
-    setProgress('Searching...')
-
-    // Close existing WebSocket
-    if (wsRef.current) {
-      wsRef.current.close()
-    }
-
-    // Use WebSocket for real-time updates
-    const ws = new WebSocket(wsUrl('/api/v1/recommendation/recommend/stream'))
-    wsRef.current = ws
-
-    ws.onopen = () => {
-      ws.send(
-        JSON.stringify({
-          query,
-          max_results: maxResults,
-          recommendation_type: recommendationType,
-          year_start: yearStart,
-          year_end: yearEnd,
-          generate_explanation: generateExplanation,
-          suggest_topics: suggestTopics,
-        })
-      )
-    }
-
-    ws.onmessage = event => {
-      try {
-        const data = JSON.parse(event.data)
-
-        if (data.type === 'progress') {
-          setProgress(
-            data.status === 'started'
-              ? `${data.stage}: Starting...`
-              : `${data.stage}: ${data.status}`
-          )
-        } else if (data.type === 'result') {
-          setResult(data.data)
-          setIsLoading(false)
-          setProgress(null)
-          ws.close()
-        } else if (data.type === 'error') {
-          setError(data.content)
-          setIsLoading(false)
-          setProgress(null)
-          ws.close()
-        }
-      } catch (e) {
-        console.error('Parse error:', e)
-      }
-    }
-
-    ws.onerror = () => {
-      // Fallback to REST API
-      fetchPapersRest()
-      ws.close()
-    }
-
-    ws.onclose = () => {
-      if (wsRef.current === ws) {
-        wsRef.current = null
-      }
     }
   }
 
@@ -321,527 +226,673 @@ export default function RecommendationPage() {
     }
   }
 
+  const searchPapers = async () => {
+    if (!query.trim()) return
+
+    setIsLoading(true)
+    setError(null)
+    setProgress('Connecting…')
+
+    // Close existing WebSocket
+    if (wsRef.current) wsRef.current.close()
+
+    const ws = new WebSocket(wsUrl('/api/v1/recommendation/recommend/stream'))
+    wsRef.current = ws
+
+    ws.onopen = () => {
+      setProgress('Searching…')
+      ws.send(
+        JSON.stringify({
+          query,
+          max_results: maxResults,
+          recommendation_type: recommendationType,
+          year_start: yearStart,
+          year_end: yearEnd,
+          generate_explanation: generateExplanation,
+          suggest_topics: suggestTopics,
+        })
+      )
+    }
+
+    ws.onmessage = event => {
+      try {
+        const data = JSON.parse(event.data)
+
+        if (data.type === 'progress') {
+          setProgress(
+            data.status === 'started' ? `${data.stage}: Starting…` : `${data.stage}: ${data.status}`
+          )
+        } else if (data.type === 'result') {
+          setResult(data.data)
+          setIsLoading(false)
+          setProgress(null)
+          setExpandedPapers(new Set())
+          ws.close()
+        } else if (data.type === 'error') {
+          setError(data.content)
+          setIsLoading(false)
+          setProgress(null)
+          ws.close()
+        }
+      } catch (e) {
+        console.error('Parse error:', e)
+      }
+    }
+
+    ws.onerror = () => {
+      // Fallback to REST API
+      fetchPapersRest()
+      ws.close()
+    }
+
+    ws.onclose = () => {
+      if (wsRef.current === ws) wsRef.current = null
+    }
+  }
+
+  const papers = result?.papers ?? []
+  const hasPapers = papers.length > 0
+
   return (
-    <PageWrapper maxWidth="2xl" showPattern>
-      {/* Page Header */}
+    <PageWrapper maxWidth="wide" showPattern breadcrumbs={[{ label: 'Recommendations' }]}>
       <PageHeader
         title="Paper Recommendations"
-        description="ML-based paper recommendations using citation networks, semantic similarity, and your reading history"
-        icon={<BookOpen className="w-5 h-5" />}
+        description="High-signal papers ranked by semantic + citation signals, tuned for deep work."
+        icon={<BookOpen className="h-5 w-5 text-blue-600 dark:text-blue-400" />}
+        actions={
+          result || error || progress ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              iconLeft={<X className="h-4 w-4" />}
+              onClick={clearResults}
+            >
+              Clear
+            </Button>
+          ) : null
+        }
       />
 
-      {/* Search Section */}
-      <Card variant="glass" className="mb-6" hoverEffect={false}>
-        <CardBody className="p-6">
-          <div className="flex gap-3">
-            {/* Search Input */}
-            <div className="flex-1">
+      {/* Top: Search + Filters */}
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_24rem] items-start">
+        {/* Search */}
+        <Card variant="glass" padding="none" interactive={false}>
+          <CardHeader padding="none" className="px-5 py-4">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+                  Search
+                </div>
+                <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                  Use a topic, a question, or a paper title.
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="hidden sm:flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400">
+                  <Sparkles className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                  <span className="font-medium">Best results with specific queries</span>
+                </div>
+              </div>
+            </div>
+          </CardHeader>
+          <CardBody padding="none" className="px-5 pb-5">
+            <form
+              onSubmit={e => {
+                e.preventDefault()
+                searchPapers()
+              }}
+              className="space-y-4"
+            >
               <Input
                 value={query}
                 onChange={e => setQuery(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && searchPapers()}
-                placeholder="Enter research topic, keywords, or paper title..."
-                leftIcon={<Search className="w-5 h-5" />}
+                placeholder="e.g. diffusion transformers for video generation"
+                leftIcon={<Search className="h-5 w-5" />}
+                rightIcon={
+                  query ? (
+                    <button
+                      type="button"
+                      onClick={() => setQuery('')}
+                      className="text-zinc-400 hover:text-zinc-700 dark:text-zinc-500 dark:hover:text-zinc-200"
+                      aria-label="Clear query"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  ) : undefined
+                }
                 size="lg"
+                className={glassFieldClassName}
+              />
+
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-white/50 bg-white/60 px-2.5 py-1 shadow-glass-sm backdrop-blur-md dark:border-white/10 dark:bg-white/5">
+                    <SlidersHorizontal className="h-3.5 w-3.5" />
+                    <span className="font-medium">
+                      {recommendationType === 'hybrid'
+                        ? 'Hybrid'
+                        : recommendationType === 'semantic'
+                          ? 'Semantic'
+                          : 'Citation'}
+                    </span>
+                  </span>
+                  {yearStart !== undefined || yearEnd !== undefined ? (
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-white/50 bg-white/60 px-2.5 py-1 shadow-glass-sm backdrop-blur-md dark:border-white/10 dark:bg-white/5">
+                      <span className="font-medium">
+                        {yearStart ?? '…'}–{yearEnd ?? '…'}
+                      </span>
+                    </span>
+                  ) : null}
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-white/50 bg-white/60 px-2.5 py-1 shadow-glass-sm backdrop-blur-md dark:border-white/10 dark:bg-white/5">
+                    <span className="font-medium">{maxResults}</span>
+                    <span>max</span>
+                  </span>
+                </div>
+
+                <Button
+                  type="submit"
+                  size="lg"
+                  loading={isLoading}
+                  disabled={!query.trim()}
+                  iconLeft={!isLoading ? <Sparkles className="h-5 w-5" /> : undefined}
+                >
+                  {isLoading ? 'Searching…' : 'Recommend'}
+                </Button>
+              </div>
+            </form>
+          </CardBody>
+        </Card>
+
+        {/* Filters */}
+        <Card variant="glass" padding="none" interactive={false} className="overflow-hidden">
+          <CardHeader padding="none" className="px-5 py-4">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2 text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+                  <SlidersHorizontal className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  Filters
+                </div>
+                <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                  Adjust ranking strategy and output.
+                </div>
+              </div>
+              {hasActiveFilters ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={resetFilters}
+                  iconLeft={<RefreshCw className="h-4 w-4" />}
+                >
+                  Reset
+                </Button>
+              ) : null}
+            </div>
+          </CardHeader>
+          <CardBody padding="none" className="px-5 pb-5 space-y-4">
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                Recommendation Type
+              </label>
+              <select
+                value={recommendationType}
+                onChange={e => setRecommendationType(e.target.value as RecommendationType)}
+                className={selectClassName}
+              >
+                <option value="hybrid">Hybrid (Recommended)</option>
+                <option value="semantic">Semantic Similarity</option>
+                <option value="citation">Citation-based</option>
+              </select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <Input
+                label="Year from"
+                type="number"
+                inputMode="numeric"
+                placeholder="e.g. 2018"
+                value={yearStart ?? ''}
+                onChange={e => setYearStart(e.target.value ? parseInt(e.target.value) : undefined)}
+                size="sm"
+                className={glassFieldClassName}
+              />
+              <Input
+                label="Year to"
+                type="number"
+                inputMode="numeric"
+                placeholder="e.g. 2025"
+                value={yearEnd ?? ''}
+                onChange={e => setYearEnd(e.target.value ? parseInt(e.target.value) : undefined)}
+                size="sm"
+                className={glassFieldClassName}
               />
             </div>
 
-            {/* Filter Toggle */}
-            <IconButton
-              variant={showFilters ? 'primary' : 'secondary'}
-              size="lg"
-              icon={<SlidersHorizontal className="w-5 h-5" />}
-              aria-label="Toggle filters"
-              onClick={() => setShowFilters(!showFilters)}
+            <Input
+              label="Max results"
+              type="number"
+              inputMode="numeric"
+              min={1}
+              max={50}
+              value={maxResults}
+              onChange={e => setMaxResults(parseInt(e.target.value) || 10)}
+              size="sm"
+              className={glassFieldClassName}
             />
 
-            {/* Search Button */}
-            <Button
-              variant="primary"
-              size="lg"
-              onClick={searchPapers}
-              loading={isLoading}
-              iconLeft={!isLoading ? <Sparkles className="w-5 h-5" /> : undefined}
-            >
-              {isLoading ? 'Searching...' : 'Find Papers'}
-            </Button>
-          </div>
-
-          {/* Filters Panel */}
-          <AnimatePresence>
-            {showFilters && (
-              <motion.div
-                variants={filterPanelVariants}
-                initial="hidden"
-                animate="visible"
-                exit="hidden"
-                className="overflow-hidden"
-              >
-                <div className="pt-4 border-t border-[#E8E2D080] dark:border-slate-700/50">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {/* Recommendation Type */}
-                    <div>
-                      <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-2">
-                        Recommendation Type
-                      </label>
-                      <select
-                        value={recommendationType}
-                        onChange={e => setRecommendationType(e.target.value)}
-                        className="w-full px-4 py-2.5 bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:border-teal-400/60 focus:ring-2 focus:ring-teal-400/20 outline-none transition-all duration-200"
-                      >
-                        <option value="hybrid">Hybrid (Recommended)</option>
-                        <option value="semantic">Semantic Similarity</option>
-                        <option value="citation">Citation-based</option>
-                      </select>
-                    </div>
-
-                    {/* Year Range */}
-                    <div>
-                      <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-2">
-                        Year Range
-                      </label>
-                      <div className="flex gap-2">
-                        <input
-                          type="number"
-                          placeholder="From"
-                          value={yearStart || ''}
-                          onChange={e =>
-                            setYearStart(e.target.value ? parseInt(e.target.value) : undefined)
-                          }
-                          className="w-full px-3 py-2.5 bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:border-teal-400/60 focus:ring-2 focus:ring-teal-400/20 outline-none transition-all duration-200"
-                        />
-                        <input
-                          type="number"
-                          placeholder="To"
-                          value={yearEnd || ''}
-                          onChange={e =>
-                            setYearEnd(e.target.value ? parseInt(e.target.value) : undefined)
-                          }
-                          className="w-full px-3 py-2.5 bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:border-teal-400/60 focus:ring-2 focus:ring-teal-400/20 outline-none transition-all duration-200"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Max Results */}
-                    <div>
-                      <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-2">
-                        Max Results
-                      </label>
-                      <input
-                        type="number"
-                        min={1}
-                        max={50}
-                        value={maxResults}
-                        onChange={e => setMaxResults(parseInt(e.target.value) || 10)}
-                        className="w-full px-3 py-2.5 bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:border-teal-400/60 focus:ring-2 focus:ring-teal-400/20 outline-none transition-all duration-200"
-                      />
-                    </div>
-
-                    {/* Options */}
-                    <div className="flex flex-col gap-3 pt-1">
-                      <label className="flex items-center gap-3 cursor-pointer group">
-                        <div className="relative">
-                          <input
-                            type="checkbox"
-                            checked={generateExplanation}
-                            onChange={e => setGenerateExplanation(e.target.checked)}
-                            className="sr-only peer"
-                          />
-                          <div className="w-5 h-5 rounded-lg border-2 border-slate-300 dark:border-slate-600 peer-checked:border-teal-500 peer-checked:bg-teal-500 transition-all duration-200 flex items-center justify-center">
-                            <motion.svg
-                              className="w-3 h-3 text-white"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                              strokeWidth={3}
-                              initial={{ pathLength: 0, opacity: 0 }}
-                              animate={{
-                                pathLength: generateExplanation ? 1 : 0,
-                                opacity: generateExplanation ? 1 : 0,
-                              }}
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                d="M5 13l4 4L19 7"
-                              />
-                            </motion.svg>
-                          </div>
-                        </div>
-                        <span className="text-sm text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-slate-100 transition-colors">
-                          AI Explanation
-                        </span>
-                      </label>
-                      <label className="flex items-center gap-3 cursor-pointer group">
-                        <div className="relative">
-                          <input
-                            type="checkbox"
-                            checked={suggestTopics}
-                            onChange={e => setSuggestTopics(e.target.checked)}
-                            className="sr-only peer"
-                          />
-                          <div className="w-5 h-5 rounded-lg border-2 border-slate-300 dark:border-slate-600 peer-checked:border-teal-500 peer-checked:bg-teal-500 transition-all duration-200 flex items-center justify-center">
-                            <motion.svg
-                              className="w-3 h-3 text-white"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                              strokeWidth={3}
-                              initial={{ pathLength: 0, opacity: 0 }}
-                              animate={{
-                                pathLength: suggestTopics ? 1 : 0,
-                                opacity: suggestTopics ? 1 : 0,
-                              }}
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                d="M5 13l4 4L19 7"
-                              />
-                            </motion.svg>
-                          </div>
-                        </div>
-                        <span className="text-sm text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-slate-100 transition-colors">
-                          Suggest Topics
-                        </span>
-                      </label>
-                    </div>
+            <div className="space-y-2">
+              <label className="flex items-start gap-3 rounded-xl border border-white/55 bg-white/60 p-3 shadow-glass-sm backdrop-blur-md transition-colors hover:bg-white/80 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/8">
+                <input
+                  type="checkbox"
+                  checked={generateExplanation}
+                  onChange={e => setGenerateExplanation(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 rounded border-zinc-300 accent-blue-600 dark:border-white/20"
+                />
+                <div>
+                  <div className="text-sm font-medium text-zinc-800 dark:text-zinc-100">
+                    AI explanation
+                  </div>
+                  <div className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+                    Generate a concise rationale for the ranked list.
                   </div>
                 </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </CardBody>
-      </Card>
+              </label>
 
-      {/* Progress Indicator */}
-      <AnimatePresence>
-        {progress && (
-          <motion.div
-            variants={progressVariants}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            className="mb-6"
-          >
-            <Card variant="glass" hoverEffect={false}>
-              <CardBody className="py-4 flex items-center gap-3">
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                >
-                  <RefreshCw className="w-5 h-5 text-teal-500" />
-                </motion.div>
-                <span className="text-sm text-teal-700 dark:text-teal-300 font-medium">
-                  {progress}
-                </span>
-              </CardBody>
-            </Card>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              <label className="flex items-start gap-3 rounded-xl border border-white/55 bg-white/60 p-3 shadow-glass-sm backdrop-blur-md transition-colors hover:bg-white/80 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/8">
+                <input
+                  type="checkbox"
+                  checked={suggestTopics}
+                  onChange={e => setSuggestTopics(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 rounded border-zinc-300 accent-blue-600 dark:border-white/20"
+                />
+                <div>
+                  <div className="text-sm font-medium text-zinc-800 dark:text-zinc-100">
+                    Related topics
+                  </div>
+                  <div className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+                    Suggest adjacent areas worth exploring.
+                  </div>
+                </div>
+              </label>
+            </div>
+          </CardBody>
+        </Card>
+      </div>
 
-      {/* Error Message */}
-      <AnimatePresence>
-        {error && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="mb-6"
-          >
-            <Card
-              variant="solid"
-              hoverEffect={false}
-              className="border-red-200 dark:border-red-800/50 bg-red-50/80 dark:bg-red-900/20"
-            >
-              <CardBody className="py-4 flex items-center gap-3">
-                <X className="w-5 h-5 text-red-500" />
-                <span className="text-sm text-red-700 dark:text-red-300">{error}</span>
-              </CardBody>
-            </Card>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Bottom: Results + Insights */}
+      <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_24rem] items-start">
+        {/* Results */}
+        <Card variant="glass" padding="none" interactive={false} className="overflow-hidden">
+          <CardHeader padding="none" className="px-5 py-4">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+                  Results
+                </div>
+                <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                  {result ? (
+                    <>
+                      Ranked papers for <span className="text-zinc-700 dark:text-zinc-200">“{result.query}”</span>
+                    </>
+                  ) : (
+                    'Run a search to see ranked papers.'
+                  )}
+                </div>
+              </div>
 
-      {/* Results Section */}
-      <div className="flex gap-6">
-        {/* Papers Grid */}
-        <div className="flex-1 min-w-0">
-          {result && result.papers.length > 0 ? (
-            <>
-              {/* Stats Bar */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="flex items-center justify-between text-sm text-slate-500 dark:text-slate-400 mb-4 px-1"
-              >
-                <span className="flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4" />
-                  Found {result.papers.length} of {result.total_candidates} candidates
-                </span>
-                <span>Processed in {result.processing_time_ms.toFixed(0)}ms</span>
-              </motion.div>
+              {result ? (
+                <div className="flex flex-col items-end gap-1 text-xs text-zinc-500 dark:text-zinc-400">
+                  <span className="inline-flex items-center gap-1.5">
+                    <TrendingUp className="h-3.5 w-3.5" />
+                    <span className="font-medium text-zinc-700 dark:text-zinc-200">
+                      {result.papers.length}
+                    </span>
+                    <span>of {result.total_candidates}</span>
+                  </span>
+                  <span>{Math.round(result.processing_time_ms)}ms</span>
+                </div>
+              ) : null}
+            </div>
+          </CardHeader>
 
-              {/* Paper Cards */}
-              <motion.div
-                variants={containerVariants}
-                initial="hidden"
-                animate="visible"
-                className="grid gap-4"
-              >
-                {result.papers.map((paper, index) => (
-                  <motion.div key={paper.paper_id} variants={cardVariants}>
-                    <Card variant="glass" hoverEffect>
-                      <CardBody className="p-5">
-                        {/* Header */}
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex-1 min-w-0">
-                            {/* Badges Row */}
-                            <div className="flex items-center gap-2 mb-2 flex-wrap">
-                              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gradient-to-br from-teal-400 to-teal-500 text-white text-xs font-bold shadow-sm">
-                                {index + 1}
-                              </span>
-                              <span
-                                className={`px-2.5 py-1 rounded-lg text-xs font-medium border backdrop-blur-sm ${getSourceBadgeStyle(paper.source)}`}
+          {/* Status */}
+          {(progress || error) && (
+            <div className="px-5 pt-5">
+              {progress ? (
+                <div className="flex items-center justify-between gap-4 rounded-xl border border-blue-500/15 bg-blue-500/10 px-4 py-3 text-sm text-blue-800 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-200">
+                  <div className="flex items-center gap-2">
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                    <span className="font-medium">{progress}</span>
+                  </div>
+                  <span className="text-xs text-blue-700/80 dark:text-blue-200/80">Working…</span>
+                </div>
+              ) : null}
+
+              {error ? (
+                <div className="flex items-start gap-3 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-800 dark:border-red-500/25 dark:bg-red-500/10 dark:text-red-200">
+                  <X className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                  <div className="min-w-0">
+                    <div className="font-medium">Something went wrong</div>
+                    <div className="mt-0.5 text-xs text-red-700/80 dark:text-red-200/80">{error}</div>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          )}
+
+          <CardBody padding="none" className="pt-2">
+            {hasPapers ? (
+              <ol className="divide-y divide-zinc-200/60 dark:divide-white/10">
+                {papers.map((paper, index) => {
+                  const expanded = expandedPapers.has(paper.paper_id)
+                  const isSaved = savedPapers.has(paper.paper_id)
+                  const combined = clamp01(paper.combined_score)
+
+                  return (
+                    <li
+                      key={paper.paper_id}
+                      className="px-5 py-4 transition-colors hover:bg-white/40 dark:hover:bg-white/5"
+                    >
+                      <div className="flex items-start gap-4">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/55 bg-white/60 text-xs font-bold text-zinc-700 shadow-glass-sm backdrop-blur-md dark:border-white/10 dark:bg-white/5 dark:text-zinc-200">
+                          {index + 1}
+                        </div>
+
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="min-w-0">
+                              <button
+                                type="button"
+                                onClick={() => openExternal(paper.url)}
+                                className="block text-left text-sm font-semibold text-zinc-900 hover:text-blue-700 dark:text-zinc-50 dark:hover:text-blue-300"
                               >
-                                {getSourceLabel(paper.source)}
-                              </span>
-                              <span className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
-                                <Calendar className="w-3.5 h-3.5" />
-                                {paper.year}
-                              </span>
-                              {paper.citation_count !== undefined &&
-                                paper.citation_count !== null && (
-                                  <span className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
-                                    <Quote className="w-3.5 h-3.5" />
+                                <span className="line-clamp-2">{paper.title}</span>
+                              </button>
+
+                              <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-zinc-500 dark:text-zinc-400">
+                                <span className="text-zinc-600 dark:text-zinc-300">
+                                  {formatAuthors(paper.authors)}
+                                </span>
+                                <span className="text-zinc-300 dark:text-zinc-700">•</span>
+                                <span>{paper.year}</span>
+                                {paper.venue ? (
+                                  <>
+                                    <span className="text-zinc-300 dark:text-zinc-700">•</span>
+                                    <span className="truncate">{paper.venue}</span>
+                                  </>
+                                ) : null}
+                              </div>
+
+                              <div className="mt-2 flex flex-wrap items-center gap-2">
+                                <span
+                                  className={cn(
+                                    'inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium',
+                                    getSourceBadgeStyle(paper.source)
+                                  )}
+                                >
+                                  {getSourceLabel(paper.source)}
+                                </span>
+
+                                {paper.citation_count !== undefined && paper.citation_count !== null ? (
+                                  <span className="inline-flex items-center rounded-full border border-zinc-200/70 bg-white/60 px-2.5 py-1 text-xs text-zinc-600 shadow-glass-sm backdrop-blur-md dark:border-white/10 dark:bg-white/5 dark:text-zinc-300">
                                     {paper.citation_count} citations
                                   </span>
-                                )}
-                            </div>
-
-                            {/* Title */}
-                            <h3 className="font-semibold text-slate-800 dark:text-slate-100 leading-snug line-clamp-2">
-                              {paper.title}
-                            </h3>
-
-                            {/* Authors */}
-                            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                              {formatAuthors(paper.authors)}
-                            </p>
-                          </div>
-
-                          {/* Score Badge */}
-                          <div className="flex-shrink-0 text-center">
-                            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-teal-400/20 to-cyan-400/20 dark:from-teal-500/30 dark:to-cyan-500/30 border border-teal-200/50 dark:border-teal-600/50 flex flex-col items-center justify-center">
-                              <div className="text-lg font-bold text-teal-600 dark:text-teal-400">
-                                {(paper.combined_score * 100).toFixed(0)}%
-                              </div>
-                              <div className="text-[10px] text-teal-500/80 dark:text-teal-400/80 uppercase tracking-wide">
-                                Match
+                                ) : null}
                               </div>
                             </div>
+
+                            <div className="flex shrink-0 flex-col items-end gap-2">
+                              <div className="flex flex-col items-end gap-1.5">
+                                <span className="inline-flex items-center gap-2 rounded-full border border-blue-500/15 bg-blue-500/10 px-2.5 py-1 text-xs font-semibold text-blue-800 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-200">
+                                  {formatPercent(paper.combined_score)}
+                                </span>
+                                <div className="h-1.5 w-24 overflow-hidden rounded-full bg-zinc-200/60 dark:bg-white/10">
+                                  <div
+                                    className="h-full rounded-full bg-gradient-to-r from-blue-600 to-indigo-600"
+                                    style={{ width: `${Math.round(combined * 100)}%` }}
+                                  />
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                <IconButton
+                                  size="sm"
+                                  variant={isSaved ? 'secondary' : 'outline'}
+                                  icon={isSaved ? <Check className="h-4 w-4" /> : <BookmarkPlus className="h-4 w-4" />}
+                                  aria-label={isSaved ? 'Saved' : 'Save paper'}
+                                  onClick={() => savePaper(paper)}
+                                  disabled={isSaved}
+                                  className={isSaved ? 'text-blue-700 dark:text-blue-200' : undefined}
+                                />
+
+                                <IconButton
+                                  size="sm"
+                                  variant="ghost"
+                                  icon={<ExternalLink className="h-4 w-4" />}
+                                  aria-label="Open paper"
+                                  onClick={() => openExternal(paper.url)}
+                                />
+
+                                <IconButton
+                                  size="sm"
+                                  variant="ghost"
+                                  icon={expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                                  aria-label={expanded ? 'Collapse details' : 'Expand details'}
+                                  aria-expanded={expanded}
+                                  onClick={() => togglePaperExpand(paper.paper_id)}
+                                />
+                              </div>
+                            </div>
                           </div>
-                        </div>
 
-                        {/* Recommendation Reason */}
-                        <div className="mt-4 px-4 py-3 bg-gradient-to-r from-teal-50/80 to-cyan-50/80 dark:from-teal-900/20 dark:to-cyan-900/20 rounded-xl border border-teal-100/50 dark:border-teal-800/30">
-                          <p className="text-sm text-teal-800 dark:text-teal-200">
-                            {paper.recommendation_reason}
-                          </p>
-                        </div>
+                          {expanded ? (
+                            <div className="mt-4 rounded-xl border border-zinc-200/70 bg-white/60 p-4 shadow-glass-sm backdrop-blur-md dark:border-white/10 dark:bg-white/5">
+                              <div className="grid gap-5 md:grid-cols-2">
+                                <div className="space-y-4">
+                                  {paper.recommendation_reason ? (
+                                    <div>
+                                      <div className="text-xs font-semibold tracking-wide text-zinc-500 dark:text-zinc-400">
+                                        Why this paper
+                                      </div>
+                                      <p className="mt-1 text-sm text-zinc-700 dark:text-zinc-200">
+                                        {paper.recommendation_reason}
+                                      </p>
+                                    </div>
+                                  ) : null}
 
-                        {/* Expandable Abstract */}
-                        <div className="mt-4">
-                          <button
-                            onClick={() => togglePaperExpand(paper.paper_id)}
-                            className="flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
-                          >
-                            {expandedPapers.has(paper.paper_id) ? (
-                              <>
-                                <ChevronUp className="w-4 h-4" />
-                                Hide abstract
-                              </>
-                            ) : (
-                              <>
-                                <ChevronDown className="w-4 h-4" />
-                                Show abstract
-                              </>
-                            )}
-                          </button>
-
-                          <AnimatePresence>
-                            {expandedPapers.has(paper.paper_id) && (
-                              <motion.div
-                                initial={{ height: 0, opacity: 0 }}
-                                animate={{ height: 'auto', opacity: 1 }}
-                                exit={{ height: 0, opacity: 0 }}
-                                transition={{ duration: 0.2 }}
-                                className="overflow-hidden"
-                              >
-                                <p className="mt-3 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-                                  {paper.abstract || 'No abstract available.'}
-                                </p>
-
-                                {/* Score Breakdown */}
-                                <div className="mt-4 pt-4 border-t border-[#E8E2D080] dark:border-slate-700/50">
-                                  <div className="grid grid-cols-3 gap-4">
-                                    <div className="text-center">
-                                      <div className="text-xs text-slate-400 mb-1">Semantic</div>
-                                      <div className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                                        {(paper.similarity_score * 100).toFixed(1)}%
+                                  {paper.abstract ? (
+                                    <div>
+                                      <div className="text-xs font-semibold tracking-wide text-zinc-500 dark:text-zinc-400">
+                                        Abstract
+                                      </div>
+                                      <div className="mt-2 prose prose-sm max-w-none prose-p:leading-relaxed prose-p:text-zinc-600 dark:prose-invert dark:prose-p:text-zinc-300">
+                                        <ReactMarkdown>{paper.abstract}</ReactMarkdown>
                                       </div>
                                     </div>
-                                    <div className="text-center">
-                                      <div className="text-xs text-slate-400 mb-1">Citation</div>
-                                      <div className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                                        {(paper.citation_score * 100).toFixed(1)}%
+                                  ) : null}
+
+                                  {paper.fields_of_study?.length ? (
+                                    <div>
+                                      <div className="text-xs font-semibold tracking-wide text-zinc-500 dark:text-zinc-400">
+                                        Fields
+                                      </div>
+                                      <div className="mt-2 flex flex-wrap gap-2">
+                                        {paper.fields_of_study.slice(0, 6).map(field => (
+                                          <span
+                                            key={field}
+                                            className="rounded-full border border-zinc-200/70 bg-zinc-100/70 px-2.5 py-1 text-xs text-zinc-700 dark:border-white/10 dark:bg-white/5 dark:text-zinc-300"
+                                          >
+                                            {field}
+                                          </span>
+                                        ))}
                                       </div>
                                     </div>
-                                    <div className="text-center">
-                                      <div className="text-xs text-slate-400 mb-1">Recency</div>
-                                      <div className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                                        {(paper.recency_score * 100).toFixed(1)}%
-                                      </div>
+                                  ) : null}
+                                </div>
+
+                                <div className="space-y-4">
+                                  <div>
+                                    <div className="text-xs font-semibold tracking-wide text-zinc-500 dark:text-zinc-400">
+                                      Signals
+                                    </div>
+                                    <div className="mt-2 space-y-2">
+                                      {[
+                                        { label: 'Similarity', value: paper.similarity_score },
+                                        { label: 'Citation', value: paper.citation_score },
+                                        { label: 'Recency', value: paper.recency_score },
+                                      ].map(metric => (
+                                        <div key={metric.label} className="flex items-center gap-3">
+                                          <div className="w-20 text-xs text-zinc-600 dark:text-zinc-300">
+                                            {metric.label}
+                                          </div>
+                                          <div className="h-2 flex-1 overflow-hidden rounded-full bg-zinc-200/60 dark:bg-white/10">
+                                            <div
+                                              className="h-full rounded-full bg-gradient-to-r from-blue-600 to-indigo-600"
+                                              style={{ width: `${Math.round(clamp01(metric.value) * 100)}%` }}
+                                            />
+                                          </div>
+                                          <div className="w-10 text-right text-xs font-medium text-zinc-700 dark:text-zinc-200">
+                                            {formatPercent(metric.value)}
+                                          </div>
+                                        </div>
+                                      ))}
                                     </div>
                                   </div>
+
+                                  {(paper.arxiv_id || paper.doi) && (
+                                    <div>
+                                      <div className="text-xs font-semibold tracking-wide text-zinc-500 dark:text-zinc-400">
+                                        Identifiers
+                                      </div>
+                                      <dl className="mt-2 space-y-1 text-xs text-zinc-600 dark:text-zinc-300">
+                                        {paper.arxiv_id ? (
+                                          <div className="flex justify-between gap-3">
+                                            <dt className="text-zinc-500 dark:text-zinc-400">arXiv</dt>
+                                            <dd className="font-medium text-zinc-700 dark:text-zinc-200">
+                                              {paper.arxiv_id}
+                                            </dd>
+                                          </div>
+                                        ) : null}
+                                        {paper.doi ? (
+                                          <div className="flex justify-between gap-3">
+                                            <dt className="text-zinc-500 dark:text-zinc-400">DOI</dt>
+                                            <dd className="font-medium text-zinc-700 dark:text-zinc-200">
+                                              {paper.doi}
+                                            </dd>
+                                          </div>
+                                        ) : null}
+                                      </dl>
+                                    </div>
+                                  )}
                                 </div>
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
+                              </div>
+                            </div>
+                          ) : null}
                         </div>
-                      </CardBody>
-
-                      <CardFooter className="px-5 py-3 flex items-center gap-4">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          iconLeft={<ExternalLink className="w-4 h-4" />}
-                          onClick={() => window.open(paper.url, '_blank')}
-                        >
-                          View Paper
-                        </Button>
-
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          iconLeft={
-                            savedPapers.has(paper.paper_id) ? (
-                              <Star className="w-4 h-4 fill-current text-amber-500" />
-                            ) : (
-                              <BookmarkPlus className="w-4 h-4" />
-                            )
-                          }
-                          onClick={() => savePaper(paper)}
-                          disabled={savedPapers.has(paper.paper_id)}
-                          className={
-                            savedPapers.has(paper.paper_id)
-                              ? 'text-amber-600 dark:text-amber-400'
-                              : ''
-                          }
-                        >
-                          {savedPapers.has(paper.paper_id) ? 'Saved' : 'Save'}
-                        </Button>
-
-                        {/* Fields of Study */}
-                        {paper.fields_of_study && paper.fields_of_study.length > 0 && (
-                          <div className="flex-1 flex flex-wrap gap-1.5 justify-end">
-                            {paper.fields_of_study.slice(0, 3).map((field, i) => (
-                              <span
-                                key={i}
-                                className="px-2 py-0.5 bg-slate-100/80 dark:bg-slate-800/60 rounded-lg text-xs text-slate-500 dark:text-slate-400 border border-slate-200/50 dark:border-slate-700/50"
-                              >
-                                {field}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </CardFooter>
-                    </Card>
-                  </motion.div>
-                ))}
-              </motion.div>
-            </>
-          ) : result && result.papers.length === 0 ? (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="flex flex-col items-center justify-center py-20"
-            >
-              <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 flex items-center justify-center mb-6">
-                <BookOpen className="w-10 h-10 text-slate-400 dark:text-slate-500" />
-              </div>
-              <h3 className="text-lg font-medium text-slate-700 dark:text-slate-300 mb-2">
-                No papers found
-              </h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400">
-                Try a different search query or adjust your filters.
-              </p>
-            </motion.div>
-          ) : !isLoading ? (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="flex flex-col items-center justify-center py-20"
-            >
-              <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-teal-100 to-cyan-100 dark:from-teal-900/30 dark:to-cyan-900/30 flex items-center justify-center mb-6">
-                <Search className="w-10 h-10 text-teal-500 dark:text-teal-400" />
-              </div>
-              <h3 className="text-lg font-medium text-slate-700 dark:text-slate-300 mb-2">
-                Ready to discover papers
-              </h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400">
-                Enter a research topic to find relevant papers
-              </p>
-            </motion.div>
-          ) : null}
-        </div>
-
-        {/* AI Insights Panel */}
-        <AnimatePresence>
-          {result && (result.explanation || result.related_topics) && (
-            <motion.div
-              variants={insightsPanelVariants}
-              initial="hidden"
-              animate="visible"
-              exit="hidden"
-              className="w-96 flex-shrink-0"
-            >
-              <Card variant="glass" hoverEffect={false} className="sticky top-4">
-                <div className="px-5 py-4 border-b border-[#E8E2D080] dark:border-slate-700/50 bg-gradient-to-r from-teal-50/50 to-cyan-50/50 dark:from-teal-900/20 dark:to-cyan-900/20">
-                  <h3 className="font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                    <Sparkles className="w-5 h-5 text-teal-500" />
-                    AI Insights
-                  </h3>
+                      </div>
+                    </li>
+                  )
+                })}
+              </ol>
+            ) : result && papers.length === 0 ? (
+              <div className="px-5 py-16 text-center">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-100 text-zinc-500 dark:bg-white/5 dark:text-zinc-300">
+                  <Search className="h-5 w-5" />
                 </div>
+                <div className="mt-4 text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+                  No papers found
+                </div>
+                <div className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
+                  Try a different query or broaden your filters.
+                </div>
+              </div>
+            ) : isLoading ? (
+              <div className="px-5 py-16 text-center">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-700 dark:text-blue-200">
+                  <RefreshCw className="h-5 w-5 animate-spin" />
+                </div>
+                <div className="mt-4 text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+                  Working…
+                </div>
+                <div className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
+                  Streaming progress as results are computed.
+                </div>
+              </div>
+            ) : (
+              <div className="px-5 py-16 text-center">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-700 dark:text-blue-200">
+                  <Sparkles className="h-5 w-5" />
+                </div>
+                <div className="mt-4 text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+                  Ready when you are
+                </div>
+                <div className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
+                  Enter a query above to get ranked recommendations.
+                </div>
+              </div>
+            )}
+          </CardBody>
+        </Card>
 
-                <CardBody className="space-y-5 max-h-[calc(100vh-16rem)] overflow-y-auto">
-                  {result.explanation && (
-                    <div>
-                      <h4 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-3">
-                        Why these papers?
-                      </h4>
-                      <div className="prose prose-sm dark:prose-invert max-w-none prose-p:text-slate-600 dark:prose-p:text-slate-300 prose-headings:text-slate-800 dark:prose-headings:text-slate-200">
-                        <ReactMarkdown>{result.explanation}</ReactMarkdown>
-                      </div>
-                    </div>
-                  )}
+        {/* Insights */}
+        <Card
+          variant="glass"
+          padding="none"
+          interactive={false}
+          className="overflow-hidden lg:sticky lg:top-4"
+        >
+          <CardHeader
+            padding="none"
+            className="px-5 py-4 bg-gradient-to-r from-blue-50/70 via-white/40 to-transparent dark:from-blue-500/10 dark:via-white/5"
+          >
+            <div className="flex items-center gap-2 text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+              <Sparkles className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              AI Insights
+            </div>
+            <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+              Explanation + related topics (optional).
+            </div>
+          </CardHeader>
 
-                  {result.related_topics && (
-                    <div>
-                      <h4 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-3">
-                        Related Topics to Explore
-                      </h4>
-                      <div className="prose prose-sm dark:prose-invert max-w-none prose-p:text-slate-600 dark:prose-p:text-slate-300">
-                        <ReactMarkdown>{result.related_topics}</ReactMarkdown>
-                      </div>
+          <CardBody padding="none" className="px-5 py-5">
+            {result?.explanation || result?.related_topics ? (
+              <div className="space-y-6 max-h-[calc(100vh-14rem)] overflow-y-auto pr-1">
+                {result.explanation ? (
+                  <section>
+                    <div className="text-xs font-semibold tracking-wide text-zinc-500 dark:text-zinc-400">
+                      Why these papers
                     </div>
-                  )}
-                </CardBody>
-              </Card>
-            </motion.div>
-          )}
-        </AnimatePresence>
+                    <div className="mt-2 prose prose-sm max-w-none prose-p:text-zinc-600 dark:prose-invert dark:prose-p:text-zinc-300">
+                      <ReactMarkdown>{result.explanation}</ReactMarkdown>
+                    </div>
+                  </section>
+                ) : null}
+
+                {result.related_topics ? (
+                  <section>
+                    <div className="text-xs font-semibold tracking-wide text-zinc-500 dark:text-zinc-400">
+                      Related topics to explore
+                    </div>
+                    <div className="mt-2 prose prose-sm max-w-none prose-p:text-zinc-600 dark:prose-invert dark:prose-p:text-zinc-300">
+                      <ReactMarkdown>{result.related_topics}</ReactMarkdown>
+                    </div>
+                  </section>
+                ) : null}
+              </div>
+            ) : (
+              <div className="py-10 text-center">
+                <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-2xl bg-white/60 text-zinc-500 shadow-glass-sm backdrop-blur-md dark:bg-white/5 dark:text-zinc-300">
+                  <Sparkles className="h-4 w-4" />
+                </div>
+                <div className="mt-4 text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+                  No insights yet
+                </div>
+                <div className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
+                  Enable “AI explanation” or “Related topics”, then search.
+                </div>
+              </div>
+            )}
+          </CardBody>
+        </Card>
       </div>
     </PageWrapper>
   )

@@ -1242,15 +1242,17 @@ export default function CoWriterEditor({
     active?: boolean;
   }) => (
     <button
+      type="button"
       onClick={onClick}
       title={title}
-      className={`p-1.5 rounded transition-all ${active ? "bg-purple-100 text-purple-700" : "text-slate-500 hover:bg-slate-100 hover:text-slate-700"}`}
+      aria-label={title}
+      className={`p-1.5 rounded-lg transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/20 ${active ? "bg-purple-100 text-purple-700" : "text-slate-500 hover:bg-slate-100 hover:text-slate-700"}`}
     >
       {icon}
     </button>
   );
 
-  const Divider = () => <div className="w-px h-5 bg-slate-200 mx-1" />;
+  const Divider = () => <div className="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-1" />;
 
   return (
     <div className="flex h-full gap-4">
@@ -1450,16 +1452,17 @@ export default function CoWriterEditor({
               ),
               top: Math.min(window.innerHeight - 480, popover.y),
             }}
-            className="z-50 w-[320px] bg-white rounded-xl shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-200 flex flex-col"
+            className="z-50 w-[320px] bg-white/95 dark:bg-zinc-950/80 dark:text-zinc-50 rounded-2xl shadow-xl border border-slate-200 dark:border-white/10 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200 flex flex-col"
           >
-            <div className="p-3 border-b border-slate-100 bg-gradient-to-r from-purple-50 to-indigo-50 flex justify-between items-center rounded-t-xl">
-              <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
+            <div className="p-3 border-b border-slate-100 dark:border-white/10 bg-gradient-to-r from-purple-50/80 to-indigo-50/80 dark:from-purple-500/10 dark:to-indigo-500/10 flex justify-between items-center rounded-t-2xl backdrop-blur-xl">
+              <div className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-zinc-100">
                 <Sparkles className="w-4 h-4 text-purple-500" />
                 AI Edit Assistant
               </div>
               <button
+                type="button"
                 onClick={() => setPopover(null)}
-                className="text-slate-400 hover:text-slate-600"
+                className="p-1 rounded-lg text-slate-400 hover:bg-white/60 hover:text-slate-600 transition-colors dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-zinc-100"
                 title="Close"
                 aria-label="Close dialog"
               >
@@ -1469,7 +1472,7 @@ export default function CoWriterEditor({
 
             <div className="p-4 space-y-4">
               {/* Selected Text Preview */}
-              <div className="text-xs text-slate-500 bg-slate-50 p-2 rounded-lg border border-slate-100 line-clamp-2 italic">
+              <div className="text-xs text-slate-500 bg-slate-50 dark:bg-white/5 p-2 rounded-xl border border-slate-100 dark:border-white/10 line-clamp-2 italic dark:text-zinc-300">
                 "{selection?.text}"
               </div>
 
@@ -1483,7 +1486,7 @@ export default function CoWriterEditor({
                   value={instruction}
                   onChange={(e) => setInstruction(e.target.value)}
                   placeholder="e.g. Make it more formal..."
-                  className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 outline-none"
+                  className="w-full px-3 py-2 text-xs border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 outline-none bg-white/80 dark:bg-zinc-950/40 dark:text-zinc-100 dark:placeholder-zinc-500"
                 />
               </div>
 
@@ -1495,15 +1498,17 @@ export default function CoWriterEditor({
                   </label>
                   <div className="flex gap-2">
                     <button
+                      type="button"
                       onClick={() => setSource(source === "rag" ? null : "rag")}
-                      className={`flex-1 flex items-center justify-center gap-1 py-1.5 text-xs border rounded-lg transition-all ${source === "rag" ? "bg-purple-50 border-purple-200 text-purple-700" : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"}`}
+                      className={`flex-1 flex items-center justify-center gap-1 py-1.5 text-xs border rounded-xl transition-all ${source === "rag" ? "bg-purple-50 border-purple-200 text-purple-700 dark:bg-purple-500/15 dark:border-purple-400/30 dark:text-purple-200" : "bg-white/80 border-slate-200 text-slate-600 hover:bg-slate-50 dark:bg-zinc-950/40 dark:border-white/10 dark:text-zinc-300 dark:hover:bg-white/5"}`}
                     >
                       <Database className="w-3 h-3" />
                       RAG
                     </button>
                     <button
+                      type="button"
                       onClick={() => setSource(source === "web" ? null : "web")}
-                      className={`flex-1 flex items-center justify-center gap-1 py-1.5 text-xs border rounded-lg transition-all ${source === "web" ? "bg-blue-50 border-blue-200 text-blue-700" : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"}`}
+                      className={`flex-1 flex items-center justify-center gap-1 py-1.5 text-xs border rounded-xl transition-all ${source === "web" ? "bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-500/15 dark:border-blue-400/30 dark:text-blue-200" : "bg-white/80 border-slate-200 text-slate-600 hover:bg-slate-50 dark:bg-zinc-950/40 dark:border-white/10 dark:text-zinc-300 dark:hover:bg-white/5"}`}
                     >
                       <Globe className="w-3 h-3" />
                       Web
@@ -1518,7 +1523,7 @@ export default function CoWriterEditor({
                   <select
                     value={selectedKb}
                     onChange={(e) => setSelectedKb(e.target.value)}
-                    className="w-full px-2 py-1.5 text-xs border border-slate-200 rounded-lg outline-none"
+                    className="w-full px-2 py-1.5 text-xs border border-slate-200 dark:border-white/10 rounded-xl outline-none bg-white/80 dark:bg-zinc-950/40 dark:text-zinc-100"
                   >
                     {kbs.map((kb) => (
                       <option key={kb} value={kb}>
@@ -1530,36 +1535,40 @@ export default function CoWriterEditor({
               )}
 
               {/* Actions */}
-              <div className="pt-2 border-t border-slate-100 space-y-3">
+              <div className="pt-2 border-t border-slate-100 dark:border-white/10 space-y-3">
                 <div className="grid grid-cols-4 gap-1.5">
                   <button
+                    type="button"
                     onClick={() => setSelectedAction("rewrite")}
                     disabled={isProcessing}
-                    className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-all text-[10px] font-medium border-2 ${selectedAction === "rewrite" ? "bg-purple-50 border-purple-400 text-purple-600" : "border-transparent text-slate-600 hover:bg-purple-50 hover:text-purple-600"}`}
+                    className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all text-[10px] font-medium border-2 ${selectedAction === "rewrite" ? "bg-purple-50 border-purple-400 text-purple-600 dark:bg-purple-500/15 dark:border-purple-400/30 dark:text-purple-200" : "border-transparent text-slate-600 hover:bg-purple-50 hover:text-purple-600 dark:text-zinc-300 dark:hover:bg-purple-500/10 dark:hover:text-purple-200"}`}
                   >
                     <Wand2 className="w-4 h-4" />
                     Rewrite
                   </button>
                   <button
+                    type="button"
                     onClick={() => setSelectedAction("shorten")}
                     disabled={isProcessing}
-                    className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-all text-[10px] font-medium border-2 ${selectedAction === "shorten" ? "bg-amber-50 border-amber-400 text-amber-600" : "border-transparent text-slate-600 hover:bg-amber-50 hover:text-amber-600"}`}
+                    className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all text-[10px] font-medium border-2 ${selectedAction === "shorten" ? "bg-amber-50 border-amber-400 text-amber-600 dark:bg-amber-500/15 dark:border-amber-400/30 dark:text-amber-200" : "border-transparent text-slate-600 hover:bg-amber-50 hover:text-amber-600 dark:text-zinc-300 dark:hover:bg-amber-500/10 dark:hover:text-amber-200"}`}
                   >
                     <Minimize2 className="w-4 h-4" />
                     Shorten
                   </button>
                   <button
+                    type="button"
                     onClick={() => setSelectedAction("expand")}
                     disabled={isProcessing}
-                    className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-all text-[10px] font-medium border-2 ${selectedAction === "expand" ? "bg-blue-50 border-blue-400 text-blue-600" : "border-transparent text-slate-600 hover:bg-blue-50 hover:text-blue-600"}`}
+                    className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all text-[10px] font-medium border-2 ${selectedAction === "expand" ? "bg-blue-50 border-blue-400 text-blue-600 dark:bg-blue-500/15 dark:border-blue-400/30 dark:text-blue-200" : "border-transparent text-slate-600 hover:bg-blue-50 hover:text-blue-600 dark:text-zinc-300 dark:hover:bg-blue-500/10 dark:hover:text-blue-200"}`}
                   >
                     <Maximize2 className="w-4 h-4" />
                     Expand
                   </button>
                   <button
+                    type="button"
                     onClick={() => setSelectedAction("automark")}
                     disabled={isProcessing}
-                    className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-all text-[10px] font-medium border-2 ${selectedAction === "automark" ? "bg-emerald-50 border-emerald-400 text-emerald-600" : "border-transparent text-slate-600 hover:bg-emerald-50 hover:text-emerald-600"}`}
+                    className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all text-[10px] font-medium border-2 ${selectedAction === "automark" ? "bg-emerald-50 border-emerald-400 text-emerald-600 dark:bg-emerald-500/15 dark:border-emerald-400/30 dark:text-emerald-200" : "border-transparent text-slate-600 hover:bg-emerald-50 hover:text-emerald-600 dark:text-zinc-300 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-200"}`}
                   >
                     <PenTool className="w-4 h-4" />
                     AI Mark
@@ -1568,9 +1577,10 @@ export default function CoWriterEditor({
 
                 {/* Submit Button */}
                 <button
+                  type="button"
                   onClick={() => handleAction(selectedAction)}
                   disabled={isProcessing}
-                  className="w-full py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-xs font-bold rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-all shadow-md hover:shadow-lg disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="w-full py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-xs font-bold rounded-xl hover:from-purple-700 hover:to-indigo-700 transition-all shadow-md hover:shadow-lg disabled:opacity-50 flex items-center justify-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/30 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-zinc-950"
                 >
                   {isProcessing ? (
                     <>
@@ -1787,21 +1797,23 @@ export default function CoWriterEditor({
 
             {/* History Panel Overlay */}
             {showHistory && (
-              <div className="absolute inset-0 z-10 bg-white/95 backdrop-blur-sm flex flex-col animate-in fade-in duration-200">
-                <div className="p-3 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                  <h3 className="text-xs font-bold text-slate-600 uppercase tracking-wider">
+              <div className="absolute inset-0 z-10 bg-white/95 dark:bg-zinc-950/80 dark:text-zinc-50 backdrop-blur-sm flex flex-col animate-in fade-in duration-200">
+                <div className="p-3 border-b border-slate-100 dark:border-white/10 flex justify-between items-center bg-slate-50/50 dark:bg-white/5">
+                  <h3 className="text-xs font-bold text-slate-600 dark:text-zinc-200 uppercase tracking-wider">
                     Version History
                   </h3>
                   <button
+                    type="button"
                     onClick={() => setShowHistory(false)}
-                    className="text-slate-400 hover:text-slate-600 p-1 hover:bg-slate-100 rounded"
+                    aria-label="Close history"
+                    className="text-slate-400 hover:text-slate-600 p-1 hover:bg-slate-100 rounded-lg transition-colors dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-zinc-100"
                   >
                     <X className="w-4 h-4" />
                   </button>
                 </div>
                 <div className="flex-1 overflow-y-auto p-2">
                   {operationHistory.length === 0 ? (
-                    <div className="text-center py-10 text-slate-400 text-sm">
+                    <div className="text-center py-10 text-slate-400 dark:text-zinc-500 text-sm">
                       No history available
                     </div>
                   ) : (
@@ -1809,30 +1821,30 @@ export default function CoWriterEditor({
                       {[...operationHistory].reverse().map((op) => (
                         <div
                           key={op.id}
-                          className="p-3 bg-white border border-slate-200 rounded-lg hover:shadow-sm transition-all cursor-pointer group"
+                          className="p-3 bg-white/90 dark:bg-zinc-950/60 border border-slate-200 dark:border-white/10 rounded-xl hover:shadow-sm transition-all cursor-pointer group"
                         >
                           <div className="flex items-center justify-between mb-1">
                             <span
-                              className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded ${
+                              className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded-full ${
                                 op.action === "rewrite"
-                                  ? "bg-purple-100 text-purple-700"
+                                  ? "bg-purple-100 text-purple-700 dark:bg-purple-500/15 dark:text-purple-200"
                                   : op.action === "shorten"
-                                    ? "bg-amber-100 text-amber-700"
+                                    ? "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-200"
                                     : op.action === "automark"
-                                      ? "bg-emerald-100 text-emerald-700"
-                                      : "bg-blue-100 text-blue-700"
+                                      ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-200"
+                                      : "bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-200"
                               }`}
                             >
                               {op.action}
                             </span>
-                            <span className="text-[10px] text-slate-400">
+                            <span className="text-[10px] text-slate-400 dark:text-zinc-500">
                               {new Date(op.timestamp).toLocaleTimeString()}
                             </span>
                           </div>
-                          <div className="text-xs text-slate-600 truncate mb-1">
+                          <div className="text-xs text-slate-600 dark:text-zinc-200 truncate mb-1">
                             "{op.input?.original_text?.substring(0, 35)}..."
                           </div>
-                          <div className="flex items-center gap-2 text-[10px] text-slate-400">
+                          <div className="flex items-center gap-2 text-[10px] text-slate-400 dark:text-zinc-500">
                             {op.source && (
                               <span className="flex items-center gap-0.5">
                                 {op.source === "rag" ? (
@@ -2055,10 +2067,10 @@ export default function CoWriterEditor({
 
       {/* Global Loading Overlay */}
       {isProcessing && !popover && (
-        <div className="fixed inset-0 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-center">
-          <div className="bg-white p-8 rounded-2xl shadow-2xl flex flex-col items-center gap-4 border">
+        <div className="fixed inset-0 bg-white/80 dark:bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 supports-[backdrop-filter]:dark:bg-black/40">
+          <div className="bg-white/90 dark:bg-zinc-950/80 p-8 rounded-2xl shadow-xl flex flex-col items-center gap-4 border border-white/40 dark:border-white/10 backdrop-blur-xl">
             <Loader2 className="w-8 h-8 text-purple-600 animate-spin" />
-            <span className="font-medium text-slate-700">Exporting...</span>
+            <span className="font-medium text-slate-700 dark:text-zinc-100">Exporting...</span>
           </div>
         </div>
       )}

@@ -230,7 +230,7 @@ export default function VersionsModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col animate-in zoom-in-95">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-2xl max-h-[80vh] flex flex-col animate-in zoom-in-95">
         {/* Header */}
         <div className="p-6 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
           <div className="flex items-center gap-3">
@@ -246,7 +246,7 @@ export default function VersionsModal({
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"
+            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"
           >
             <X className="w-5 h-5" />
           </button>
@@ -257,7 +257,7 @@ export default function VersionsModal({
           {!showCreateForm ? (
             <button
               onClick={() => setShowCreateForm(true)}
-              className="px-4 py-2 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-lg text-sm font-medium hover:bg-slate-800 dark:hover:bg-slate-200 flex items-center gap-2"
+              className="px-4 py-2 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-xl text-sm font-medium hover:bg-slate-800 dark:hover:bg-slate-200 flex items-center gap-2"
             >
               <Plus className="w-4 h-4" />
               Create Snapshot
@@ -269,12 +269,12 @@ export default function VersionsModal({
                 placeholder="Description (optional)"
                 value={description}
                 onChange={e => setDescription(e.target.value)}
-                className="flex-1 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                className="flex-1 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
               />
               <button
                 onClick={handleCreateSnapshot}
                 disabled={creatingSnapshot}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
+                className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
               >
                 {creatingSnapshot ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -288,7 +288,7 @@ export default function VersionsModal({
                   setShowCreateForm(false)
                   setDescription('')
                 }}
-                className="px-4 py-2 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 rounded-lg text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700"
+                className="px-4 py-2 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 rounded-xl text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700"
               >
                 Cancel
               </button>
@@ -297,7 +297,7 @@ export default function VersionsModal({
           {selectedForCompare.length === 2 && (
             <button
               onClick={() => setShowCompareModal(true)}
-              className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 flex items-center gap-2"
+              className="px-4 py-2 bg-purple-600 text-white rounded-xl text-sm font-medium hover:bg-purple-700 flex items-center gap-2"
             >
               <GitCompare className="w-4 h-4" />
               Compare Selected
@@ -307,7 +307,7 @@ export default function VersionsModal({
 
         {/* Error */}
         {error && (
-          <div className="mx-4 mt-4 p-3 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg text-sm flex items-center gap-2">
+          <div className="mx-4 mt-4 p-3 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-xl text-sm flex items-center gap-2">
             <AlertTriangle className="w-4 h-4" />
             {error}
           </div>
@@ -389,7 +389,7 @@ export default function VersionsModal({
                       <button
                         onClick={() => handleRollback(version.version_id)}
                         disabled={rollingBack === version.version_id}
-                        className="p-2 hover:bg-blue-100 dark:hover:bg-blue-900/40 rounded-lg text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors disabled:opacity-50"
+                        className="p-2 hover:bg-blue-100 dark:hover:bg-blue-900/40 rounded-xl text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors disabled:opacity-50"
                         title="Rollback to this version"
                       >
                         {rollingBack === version.version_id ? (
@@ -401,7 +401,7 @@ export default function VersionsModal({
                       <button
                         onClick={() => handleDeleteVersion(version.version_id)}
                         disabled={deletingVersion === version.version_id}
-                        className="p-2 hover:bg-red-100 dark:hover:bg-red-900/40 rounded-lg text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors disabled:opacity-50"
+                        className="p-2 hover:bg-red-100 dark:hover:bg-red-900/40 rounded-xl text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors disabled:opacity-50"
                         title="Delete version"
                       >
                         {deletingVersion === version.version_id ? (
@@ -561,7 +561,7 @@ function CompareVersionsModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[80vh] flex flex-col animate-in zoom-in-95">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-3xl max-h-[80vh] flex flex-col animate-in zoom-in-95">
         {/* Header */}
         <div className="p-6 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
           <div className="flex items-center gap-3">
@@ -579,7 +579,7 @@ function CompareVersionsModal({
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"
+            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"
           >
             <X className="w-5 h-5" />
           </button>
@@ -592,7 +592,7 @@ function CompareVersionsModal({
               <Loader2 className="w-8 h-8 animate-spin text-slate-400 dark:text-slate-500" />
             </div>
           ) : error ? (
-            <div className="p-4 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg">
+            <div className="p-4 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-xl">
               {error}
             </div>
           ) : comparison ? (
@@ -635,7 +635,7 @@ function CompareVersionsModal({
                     {comparison.comparison.documents_added.map(doc => (
                       <div
                         key={doc.filename}
-                        className="flex items-center justify-between p-2 bg-green-50 dark:bg-green-900/20 rounded-lg text-sm"
+                        className="flex items-center justify-between p-2 bg-green-50 dark:bg-green-900/20 rounded-xl text-sm"
                       >
                         <span className="text-slate-700 dark:text-slate-300">{doc.filename}</span>
                         <span className="text-xs text-slate-500 dark:text-slate-400">
@@ -657,7 +657,7 @@ function CompareVersionsModal({
                     {comparison.comparison.documents_deleted.map(doc => (
                       <div
                         key={doc.filename}
-                        className="flex items-center justify-between p-2 bg-red-50 dark:bg-red-900/20 rounded-lg text-sm"
+                        className="flex items-center justify-between p-2 bg-red-50 dark:bg-red-900/20 rounded-xl text-sm"
                       >
                         <span className="text-slate-700 dark:text-slate-300 line-through">
                           {doc.filename}
@@ -681,7 +681,7 @@ function CompareVersionsModal({
                     {comparison.comparison.documents_modified.map(doc => (
                       <div
                         key={doc.filename}
-                        className="flex items-center justify-between p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg text-sm"
+                        className="flex items-center justify-between p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded-xl text-sm"
                       >
                         <span className="text-slate-700 dark:text-slate-300">{doc.filename}</span>
                         <span className="text-xs text-slate-500 dark:text-slate-400">

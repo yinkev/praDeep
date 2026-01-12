@@ -172,6 +172,7 @@ export const translations = {
     'Track your learning progress and identify areas for improvement':
       'Track your learning progress and identify areas for improvement',
     Today: 'Today',
+    Yesterday: 'Yesterday',
     'This Week': 'This Week',
     'This Month': 'This Month',
     'All Time': 'All Time',
@@ -371,6 +372,7 @@ export const translations = {
     'Track your learning progress and identify areas for improvement':
       '跟踪您的学习进度并识别需要改进的领域',
     Today: '今天',
+    Yesterday: '昨天',
     'This Week': '本周',
     'This Month': '本月',
     'All Time': '全部时间',

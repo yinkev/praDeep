@@ -1,33 +1,35 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
+  AlertCircle,
   BookOpen,
+  CheckCircle2,
+  CloudUpload,
   Database,
   FileText,
+  FolderOpen,
+  History,
   Image as ImageIcon,
   Layers,
-  Plus,
-  Upload,
-  Trash2,
+  LayoutGrid,
+  List,
   Loader2,
-  X,
+  Plus,
   RefreshCw,
-  History,
-  CloudUpload,
-  Sparkles,
-  CheckCircle2,
-  AlertCircle,
-  FolderOpen,
+  Trash2,
+  Upload,
+  X,
 } from 'lucide-react'
-import PageWrapper, { PageHeader } from '@/components/ui/PageWrapper'
-import Button, { IconButton } from '@/components/ui/Button'
-import { Card, CardHeader, CardBody } from '@/components/ui/Card'
-import Modal, { ModalBody, ModalFooter } from '@/components/ui/Modal'
-import { Input } from '@/components/ui/Input'
 import VersionsModal from '@/components/knowledge/VersionsModal'
+import Button, { IconButton } from '@/components/ui/Button'
+import { Card, CardBody, CardHeader } from '@/components/ui/Card'
+import { Input } from '@/components/ui/Input'
+import Modal, { ModalBody, ModalFooter } from '@/components/ui/Modal'
+import PageWrapper, { PageHeader } from '@/components/ui/PageWrapper'
+import { useToast } from '@/components/ui/Toast'
 import { apiUrl, wsUrl } from '@/lib/api'
+import { cn } from '@/lib/utils'
 
 // ============================================================================
 // Types
@@ -57,154 +59,18 @@ interface ProgressInfo {
   file_name?: string
   progress_percent: number
   error?: string
+  timestamp?: string
 }
+
+type LayoutMode = 'grid' | 'list'
 
 // ============================================================================
-// Animation Variants
+// Helpers
 // ============================================================================
 
-const staggerContainer = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.08,
-      delayChildren: 0.1,
-    },
-  },
+function formatNumber(value: number) {
+  return value.toLocaleString()
 }
-
-const cardVariant = {
-  hidden: { opacity: 0, y: 20, scale: 0.95 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    scale: 1,
-    transition: {
-      type: 'spring' as const,
-      stiffness: 300,
-      damping: 24,
-    },
-  },
-}
-
-const uploadAreaVariants = {
-  idle: {
-    scale: 1,
-    borderColor: 'rgba(20, 184, 166, 0.3)',
-  },
-  dragging: {
-    scale: 1.02,
-    borderColor: 'rgba(20, 184, 166, 0.8)',
-    transition: {
-      type: 'spring' as const,
-      stiffness: 300,
-      damping: 20,
-    },
-  },
-}
-
-const pulseAnimation = {
-  initial: { scale: 1, opacity: 0.5 },
-  animate: {
-    scale: [1, 1.2, 1],
-    opacity: [0.5, 0.8, 0.5],
-    transition: {
-      duration: 2,
-      repeat: Infinity,
-      ease: 'easeInOut' as const,
-    },
-  },
-}
-
-// ============================================================================
-// Animated Counter Component
-// ============================================================================
-
-interface AnimatedCounterProps {
-  value: number
-  duration?: number
-  className?: string
-}
-
-function AnimatedCounter({ value, duration = 1, className = '' }: AnimatedCounterProps) {
-  const [displayValue, setDisplayValue] = useState(0)
-  const previousValue = useRef(0)
-
-  useEffect(() => {
-    const startValue = previousValue.current
-    const endValue = value
-    const startTime = Date.now()
-    const durationMs = duration * 1000
-
-    const animate = () => {
-      const now = Date.now()
-      const elapsed = now - startTime
-      const progress = Math.min(elapsed / durationMs, 1)
-
-      // Easing function for smooth animation
-      const easeOutQuart = 1 - Math.pow(1 - progress, 4)
-      const current = Math.round(startValue + (endValue - startValue) * easeOutQuart)
-
-      setDisplayValue(current)
-
-      if (progress < 1) {
-        requestAnimationFrame(animate)
-      }
-    }
-
-    requestAnimationFrame(animate)
-    previousValue.current = value
-  }, [value, duration])
-
-  return <span className={className}>{displayValue.toLocaleString()}</span>
-}
-
-// ============================================================================
-// Stat Card Component
-// ============================================================================
-
-interface StatCardProps {
-  icon: React.ReactNode
-  label: string
-  value: number
-  accentColor?: string
-}
-
-function StatCard({ icon, label, value, accentColor = 'teal' }: StatCardProps) {
-  const colorClasses = {
-    teal: 'from-teal-500/20 to-cyan-500/20 text-teal-600 dark:text-teal-400',
-    blue: 'from-blue-500/20 to-indigo-500/20 text-blue-600 dark:text-blue-400',
-    purple: 'from-purple-500/20 to-pink-500/20 text-purple-600 dark:text-purple-400',
-    amber: 'from-amber-500/20 to-orange-500/20 text-amber-600 dark:text-amber-400',
-  }
-
-  return (
-    <div
-      className={`
-        relative overflow-hidden rounded-xl p-4
-        bg-gradient-to-br ${colorClasses[accentColor as keyof typeof colorClasses]}
-        backdrop-blur-sm
-      `}
-    >
-      <div className="flex items-center gap-3">
-        <div className="w-8 h-8 rounded-lg bg-white/50 dark:bg-slate-800/50 flex items-center justify-center">
-          {icon}
-        </div>
-        <div>
-          <p className="text-xs font-medium text-slate-500 dark:text-slate-400">{label}</p>
-          <p className="text-xl font-bold text-slate-800 dark:text-slate-100">
-            <AnimatedCounter value={value} duration={0.8} />
-          </p>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ============================================================================
-// Progress Hint Helper
-// ============================================================================
 
 function getProgressHint(progress: ProgressInfo): string | null {
   const stage = progress.stage
@@ -215,7 +81,7 @@ function getProgressHint(progress: ProgressInfo): string | null {
   const looksLikeMinerU = message.includes('mineru')
 
   if (stage === 'processing_file' && (looksLikePdf || looksLikeMinerU)) {
-    return 'Large PDFs can look "stuck" here while MinerU parses a single file. The % reflects file-level progress, not within-file parsing.'
+    return 'Large PDFs can look “stuck” while MinerU parses a single file. The % reflects file-level progress, not within-file parsing.'
   }
 
   if (stage === 'processing_file') {
@@ -223,17 +89,120 @@ function getProgressHint(progress: ProgressInfo): string | null {
   }
 
   if (stage === 'processing_documents') {
-    return 'Preparing documents for parsing and indexing. For large PDFs this can take several minutes.'
+    return 'Preparing documents for parsing and indexing. Large PDFs can take several minutes.'
   }
 
   return null
 }
 
-// ============================================================================
-// Glass Upload Area Component
-// ============================================================================
+type StatusTone = 'blue' | 'emerald' | 'red' | 'zinc'
 
-interface GlassUploadAreaProps {
+type KbStatus = {
+  label: string
+  tone: StatusTone
+  icon: typeof Loader2
+  loading?: boolean
+  percent?: number
+}
+
+function getKbStatus(kb: KnowledgeBase, progress?: ProgressInfo): KbStatus {
+  if (progress) {
+    if (progress.stage === 'completed') {
+      return { label: 'Ready', tone: 'emerald', icon: CheckCircle2 }
+    }
+    if (progress.stage === 'error') {
+      return { label: 'Error', tone: 'red', icon: AlertCircle }
+    }
+
+    const stageLabels: Record<string, string> = {
+      initializing: 'Initializing',
+      processing_documents: 'Processing',
+      processing_file: 'Parsing & indexing',
+      extracting_items: 'Extracting items',
+    }
+
+    return {
+      label: stageLabels[progress.stage] || 'Indexing',
+      tone: 'blue',
+      icon: Loader2,
+      loading: true,
+      percent: progress.progress_percent,
+    }
+  }
+
+  return kb.statistics.rag_initialized
+    ? { label: 'Ready', tone: 'emerald', icon: CheckCircle2 }
+    : { label: 'Not indexed', tone: 'zinc', icon: FolderOpen }
+}
+
+const toneStyles: Record<StatusTone, { pill: string; icon: string }> = {
+  blue: {
+    pill: 'bg-blue-50 text-blue-700 ring-1 ring-blue-200/70 dark:bg-blue-500/10 dark:text-blue-200 dark:ring-blue-500/20',
+    icon: 'text-blue-600 dark:text-blue-300',
+  },
+  emerald: {
+    pill: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/70 dark:bg-emerald-500/10 dark:text-emerald-200 dark:ring-emerald-500/20',
+    icon: 'text-emerald-600 dark:text-emerald-300',
+  },
+  red: {
+    pill: 'bg-red-50 text-red-700 ring-1 ring-red-200/70 dark:bg-red-500/10 dark:text-red-200 dark:ring-red-500/20',
+    icon: 'text-red-600 dark:text-red-300',
+  },
+  zinc: {
+    pill: 'bg-white/70 text-zinc-700 ring-1 ring-zinc-200/70 dark:bg-white/5 dark:text-zinc-200 dark:ring-white/10',
+    icon: 'text-zinc-500 dark:text-zinc-300',
+  },
+}
+
+function StatusPill({ status }: { status: KbStatus }) {
+  const Icon = status.icon
+  const percent =
+    typeof status.percent === 'number' && Number.isFinite(status.percent)
+      ? Math.max(0, Math.min(100, status.percent))
+      : undefined
+
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium tabular-nums',
+        toneStyles[status.tone].pill
+      )}
+    >
+      <Icon
+        className={cn('h-3.5 w-3.5', toneStyles[status.tone].icon, status.loading && 'animate-spin')}
+      />
+      <span className="truncate">{status.label}</span>
+      {status.loading && percent !== undefined && (
+        <span className="opacity-70">{Math.round(percent)}%</span>
+      )}
+    </span>
+  )
+}
+
+function SummaryCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: number }) {
+  return (
+    <Card
+      variant="glass"
+      padding="md"
+      interactive={false}
+      className="border-white/55 bg-white/55 dark:border-white/10 dark:bg-white/5"
+    >
+      <div className="flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300">
+          {icon}
+        </div>
+        <div className="min-w-0">
+          <div className="text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-50 tabular-nums">
+            {formatNumber(value)}
+          </div>
+          <div className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">{label}</div>
+        </div>
+      </div>
+    </Card>
+  )
+}
+
+interface FileDropzoneProps {
   files: FileList | null
   setFiles: (files: FileList | null) => void
   dragActive: boolean
@@ -241,22 +210,13 @@ interface GlassUploadAreaProps {
   inputId: string
 }
 
-function GlassUploadArea({
-  files,
-  setFiles,
-  dragActive,
-  setDragActive,
-  inputId,
-}: GlassUploadAreaProps) {
+function FileDropzone({ files, setFiles, dragActive, setDragActive, inputId }: FileDropzoneProps) {
   const handleDrag = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault()
       e.stopPropagation()
-      if (e.type === 'dragenter' || e.type === 'dragover') {
-        setDragActive(true)
-      } else if (e.type === 'dragleave') {
-        setDragActive(false)
-      }
+      if (e.type === 'dragenter' || e.type === 'dragover') setDragActive(true)
+      if (e.type === 'dragleave') setDragActive(false)
     },
     [setDragActive]
   )
@@ -266,71 +226,22 @@ function GlassUploadArea({
       e.preventDefault()
       e.stopPropagation()
       setDragActive(false)
-      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-        setFiles(e.dataTransfer.files)
-      }
+      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) setFiles(e.dataTransfer.files)
     },
     [setDragActive, setFiles]
   )
 
   return (
-    <motion.div
-      className={`
-        relative overflow-hidden rounded-2xl p-8
-        border-2 border-dashed
-        transition-colors duration-300
-        ${
-          dragActive
-            ? 'border-teal-500 bg-teal-500/10'
-            : 'border-slate-200/60 dark:border-slate-700/60 bg-white/40 dark:bg-slate-800/40'
-        }
-        backdrop-blur-xl
-      `}
-      variants={uploadAreaVariants}
-      animate={dragActive ? 'dragging' : 'idle'}
+    <div
       onDragEnter={handleDrag}
       onDragLeave={handleDrag}
       onDragOver={handleDrag}
       onDrop={handleDrop}
+      className={cn(
+        'rounded-2xl border border-dashed p-6 transition-colors',
+        dragActive ? 'border-blue-500 bg-blue-50/70' : 'border-zinc-200 bg-zinc-50/50'
+      )}
     >
-      {/* Background glow effect */}
-      <motion.div
-        className="absolute inset-0 bg-gradient-to-br from-teal-500/10 via-transparent to-cyan-500/10 pointer-events-none"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: dragActive ? 1 : 0 }}
-        transition={{ duration: 0.3 }}
-      />
-
-      {/* Animated particles when dragging */}
-      <AnimatePresence>
-        {dragActive && (
-          <>
-            {[...Array(5)].map((_, i) => (
-              <motion.div
-                key={i}
-                className="absolute w-2 h-2 rounded-full bg-teal-500/40"
-                initial={{
-                  x: `${20 + i * 15}%`,
-                  y: '100%',
-                  opacity: 0,
-                }}
-                animate={{
-                  y: '-20%',
-                  opacity: [0, 1, 0],
-                }}
-                exit={{ opacity: 0 }}
-                transition={{
-                  duration: 1.5,
-                  delay: i * 0.2,
-                  repeat: Infinity,
-                  ease: 'easeOut' as const,
-                }}
-              />
-            ))}
-          </>
-        )}
-      </AnimatePresence>
-
       <input
         type="file"
         multiple
@@ -339,310 +250,266 @@ function GlassUploadArea({
         onChange={e => setFiles(e.target.files)}
         accept=".pdf,.txt,.md"
       />
-      <label htmlFor={inputId} className="cursor-pointer flex flex-col items-center gap-4 relative">
-        <motion.div
-          className={`
-            w-16 h-16 rounded-2xl flex items-center justify-center
-            ${dragActive ? 'bg-teal-500/20' : 'bg-slate-100 dark:bg-slate-700/50'}
-            transition-colors duration-300
-          `}
-          animate={dragActive ? { scale: [1, 1.1, 1] } : {}}
-          transition={{ duration: 0.5, repeat: dragActive ? Infinity : 0 }}
+      <label htmlFor={inputId} className="flex cursor-pointer flex-col items-center gap-3 text-center">
+        <div
+          className={cn(
+            'flex h-12 w-12 items-center justify-center rounded-2xl',
+            dragActive ? 'bg-blue-100 text-blue-700' : 'bg-white text-zinc-500'
+          )}
         >
-          <CloudUpload
-            className={`w-8 h-8 ${dragActive ? 'text-teal-500' : 'text-slate-400 dark:text-slate-500'}`}
-          />
-        </motion.div>
-
-        <div className="text-center">
-          <span className="text-sm font-medium text-slate-700 dark:text-slate-200 block">
-            {files && files.length > 0 ? (
-              <span className="text-teal-600 dark:text-teal-400">
-                {files.length} file{files.length !== 1 ? 's' : ''} selected
-              </span>
-            ) : (
-              'Drag & drop files here or click to browse'
-            )}
-          </span>
-          <span className="text-xs text-slate-500 dark:text-slate-400 mt-1 block">
-            Supports PDF, TXT, MD
-          </span>
+          <CloudUpload className="h-6 w-6" />
         </div>
 
-        {files && files.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex flex-wrap gap-2 justify-center mt-2"
-          >
-            {Array.from(files)
-              .slice(0, 3)
-              .map((file, i) => (
-                <span
-                  key={i}
-                  className="px-2 py-1 rounded-full bg-teal-100 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300 text-xs"
-                >
-                  {file.name.length > 20 ? file.name.substring(0, 17) + '...' : file.name}
-                </span>
-              ))}
-            {files.length > 3 && (
-              <span className="px-2 py-1 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs">
-                +{files.length - 3} more
-              </span>
-            )}
-          </motion.div>
-        )}
+        <div>
+          <div className="text-sm font-medium text-zinc-900">
+            {files && files.length > 0
+              ? `${files.length} file${files.length !== 1 ? 's' : ''} selected`
+              : 'Drop files here or click to browse'}
+          </div>
+          <div className="mt-1 text-xs text-zinc-500">PDF, TXT, MD</div>
+        </div>
       </label>
-    </motion.div>
+
+      {files && files.length > 0 && (
+        <div className="mt-4 flex flex-wrap justify-center gap-2">
+          {Array.from(files)
+            .slice(0, 3)
+            .map(file => (
+              <span
+                key={file.name}
+                className="inline-flex max-w-[220px] items-center truncate rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-medium text-blue-700 ring-1 ring-blue-200/70"
+                title={file.name}
+              >
+                {file.name}
+              </span>
+            ))}
+          {files.length > 3 && (
+            <span className="inline-flex items-center rounded-full bg-white px-2.5 py-1 text-[11px] font-medium text-zinc-700 ring-1 ring-zinc-200/70">
+              +{files.length - 3} more
+            </span>
+          )}
+        </div>
+      )}
+    </div>
   )
 }
 
-// ============================================================================
-// Knowledge Base Card Component
-// ============================================================================
-
-interface KBCardProps {
+interface KnowledgeBaseCardProps {
   kb: KnowledgeBase
   progress?: ProgressInfo
+  reindexing: boolean
   onUpload: () => void
   onDelete: () => void
   onReindex: () => void
   onViewVersions: () => void
-  reindexing: boolean
   onClearProgress: () => void
 }
 
-function KBCard({
+function KnowledgeBaseCard({
   kb,
   progress,
+  reindexing,
   onUpload,
   onDelete,
   onReindex,
   onViewVersions,
-  reindexing,
   onClearProgress,
-}: KBCardProps) {
-  const getStatusInfo = () => {
-    if (progress) {
-      if (progress.stage === 'completed') {
-        return { status: 'Ready', color: 'emerald', icon: CheckCircle2 }
-      } else if (progress.stage === 'error') {
-        return { status: 'Error', color: 'red', icon: AlertCircle }
-      } else {
-        const stageLabels: Record<string, string> = {
-          initializing: 'Initializing',
-          processing_documents: 'Processing',
-          processing_file: 'Parsing & Indexing',
-          extracting_items: 'Extracting Items',
-        }
-        return {
-          status: stageLabels[progress.stage] || progress.stage,
-          color: 'blue',
-          icon: Loader2,
-          loading: true,
-          percent: progress.progress_percent,
-        }
-      }
-    }
-    return kb.statistics.rag_initialized
-      ? { status: 'Ready', color: 'emerald', icon: CheckCircle2 }
-      : { status: 'Not Indexed', color: 'slate', icon: FolderOpen }
-  }
-
-  const statusInfo = getStatusInfo()
+}: KnowledgeBaseCardProps) {
+  const status = getKbStatus(kb, progress)
   const hint = progress ? getProgressHint(progress) : null
+  const percent =
+    typeof status.percent === 'number' && Number.isFinite(status.percent)
+      ? Math.max(0, Math.min(100, status.percent))
+      : undefined
+
+  const chunks = kb.statistics.rag?.chunks ?? 0
+  const entities = kb.statistics.rag?.entities ?? 0
 
   return (
-    <Card variant="glass" className="group relative">
-      {/* Animated background gradient on hover */}
-      <motion.div
-        className="absolute inset-0 bg-gradient-to-br from-teal-500/5 via-transparent to-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl"
-        initial={false}
+    <Card
+      variant="glass"
+      padding="none"
+      className="group relative flex h-full flex-col border-white/55 bg-white/55 dark:border-white/10 dark:bg-white/5"
+    >
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.12),transparent_55%)] opacity-0 transition-opacity duration-300 group-hover:opacity-100"
       />
 
-      <CardHeader className="flex items-start justify-between gap-4 relative">
-        <div className="flex items-center gap-3">
-          <div
-            className="
-              w-12 h-12 rounded-xl flex items-center justify-center
-              bg-gradient-to-br from-teal-500/20 to-cyan-500/20
-              border border-teal-500/20
-              shadow-lg shadow-teal-500/10
-            "
-          >
-            <Database className="w-6 h-6 text-teal-600 dark:text-teal-400" />
+      <CardHeader className="relative">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex min-w-0 items-start gap-3">
+            <div className="flex h-11 w-11 flex-none items-center justify-center rounded-xl bg-blue-50 text-blue-600 transition-colors group-hover:bg-blue-100 dark:bg-blue-500/15 dark:text-blue-300 dark:group-hover:bg-blue-500/20">
+              <Database className="h-5 w-5" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="truncate text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+                  {kb.name}
+                </h3>
+                {kb.is_default && (
+                  <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-blue-700 ring-1 ring-blue-200/70 dark:bg-blue-500/10 dark:text-blue-200 dark:ring-blue-500/20">
+                    Default
+                  </span>
+                )}
+              </div>
+              <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                {formatNumber(kb.statistics.raw_documents)} docs · {formatNumber(kb.statistics.images)} images
+              </div>
+            </div>
           </div>
-          <div>
-            <h3 className="font-bold text-slate-900 dark:text-slate-100">{kb.name}</h3>
-            {kb.is_default && (
-              <span
-                className="
-                  inline-flex items-center gap-1 px-2 py-0.5 rounded-full
-                  bg-teal-100 dark:bg-teal-900/40
-                  text-teal-700 dark:text-teal-300
-                  text-[10px] font-bold uppercase tracking-wide
-                  border border-teal-200 dark:border-teal-800
-                "
-              >
-                <Sparkles className="w-2.5 h-2.5" />
-                Default
-              </span>
-            )}
-          </div>
-        </div>
 
-        {/* Action buttons - visible on hover */}
-        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-          <IconButton
-            icon={<History className="w-4 h-4" />}
-            variant="ghost"
-            size="sm"
-            aria-label="Version History"
-            onClick={onViewVersions}
-          />
-          <IconButton
-            icon={<RefreshCw className={`w-4 h-4 ${reindexing ? 'animate-spin' : ''}`} />}
-            variant="ghost"
-            size="sm"
-            aria-label="Re-index"
-            onClick={onReindex}
-            disabled={reindexing}
-          />
-          <IconButton
-            icon={<Upload className="w-4 h-4" />}
-            variant="ghost"
-            size="sm"
-            aria-label="Upload Documents"
-            onClick={onUpload}
-          />
-          <IconButton
-            icon={<Trash2 className="w-4 h-4" />}
-            variant="ghost"
-            size="sm"
-            aria-label="Delete"
-            onClick={onDelete}
-            className="hover:!bg-red-100 dark:hover:!bg-red-900/40 hover:!text-red-600 dark:hover:!text-red-400"
-          />
+          <div className="flex flex-none items-start gap-2">
+            <StatusPill status={status} />
+          </div>
         </div>
       </CardHeader>
 
-      <CardBody className="space-y-4 relative">
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 gap-3">
-          <StatCard
-            icon={<FileText className="w-4 h-4" />}
-            label="Documents"
-            value={kb.statistics.raw_documents}
-            accentColor="teal"
-          />
-          <StatCard
-            icon={<ImageIcon className="w-4 h-4" />}
-            label="Images"
-            value={kb.statistics.images}
-            accentColor="purple"
-          />
+      <CardBody className="relative flex flex-1 flex-col gap-4">
+        <div className="grid grid-cols-3 gap-3">
+          <div className="rounded-xl border border-zinc-200/70 bg-white/60 p-3 backdrop-blur-md dark:border-white/10 dark:bg-white/5">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400">Docs</span>
+              <FileText className="h-4 w-4 text-zinc-400 dark:text-zinc-500" />
+            </div>
+            <div className="mt-1 text-sm font-semibold text-zinc-900 dark:text-zinc-50 tabular-nums">
+              {formatNumber(kb.statistics.raw_documents)}
+            </div>
+          </div>
+          <div className="rounded-xl border border-zinc-200/70 bg-white/60 p-3 backdrop-blur-md dark:border-white/10 dark:bg-white/5">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400">Images</span>
+              <ImageIcon className="h-4 w-4 text-zinc-400 dark:text-zinc-500" />
+            </div>
+            <div className="mt-1 text-sm font-semibold text-zinc-900 dark:text-zinc-50 tabular-nums">
+              {formatNumber(kb.statistics.images)}
+            </div>
+          </div>
+          <div className="rounded-xl border border-zinc-200/70 bg-white/60 p-3 backdrop-blur-md dark:border-white/10 dark:bg-white/5">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400">Chunks</span>
+              <Layers className="h-4 w-4 text-zinc-400 dark:text-zinc-500" />
+            </div>
+            <div className="mt-1 text-sm font-semibold text-zinc-900 dark:text-zinc-50 tabular-nums">
+              {formatNumber(chunks)}
+            </div>
+          </div>
         </div>
 
-        {/* Status Section */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-slate-500 dark:text-slate-400 font-medium flex items-center gap-1.5">
-              <Layers className="w-3 h-3" /> Status
-            </span>
-            <span
-              className={`
-                font-semibold flex items-center gap-1
-                ${
-                  statusInfo.color === 'emerald'
-                    ? 'text-emerald-600 dark:text-emerald-400'
-                    : statusInfo.color === 'red'
-                      ? 'text-red-600 dark:text-red-400'
-                      : statusInfo.color === 'blue'
-                        ? 'text-blue-600 dark:text-blue-400'
-                        : 'text-slate-400 dark:text-slate-500'
-                }
-              `}
-            >
-              {statusInfo.loading && <Loader2 className="w-3 h-3 animate-spin" />}
-              {statusInfo.status}
-              {statusInfo.percent !== undefined && ` ${statusInfo.percent}%`}
-            </span>
-          </div>
+        <div className="rounded-2xl border border-zinc-200/70 bg-white/60 p-4 backdrop-blur-md dark:border-white/10 dark:bg-white/5">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="text-xs font-semibold text-zinc-900 dark:text-zinc-50">Index status</div>
 
-          {/* Progress Bar */}
-          <div className="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
-            {progress ? (
-              <motion.div
-                className={`h-full rounded-full ${
-                  progress.stage === 'completed'
-                    ? 'bg-emerald-500'
-                    : progress.stage === 'error'
-                      ? 'bg-red-500'
-                      : 'bg-gradient-to-r from-teal-500 to-cyan-500'
-                }`}
-                initial={{ width: 0 }}
-                animate={{ width: `${progress.progress_percent}%` }}
-                transition={{ duration: 0.5, ease: 'easeOut' }}
-              />
-            ) : (
-              <div
-                className={`h-full rounded-full ${
-                  kb.statistics.rag_initialized
-                    ? 'bg-emerald-500 w-full'
-                    : 'bg-slate-300 dark:bg-slate-600 w-0'
-                }`}
-              />
-            )}
-          </div>
-
-          {/* Progress Details */}
-          {progress && progress.message && (
-            <div className="space-y-1">
-              <div className="text-[10px] text-slate-600 dark:text-slate-400 flex items-center justify-between">
-                <span className="truncate">{progress.message}</span>
-                {progress.stage !== 'completed' && (
-                  <button
-                    onClick={e => {
-                      e.stopPropagation()
-                      onClearProgress()
-                    }}
-                    className="text-slate-400 hover:text-red-500 transition-colors ml-2 flex-shrink-0"
-                    title="Clear progress status"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                )}
-              </div>
-              {hint && (
-                <p className="text-[10px] text-slate-500 dark:text-slate-500/90 italic">{hint}</p>
+              {progress?.message ? (
+                <div className="mt-1 flex items-start gap-2 text-xs text-zinc-600 dark:text-zinc-300">
+                  <span className="min-w-0 flex-1 truncate">{progress.message}</span>
+                  {progress.stage !== 'completed' && (
+                    <button
+                      type="button"
+                      onClick={e => {
+                        e.stopPropagation()
+                        onClearProgress()
+                      }}
+                      className="flex-none rounded-lg p-1 text-zinc-400 transition-colors hover:bg-zinc-900/5 hover:text-red-600 dark:hover:bg-white/5 dark:hover:text-red-300"
+                      aria-label="Clear progress status"
+                      title="Clear progress status"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="mt-1 text-xs text-zinc-600 dark:text-zinc-300">
+                  {kb.statistics.rag_initialized ? 'Ready for retrieval and grounded chat.' : 'Not indexed yet.'}
+                </div>
               )}
-              {progress.file_name && (
-                <div className="text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                  <FileText className="w-3 h-3" />
+
+              {!progress && kb.statistics.rag && (
+                <div className="mt-2 text-[11px] text-zinc-500 dark:text-zinc-400 tabular-nums">
+                  {formatNumber(chunks)} chunks · {formatNumber(entities)} entities
+                </div>
+              )}
+
+              {hint && <div className="mt-2 text-[11px] italic text-zinc-500 dark:text-zinc-400">{hint}</div>}
+
+              {progress?.file_name && (
+                <div className="mt-2 flex items-center gap-2 text-[11px] text-zinc-500 dark:text-zinc-400">
+                  <FileText className="h-3.5 w-3.5" />
                   <span className="truncate">{progress.file_name}</span>
                 </div>
               )}
-              {progress.current > 0 && progress.total > 0 && (
-                <p className="text-[10px] text-slate-400 dark:text-slate-500">
+              {progress && progress.current > 0 && progress.total > 0 && (
+                <div className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400 tabular-nums">
                   File {progress.current} of {progress.total}
-                </p>
+                </div>
               )}
-              {progress.error && (
-                <p className="text-[10px] text-red-600 dark:text-red-400">
-                  Error: {progress.error}
-                </p>
+              {progress?.error && (
+                <div className="mt-2 text-[11px] text-red-700 dark:text-red-200">Error: {progress.error}</div>
               )}
             </div>
-          )}
 
-          {/* RAG Stats */}
-          {!progress && kb.statistics.rag && (
-            <div className="flex gap-3 text-[10px] text-slate-400 dark:text-slate-500">
-              <span>{kb.statistics.rag.chunks} chunks</span>
-              <span>-</span>
-              <span>{kb.statistics.rag.entities} entities</span>
-            </div>
-          )}
+            {status.loading && percent !== undefined && (
+              <div className="flex-none text-xs font-semibold text-zinc-700 dark:text-zinc-200 tabular-nums">
+                {Math.round(percent)}%
+              </div>
+            )}
+          </div>
+
+          <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-zinc-200/70 dark:bg-white/10">
+            {status.loading && percent !== undefined ? (
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-blue-500 to-blue-600"
+                style={{ width: `${percent}%` }}
+              />
+            ) : (
+              <div
+                className={cn(
+                  'h-full rounded-full',
+                  kb.statistics.rag_initialized ? 'w-full bg-emerald-500' : 'w-0 bg-zinc-300 dark:bg-white/20'
+                )}
+              />
+            )}
+          </div>
+        </div>
+
+        <div className="mt-auto flex items-center justify-between gap-2">
+          <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
+            {kb.statistics.rag_initialized ? 'RAG enabled' : 'RAG disabled'}
+          </div>
+
+          <div className="flex items-center gap-1">
+            <IconButton
+              icon={<History className="h-4 w-4" />}
+              variant="ghost"
+              size="sm"
+              aria-label="Version history"
+              onClick={onViewVersions}
+            />
+            <IconButton
+              icon={<RefreshCw className={cn('h-4 w-4', reindexing && 'animate-spin')} />}
+              variant="ghost"
+              size="sm"
+              aria-label="Re-index"
+              onClick={onReindex}
+              disabled={reindexing}
+            />
+            <IconButton
+              icon={<Upload className="h-4 w-4" />}
+              variant="ghost"
+              size="sm"
+              aria-label="Upload documents"
+              onClick={onUpload}
+            />
+            <IconButton
+              icon={<Trash2 className="h-4 w-4" />}
+              variant="ghost"
+              size="sm"
+              aria-label="Delete knowledge base"
+              onClick={onDelete}
+              className="hover:!bg-red-50 hover:!text-red-600 dark:hover:!bg-red-950/40 dark:hover:!text-red-300"
+            />
+          </div>
         </div>
       </CardBody>
     </Card>
@@ -650,13 +517,16 @@ function KBCard({
 }
 
 // ============================================================================
-// Main Component
+// Main
 // ============================================================================
 
 export default function KnowledgePage() {
+  const toast = useToast()
+
   const [kbs, setKbs] = useState<KnowledgeBase[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [layout, setLayout] = useState<LayoutMode>('grid')
   const [uploadModalOpen, setUploadModalOpen] = useState(false)
   const [createModalOpen, setCreateModalOpen] = useState(false)
   const [targetKb, setTargetKb] = useState<string>('')
@@ -668,6 +538,7 @@ export default function KnowledgePage() {
   const [progressMap, setProgressMap] = useState<Record<string, ProgressInfo>>({})
   const [versionsModalOpen, setVersionsModalOpen] = useState(false)
   const [versionsKb, setVersionsKb] = useState<string>('')
+
   const wsConnectionsRef = useRef<Record<string, WebSocket>>({})
   const kbsNamesRef = useRef<string[]>([])
 
@@ -675,34 +546,48 @@ export default function KnowledgePage() {
   useEffect(() => {
     try {
       const saved = localStorage.getItem('kb_progress_map')
-      if (saved) {
-        const parsed = JSON.parse(saved)
-        const now = new Date().getTime()
-        const thirtyMinutes = 30 * 60 * 1000
-        const cleaned: Record<string, ProgressInfo> = {}
+      if (!saved) return
 
-        Object.entries(parsed).forEach(([kbName, progress]: [string, any]) => {
-          if (progress.timestamp) {
-            const progressTime = new Date(progress.timestamp).getTime()
-            const age = now - progressTime
+      const parsed = JSON.parse(saved)
+      const now = new Date().getTime()
+      const thirtyMinutes = 30 * 60 * 1000
+      const cleaned: Record<string, ProgressInfo> = {}
 
-            if (
-              progress.stage === 'completed' ||
-              progress.stage === 'error' ||
-              age < thirtyMinutes
-            ) {
-              cleaned[kbName] = progress
-            }
-          } else {
-            if (progress.stage === 'completed' || progress.stage === 'error') {
-              cleaned[kbName] = progress
-            }
-          }
-        })
-
-        setProgressMap(cleaned)
-        localStorage.setItem('kb_progress_map', JSON.stringify(cleaned))
+      const isProgressInfo = (value: unknown): value is ProgressInfo => {
+        if (!value || typeof value !== 'object') return false
+        const record = value as Record<string, unknown>
+        return (
+          typeof record.stage === 'string' &&
+          typeof record.message === 'string' &&
+          typeof record.current === 'number' &&
+          typeof record.total === 'number' &&
+          typeof record.progress_percent === 'number' &&
+          (record.timestamp === undefined || typeof record.timestamp === 'string')
+        )
       }
+
+      const parsedEntries = parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>) : {}
+
+      Object.entries(parsedEntries).forEach(([kbName, progress]) => {
+        if (!isProgressInfo(progress)) return
+
+        if (progress.timestamp) {
+          const progressTime = new Date(progress.timestamp).getTime()
+          const age = now - progressTime
+
+          if (progress.stage === 'completed' || progress.stage === 'error' || age < thirtyMinutes) {
+            cleaned[kbName] = progress
+          }
+          return
+        }
+
+        if (progress.stage === 'completed' || progress.stage === 'error') {
+          cleaned[kbName] = progress
+        }
+      })
+
+      setProgressMap(cleaned)
+      localStorage.setItem('kb_progress_map', JSON.stringify(cleaned))
     } catch (e) {
       console.error('Failed to load progress from localStorage:', e)
     }
@@ -747,9 +632,11 @@ export default function KnowledgePage() {
 
       setKbs(data)
       setError(null)
-    } catch (err: any) {
-      let errorMessage = err.message || 'Failed to load knowledge bases.'
-      if (err.name === 'TypeError' && err.message.includes('fetch')) {
+    } catch (err: unknown) {
+      const errorName = err instanceof Error ? err.name : undefined
+      const resolvedMessage = err instanceof Error ? err.message : String(err)
+      let errorMessage = resolvedMessage || 'Failed to load knowledge bases.'
+      if (errorName === 'TypeError' && resolvedMessage.includes('fetch')) {
         errorMessage = `Network error: Cannot connect to backend. Please ensure the backend is running.`
       }
       setError(errorMessage)
@@ -810,10 +697,6 @@ export default function KnowledgePage() {
 
       const ws = new WebSocket(wsUrl(`/api/v1/knowledge/${kb.name}/progress/ws`))
 
-      ws.onopen = () => {
-        console.log(`[Progress WS] Connected for KB: ${kb.name}`)
-      }
-
       ws.onmessage = event => {
         try {
           const data = JSON.parse(event.data)
@@ -850,10 +733,6 @@ export default function KnowledgePage() {
         console.error(`[Progress WS] Error for ${kb.name}:`, error)
       }
 
-      ws.onclose = () => {
-        console.log(`[Progress WS] Closed for KB: ${kb.name}`)
-      }
-
       connections[kb.name] = ws
       wsConnectionsRef.current[kb.name] = ws
     })
@@ -873,26 +752,48 @@ export default function KnowledgePage() {
     }
   }, [])
 
+  const clearProgress = async (kbName: string) => {
+    setProgressMap(prev => {
+      const updated = { ...prev }
+      delete updated[kbName]
+      try {
+        localStorage.setItem('kb_progress_map', JSON.stringify(updated))
+      } catch (e) {
+        console.error('Failed to save progress to localStorage:', e)
+      }
+      return updated
+    })
+
+    try {
+      await fetch(apiUrl(`/api/v1/knowledge/${kbName}/progress/clear`), { method: 'POST' })
+    } catch (e) {
+      console.error('Failed to clear backend progress:', e)
+    }
+  }
+
   const handleDelete = async (name: string) => {
     if (
       !confirm(`Are you sure you want to delete knowledge base "${name}"? This cannot be undone.`)
-    )
+    ) {
       return
+    }
 
     try {
       const res = await fetch(apiUrl(`/api/v1/knowledge/${name}`), { method: 'DELETE' })
       if (!res.ok) throw new Error('Failed to delete knowledge base')
       clearProgress(name)
-      fetchKnowledgeBases()
+      await fetchKnowledgeBases()
+      toast.success(`Deleted “${name}”.`)
     } catch (err) {
       console.error(err)
-      alert('Failed to delete knowledge base')
+      toast.error('Failed to delete knowledge base')
     }
   }
 
   const handleReindex = async (name: string) => {
-    if (!confirm(`Re-index "${name}"? This will rebuild the RAG index from existing documents.`))
+    if (!confirm(`Re-index "${name}"? This will rebuild the RAG index from existing documents.`)) {
       return
+    }
 
     setReindexingKb(name)
     setProgressMap(prev => {
@@ -911,29 +812,12 @@ export default function KnowledgePage() {
         const errorData = await res.json().catch(() => ({}))
         throw new Error(errorData.detail || 'Failed to start re-indexing')
       }
-    } catch (err: any) {
-      alert(`Failed to re-index: ${err.message}`)
+      toast.info(`Re-index started for “${name}”.`)
+    } catch (err: unknown) {
+      const resolvedMessage = err instanceof Error ? err.message : String(err)
+      toast.error(`Failed to re-index: ${resolvedMessage}`)
     } finally {
       setReindexingKb(null)
-    }
-  }
-
-  const clearProgress = async (kbName: string) => {
-    setProgressMap(prev => {
-      const updated = { ...prev }
-      delete updated[kbName]
-      try {
-        localStorage.setItem('kb_progress_map', JSON.stringify(updated))
-      } catch (e) {
-        console.error('Failed to save progress to localStorage:', e)
-      }
-      return updated
-    })
-
-    try {
-      await fetch(apiUrl(`/api/v1/knowledge/${kbName}/progress/clear`), { method: 'POST' })
-    } catch (e) {
-      console.error('Failed to clear backend progress:', e)
     }
   }
 
@@ -955,10 +839,10 @@ export default function KnowledgePage() {
       setUploadModalOpen(false)
       setFiles(null)
       await fetchKnowledgeBases()
-      alert('Files uploaded successfully! Processing started in background.')
+      toast.success('Files uploaded. Processing started in background.')
     } catch (err) {
       console.error(err)
-      alert('Failed to upload files')
+      toast.error('Failed to upload files')
     } finally {
       setUploading(false)
     }
@@ -1023,16 +907,18 @@ export default function KnowledgePage() {
         await fetchKnowledgeBases()
       }, 1000)
 
-      alert('Knowledge base created successfully! Initialization started in background.')
-    } catch (err: any) {
-      console.error(err)
-      alert(`Failed to create knowledge base: ${err.message}`)
+      toast.success('Knowledge base created. Initialization started in background.')
+    } catch (err: unknown) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error(err)
+      }
+      const resolvedMessage = err instanceof Error ? err.message : String(err)
+      toast.error(`Failed to create knowledge base: ${resolvedMessage}`)
     } finally {
       setUploading(false)
     }
   }
 
-  // Calculate total stats
   const totalStats = kbs.reduce(
     (acc, kb) => ({
       documents: acc.documents + kb.statistics.raw_documents,
@@ -1042,29 +928,63 @@ export default function KnowledgePage() {
     { documents: 0, images: 0, chunks: 0 }
   )
 
+  const itemsLayoutClassName =
+    layout === 'grid'
+      ? 'grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 auto-rows-fr'
+      : 'grid grid-cols-1 gap-3'
+
   return (
-    <PageWrapper maxWidth="2xl" breadcrumbs={[{ label: 'Knowledge Bases' }]}>
+    <PageWrapper maxWidth="wide" showPattern breadcrumbs={[{ label: 'Knowledge Bases' }]}>
       <PageHeader
         title="Knowledge Bases"
-        description="Manage and explore your educational content repositories with intelligent RAG indexing."
-        icon={<BookOpen className="w-5 h-5" />}
+        description="Manage your content repositories and keep them indexed for grounded retrieval."
+        icon={<BookOpen className="h-5 w-5 text-blue-600 dark:text-blue-400" />}
+        className="flex-col gap-4 sm:flex-row sm:items-start"
         actions={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <div className="flex items-center rounded-xl border border-white/55 bg-white/70 p-1 shadow-sm backdrop-blur-md dark:border-white/10 dark:bg-white/5">
+              <IconButton
+                icon={<LayoutGrid className="h-4 w-4" />}
+                variant="ghost"
+                size="sm"
+                aria-label="Grid view"
+                aria-pressed={layout === 'grid'}
+                onClick={() => setLayout('grid')}
+                className={cn(
+                  'transition-colors',
+                  layout === 'grid'
+                    ? '!bg-white/90 !text-blue-600 shadow-sm border border-zinc-200/70 hover:!bg-white/90 dark:!bg-zinc-950/60 dark:!text-blue-300 dark:border-white/10 dark:hover:!bg-zinc-950/60'
+                    : '!bg-transparent text-zinc-600 hover:!bg-white/70 hover:!text-zinc-900 dark:text-zinc-300 dark:hover:!bg-white/5 dark:hover:!text-zinc-50'
+                )}
+              />
+              <IconButton
+                icon={<List className="h-4 w-4" />}
+                variant="ghost"
+                size="sm"
+                aria-label="List view"
+                aria-pressed={layout === 'list'}
+                onClick={() => setLayout('list')}
+                className={cn(
+                  'transition-colors',
+                  layout === 'list'
+                    ? '!bg-white/90 !text-blue-600 shadow-sm border border-zinc-200/70 hover:!bg-white/90 dark:!bg-zinc-950/60 dark:!text-blue-300 dark:border-white/10 dark:hover:!bg-zinc-950/60'
+                    : '!bg-transparent text-zinc-600 hover:!bg-white/70 hover:!text-zinc-900 dark:text-zinc-300 dark:hover:!bg-white/5 dark:hover:!text-zinc-50'
+                )}
+              />
+            </div>
+
             <Button
               variant="secondary"
               size="sm"
-              iconLeft={<RefreshCw className="w-4 h-4" />}
-              onClick={async () => {
-                setLoading(true)
-                await fetchKnowledgeBases()
-              }}
+              iconLeft={<RefreshCw className="h-4 w-4" />}
+              onClick={fetchKnowledgeBases}
             >
               Refresh
             </Button>
             <Button
               variant="primary"
               size="sm"
-              iconLeft={<Plus className="w-4 h-4" />}
+              iconLeft={<Plus className="h-4 w-4" />}
               onClick={() => {
                 setFiles(null)
                 setNewKbName('')
@@ -1077,88 +997,82 @@ export default function KnowledgePage() {
         }
       />
 
-      {/* Summary Stats */}
-      {!loading && kbs.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="grid grid-cols-3 gap-4 mb-6"
-        >
-          <StatCard
-            icon={<Database className="w-4 h-4" />}
-            label="Total Knowledge Bases"
-            value={kbs.length}
-            accentColor="teal"
-          />
-          <StatCard
-            icon={<FileText className="w-4 h-4" />}
-            label="Total Documents"
-            value={totalStats.documents}
-            accentColor="blue"
-          />
-          <StatCard
-            icon={<Layers className="w-4 h-4" />}
-            label="Total Chunks"
-            value={totalStats.chunks}
-            accentColor="purple"
-          />
-        </motion.div>
-      )}
-
-      {/* Error State */}
-      <AnimatePresence>
-        {error && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="
-              mb-6 p-4 rounded-xl
-              bg-red-50/80 dark:bg-red-900/20
-              backdrop-blur-sm
-              border border-red-200 dark:border-red-800
-              text-red-600 dark:text-red-400
-              flex items-center gap-3
-            "
-          >
-            <AlertCircle className="w-5 h-5 flex-shrink-0" />
-            <span className="text-sm">{error}</span>
-          </motion.div>
+      <div className="space-y-6">
+        {!loading && kbs.length > 0 && (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <SummaryCard icon={<Database className="h-4 w-4" />} label="Knowledge bases" value={kbs.length} />
+            <SummaryCard icon={<FileText className="h-4 w-4" />} label="Documents" value={totalStats.documents} />
+            <SummaryCard icon={<ImageIcon className="h-4 w-4" />} label="Images" value={totalStats.images} />
+            <SummaryCard icon={<Layers className="h-4 w-4" />} label="Chunks" value={totalStats.chunks} />
+          </div>
         )}
-      </AnimatePresence>
 
-      {/* Loading State */}
-      {loading && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1, 2, 3].map(i => (
-            <div
-              key={i}
-              className="
-                h-64 rounded-2xl
-                bg-white/40 dark:bg-slate-800/40
-                backdrop-blur-xl
-                border border-white/30 dark:border-slate-700/30
-                animate-pulse
-              "
-            />
-          ))}
-        </div>
-      )}
+        {error && (
+          <Card
+            variant="glass"
+            padding="sm"
+            interactive={false}
+            className="border-red-200/70 bg-red-50/60 text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-200"
+          >
+            <div className="flex items-center gap-3">
+              <AlertCircle className="h-5 w-5 flex-none" />
+              <span className="text-sm">{error}</span>
+            </div>
+          </Card>
+        )}
 
-      {/* KB Grid */}
-      {!loading && (
-        <motion.div
-          variants={staggerContainer}
-          initial="hidden"
-          animate="visible"
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-        >
-          {kbs.map(kb => (
-            <motion.div key={kb.name} variants={cardVariant}>
-              <KBCard
+        {loading ? (
+          <div className={itemsLayoutClassName}>
+            {Array.from({ length: layout === 'grid' ? 6 : 3 }).map((_, i) => (
+              <Card
+                key={i}
+                variant="glass"
+                padding="none"
+                interactive={false}
+                className="h-[340px] animate-pulse"
+              />
+            ))}
+          </div>
+        ) : kbs.length === 0 ? (
+          <Card
+            variant="glass"
+            padding="lg"
+            interactive={false}
+            className="border-white/55 bg-white/55 text-center dark:border-white/10 dark:bg-white/5"
+          >
+            <div className="mx-auto flex max-w-md flex-col items-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300">
+                <Database className="h-7 w-7" />
+              </div>
+              <h3 className="mt-4 text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+                No knowledge bases yet
+              </h3>
+              <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
+                Create your first knowledge base to start organizing and indexing content for grounded retrieval.
+              </p>
+              <div className="mt-5">
+                <Button
+                  variant="primary"
+                  iconLeft={<Plus className="h-4 w-4" />}
+                  onClick={() => {
+                    setFiles(null)
+                    setNewKbName('')
+                    setCreateModalOpen(true)
+                  }}
+                >
+                  Create knowledge base
+                </Button>
+              </div>
+            </div>
+          </Card>
+        ) : (
+          <div className={itemsLayoutClassName}>
+            {kbs.map(kb => (
+              <KnowledgeBaseCard
+                key={kb.name}
                 kb={kb}
                 progress={progressMap[kb.name]}
+                reindexing={reindexingKb === kb.name}
                 onUpload={() => {
                   setTargetKb(kb.name)
                   setFiles(null)
@@ -1170,50 +1084,16 @@ export default function KnowledgePage() {
                   setVersionsKb(kb.name)
                   setVersionsModalOpen(true)
                 }}
-                reindexing={reindexingKb === kb.name}
                 onClearProgress={async () => {
                   await clearProgress(kb.name)
                   fetchKnowledgeBases()
                 }}
               />
-            </motion.div>
-          ))}
+            ))}
+          </div>
+        )}
+      </div>
 
-          {/* Empty State */}
-          {kbs.length === 0 && (
-            <motion.div variants={cardVariant} className="col-span-full text-center py-16">
-              <motion.div
-                className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center"
-                variants={pulseAnimation}
-                initial="initial"
-                animate="animate"
-              >
-                <Database className="w-10 h-10 text-slate-300 dark:text-slate-600" />
-              </motion.div>
-              <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                No Knowledge Bases Yet
-              </h3>
-              <p className="text-slate-500 dark:text-slate-400 mb-6 max-w-md mx-auto">
-                Create your first knowledge base to start organizing and indexing your educational
-                content.
-              </p>
-              <Button
-                variant="primary"
-                iconLeft={<Plus className="w-4 h-4" />}
-                onClick={() => {
-                  setFiles(null)
-                  setNewKbName('')
-                  setCreateModalOpen(true)
-                }}
-              >
-                Create Knowledge Base
-              </Button>
-            </motion.div>
-          )}
-        </motion.div>
-      )}
-
-      {/* Create KB Modal */}
       <Modal
         isOpen={createModalOpen}
         onClose={() => setCreateModalOpen(false)}
@@ -1231,19 +1111,19 @@ export default function KnowledgePage() {
             />
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              <label className="mb-2 block text-sm font-medium text-zinc-900 dark:text-zinc-50">
                 Upload Documents
               </label>
-              <GlassUploadArea
+              <FileDropzone
                 files={files}
                 setFiles={setFiles}
                 dragActive={dragActive}
                 setDragActive={setDragActive}
                 inputId="kb-create-upload"
               />
-              <p className="mt-2 text-[10px] text-slate-500 dark:text-slate-400">
-                Large PDFs may take several minutes to parse. You can leave this page; processing
-                continues in the background.
+              <p className="mt-2 text-[11px] text-zinc-500 dark:text-zinc-400">
+                Large PDFs may take several minutes to parse. You can leave this page; processing continues
+                in the background.
               </p>
             </div>
           </ModalBody>
@@ -1264,7 +1144,6 @@ export default function KnowledgePage() {
         </form>
       </Modal>
 
-      {/* Upload Modal */}
       <Modal
         isOpen={uploadModalOpen}
         onClose={() => setUploadModalOpen(false)}
@@ -1273,12 +1152,12 @@ export default function KnowledgePage() {
       >
         <form onSubmit={handleUpload}>
           <ModalBody className="space-y-4">
-            <p className="text-sm text-slate-600 dark:text-slate-300">
+            <p className="text-sm text-zinc-600 dark:text-zinc-300">
               Upload PDF, TXT, or MD files to{' '}
-              <span className="font-semibold text-teal-600 dark:text-teal-400">{targetKb}</span>.
+              <span className="font-semibold text-blue-600 dark:text-blue-400">{targetKb}</span>.
             </p>
 
-            <GlassUploadArea
+            <FileDropzone
               files={files}
               setFiles={setFiles}
               dragActive={dragActive}
@@ -1286,8 +1165,8 @@ export default function KnowledgePage() {
               inputId="kb-upload"
             />
 
-            <p className="text-[10px] text-slate-500 dark:text-slate-400">
-              Progress updates will appear on the KB card once processing begins.
+            <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+              Progress updates will appear on the knowledge base card once processing begins.
             </p>
           </ModalBody>
 
@@ -1307,7 +1186,6 @@ export default function KnowledgePage() {
         </form>
       </Modal>
 
-      {/* Versions Modal */}
       <VersionsModal
         isOpen={versionsModalOpen}
         onClose={() => setVersionsModalOpen(false)}

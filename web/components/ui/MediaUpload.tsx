@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useRef, useState } from 'react'
+import Image from 'next/image'
 import { ImagePlus, X, Film, Image as ImageIcon, Loader2 } from 'lucide-react'
 import type { MediaItem } from '@/context/GlobalContext'
 
@@ -66,7 +67,9 @@ export default function MediaUpload({
           name: file.name,
         })
       } catch (err) {
-        console.error('Error processing file:', err)
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Error processing file:', err)
+        }
         setError(`Failed to process: ${file.name}`)
       }
     }
@@ -117,7 +120,7 @@ export default function MediaUpload({
         onClick={handleClick}
         disabled={disabled || isProcessing || media.length >= maxFiles}
         className={`
-          flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-all
+          flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-xl transition-all
           ${
             disabled || isProcessing || media.length >= maxFiles
               ? 'bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-500 cursor-not-allowed'
@@ -153,13 +156,17 @@ export default function MediaUpload({
           {media.map((item, index) => (
             <div
               key={index}
-              className="relative group w-16 h-16 rounded-lg overflow-hidden bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600"
+              className="relative group w-16 h-16 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600"
             >
               {item.type === 'image' ? (
-                <img
+                <Image
                   src={`data:${item.mimeType};base64,${item.data}`}
                   alt={item.name || `Image ${index + 1}`}
-                  className="w-full h-full object-cover"
+                  width={64}
+                  height={64}
+                  className="h-full w-full object-cover"
+                  sizes="64px"
+                  unoptimized
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-slate-200 dark:bg-slate-600">
@@ -181,7 +188,8 @@ export default function MediaUpload({
                 <button
                   type="button"
                   onClick={() => removeMedia(index)}
-                  className="absolute top-0.5 right-0.5 p-0.5 bg-red-500 hover:bg-red-600 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                  aria-label={`Remove ${item.type === 'image' ? 'image' : 'video'} ${item.name || index + 1}`}
+                  className="absolute top-0.5 right-0.5 p-0.5 bg-red-500 hover:bg-red-600 rounded-full opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus:opacity-100 transition-opacity"
                   title="Remove"
                 >
                   <X className="w-2.5 h-2.5 text-white" />

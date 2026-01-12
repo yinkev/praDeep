@@ -1,33 +1,32 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
+  ArrowDownRight,
+  ArrowUpRight,
   BarChart3,
-  TrendingUp,
-  Target,
-  Clock,
-  Zap,
-  Calendar,
   BookOpen,
-  Brain,
-  Trophy,
-  ArrowUp,
-  ArrowDown,
-  Loader2,
-  RefreshCw,
+  Calendar,
   Calculator,
+  Clock,
   FileText,
-  Microscope,
+  Loader2,
   MessageCircle,
+  Microscope,
+  RefreshCw,
   Sparkles,
+  Target,
+  TrendingUp,
+  Trophy,
+  Zap,
 } from 'lucide-react'
 import { apiUrl } from '@/lib/api'
 import { getTranslation } from '@/lib/i18n'
 import { useGlobal } from '@/context/GlobalContext'
 import PageWrapper, { PageHeader } from '@/components/ui/PageWrapper'
-import { Card, CardBody, CardHeader } from '@/components/ui/Card'
+import { Card, CardBody, CardContent, CardHeader } from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
+import { cn } from '@/lib/utils'
 
 type TimeRange = 'day' | 'week' | 'month' | 'all'
 
@@ -88,333 +87,294 @@ interface PredictiveMetrics {
   recommendations: string[]
 }
 
-const TYPE_CONFIG: Record<
-  string,
-  {
-    icon: React.ComponentType<{ className?: string }>
-    gradient: string
-    iconColor: string
-    barGradient: string
-  }
-> = {
-  solve: {
-    icon: Calculator,
-    gradient: 'from-blue-500/20 to-blue-600/10',
-    iconColor: 'text-blue-500',
-    barGradient: 'from-blue-500 to-blue-400',
-  },
-  question: {
-    icon: FileText,
-    gradient: 'from-purple-500/20 to-purple-600/10',
-    iconColor: 'text-purple-500',
-    barGradient: 'from-purple-500 to-purple-400',
-  },
-  research: {
-    icon: Microscope,
-    gradient: 'from-emerald-500/20 to-emerald-600/10',
-    iconColor: 'text-emerald-500',
-    barGradient: 'from-emerald-500 to-emerald-400',
-  },
-  chat: {
-    icon: MessageCircle,
-    gradient: 'from-amber-500/20 to-amber-600/10',
-    iconColor: 'text-amber-500',
-    barGradient: 'from-amber-500 to-amber-400',
-  },
+type SegmentedOption<TValue extends string> = {
+  value: TValue
+  label: string
 }
 
-// ============================================================================
-// Animation Variants
-// ============================================================================
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.08,
-      delayChildren: 0.1,
-    },
-  },
-}
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      type: 'spring' as const,
-      stiffness: 300,
-      damping: 24,
-    },
-  },
-}
-
-const counterVariants = {
-  hidden: { scale: 0.8, opacity: 0 },
-  visible: {
-    scale: 1,
-    opacity: 1,
-    transition: {
-      type: 'spring' as const,
-      stiffness: 400,
-      damping: 20,
-    },
-  },
-}
-
-// ============================================================================
-// Animated Number Counter Component
-// ============================================================================
-
-function AnimatedCounter({ value, suffix = '' }: { value: number; suffix?: string }) {
-  const [displayValue, setDisplayValue] = useState(0)
-  const prevValue = useRef(0)
+function SegmentedControl<TValue extends string>({
+  value,
+  options,
+  onChange,
+  ariaLabel,
+  className,
+}: {
+  value: TValue
+  options: Array<SegmentedOption<TValue>>
+  onChange: (next: TValue) => void
+  ariaLabel: string
+  className?: string
+}) {
+  const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0 })
+  const optionRefs = useRef<(HTMLButtonElement | null)[]>([])
 
   useEffect(() => {
-    const startValue = prevValue.current
-    const endValue = value
-    const duration = 800
-    const startTime = performance.now()
+    const updateIndicator = () => {
+      const activeIndex = options.findIndex(o => o.value === value)
+      const activeRef = optionRefs.current[activeIndex]
+      if (!activeRef) return
 
-    const animate = (currentTime: number) => {
-      const elapsed = currentTime - startTime
-      const progress = Math.min(elapsed / duration, 1)
-
-      // Easing function for smooth animation
-      const easeOutQuart = 1 - Math.pow(1 - progress, 4)
-      const current = Math.round(startValue + (endValue - startValue) * easeOutQuart)
-
-      setDisplayValue(current)
-
-      if (progress < 1) {
-        requestAnimationFrame(animate)
-      }
+      setIndicatorStyle({
+        left: activeRef.offsetLeft,
+        width: activeRef.offsetWidth,
+      })
     }
 
-    requestAnimationFrame(animate)
-    prevValue.current = value
-  }, [value])
+    updateIndicator()
+    window.addEventListener('resize', updateIndicator)
+    return () => window.removeEventListener('resize', updateIndicator)
+  }, [options, value])
 
   return (
-    <motion.span
-      variants={counterVariants}
-      initial="hidden"
-      animate="visible"
-      className="tabular-nums"
-    >
-      {displayValue.toLocaleString()}
-      {suffix}
-    </motion.span>
+    <div className={cn('relative', className)}>
+      <div
+        role="tablist"
+        aria-label={ariaLabel}
+        onKeyDown={e => {
+          if (!options.length) return
+
+          const activeIndex = options.findIndex(o => o.value === value)
+          const clampIndex = (index: number) => (index + options.length) % options.length
+          const goTo = (index: number) => {
+            const nextIndex = clampIndex(index)
+            const next = options[nextIndex]?.value
+            if (!next) return
+            onChange(next)
+            optionRefs.current[nextIndex]?.focus()
+          }
+
+          if (e.key === 'ArrowLeft') {
+            e.preventDefault()
+            goTo(Math.max(0, activeIndex) - 1)
+          } else if (e.key === 'ArrowRight') {
+            e.preventDefault()
+            goTo(Math.max(0, activeIndex) + 1)
+          } else if (e.key === 'Home') {
+            e.preventDefault()
+            goTo(0)
+          } else if (e.key === 'End') {
+            e.preventDefault()
+            goTo(options.length - 1)
+          }
+        }}
+        className={cn(
+          'relative inline-flex items-center gap-1 rounded-xl border border-glass-border bg-glass p-1 shadow-glass-sm backdrop-blur-md',
+          'dark:border-white/10 dark:bg-white/5'
+        )}
+      >
+        {options.map((option, index) => {
+          const isActive = option.value === value
+
+          return (
+            <button
+              key={option.value}
+              ref={el => {
+                optionRefs.current[index] = el
+              }}
+              type="button"
+              role="tab"
+              aria-selected={isActive}
+              tabIndex={isActive ? 0 : -1}
+              onClick={() => onChange(option.value)}
+              className={cn(
+                'relative z-10 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors duration-200',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30',
+                isActive
+                  ? 'text-blue-700 dark:text-blue-300'
+                  : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'
+              )}
+            >
+              {option.label}
+            </button>
+          )
+        })}
+
+        <div
+          aria-hidden="true"
+          className={cn(
+            'pointer-events-none absolute bottom-1 top-1 rounded-lg border border-white/55 bg-white/80 shadow-sm',
+            'dark:border-white/10 dark:bg-zinc-950/50',
+            'transition-[left,width] duration-200 ease-out-expo'
+          )}
+          style={{
+            left: indicatorStyle.left,
+            width: indicatorStyle.width,
+          }}
+        />
+      </div>
+    </div>
   )
 }
 
-// ============================================================================
-// Glass Stats Card Component
-// ============================================================================
-
-function GlassStatCard({
-  title,
+function StatCard({
+  icon: Icon,
+  label,
   value,
   suffix,
-  icon: Icon,
-  gradient,
-  iconColor,
-  delay = 0,
 }: {
-  title: string
+  icon: React.ElementType
+  label: string
   value: number
   suffix?: string
-  icon: React.ComponentType<{ className?: string }>
-  gradient: string
-  iconColor: string
-  delay?: number
 }) {
   return (
-    <motion.div variants={itemVariants} className="relative overflow-hidden">
-      <Card variant="glass" className="h-full">
-        <CardBody className="relative z-10">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{title}</p>
-              <p className="text-3xl font-bold text-slate-900 dark:text-slate-100 mt-1">
-                <AnimatedCounter value={value} suffix={suffix} />
-              </p>
-            </div>
-            <motion.div
-              initial={{ scale: 0, rotate: -180 }}
-              animate={{ scale: 1, rotate: 0 }}
-              transition={{
-                type: 'spring' as const,
-                stiffness: 260,
-                damping: 20,
-                delay: delay + 0.2,
-              }}
-              className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${gradient} backdrop-blur-sm flex items-center justify-center shadow-lg`}
-            >
-              <Icon className={`w-7 h-7 ${iconColor}`} />
-            </motion.div>
+    <Card variant="glass" padding="none" interactive className="h-full">
+      <CardContent className="flex items-start gap-4">
+        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-500/10 text-blue-700 ring-1 ring-blue-500/15 dark:text-blue-300 dark:ring-blue-500/20">
+          <Icon className="h-5 w-5" />
+        </div>
+
+        <div className="min-w-0">
+          <div className="text-sm font-medium text-zinc-500 dark:text-zinc-400">{label}</div>
+          <div className="mt-1 flex items-baseline gap-1.5">
+            <span className="text-3xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50 tabular-nums">
+              {Number.isFinite(value) ? value.toLocaleString() : '—'}
+            </span>
+            {suffix && (
+              <span className="text-sm font-medium text-zinc-500 dark:text-zinc-400">{suffix}</span>
+            )}
           </div>
-        </CardBody>
-        {/* Decorative gradient blob */}
-        <div
-          className={`absolute -top-8 -right-8 w-24 h-24 bg-gradient-to-br ${gradient} rounded-full blur-2xl opacity-50`}
-        />
-      </Card>
-    </motion.div>
+        </div>
+      </CardContent>
+    </Card>
   )
 }
 
-// ============================================================================
-// Score Gauge with Animation
-// ============================================================================
-
-function ScoreGauge({ score, label, color }: { score: number; label: string; color: string }) {
-  const circumference = 2 * Math.PI * 36
-  const [animatedScore, setAnimatedScore] = useState(0)
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setAnimatedScore(score)
-    }, 300)
-    return () => clearTimeout(timer)
-  }, [score])
-
-  const strokeDashoffset = circumference - (animatedScore / 100) * circumference
-
-  return (
-    <motion.div variants={itemVariants} className="flex flex-col items-center">
-      <div className="relative w-24 h-24">
-        <svg className="w-24 h-24 transform -rotate-90" viewBox="0 0 80 80">
-          {/* Background track */}
-          <circle
-            cx="40"
-            cy="40"
-            r="36"
-            stroke="currentColor"
-            strokeWidth="6"
-            fill="none"
-            className="text-slate-200/50 dark:text-slate-700/50"
-          />
-          {/* Animated progress */}
-          <motion.circle
-            cx="40"
-            cy="40"
-            r="36"
-            stroke="currentColor"
-            strokeWidth="6"
-            fill="none"
-            strokeLinecap="round"
-            strokeDasharray={circumference}
-            initial={{ strokeDashoffset: circumference }}
-            animate={{ strokeDashoffset }}
-            transition={{ duration: 1, ease: 'easeOut' as const, delay: 0.5 }}
-            className={color}
-          />
-        </svg>
-        <motion.div
-          initial={{ opacity: 0, scale: 0.5 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.8, type: 'spring' as const }}
-          className="absolute inset-0 flex items-center justify-center"
-        >
-          <span className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-            <AnimatedCounter value={score} />
-          </span>
-        </motion.div>
-      </div>
-      <span className="mt-2 text-sm font-medium text-slate-600 dark:text-slate-400">{label}</span>
-    </motion.div>
-  )
-}
-
-// ============================================================================
-// Animated Progress Bar
-// ============================================================================
-
-function AnimatedProgressBar({
+function ProgressBar({
   value,
-  maxValue,
-  gradient,
+  max,
+  className,
 }: {
   value: number
-  maxValue: number
-  gradient: string
+  max: number
+  className?: string
 }) {
-  const percentage = maxValue > 0 ? (value / maxValue) * 100 : 0
+  const percentage = max > 0 ? Math.min(100, (value / max) * 100) : 0
 
   return (
-    <div className="w-full bg-slate-200/50 dark:bg-slate-700/50 rounded-full h-2 overflow-hidden backdrop-blur-sm">
-      <motion.div
-        className={`h-2 rounded-full bg-gradient-to-r ${gradient}`}
-        initial={{ width: 0 }}
-        animate={{ width: `${Math.min(percentage, 100)}%` }}
-        transition={{ duration: 0.8, ease: 'easeOut' as const, delay: 0.3 }}
+    <div className={cn('h-2 w-full rounded-full bg-zinc-200/70 dark:bg-white/10', className)}>
+      <div
+        className={cn(
+          'h-full rounded-full bg-gradient-to-r from-blue-600 to-blue-400',
+          'transition-[width] duration-500 ease-out-expo'
+        )}
+        style={{ width: `${percentage}%` }}
       />
     </div>
   )
 }
 
-// ============================================================================
-// Glass Bar Chart
-// ============================================================================
-
-function GlassBarChart({ data, maxHeight = 80 }: { data: TimelineData[]; maxHeight?: number }) {
-  if (!data.length) return null
-
-  const maxValue = Math.max(...data.map(d => d.total || 0), 1)
-
+function ChartShell({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className="flex items-end gap-1.5 h-24">
-      {data.slice(-14).map((item, idx) => {
-        const height = ((item.total || 0) / maxValue) * maxHeight
-        return (
-          <motion.div
-            key={idx}
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: `${Math.max(height, 4)}px`, opacity: 1 }}
-            transition={{ duration: 0.5, delay: idx * 0.03, ease: 'easeOut' }}
-            className="flex-1 flex flex-col items-center gap-1.5 group"
-          >
-            <div className="relative w-full">
-              <div
-                className="w-full bg-gradient-to-t from-teal-500 to-teal-400 rounded-t-lg hover:from-teal-400 hover:to-teal-300 transition-all shadow-lg shadow-teal-500/20"
-                style={{ height: `${Math.max(height, 4)}px` }}
-              />
-              {/* Glassmorphic tooltip */}
-              <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md text-slate-800 dark:text-slate-200 text-xs px-2.5 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10 shadow-lg border border-white/30 dark:border-slate-700/30">
-                {item.total} activities
-              </div>
-            </div>
-            <span className="text-[10px] text-slate-400 dark:text-slate-500 truncate w-full text-center">
-              {item.time.slice(-5)}
-            </span>
-          </motion.div>
-        )
-      })}
+    <div
+      className={cn(
+        'rounded-xl border border-zinc-200/70 bg-white/70 shadow-sm',
+        'dark:border-white/10 dark:bg-zinc-950/30',
+        className
+      )}
+    >
+      {children}
     </div>
   )
 }
 
-// ============================================================================
-// Main Analytics Page Component
-// ============================================================================
+function TimelineChart({ data, unitLabel }: { data: TimelineData[]; unitLabel: string }) {
+  const points = data.slice(-14)
+  const maxValue = Math.max(...points.map(p => p.total || 0), 1)
+
+  return (
+    <div className="space-y-3">
+      <div className="flex h-32 items-end gap-2">
+        {points.map((point, idx) => {
+          const heightPercent = Math.max(2, (Math.max(0, point.total || 0) / maxValue) * 100)
+          const label = point.time.length >= 5 ? point.time.slice(-5) : point.time
+
+          return (
+            <div key={`${point.time}-${idx}`} className="group relative flex-1">
+              <div className="relative h-32 overflow-hidden rounded-lg bg-zinc-100/80 dark:bg-white/5">
+                <div
+                  className="absolute bottom-0 left-0 right-0 rounded-lg bg-gradient-to-t from-blue-600 to-blue-400 shadow-[0_-12px_24px_rgba(59,130,246,0.18)]"
+                  style={{ height: `${heightPercent}%` }}
+                />
+              </div>
+
+              <div className="mt-2 text-center text-[10px] text-zinc-500 dark:text-zinc-400">
+                {label}
+              </div>
+
+              <div
+                className={cn(
+                  'pointer-events-none absolute -top-9 left-1/2 -translate-x-1/2 whitespace-nowrap',
+                  'rounded-lg border border-white/60 bg-white/85 px-2.5 py-1 text-xs text-zinc-800 shadow-glass-sm backdrop-blur-md',
+                  'opacity-0 transition-opacity duration-150 group-hover:opacity-100',
+                  'dark:border-white/10 dark:bg-zinc-950/70 dark:text-zinc-100'
+                )}
+              >
+                {point.total} {unitLabel}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function ScoreBar({ label, score }: { label: string; score: number }) {
+  const safeScore = Number.isFinite(score) ? Math.max(0, Math.min(100, score)) : 0
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-sm font-medium text-zinc-900 dark:text-zinc-50">{label}</span>
+        <span className="text-sm font-semibold tabular-nums text-zinc-700 dark:text-zinc-200">
+          {Math.round(safeScore)}
+        </span>
+      </div>
+      <ProgressBar value={safeScore} max={100} className="h-2.5" />
+    </div>
+  )
+}
+
+const ACTIVITY_TYPE_ICON: Record<string, React.ElementType> = {
+  solve: Calculator,
+  question: FileText,
+  research: Microscope,
+  chat: MessageCircle,
+}
 
 export default function AnalyticsPage() {
   const { uiSettings } = useGlobal()
-  const t = (key: string) => getTranslation(uiSettings.language, key)
+  const t = useCallback(
+    (key: string) => getTranslation(uiSettings.language, key),
+    [uiSettings.language]
+  )
 
   const [timeRange, setTimeRange] = useState<TimeRange>('week')
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
   const [summary, setSummary] = useState<AnalyticsSummary | null>(null)
   const [timeline, setTimeline] = useState<TimelineData[]>([])
   const [progress, setProgress] = useState<LearningProgress | null>(null)
   const [topics, setTopics] = useState<TopicAnalysis | null>(null)
   const [predictions, setPredictions] = useState<PredictiveMetrics | null>(null)
 
-  const fetchAnalytics = async () => {
+  const timeRangeOptions = useMemo(
+    () =>
+      [
+        { value: 'day', label: t('Today') },
+        { value: 'week', label: t('This Week') },
+        { value: 'month', label: t('This Month') },
+        { value: 'all', label: t('All Time') },
+      ] satisfies Array<SegmentedOption<TimeRange>>,
+    [t]
+  )
+
+  const fetchAnalytics = useCallback(async () => {
     setLoading(true)
+    setError(null)
+
     try {
       const [summaryRes, timelineRes, progressRes, topicsRes, predictionsRes] = await Promise.all([
         fetch(apiUrl(`/api/v1/analytics/summary?time_range=${timeRange}`)),
@@ -426,6 +386,10 @@ export default function AnalyticsPage() {
         fetch(apiUrl(`/api/v1/analytics/predictions?time_range=${timeRange}`)),
       ])
 
+      const responses = [summaryRes, timelineRes, progressRes, topicsRes, predictionsRes]
+      const firstBad = responses.find(r => !r.ok)
+      if (firstBad) throw new Error(`Analytics request failed: ${firstBad.status}`)
+
       const [summaryData, timelineData, progressData, topicsData, predictionsData] =
         await Promise.all([
           summaryRes.json(),
@@ -436,55 +400,50 @@ export default function AnalyticsPage() {
         ])
 
       setSummary(summaryData)
-      setTimeline(timelineData.data || [])
+      setTimeline(timelineData?.data ?? [])
       setProgress(progressData)
       setTopics(topicsData)
       setPredictions(predictionsData)
-    } catch (error) {
-      console.error('Failed to fetch analytics:', error)
+    } catch (fetchError) {
+      console.error('Failed to fetch analytics:', fetchError)
+      setError(t('Error loading data'))
     } finally {
       setLoading(false)
     }
-  }
+  }, [t, timeRange])
 
   useEffect(() => {
     fetchAnalytics()
-  }, [timeRange])
+  }, [fetchAnalytics])
 
-  const timeRangeOptions = [
-    { value: 'day', label: t('Today') },
-    { value: 'week', label: t('This Week') },
-    { value: 'month', label: t('This Month') },
-    { value: 'all', label: t('All Time') },
-  ]
+  const totalActivities = summary?.total_activities ?? 0
+  const breakdownEntries = Object.entries(summary?.activity_breakdown ?? {}).sort(
+    (a, b) => b[1] - a[1]
+  )
+
+  const strengthMax = Math.max(
+    ...(topics?.strength_areas ?? []).map(item => item.sessions ?? item.count ?? 0),
+    1
+  )
+  const timeRangeLabel =
+    timeRangeOptions.find(option => option.value === timeRange)?.label ?? timeRange
 
   return (
-    <PageWrapper maxWidth="2xl" showPattern>
-      {/* Header */}
+    <PageWrapper maxWidth="wide" showPattern breadcrumbs={[{ label: t('Analytics') }]}>
       <PageHeader
         title={t('Learning Analytics')}
         description={t('Track your learning progress and identify areas for improvement')}
-        icon={<BarChart3 className="w-5 h-5" />}
+        icon={<BarChart3 className="h-5 w-5 text-blue-600 dark:text-blue-300" />}
         actions={
-          <div className="flex items-center gap-3">
-            {/* Time Range Selector */}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
             <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-slate-400" />
-              <div className="flex bg-white/50 dark:bg-slate-800/50 backdrop-blur-md rounded-xl p-1 border border-white/30 dark:border-slate-700/30">
-                {timeRangeOptions.map(option => (
-                  <button
-                    key={option.value}
-                    onClick={() => setTimeRange(option.value as TimeRange)}
-                    className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all ${
-                      timeRange === option.value
-                        ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-md'
-                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
-                    }`}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
+              <Clock className="h-4 w-4 text-zinc-400" />
+              <SegmentedControl<TimeRange>
+                ariaLabel={t('Time Range')}
+                value={timeRange}
+                options={timeRangeOptions}
+                onChange={setTimeRange}
+              />
             </div>
 
             <Button
@@ -492,336 +451,383 @@ export default function AnalyticsPage() {
               size="sm"
               onClick={fetchAnalytics}
               loading={loading}
-              iconLeft={<RefreshCw className="w-4 h-4" />}
+              iconLeft={<RefreshCw className="h-4 w-4" />}
             >
               {t('Refresh')}
             </Button>
           </div>
         }
+        className="flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
       />
 
-      {/* Main Content */}
-      <AnimatePresence mode="wait">
+      <div className="space-y-6">
         {loading ? (
-          <motion.div
-            key="loading"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="flex items-center justify-center h-64"
-          >
-            <Card variant="glass" className="px-8 py-6">
-              <div className="flex items-center gap-3 text-slate-500">
-                <Loader2 className="w-6 h-6 animate-spin text-teal-500" />
-                <span>{t('Loading analytics')}...</span>
-              </div>
+          <div className="flex items-center justify-center py-16">
+            <Card variant="glass" padding="none" interactive={false} className="overflow-hidden">
+              <CardBody className="flex items-center gap-3 text-zinc-600 dark:text-zinc-300">
+                <Loader2 className="h-5 w-5 animate-spin text-blue-600 dark:text-blue-400" />
+                <span className="text-sm">{t('Loading analytics')}...</span>
+              </CardBody>
             </Card>
-          </motion.div>
+          </div>
+        ) : error ? (
+          <Card variant="glass" padding="none" interactive={false}>
+            <CardHeader className="flex-row items-start justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 flex h-10 w-10 items-center justify-center rounded-xl bg-red-500/10 text-red-700 ring-1 ring-red-500/15 dark:text-red-300 dark:ring-red-500/20">
+                  <Target className="h-5 w-5" />
+                </div>
+                <div>
+                  <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
+                    {t('Error')}
+                  </h2>
+                  <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">{error}</p>
+                </div>
+              </div>
+
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={fetchAnalytics}
+                iconLeft={<RefreshCw className="h-4 w-4" />}
+              >
+                {t('Refresh')}
+              </Button>
+            </CardHeader>
+          </Card>
         ) : (
-          <motion.div
-            key="content"
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-            className="space-y-6"
-          >
-            {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <GlassStatCard
-                title={t('Total Activities')}
-                value={summary?.total_activities || 0}
+          <>
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
+              <StatCard
                 icon={Zap}
-                gradient="from-teal-500/30 to-teal-600/20"
-                iconColor="text-teal-500"
-                delay={0}
+                label={t('Total Activities')}
+                value={summary?.total_activities ?? 0}
               />
-              <GlassStatCard
-                title={t('Current Streak')}
-                value={progress?.current_streak || 0}
-                suffix={` ${t('days')}`}
+              <StatCard
                 icon={Trophy}
-                gradient="from-amber-500/30 to-amber-600/20"
-                iconColor="text-amber-500"
-                delay={0.1}
+                label={t('Current Streak')}
+                value={progress?.current_streak ?? 0}
+                suffix={t('days')}
               />
-              <GlassStatCard
-                title={t('Topics Covered')}
-                value={topics?.total_topics || 0}
+              <StatCard
                 icon={BookOpen}
-                gradient="from-emerald-500/30 to-emerald-600/20"
-                iconColor="text-emerald-500"
-                delay={0.2}
+                label={t('Topics Covered')}
+                value={topics?.total_topics ?? 0}
               />
-              <GlassStatCard
-                title={t('Active Days')}
-                value={progress?.active_days || 0}
+              <StatCard
                 icon={Calendar}
-                gradient="from-purple-500/30 to-purple-600/20"
-                iconColor="text-purple-500"
-                delay={0.3}
+                label={t('Active Days')}
+                value={progress?.active_days ?? 0}
               />
             </div>
 
-            {/* Activity Timeline & Breakdown */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              {/* Activity Timeline */}
-              <motion.div variants={itemVariants} className="lg:col-span-2">
-                <Card variant="glass">
-                  <CardHeader>
-                    <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                      <TrendingUp className="w-5 h-5 text-teal-500" />
-                      {t('Activity Timeline')}
-                    </h3>
-                  </CardHeader>
-                  <CardBody>
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+              <Card
+                variant="glass"
+                padding="none"
+                interactive={false}
+                className="lg:col-span-2 overflow-hidden"
+              >
+                <CardHeader className="flex-row items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="rounded-lg bg-blue-50/80 p-2 dark:bg-blue-500/10">
+                      <TrendingUp className="h-5 w-5 text-blue-600 dark:text-blue-300" />
+                    </div>
+                    <div>
+                      <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
+                        {t('Activity Timeline')}
+                      </h2>
+                      <p className="text-sm text-zinc-500 dark:text-zinc-400">{timeRangeLabel}</p>
+                    </div>
+                  </div>
+                </CardHeader>
+
+                <CardBody className="space-y-4">
+                  <ChartShell className="overflow-hidden p-6">
                     {timeline.length > 0 ? (
-                      <GlassBarChart data={timeline} />
+                      <TimelineChart data={timeline} unitLabel={t('activities')} />
                     ) : (
-                      <div className="h-24 flex items-center justify-center text-slate-400 dark:text-slate-500">
+                      <div className="flex h-40 items-center justify-center text-sm text-zinc-500 dark:text-zinc-400">
                         {t('No activity data available')}
                       </div>
                     )}
-                  </CardBody>
-                </Card>
-              </motion.div>
-
-              {/* Activity Breakdown */}
-              <motion.div variants={itemVariants}>
-                <Card variant="glass" className="h-full">
-                  <CardHeader>
-                    <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                      <Target className="w-5 h-5 text-purple-500" />
-                      {t('Activity Breakdown')}
-                    </h3>
-                  </CardHeader>
-                  <CardBody>
-                    <div className="space-y-4">
-                      {Object.entries(summary?.activity_breakdown || {}).map(
-                        ([type, count], idx) => {
-                          const config = TYPE_CONFIG[type] || TYPE_CONFIG.chat
-                          const IconComponent = config.icon
-                          const total = summary?.total_activities || 1
-
-                          return (
-                            <motion.div
-                              key={type}
-                              initial={{ opacity: 0, x: -20 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              transition={{ delay: idx * 0.1 + 0.3 }}
-                              className="flex items-center gap-3"
-                            >
-                              <div
-                                className={`w-9 h-9 rounded-xl bg-gradient-to-br ${config.gradient} backdrop-blur-sm flex items-center justify-center`}
-                              >
-                                <IconComponent className={`w-4 h-4 ${config.iconColor}`} />
-                              </div>
-                              <div className="flex-1">
-                                <div className="flex justify-between text-sm mb-1.5">
-                                  <span className="font-medium text-slate-700 dark:text-slate-300 capitalize">
-                                    {type}
-                                  </span>
-                                  <span className="text-slate-500 font-semibold">{count}</span>
-                                </div>
-                                <AnimatedProgressBar
-                                  value={count}
-                                  maxValue={total}
-                                  gradient={config.barGradient}
-                                />
-                              </div>
-                            </motion.div>
-                          )
-                        }
-                      )}
-                      {Object.keys(summary?.activity_breakdown || {}).length === 0 && (
-                        <div className="text-center text-slate-400 dark:text-slate-500 py-4">
-                          {t('No activities yet')}
-                        </div>
-                      )}
-                    </div>
-                  </CardBody>
-                </Card>
-              </motion.div>
-            </div>
-
-            {/* Learning Scores */}
-            <motion.div variants={itemVariants}>
-              <Card variant="glass">
-                <CardHeader>
-                  <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                    <Brain className="w-5 h-5 text-emerald-500" />
-                    {t('Learning Scores')}
-                  </h3>
-                </CardHeader>
-                <CardBody>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                    <ScoreGauge
-                      score={predictions?.overall_score || 0}
-                      label={t('Overall')}
-                      color="text-teal-500"
-                    />
-                    <ScoreGauge
-                      score={predictions?.engagement_score || 0}
-                      label={t('Engagement')}
-                      color="text-emerald-500"
-                    />
-                    <ScoreGauge
-                      score={predictions?.consistency_score || 0}
-                      label={t('Consistency')}
-                      color="text-purple-500"
-                    />
-                    <ScoreGauge
-                      score={predictions?.diversity_score || 0}
-                      label={t('Diversity')}
-                      color="text-amber-500"
-                    />
-                  </div>
-
-                  {/* Recommendations */}
-                  {predictions?.recommendations && predictions.recommendations.length > 0 && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 1 }}
-                      className="mt-6 pt-5 border-t border-white/30 dark:border-slate-700/30"
-                    >
-                      <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
-                        <Sparkles className="w-4 h-4 text-teal-500" />
-                        {t('Recommendations')}
-                      </h4>
-                      <div className="space-y-2">
-                        {predictions.recommendations.map((rec, idx) => (
-                          <motion.div
-                            key={idx}
-                            initial={{ opacity: 0, x: -10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: 1.1 + idx * 0.1 }}
-                            className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-400 bg-white/30 dark:bg-slate-800/30 backdrop-blur-sm rounded-lg px-3 py-2"
-                          >
-                            <span className="text-teal-500 mt-0.5">*</span>
-                            <span>{rec}</span>
-                          </motion.div>
-                        ))}
-                      </div>
-                    </motion.div>
-                  )}
+                  </ChartShell>
                 </CardBody>
               </Card>
-            </motion.div>
 
-            {/* Strength Areas & Knowledge Gaps */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {/* Strength Areas */}
-              <motion.div variants={itemVariants}>
-                <Card variant="glass" className="h-full">
-                  <CardHeader>
-                    <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                      <ArrowUp className="w-5 h-5 text-emerald-500" />
-                      {t('Strength Areas')}
-                    </h3>
-                  </CardHeader>
-                  <CardBody>
-                    <div className="space-y-3">
-                      {topics?.strength_areas?.map((item, idx) => (
-                        <motion.div
-                          key={idx}
-                          initial={{ opacity: 0, scale: 0.95 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          transition={{ delay: idx * 0.1 + 0.5 }}
-                          className="flex items-center justify-between p-3 bg-gradient-to-r from-emerald-500/10 to-emerald-600/5 backdrop-blur-sm rounded-xl border border-emerald-500/20"
-                        >
-                          <span className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate flex-1">
-                            {item.topic}
-                          </span>
-                          <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 ml-2 bg-emerald-500/10 px-2 py-0.5 rounded-full">
-                            {item.sessions} {t('sessions')}
-                          </span>
-                        </motion.div>
-                      ))}
-                      {(!topics?.strength_areas || topics.strength_areas.length === 0) && (
-                        <div className="text-center text-slate-400 dark:text-slate-500 py-4">
-                          {t('Keep learning to identify your strengths!')}
-                        </div>
-                      )}
+              <Card variant="glass" padding="none" interactive={false} className="overflow-hidden">
+                <CardHeader className="flex-row items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="rounded-lg bg-blue-50/80 p-2 dark:bg-blue-500/10">
+                      <Target className="h-5 w-5 text-blue-600 dark:text-blue-300" />
                     </div>
-                  </CardBody>
-                </Card>
-              </motion.div>
+                    <div>
+                      <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
+                        {t('Activity Breakdown')}
+                      </h2>
+                      <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                        {t('Total Activities')}: {totalActivities.toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                </CardHeader>
 
-              {/* Knowledge Gaps */}
-              <motion.div variants={itemVariants}>
-                <Card variant="glass" className="h-full">
-                  <CardHeader>
-                    <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                      <ArrowDown className="w-5 h-5 text-amber-500" />
-                      {t('Areas to Review')}
-                    </h3>
-                  </CardHeader>
-                  <CardBody>
-                    <div className="space-y-3">
-                      {topics?.knowledge_gaps?.map((item, idx) => (
-                        <motion.div
-                          key={idx}
-                          initial={{ opacity: 0, scale: 0.95 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          transition={{ delay: idx * 0.1 + 0.5 }}
-                          className="flex items-center justify-between p-3 bg-gradient-to-r from-amber-500/10 to-amber-600/5 backdrop-blur-sm rounded-xl border border-amber-500/20"
-                        >
-                          <span className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate flex-1">
-                            {item.topic}
-                          </span>
-                          <span className="text-xs font-semibold text-amber-600 dark:text-amber-400 ml-2 bg-amber-500/10 px-2 py-0.5 rounded-full">
-                            {item.days_since_last !== undefined
-                              ? `${Math.round(item.days_since_last)} ${t('days ago')}`
-                              : `${item.sessions} ${t('sessions')}`}
-                          </span>
-                        </motion.div>
-                      ))}
-                      {(!topics?.knowledge_gaps || topics.knowledge_gaps.length === 0) && (
-                        <div className="text-center text-slate-400 dark:text-slate-500 py-4">
-                          {t('Great! No knowledge gaps detected.')}
-                        </div>
-                      )}
-                    </div>
-                  </CardBody>
-                </Card>
-              </motion.div>
+                <CardBody>
+                  <ChartShell className="p-6">
+                    {breakdownEntries.length > 0 ? (
+                      <div className="space-y-4">
+                        {breakdownEntries.map(([type, count]) => {
+                          const Icon = ACTIVITY_TYPE_ICON[type] ?? MessageCircle
+                          const percentage =
+                            totalActivities > 0 ? Math.round((count / totalActivities) * 100) : 0
+                          const typeLabel = t(`${type.slice(0, 1).toUpperCase()}${type.slice(1)}`)
+
+                          return (
+                            <div key={type} className="space-y-2">
+                              <div className="flex items-center justify-between gap-3">
+                                <div className="flex min-w-0 items-center gap-2.5">
+                                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/70 text-blue-700 shadow-glass-sm ring-1 ring-white/60 backdrop-blur-md dark:bg-white/5 dark:text-blue-300 dark:ring-white/10">
+                                    <Icon className="h-4 w-4" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <div className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-50">
+                                      {typeLabel}
+                                    </div>
+                                    <div className="text-xs text-zinc-500 dark:text-zinc-400 tabular-nums">
+                                      {count.toLocaleString()} · {percentage}%
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                              <ProgressBar value={count} max={Math.max(totalActivities, 1)} />
+                            </div>
+                          )
+                        })}
+                      </div>
+                    ) : (
+                      <div className="py-10 text-center text-sm text-zinc-500 dark:text-zinc-400">
+                        {t('No activities yet')}
+                      </div>
+                    )}
+                  </ChartShell>
+                </CardBody>
+              </Card>
             </div>
 
-            {/* All Topics */}
-            {topics?.all_topics && topics.all_topics.length > 0 && (
-              <motion.div variants={itemVariants}>
-                <Card variant="glass">
-                  <CardHeader>
-                    <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                      <BookOpen className="w-5 h-5 text-teal-500" />
-                      {t('All Topics')}
-                    </h3>
-                  </CardHeader>
-                  <CardBody>
-                    <div className="flex flex-wrap gap-2">
-                      {topics.all_topics.map((item, idx) => (
-                        <motion.div
-                          key={idx}
-                          initial={{ opacity: 0, scale: 0.8 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          transition={{ delay: idx * 0.02 + 0.3 }}
-                          whileHover={{ scale: 1.05 }}
-                          className="px-3 py-1.5 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm rounded-full text-sm text-slate-700 dark:text-slate-300 flex items-center gap-2 border border-white/30 dark:border-slate-700/30 shadow-sm cursor-default"
+            <Card variant="glass" padding="none" interactive={false} className="overflow-hidden">
+              <CardHeader className="flex-row items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-lg bg-blue-50/80 p-2 dark:bg-blue-500/10">
+                    <Sparkles className="h-5 w-5 text-blue-600 dark:text-blue-300" />
+                  </div>
+                  <div>
+                    <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
+                      {t('Learning Scores')}
+                    </h2>
+                    <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                      {t('Track your learning progress and identify areas for improvement')}
+                    </p>
+                  </div>
+                </div>
+              </CardHeader>
+
+              <CardBody className="space-y-6">
+                <ChartShell className="p-6">
+                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                    <ScoreBar label={t('Overall')} score={predictions?.overall_score ?? 0} />
+                    <ScoreBar label={t('Engagement')} score={predictions?.engagement_score ?? 0} />
+                    <ScoreBar
+                      label={t('Consistency')}
+                      score={predictions?.consistency_score ?? 0}
+                    />
+                    <ScoreBar label={t('Diversity')} score={predictions?.diversity_score ?? 0} />
+                  </div>
+                </ChartShell>
+
+                {predictions?.recommendations && predictions.recommendations.length > 0 && (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+                      <Sparkles className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                      {t('Recommendations')}
+                    </div>
+
+                    <div className="space-y-2">
+                      {predictions.recommendations.map((rec, idx) => (
+                        <div
+                          key={`${idx}-${rec}`}
+                          className={cn(
+                            'flex items-start gap-2 rounded-xl border border-white/55 bg-white/60 px-4 py-3 text-sm text-zinc-700 shadow-glass-sm backdrop-blur-md',
+                            'dark:border-white/10 dark:bg-white/5 dark:text-zinc-200'
+                          )}
                         >
-                          <span className="truncate max-w-[200px]">{item.topic}</span>
-                          <span className="text-xs text-teal-500 font-semibold">
-                            ({item.count})
-                          </span>
-                        </motion.div>
+                          <span className="mt-0.5 text-blue-600 dark:text-blue-400">*</span>
+                          <span>{rec}</span>
+                        </div>
                       ))}
                     </div>
-                  </CardBody>
-                </Card>
-              </motion.div>
+                  </div>
+                )}
+              </CardBody>
+            </Card>
+
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+              <Card variant="glass" padding="none" interactive={false} className="overflow-hidden">
+                <CardHeader className="flex-row items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="rounded-lg bg-blue-50/80 p-2 dark:bg-blue-500/10">
+                      <ArrowUpRight className="h-5 w-5 text-blue-600 dark:text-blue-300" />
+                    </div>
+                    <div>
+                      <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
+                        {t('Strength Areas')}
+                      </h2>
+                      <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                        {t('Topics Covered')}: {(topics?.total_topics ?? 0).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                </CardHeader>
+
+                <CardBody>
+                  <ChartShell className="p-6">
+                    {topics?.strength_areas && topics.strength_areas.length > 0 ? (
+                      <div className="space-y-3">
+                        {topics.strength_areas.slice(0, 8).map((item, idx) => {
+                          const count = item.sessions ?? item.count ?? 0
+                          return (
+                            <div
+                              key={`${idx}-${item.topic}`}
+                              className="rounded-xl border border-white/55 bg-white/70 px-4 py-3 shadow-glass-sm backdrop-blur-md dark:border-white/10 dark:bg-white/5"
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0">
+                                  <div className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-50">
+                                    {item.topic}
+                                  </div>
+                                  <div className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+                                    {count} {t('sessions')}
+                                  </div>
+                                </div>
+                                <div className="text-xs font-semibold tabular-nums text-blue-700 dark:text-blue-300">
+                                  {Math.round((count / strengthMax) * 100)}%
+                                </div>
+                              </div>
+                              <div className="mt-3">
+                                <ProgressBar value={count} max={strengthMax} />
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    ) : (
+                      <div className="py-10 text-center text-sm text-zinc-500 dark:text-zinc-400">
+                        {t('Keep learning to identify your strengths!')}
+                      </div>
+                    )}
+                  </ChartShell>
+                </CardBody>
+              </Card>
+
+              <Card variant="glass" padding="none" interactive={false} className="overflow-hidden">
+                <CardHeader className="flex-row items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="rounded-lg bg-blue-50/80 p-2 dark:bg-blue-500/10">
+                      <ArrowDownRight className="h-5 w-5 text-blue-600 dark:text-blue-300" />
+                    </div>
+                    <div>
+                      <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
+                        {t('Areas to Review')}
+                      </h2>
+                      <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                        {t('Track your learning progress and identify areas for improvement')}
+                      </p>
+                    </div>
+                  </div>
+                </CardHeader>
+
+                <CardBody>
+                  <ChartShell className="p-6">
+                    {topics?.knowledge_gaps && topics.knowledge_gaps.length > 0 ? (
+                      <div className="space-y-3">
+                        {topics.knowledge_gaps.slice(0, 8).map((item, idx) => {
+                          const badge =
+                            item.days_since_last !== undefined
+                              ? `${Math.round(item.days_since_last)} ${t('days ago')}`
+                              : `${item.sessions ?? item.count ?? 0} ${t('sessions')}`
+
+                          return (
+                            <div
+                              key={`${idx}-${item.topic}`}
+                              className="flex items-center justify-between gap-3 rounded-xl border border-white/55 bg-white/70 px-4 py-3 shadow-glass-sm backdrop-blur-md dark:border-white/10 dark:bg-white/5"
+                            >
+                              <div className="min-w-0">
+                                <div className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-50">
+                                  {item.topic}
+                                </div>
+                                <div className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+                                  {t('Areas to Review')}
+                                </div>
+                              </div>
+
+                              <span className="shrink-0 rounded-full bg-blue-500/10 px-3 py-1 text-xs font-semibold text-blue-700 ring-1 ring-blue-500/15 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20">
+                                {badge}
+                              </span>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    ) : (
+                      <div className="py-10 text-center text-sm text-zinc-500 dark:text-zinc-400">
+                        {t('Great! No knowledge gaps detected.')}
+                      </div>
+                    )}
+                  </ChartShell>
+                </CardBody>
+              </Card>
+            </div>
+
+            {topics?.all_topics && topics.all_topics.length > 0 && (
+              <Card variant="glass" padding="none" interactive={false} className="overflow-hidden">
+                <CardHeader className="flex-row items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="rounded-lg bg-blue-50/80 p-2 dark:bg-blue-500/10">
+                      <BookOpen className="h-5 w-5 text-blue-600 dark:text-blue-300" />
+                    </div>
+                    <div>
+                      <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
+                        {t('All Topics')}
+                      </h2>
+                      <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                        {t('Topics Covered')}: {(topics?.total_topics ?? 0).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                </CardHeader>
+
+                <CardBody>
+                  <div className="flex flex-wrap gap-2">
+                    {topics.all_topics.map((item, idx) => (
+                      <span
+                        key={`${idx}-${item.topic}`}
+                        className={cn(
+                          'inline-flex max-w-full items-center gap-2 rounded-full border border-white/55 bg-white/60 px-3 py-1.5 text-sm text-zinc-700 shadow-glass-sm backdrop-blur-md',
+                          'dark:border-white/10 dark:bg-zinc-950/45 dark:text-zinc-200'
+                        )}
+                        title={`${item.topic} (${item.count ?? item.sessions ?? 0})`}
+                      >
+                        <span className="truncate">{item.topic}</span>
+                        <span className="shrink-0 text-xs font-semibold text-blue-700 dark:text-blue-300 tabular-nums">
+                          {item.count ?? item.sessions ?? 0}
+                        </span>
+                      </span>
+                    ))}
+                  </div>
+                </CardBody>
+              </Card>
             )}
-          </motion.div>
+          </>
         )}
-      </AnimatePresence>
+      </div>
     </PageWrapper>
   )
 }

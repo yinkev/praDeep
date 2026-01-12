@@ -69,7 +69,7 @@ test.describe('DI container verification (backend)', () => {
   test.afterAll(async () => {
     if (!server) return
     try {
-      process.kill(-server.pid, 'SIGTERM')
+      if (server.pid) process.kill(-server.pid, 'SIGTERM')
     } catch {
       // ignore
     }

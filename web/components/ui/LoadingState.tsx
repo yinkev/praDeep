@@ -1,19 +1,21 @@
 'use client'
 
-import React from 'react'
-import { motion } from 'framer-motion'
+import * as React from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
+import { cn } from '@/lib/utils'
 
 // ============================================================================
 // Types
 // ============================================================================
 
-export type SpinnerSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl'
+export type SpinnerSize = 'sm' | 'md' | 'lg' | 'xl'
 export type SkeletonVariant = 'text' | 'circular' | 'rectangular' | 'card'
 
 interface SpinnerProps {
   size?: SpinnerSize
   className?: string
   label?: string
+  text?: string
 }
 
 interface SkeletonProps {
@@ -46,8 +48,12 @@ interface InlineLoadingProps {
 }
 
 interface FullPageLoadingProps {
+  isVisible?: boolean
   message?: string
   showSpinner?: boolean
+  variant?: 'spinner' | 'skeleton'
+  size?: SpinnerSize
+  blur?: boolean
   className?: string
 }
 
@@ -55,65 +61,78 @@ interface LoadingOverlayProps {
   isVisible: boolean
   message?: string
   blur?: boolean
+  fullPage?: boolean
+  variant?: 'spinner' | 'skeleton'
+  size?: SpinnerSize
   className?: string
 }
 
-// ============================================================================
-// Constants
-// ============================================================================
-
-const spinnerSizes: Record<SpinnerSize, { size: string; border: string }> = {
-  xs: { size: 'w-3 h-3', border: 'border' },
-  sm: { size: 'w-4 h-4', border: 'border-2' },
-  md: { size: 'w-6 h-6', border: 'border-2' },
-  lg: { size: 'w-8 h-8', border: 'border-[3px]' },
-  xl: { size: 'w-12 h-12', border: 'border-4' },
+interface DotsLoadingProps {
+  className?: string
+  size?: 'sm' | 'md' | 'lg'
 }
 
-// Cloud Dancer shimmer gradient
-const shimmerGradient = `
-  linear-gradient(
-    90deg,
-    #F4F1ED 0%,
-    #FAF9F7 20%,
-    #FFFFFF 50%,
-    #FAF9F7 80%,
-    #F4F1ED 100%
-  )
-`
-
 // ============================================================================
-// Spinner Component
+// Styles - 2026 Modern Minimal Loading
 // ============================================================================
 
-export function Spinner({ size = 'md', className = '', label }: SpinnerProps) {
-  const { size: sizeClass, border } = spinnerSizes[size]
+const spinnerSizeStyles: Record<SpinnerSize, string> = {
+  sm: 'h-4 w-4 border-2',
+  md: 'h-5 w-5 border-2',
+  lg: 'h-6 w-6 border-[3px]',
+  xl: 'h-8 w-8 border-[3px]',
+}
+
+const labelSizeStyles: Record<SpinnerSize, string> = {
+  sm: 'text-xs',
+  md: 'text-sm',
+  lg: 'text-sm',
+  xl: 'text-base',
+}
+
+const dotSizeStyles: Record<'sm' | 'md' | 'lg', string> = {
+  sm: 'h-1.5 w-1.5',
+  md: 'h-2 w-2',
+  lg: 'h-2.5 w-2.5',
+}
+
+const fadeTransition = {
+  duration: 0.18,
+  ease: [0.16, 1, 0.3, 1] as const,
+}
+
+// ============================================================================
+// Spinner Component - Clean ring with subtle motion
+// ============================================================================
+
+export function Spinner({ size = 'md', className = '', label, text }: SpinnerProps) {
+  const resolvedText = text ?? label
 
   return (
-    <div className={`inline-flex items-center gap-2 ${className}`}>
-      <motion.div
-        className={`
-          ${sizeClass} ${border}
-          rounded-full
-          border-teal-500/30
-          border-t-teal-500
-        `}
-        animate={{ rotate: 360 }}
-        transition={{
-          duration: 0.8,
-          repeat: Infinity,
-          ease: 'linear' as const,
-        }}
-        role="status"
-        aria-label={label || 'Loading'}
+    <span
+      role="status"
+      aria-live="polite"
+      aria-label={resolvedText || 'Loading'}
+      className={cn('inline-flex items-center gap-2', className)}
+    >
+      <span
+        className={cn(
+          'inline-block rounded-full border border-border/50 border-t-accent',
+          'motion-safe:animate-spin motion-safe:[animation-duration:900ms]',
+          spinnerSizeStyles[size]
+        )}
       />
-      {label && <span className="text-sm text-slate-600 dark:text-slate-400">{label}</span>}
-    </div>
+      {resolvedText && (
+        <span className={cn('font-medium text-text-muted', labelSizeStyles[size])}>
+          {resolvedText}
+        </span>
+      )}
+    </span>
   )
 }
 
 // ============================================================================
-// Skeleton Component
+// Skeleton Component - Pulse placeholders
 // ============================================================================
 
 export function Skeleton({
@@ -124,49 +143,46 @@ export function Skeleton({
   lines = 1,
   animate = true,
 }: SkeletonProps) {
-  const baseClasses = 'bg-cloud-dancer dark:bg-slate-700 overflow-hidden'
+  const baseClassName = cn(
+    'bg-border-muted/80 dark:bg-white/10',
+    animate && 'animate-pulse',
+    variant === 'text' && 'rounded-md',
+    variant === 'rectangular' && 'rounded-lg',
+    variant === 'circular' && 'rounded-full',
+    variant === 'card' && 'rounded-xl shadow-xs',
+    className
+  )
 
-  const variantClasses: Record<SkeletonVariant, string> = {
-    text: 'h-4 rounded',
-    circular: 'rounded-full',
-    rectangular: 'rounded-lg',
-    card: 'rounded-2xl',
+  const baseStyle: React.CSSProperties = {
+    width: width ? (typeof width === 'number' ? `${width}px` : width) : undefined,
+    height: height ? (typeof height === 'number' ? `${height}px` : height) : undefined,
   }
 
-  const getStyle = (): React.CSSProperties => {
-    const style: React.CSSProperties = {}
-    if (width) style.width = typeof width === 'number' ? `${width}px` : width
-    if (height) style.height = typeof height === 'number' ? `${height}px` : height
-    if (variant === 'circular' && !height && width) style.height = style.width
-    return style
+  if (variant === 'circular' && !baseStyle.height && width) {
+    baseStyle.height = typeof width === 'number' ? `${width}px` : width
   }
 
-  const shimmerAnimation = animate
-    ? {
-        backgroundImage: shimmerGradient,
-        backgroundSize: '200% 100%',
-        animation: 'shimmer 1.5s ease-in-out infinite',
-      }
-    : {}
+  const resolvedHeight =
+    baseStyle.height ??
+    (variant === 'text' ? '1rem' : variant === 'card' ? '8rem' : undefined)
+
+  if (!baseStyle.height && resolvedHeight) baseStyle.height = resolvedHeight
 
   if (variant === 'text' && lines > 1) {
     return (
-      <div className={`space-y-2 ${className}`}>
+      <div className={cn('space-y-2', className)}>
         {Array.from({ length: lines }).map((_, index) => (
-          <motion.div
+          <div
             key={index}
-            className={`${baseClasses} ${variantClasses.text}`}
+            className={cn(
+              'bg-border-muted/80 dark:bg-white/10',
+              animate && 'animate-pulse',
+              'rounded-md'
+            )}
             style={{
-              ...getStyle(),
-              width: index === lines - 1 ? '75%' : width || '100%',
-              ...shimmerAnimation,
-            }}
-            initial={{ opacity: 0.6 }}
-            animate={{ opacity: [0.6, 1, 0.6] }}
-            transition={{
-              duration: 1.5,
-              repeat: Infinity,
-              delay: index * 0.1,
+              ...baseStyle,
+              width: index === lines - 1 ? '72%' : baseStyle.width ?? '100%',
+              height: baseStyle.height ?? '1rem',
             }}
           />
         ))}
@@ -174,18 +190,7 @@ export function Skeleton({
     )
   }
 
-  return (
-    <motion.div
-      className={`${baseClasses} ${variantClasses[variant]} ${className}`}
-      style={{ ...getStyle(), ...shimmerAnimation }}
-      initial={{ opacity: 0.6 }}
-      animate={{ opacity: [0.6, 1, 0.6] }}
-      transition={{
-        duration: 1.5,
-        repeat: Infinity,
-      }}
-    />
-  )
+  return <div className={baseClassName} style={baseStyle} />
 }
 
 // ============================================================================
@@ -200,15 +205,14 @@ export function CardSkeleton({
   className = '',
 }: CardSkeletonProps) {
   return (
-    <div
-      className={`
-        bg-white dark:bg-slate-800 rounded-2xl overflow-hidden
-        shadow-soft border border-slate-100 dark:border-slate-700
-        ${className}
-      `}
-    >
+    <div className={cn('overflow-hidden rounded-xl border border-border/60 bg-surface-tertiary', className)}>
       {showImage && (
-        <Skeleton variant="rectangular" width="100%" height={160} className="rounded-none" />
+        <Skeleton
+          variant="rectangular"
+          width="100%"
+          height={160}
+          className="rounded-none bg-border-muted/70 dark:bg-white/10"
+        />
       )}
       <div className="p-4 space-y-3">
         {showTitle && <Skeleton variant="text" width="70%" height={20} />}
@@ -234,7 +238,7 @@ export function TextSkeleton({
   className = '',
 }: TextSkeletonProps) {
   return (
-    <div className={`space-y-2 ${className}`}>
+    <div className={cn('space-y-2', className)}>
       {Array.from({ length: lines }).map((_, index) => (
         <Skeleton key={index} variant="text" width={index === lines - 1 ? lastLineWidth : '100%'} />
       ))}
@@ -243,7 +247,7 @@ export function TextSkeleton({
 }
 
 // ============================================================================
-// Inline Loading Component (for buttons)
+// Inline Loading Component
 // ============================================================================
 
 export function InlineLoading({
@@ -252,9 +256,9 @@ export function InlineLoading({
   className = '',
 }: InlineLoadingProps) {
   return (
-    <span className={`inline-flex items-center gap-2 ${className}`}>
+    <span className={cn('inline-flex items-center gap-2', className)}>
       <Spinner size={size} />
-      <span className="text-current">{text}</span>
+      {text && <span className="font-medium text-current">{text}</span>}
     </span>
   )
 }
@@ -264,43 +268,53 @@ export function InlineLoading({
 // ============================================================================
 
 export function FullPageLoading({
+  isVisible = true,
   message = 'Loading...',
   showSpinner = true,
+  variant = 'spinner',
+  size = 'lg',
+  blur = true,
   className = '',
 }: FullPageLoadingProps) {
   return (
-    <motion.div
-      className={`
-        fixed inset-0 z-50
-        flex flex-col items-center justify-center
-        bg-cloud-soft dark:bg-slate-900
-        ${className}
-      `}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.3 }}
-    >
-      {showSpinner && (
+    <AnimatePresence>
+      {isVisible ? (
         <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: 0.1, duration: 0.3 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={fadeTransition}
+          className={cn(
+            'fixed inset-0 z-50 flex items-center justify-center',
+            'bg-surface-primary/70 dark:bg-black/40',
+            blur && 'backdrop-blur-lg',
+            className
+          )}
         >
-          <Spinner size="xl" />
+          <motion.div
+            initial={{ opacity: 0, y: 6, scale: 0.985 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 6, scale: 0.985 }}
+            transition={fadeTransition}
+            className={cn(
+              'flex flex-col items-center justify-center gap-3',
+              'rounded-2xl border border-border/60 bg-glass-strong px-6 py-5 shadow-glass-sm',
+              'dark:border-white/10 dark:bg-white/5'
+            )}
+          >
+            {showSpinner && variant === 'spinner' && <Spinner size={size} />}
+            {variant === 'skeleton' && (
+              <div className="w-56 space-y-3">
+                <Skeleton variant="text" width="78%" />
+                <Skeleton variant="text" width="92%" />
+                <Skeleton variant="text" width="62%" />
+              </div>
+            )}
+            {message && <p className="text-sm font-medium text-text-muted">{message}</p>}
+          </motion.div>
         </motion.div>
-      )}
-      {message && (
-        <motion.p
-          className="mt-4 text-slate-600 dark:text-slate-400 text-lg font-medium"
-          initial={{ y: 10, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.2, duration: 0.3 }}
-        >
-          {message}
-        </motion.p>
-      )}
-    </motion.div>
+      ) : null}
+    </AnimatePresence>
   )
 }
 
@@ -312,48 +326,78 @@ export function LoadingOverlay({
   isVisible,
   message,
   blur = true,
+  fullPage = false,
+  variant = 'spinner',
+  size = 'lg',
   className = '',
 }: LoadingOverlayProps) {
-  if (!isVisible) return null
-
   return (
-    <motion.div
-      className={`
-        absolute inset-0 z-40
-        flex flex-col items-center justify-center
-        bg-white/80 dark:bg-slate-900/80
-        ${blur ? 'backdrop-blur-sm' : ''}
-        rounded-inherit
-        ${className}
-      `}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.2 }}
-    >
-      <Spinner size="lg" />
-      {message && <p className="mt-3 text-sm text-slate-600 dark:text-slate-400">{message}</p>}
-    </motion.div>
+    <AnimatePresence>
+      {isVisible ? (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={fadeTransition}
+          className={cn(
+            'z-40 flex flex-col items-center justify-center',
+            fullPage ? 'fixed inset-0' : 'absolute inset-0 rounded-xl',
+            'bg-surface-primary/60 dark:bg-black/30',
+            blur && 'backdrop-blur-md',
+            'cursor-wait',
+            className
+          )}
+        >
+          {variant === 'spinner' ? <Spinner size={size} /> : <Skeleton variant="rectangular" width={44} height={44} />}
+          {message && <p className="mt-3 text-sm font-medium text-text-muted">{message}</p>}
+        </motion.div>
+      ) : null}
+    </AnimatePresence>
   )
 }
 
 // ============================================================================
-// Pulse Dot Loading Component
+// Dots Loading Component - subtle bounce
+// ============================================================================
+
+export function DotsLoading({ className = '', size = 'md' }: DotsLoadingProps) {
+  return (
+    <div className={cn('flex items-center gap-1.5', className)} aria-hidden="true">
+      {[0, 1, 2].map(index => (
+        <motion.span
+          key={index}
+          className={cn(
+            'inline-block rounded-full bg-text-subtle dark:bg-white/40',
+            dotSizeStyles[size]
+          )}
+          animate={{ y: [0, -4, 0] }}
+          transition={{
+            duration: 0.6,
+            ease: 'easeInOut',
+            repeat: Infinity,
+            delay: index * 0.12,
+          }}
+        />
+      ))}
+    </div>
+  )
+}
+
+// ============================================================================
+// Pulse Dots Loading Component (alias for backwards compatibility)
 // ============================================================================
 
 export function PulseDots({ className = '' }: { className?: string }) {
   return (
-    <div className={`flex items-center gap-1 ${className}`}>
+    <div className={cn('flex items-center gap-1.5', className)} aria-hidden="true">
       {[0, 1, 2].map(index => (
-        <motion.div
+        <motion.span
           key={index}
-          className="w-2 h-2 rounded-full bg-teal-500"
-          animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.5, 1, 0.5],
-          }}
+          className={cn('inline-block h-2 w-2 rounded-full bg-text-subtle dark:bg-white/40')}
+          animate={{ scale: [1, 1.22, 1], opacity: [0.45, 1, 0.45] }}
           transition={{
-            duration: 0.8,
+            duration: 0.9,
+            ease: 'easeInOut',
             repeat: Infinity,
             delay: index * 0.15,
           }}
@@ -364,22 +408,7 @@ export function PulseDots({ className = '' }: { className?: string }) {
 }
 
 // ============================================================================
-// CSS Keyframes (add to global styles or use style tag)
-// ============================================================================
-
-export const shimmerKeyframes = `
-  @keyframes shimmer {
-    0% {
-      background-position: -200% 0;
-    }
-    100% {
-      background-position: 200% 0;
-    }
-  }
-`
-
-// ============================================================================
-// Default Export (for convenience)
+// Default Export
 // ============================================================================
 
 const LoadingState = {
@@ -390,6 +419,7 @@ const LoadingState = {
   InlineLoading,
   FullPageLoading,
   LoadingOverlay,
+  DotsLoading,
   PulseDots,
 }
 
