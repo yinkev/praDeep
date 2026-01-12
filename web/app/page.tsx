@@ -1117,7 +1117,7 @@ export default function HomePage() {
                     }}
                     className="will-change-transform"
                   >
-                    <Link href={action.href} className="group block h-full">
+                    <Link href={action.href} prefetch={true} className="group block h-full">
                       <Card
                         variant="glass"
                         padding="md"

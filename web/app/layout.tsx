@@ -5,6 +5,7 @@ import Sidebar from '@/components/Sidebar'
 import { GlobalProvider } from '@/context/GlobalContext'
 import ThemeScript from '@/components/ThemeScript'
 import { ToastProvider } from '@/components/ui/Toast'
+import MotionProvider from '@/components/MotionProvider'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -67,20 +68,22 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body
         className={`${inter.className} min-h-dvh bg-surface-base antialiased transition-colors duration-200`}
       >
-        <ToastProvider>
-          <GlobalProvider>
-            <div className="flex h-dvh w-full overflow-hidden">
-              <Sidebar />
-              <main
-                id="app-scroll"
-                className="flex-1 overflow-y-auto scroll-smooth bg-[radial-gradient(circle_at_1px_1px,rgb(var(--color-border-subtle))_1px,transparent_0)] [background-size:24px_24px]"
-                style={{ backgroundPosition: 'center center' }}
-              >
-                {children}
-              </main>
-            </div>
-          </GlobalProvider>
-        </ToastProvider>
+        <MotionProvider>
+          <ToastProvider>
+            <GlobalProvider>
+              <div className="flex h-dvh w-full overflow-hidden">
+                <Sidebar />
+                <main
+                  id="app-scroll"
+                  className="flex-1 overflow-y-auto scroll-smooth bg-[radial-gradient(circle_at_1px_1px,rgb(var(--color-border-subtle))_1px,transparent_0)] [background-size:24px_24px]"
+                  style={{ backgroundPosition: 'center center' }}
+                >
+                  {children}
+                </main>
+              </div>
+            </GlobalProvider>
+          </ToastProvider>
+        </MotionProvider>
       </body>
     </html>
   )

@@ -258,6 +258,7 @@ export default function Sidebar({ collapsible = true }: SidebarProps) {
                     <div key={item.href} className="relative">
                       <Link
                         href={item.href}
+                        prefetch={true}
                         aria-current={isActive ? 'page' : undefined}
                         className={cn(
                           'relative flex h-10 w-full items-center rounded-md py-2 text-[13px] font-medium',
