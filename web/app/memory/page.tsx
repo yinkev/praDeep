@@ -22,6 +22,7 @@ import {
   Upload,
   Zap,
 } from 'lucide-react'
+import { motion, type Variants } from 'framer-motion'
 import { apiUrl } from '@/lib/api'
 import { cn } from '@/lib/utils'
 import { getTranslation } from '@/lib/i18n'
@@ -65,6 +66,42 @@ interface RecurringQuestion {
 
 type LayoutMode = 'grid' | 'list'
 
+// Premium animation variants
+const fadeInUp: Variants = {
+  hidden: { opacity: 0, y: 24 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.5,
+      ease: [0.16, 1, 0.3, 1], // out-expo
+    },
+  },
+}
+
+const staggerContainer: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.08,
+      delayChildren: 0.1,
+    },
+  },
+}
+
+const scaleIn: Variants = {
+  hidden: { opacity: 0, scale: 0.95 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    transition: {
+      duration: 0.4,
+      ease: [0.16, 1, 0.3, 1],
+    },
+  },
+}
+
 interface ToggleSwitchProps {
   checked: boolean
   onChange: (checked: boolean) => void
@@ -73,26 +110,33 @@ interface ToggleSwitchProps {
 
 function ToggleSwitch({ checked, onChange, disabled }: ToggleSwitchProps) {
   return (
-    <button
+    <motion.button
       type="button"
       role="switch"
       aria-checked={checked}
       disabled={disabled}
       onClick={() => onChange(!checked)}
+      whileTap={disabled ? undefined : { scale: 0.95 }}
       className={cn(
-        'relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200',
-        checked ? 'bg-blue-600' : 'bg-zinc-200 dark:bg-white/10',
-        disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer',
+        'relative inline-flex h-6 w-11 items-center rounded-full transition-all duration-300',
+        checked ? 'bg-blue-600 shadow-lg shadow-blue-500/25' : 'bg-zinc-200 dark:bg-white/10',
+        disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:shadow-md',
         'focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/35 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-zinc-950'
       )}
     >
-      <span
+      <motion.span
+        layout
+        transition={{
+          type: 'spring',
+          stiffness: 500,
+          damping: 30,
+        }}
         className={cn(
-          'inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200 will-change-transform dark:bg-zinc-50',
+          'inline-block h-4 w-4 rounded-full bg-white shadow-lg dark:bg-zinc-50',
           checked ? 'translate-x-6' : 'translate-x-1'
         )}
       />
-    </button>
+    </motion.button>
   )
 }
 
@@ -104,19 +148,42 @@ interface StatCardProps {
 
 function StatCard({ icon, value, label }: StatCardProps) {
   return (
-    <Card variant="glass" padding="sm" className="h-full">
-      <div className="flex items-center gap-3">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-blue-600 ring-1 ring-blue-100/80 dark:bg-blue-950/40 dark:text-blue-400 dark:ring-white/10">
-          {icon}
-        </div>
-        <div className="min-w-0">
-          <div className="text-xs font-medium text-zinc-500 dark:text-zinc-400">{label}</div>
-          <div className="mt-0.5 text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50 tabular-nums">
-            {value}
+    <motion.div
+      variants={fadeInUp}
+      whileHover={{
+        scale: 1.02,
+        transition: { duration: 0.2, ease: [0.16, 1, 0.3, 1] },
+      }}
+      className="h-full"
+    >
+      <Card
+        variant="glass"
+        padding="sm"
+        className="h-full transition-shadow duration-300 hover:shadow-lg"
+      >
+        <div className="flex items-center gap-3">
+          <motion.div
+            whileHover={{ rotate: [0, -10, 10, -10, 0], scale: 1.1 }}
+            transition={{ duration: 0.5 }}
+            className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-blue-600 ring-1 ring-blue-100/80 dark:bg-blue-950/40 dark:text-blue-400 dark:ring-white/10"
+          >
+            {icon}
+          </motion.div>
+          <div className="min-w-0">
+            <div className="text-xs font-medium text-zinc-500 dark:text-zinc-400">{label}</div>
+            <motion.div
+              key={value}
+              initial={{ scale: 1.2, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+              className="mt-0.5 text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50 tabular-nums"
+            >
+              {value}
+            </motion.div>
           </div>
         </div>
-      </div>
-    </Card>
+      </Card>
+    </motion.div>
   )
 }
 
@@ -130,20 +197,47 @@ function ProgressBar({ label, value, maxValue }: ProgressBarProps) {
   const pct = maxValue > 0 ? Math.min(1, value / maxValue) : 0
 
   return (
-    <div className="flex items-center gap-3">
-      <div className="w-28 truncate text-xs font-medium text-zinc-600 dark:text-zinc-400">
+    <motion.div
+      initial={{ opacity: 0, x: -20 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+      className="group flex items-center gap-3"
+    >
+      <div className="w-28 truncate text-xs font-medium text-zinc-600 transition-colors group-hover:text-zinc-900 dark:text-zinc-400 dark:group-hover:text-zinc-200">
         {label}
       </div>
-      <div className="h-2 flex-1 overflow-hidden rounded-full bg-zinc-200/70 dark:bg-white/10">
-        <div
-          className="h-full rounded-full bg-gradient-to-r from-blue-500 to-indigo-500"
+      <div className="relative h-2 flex-1 overflow-hidden rounded-full bg-zinc-200/70 dark:bg-white/10">
+        <motion.div
+          initial={{ width: 0 }}
+          animate={{ width: `${pct * 100}%` }}
+          transition={{
+            duration: 1.2,
+            delay: 0.2,
+            ease: [0.16, 1, 0.3, 1],
+          }}
+          className="h-full rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 shadow-sm"
+        />
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: [0, 1, 0] }}
+          transition={{
+            duration: 2,
+            delay: 0.2,
+            ease: 'easeInOut',
+          }}
+          className="absolute inset-y-0 left-0 w-full bg-gradient-to-r from-transparent via-white/30 to-transparent"
           style={{ width: `${pct * 100}%` }}
         />
       </div>
-      <div className="w-10 text-right text-xs text-zinc-500 tabular-nums dark:text-zinc-400">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.3, delay: 0.5 }}
+        className="w-10 text-right text-xs font-medium text-zinc-500 tabular-nums dark:text-zinc-400"
+      >
         {value}
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   )
 }
 
@@ -605,7 +699,9 @@ export default function MemoryPage() {
                     </label>
                     <select
                       value={preferences.preferred_explanation_format}
-                      onChange={e => updatePreference('preferred_explanation_format', e.target.value)}
+                      onChange={e =>
+                        updatePreference('preferred_explanation_format', e.target.value)
+                      }
                       disabled={saving}
                       className="mt-2 w-full rounded-xl border border-white/55 bg-white/70 px-3 py-2 text-sm text-zinc-900 shadow-glass-sm backdrop-blur-md transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/40 dark:border-white/10 dark:bg-white/5 dark:text-zinc-100"
                     >

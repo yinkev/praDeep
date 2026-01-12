@@ -495,55 +495,91 @@ export default function IdeaGenPage() {
                   </div>
 
                   <div className="mt-6 space-y-5">
-                    <div className="rounded-2xl border border-white/55 bg-white/60 px-4 py-3 shadow-glass-sm backdrop-blur-md dark:border-white/10 dark:bg-white/5">
+                    <motion.div
+                      className="rounded-2xl border border-white/55 bg-white/60 px-4 py-3 shadow-glass-sm backdrop-blur-md dark:border-white/10 dark:bg-white/5 transition-all duration-300"
+                      animate={{
+                        borderColor:
+                          selectedRecords.size > 0 ? 'rgba(59, 130, 246, 0.3)' : undefined,
+                      }}
+                    >
                       <div className="flex items-start justify-between gap-4">
                         <div className="min-w-0">
                           <div className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
                             Sources
                           </div>
-                          <div className="mt-1 text-sm font-medium text-zinc-900 dark:text-zinc-50">
+                          <motion.div
+                            className="mt-1 text-sm font-medium text-zinc-900 dark:text-zinc-50"
+                            key={selectedRecords.size}
+                            initial={{ opacity: 0, y: -2 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.2 }}
+                          >
                             {selectedRecords.size === 0
                               ? 'Optional context'
                               : `${selectedRecords.size} record${selectedRecords.size === 1 ? '' : 's'} selected`}
-                          </div>
+                          </motion.div>
                           <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
                             {selectedRecords.size === 0
                               ? 'Pick notebook records to ground IdeaGen (recommended).'
                               : 'These will be sent as context to the generator.'}
                           </div>
                         </div>
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300">
+                        <motion.div
+                          className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300"
+                          animate={{
+                            scale: selectedRecords.size > 0 ? [1, 1.1, 1] : 1,
+                          }}
+                          transition={{ duration: 0.3 }}
+                        >
                           <BookOpen className="h-4 w-4" />
-                        </div>
+                        </motion.div>
                       </div>
 
-                      {selectedRecords.size > 0 && (
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          {selectedRecordsArray.slice(0, 4).map(r => (
-                            <span
-                              key={r.id}
-                              className="inline-flex max-w-full items-center gap-2 rounded-full border border-zinc-200/70 bg-white/80 px-2.5 py-1 text-[11px] font-medium text-zinc-700 shadow-xs backdrop-blur dark:border-white/10 dark:bg-white/5 dark:text-zinc-200"
-                              title={`${r.notebookName}: ${getRecordTitle(r)}`}
-                            >
-                              <span
-                                className="h-2 w-2 rounded-full"
-                                style={{
-                                  backgroundColor:
-                                    notebooks.find(nb => nb.id === r.notebookId)?.color ||
-                                    '#94a3b8',
-                                }}
-                              />
-                              <span className="truncate">{getRecordTitle(r)}</span>
-                            </span>
-                          ))}
-                          {selectedRecordsArray.length > 4 && (
-                            <span className="inline-flex items-center px-1 py-1 text-xs text-zinc-500 dark:text-zinc-400">
-                              +{selectedRecordsArray.length - 4} more
-                            </span>
-                          )}
-                        </div>
-                      )}
-                    </div>
+                      <AnimatePresence mode="wait">
+                        {selectedRecords.size > 0 && (
+                          <motion.div
+                            className="mt-3 flex flex-wrap gap-2"
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                          >
+                            {selectedRecordsArray.slice(0, 4).map((r, idx) => (
+                              <motion.span
+                                key={r.id}
+                                className="inline-flex max-w-full items-center gap-2 rounded-full border border-zinc-200/70 bg-white/80 px-2.5 py-1 text-[11px] font-medium text-zinc-700 shadow-xs backdrop-blur dark:border-white/10 dark:bg-white/5 dark:text-zinc-200 hover:shadow-md hover:scale-105 transition-all duration-200"
+                                title={`${r.notebookName}: ${getRecordTitle(r)}`}
+                                initial={{ opacity: 0, scale: 0.8, y: -10 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                transition={{ duration: 0.3, delay: idx * 0.05 }}
+                              >
+                                <motion.span
+                                  className="h-2 w-2 rounded-full"
+                                  style={{
+                                    backgroundColor:
+                                      notebooks.find(nb => nb.id === r.notebookId)?.color ||
+                                      '#94a3b8',
+                                  }}
+                                  animate={{ scale: [1, 1.2, 1] }}
+                                  transition={{ duration: 0.4, delay: idx * 0.05 }}
+                                />
+                                <span className="truncate">{getRecordTitle(r)}</span>
+                              </motion.span>
+                            ))}
+                            {selectedRecordsArray.length > 4 && (
+                              <motion.span
+                                className="inline-flex items-center px-1 py-1 text-xs text-zinc-500 dark:text-zinc-400"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ duration: 0.3, delay: 0.2 }}
+                              >
+                                +{selectedRecordsArray.length - 4} more
+                              </motion.span>
+                            )}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </motion.div>
 
                     <Textarea
                       label="Prompt (optional)"
@@ -567,56 +603,119 @@ export default function IdeaGenPage() {
                       leftIcon={<Target className="h-4 w-4" />}
                     />
 
-                    {(isGenerating || generationStatus) && (
-                      <div className="rounded-2xl border border-white/55 bg-white/60 px-4 py-3 shadow-glass-sm backdrop-blur-md dark:border-white/10 dark:bg-white/5">
-                        <div className="flex items-center gap-2">
-                          {isGenerating ? (
-                            <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
-                          ) : (
-                            <Check className="h-4 w-4 text-blue-600" />
-                          )}
-                          <div className="min-w-0 flex-1">
-                            <div className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
-                              {generationStatus || (isGenerating ? 'Working…' : 'Ready')}
-                            </div>
-                            {progress && (
-                              <div className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
-                                Step {progress.current} / {progress.total}
-                              </div>
-                            )}
-                          </div>
-
-                          {isGenerating && (
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={stopGeneration}
-                              iconLeft={<StopCircle className="h-4 w-4" />}
+                    <AnimatePresence mode="wait">
+                      {(isGenerating || generationStatus) && (
+                        <motion.div
+                          className="rounded-2xl border border-white/55 bg-white/60 px-4 py-3 shadow-glass-sm backdrop-blur-md dark:border-white/10 dark:bg-white/5"
+                          initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                          transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                        >
+                          <div className="flex items-center gap-2">
+                            <motion.div
+                              animate={isGenerating ? { rotate: 360 } : {}}
+                              transition={
+                                isGenerating
+                                  ? { duration: 1, repeat: Infinity, ease: 'linear' }
+                                  : {}
+                              }
                             >
-                              Stop
-                            </Button>
-                          )}
-                        </div>
+                              {isGenerating ? (
+                                <Loader2 className="h-4 w-4 text-blue-600" />
+                              ) : (
+                                <motion.div
+                                  initial={{ scale: 0 }}
+                                  animate={{ scale: 1 }}
+                                  transition={{ type: 'spring', stiffness: 200, damping: 15 }}
+                                >
+                                  <Check className="h-4 w-4 text-blue-600" />
+                                </motion.div>
+                              )}
+                            </motion.div>
+                            <div className="min-w-0 flex-1">
+                              <motion.div
+                                className="text-sm font-medium text-zinc-900 dark:text-zinc-50"
+                                key={generationStatus}
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ duration: 0.2 }}
+                              >
+                                {generationStatus || (isGenerating ? 'Working…' : 'Ready')}
+                              </motion.div>
+                              <AnimatePresence mode="wait">
+                                {progress && (
+                                  <motion.div
+                                    className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400"
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: 'auto' }}
+                                    exit={{ opacity: 0, height: 0 }}
+                                    transition={{ duration: 0.2 }}
+                                  >
+                                    Step {progress.current} / {progress.total}
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
+                            </div>
 
-                        {progress && progressPercent !== null && (
-                          <div className="mt-3">
-                            <div className="flex items-center justify-between text-[11px] text-zinc-500 dark:text-zinc-400">
-                              <span>{progressPercent}%</span>
-                              <span>
-                                {Math.max(0, Math.min(progress.current, progress.total))}/
-                                {progress.total}
-                              </span>
-                            </div>
-                            <div className="mt-1.5 h-1.5 w-full rounded-full bg-zinc-200/70 dark:bg-white/10">
-                              <div
-                                className="h-full rounded-full bg-blue-600/80"
-                                style={{ width: `${progressPercent}%` }}
-                              />
-                            </div>
+                            <AnimatePresence>
+                              {isGenerating && (
+                                <motion.div
+                                  initial={{ opacity: 0, scale: 0.8 }}
+                                  animate={{ opacity: 1, scale: 1 }}
+                                  exit={{ opacity: 0, scale: 0.8 }}
+                                  transition={{ duration: 0.2 }}
+                                >
+                                  <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    onClick={stopGeneration}
+                                    iconLeft={<StopCircle className="h-4 w-4" />}
+                                  >
+                                    Stop
+                                  </Button>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
                           </div>
-                        )}
-                      </div>
-                    )}
+
+                          <AnimatePresence mode="wait">
+                            {progress && progressPercent !== null && (
+                              <motion.div
+                                className="mt-3"
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                              >
+                                <div className="flex items-center justify-between text-[11px] text-zinc-500 dark:text-zinc-400">
+                                  <motion.span
+                                    key={progressPercent}
+                                    initial={{ opacity: 0, y: -5 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: 0.2 }}
+                                  >
+                                    {progressPercent}%
+                                  </motion.span>
+                                  <span>
+                                    {Math.max(0, Math.min(progress.current, progress.total))}/
+                                    {progress.total}
+                                  </span>
+                                </div>
+                                <div className="mt-1.5 h-1.5 w-full rounded-full bg-zinc-200/70 dark:bg-white/10 overflow-hidden">
+                                  <motion.div
+                                    className="h-full rounded-full bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 shadow-sm shadow-blue-500/50"
+                                    initial={{ width: '0%' }}
+                                    animate={{ width: `${progressPercent}%` }}
+                                    transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                                  />
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
 
                   <div className="mt-6 flex flex-wrap gap-3">
@@ -753,20 +852,38 @@ export default function IdeaGenPage() {
                                 className="flex-row items-start justify-between gap-4"
                               >
                                 <div className="flex items-start gap-3 min-w-0">
-                                  <button
+                                  <motion.button
                                     type="button"
                                     onClick={() => toggleIdeaSelected(idea.id)}
                                     className={cn(
-                                      'mt-0.5 h-7 w-7 rounded-full border-2 flex items-center justify-center shrink-0 transition-all',
+                                      'mt-0.5 h-7 w-7 rounded-full border-2 flex items-center justify-center shrink-0 transition-all duration-200',
                                       idea.selected
-                                        ? 'bg-blue-600 border-blue-600 text-white shadow-sm shadow-blue-600/20'
-                                        : 'border-zinc-300 dark:border-white/20 hover:border-blue-400 dark:hover:border-blue-400'
+                                        ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-600/30'
+                                        : 'border-zinc-300 dark:border-white/20 hover:border-blue-400 dark:hover:border-blue-400 hover:shadow-md hover:scale-110'
                                     )}
                                     aria-pressed={idea.selected}
                                     aria-label={idea.selected ? 'Deselect idea' : 'Select idea'}
+                                    whileTap={{ scale: 0.9 }}
+                                    animate={idea.selected ? { scale: [1, 1.1, 1] } : {}}
+                                    transition={{ duration: 0.3 }}
                                   >
-                                    {idea.selected && <Check className="h-4 w-4" />}
-                                  </button>
+                                    <AnimatePresence mode="wait">
+                                      {idea.selected && (
+                                        <motion.div
+                                          initial={{ scale: 0, rotate: -90 }}
+                                          animate={{ scale: 1, rotate: 0 }}
+                                          exit={{ scale: 0, rotate: 90 }}
+                                          transition={{
+                                            type: 'spring',
+                                            stiffness: 300,
+                                            damping: 20,
+                                          }}
+                                        >
+                                          <Check className="h-4 w-4" />
+                                        </motion.div>
+                                      )}
+                                    </AnimatePresence>
+                                  </motion.button>
 
                                   <div className="min-w-0">
                                     <div className="flex flex-wrap items-center gap-2">

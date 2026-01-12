@@ -87,7 +87,7 @@ interface SessionState {
 }
 
 // ============================================================================
-// Animation Variants
+// Animation Variants - Enhanced for Premium Interactions
 // ============================================================================
 
 const fadeInUp: Variants = {
@@ -95,44 +95,57 @@ const fadeInUp: Variants = {
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] },
+    transition: {
+      duration: 0.5,
+      ease: [0.22, 0.61, 0.36, 1],
+    },
   },
   exit: {
     opacity: 0,
     y: -10,
-    transition: { duration: 0.2 },
+    transition: { duration: 0.25, ease: [0.22, 0.61, 0.36, 1] },
   },
 }
 
 const slideInLeft: Variants = {
-  hidden: { opacity: 0, x: -20 },
+  hidden: { opacity: 0, x: -30 },
   visible: {
     opacity: 1,
     x: 0,
-    transition: { duration: 0.4, ease: 'easeOut' },
+    transition: {
+      duration: 0.6,
+      ease: [0.16, 1, 0.3, 1],
+    },
   },
 }
 
 const slideInRight: Variants = {
-  hidden: { opacity: 0, x: 20 },
+  hidden: { opacity: 0, x: 30 },
   visible: {
     opacity: 1,
     x: 0,
-    transition: { duration: 0.4, ease: 'easeOut' },
+    transition: {
+      duration: 0.6,
+      ease: [0.16, 1, 0.3, 1],
+    },
   },
 }
 
 const scaleIn: Variants = {
-  hidden: { opacity: 0, scale: 0.95 },
+  hidden: { opacity: 0, scale: 0.92 },
   visible: {
     opacity: 1,
     scale: 1,
-    transition: { type: 'spring' as const, stiffness: 300, damping: 25 },
+    transition: {
+      type: 'spring' as const,
+      stiffness: 260,
+      damping: 22,
+    },
   },
   exit: {
     opacity: 0,
-    scale: 0.95,
-    transition: { duration: 0.2 },
+    scale: 0.92,
+    transition: { duration: 0.25, ease: [0.22, 0.61, 0.36, 1] },
   },
 }
 
@@ -141,20 +154,49 @@ const staggerContainer: Variants = {
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.08,
-      delayChildren: 0.1,
+      staggerChildren: 0.06,
+      delayChildren: 0.05,
     },
   },
 }
 
 const pulseGlow: Variants = {
-  initial: { boxShadow: '0 0 0 0 rgba(20, 184, 166, 0)' },
+  initial: {
+    boxShadow: '0 0 0 0 rgba(20, 184, 166, 0)',
+    scale: 1,
+  },
   animate: {
-    boxShadow: ['0 0 0 0 rgba(20, 184, 166, 0.4)', '0 0 0 12px rgba(20, 184, 166, 0)'],
+    boxShadow: ['0 0 0 0 rgba(20, 184, 166, 0.5)', '0 0 0 16px rgba(20, 184, 166, 0)'],
+    scale: [1, 1.02, 1],
     transition: {
-      duration: 1.5,
+      duration: 2,
       repeat: Infinity,
       ease: 'easeOut' as const,
+    },
+  },
+}
+
+const shimmerVariant: Variants = {
+  initial: { backgroundPosition: '200% center' },
+  animate: {
+    backgroundPosition: '-200% center',
+    transition: {
+      duration: 2.5,
+      repeat: Infinity,
+      ease: 'linear' as const,
+    },
+  },
+}
+
+const celebrationBurst: Variants = {
+  hidden: { scale: 0, opacity: 0 },
+  visible: {
+    scale: [0, 1.2, 1],
+    opacity: [0, 1, 1],
+    transition: {
+      duration: 0.6,
+      times: [0, 0.6, 1],
+      ease: [0.34, 1.56, 0.64, 1],
     },
   },
 }
@@ -201,55 +243,111 @@ function ProgressIndicator({ currentStep, totalSteps, progress, status }: Progre
         const Icon = step.icon
         const isCompleted = index < activeStep
         const isCurrent = index === activeStep
+        const isNext = index === activeStep + 1
 
         return (
           <div key={step.id} className="flex items-center gap-2">
             <motion.div
               className={`
-                relative flex items-center justify-center w-8 h-8 rounded-full
-                transition-all duration-300
+                relative flex items-center justify-center w-10 h-10 rounded-full
+                transition-all duration-500
                 ${
                   isCurrent
-                    ? 'bg-gradient-to-r from-teal-500 to-teal-600 text-white shadow-lg shadow-teal-500/30'
+                    ? 'bg-gradient-to-r from-teal-500 via-teal-600 to-teal-500 text-white shadow-xl shadow-teal-500/40'
                     : isCompleted
-                      ? 'bg-teal-100 dark:bg-teal-900/50 text-teal-600 dark:text-teal-400'
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500'
+                      ? 'bg-gradient-to-br from-teal-400 to-teal-500 text-white shadow-md shadow-teal-500/20'
+                      : isNext
+                        ? 'bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 border-2 border-teal-200 dark:border-teal-700'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500'
                 }
               `}
               variants={isCurrent ? pulseGlow : undefined}
               initial="initial"
-              animate={isCurrent ? 'animate' : 'initial'}
+              animate={isCurrent ? 'animate' : isCompleted ? 'visible' : 'initial'}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.98 }}
+              layout
             >
-              <Icon className="w-4 h-4" />
+              <motion.div
+                initial={false}
+                animate={
+                  isCompleted
+                    ? { scale: [1, 1.3, 1], rotate: [0, 180, 360] }
+                    : isCurrent
+                      ? { rotate: [0, 5, -5, 0] }
+                      : {}
+                }
+                transition={
+                  isCompleted
+                    ? { duration: 0.6, ease: [0.34, 1.56, 0.64, 1] }
+                    : isCurrent
+                      ? { duration: 2, repeat: Infinity, ease: 'easeInOut' }
+                      : {}
+                }
+              >
+                <Icon
+                  className={`${isCurrent ? 'w-5 h-5' : 'w-4 h-4'} transition-all duration-300`}
+                />
+              </motion.div>
               {isCurrent && (
+                <>
+                  <motion.div
+                    className="absolute inset-0 rounded-full bg-gradient-to-r from-teal-400/30 via-transparent to-teal-400/30"
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
+                  />
+                  <motion.div
+                    className="absolute inset-0 rounded-full bg-teal-400/20"
+                    animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0, 0.3] }}
+                    transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                  />
+                </>
+              )}
+              {isCompleted && (
                 <motion.div
-                  className="absolute inset-0 rounded-full bg-teal-400/20"
-                  animate={{ scale: [1, 1.2, 1] }}
-                  transition={{ duration: 1.5, repeat: Infinity }}
+                  className="absolute inset-0 rounded-full bg-white/20"
+                  initial={{ scale: 0, opacity: 1 }}
+                  animate={{ scale: 1.5, opacity: 0 }}
+                  transition={{ duration: 0.6 }}
                 />
               )}
             </motion.div>
-            <span
+            <motion.span
               className={`
-              text-xs font-medium hidden md:block
-              ${
-                isCurrent
-                  ? 'text-teal-600 dark:text-teal-400'
-                  : isCompleted
-                    ? 'text-slate-600 dark:text-slate-400'
-                    : 'text-slate-400 dark:text-slate-500'
-              }
-            `}
+                text-xs font-semibold hidden md:block transition-all duration-300
+                ${
+                  isCurrent
+                    ? 'text-teal-600 dark:text-teal-400'
+                    : isCompleted
+                      ? 'text-teal-600/70 dark:text-teal-400/70'
+                      : isNext
+                        ? 'text-slate-500 dark:text-slate-400'
+                        : 'text-slate-400 dark:text-slate-500'
+                }
+              `}
+              animate={isCurrent ? { scale: [1, 1.05, 1] } : {}}
+              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
             >
               {step.label}
-            </span>
+            </motion.span>
             {index < steps.length - 1 && (
-              <div className="hidden sm:flex items-center">
-                <div
-                  className={`w-8 h-0.5 ${
-                    isCompleted ? 'bg-teal-400 dark:bg-teal-500' : 'bg-slate-200 dark:bg-slate-600'
+              <div className="hidden sm:flex items-center relative w-12 h-1">
+                <motion.div
+                  className={`absolute inset-0 rounded-full ${
+                    isCompleted ? 'bg-teal-400 dark:bg-teal-500' : 'bg-slate-200 dark:bg-slate-700'
                   }`}
+                  initial={{ scaleX: 0 }}
+                  animate={{ scaleX: isCompleted ? 1 : 0.3 }}
+                  transition={{ duration: 0.6, ease: [0.22, 0.61, 0.36, 1] }}
+                  style={{ transformOrigin: 'left' }}
                 />
+                {isCompleted && (
+                  <motion.div
+                    className="absolute inset-0 rounded-full bg-gradient-to-r from-transparent via-white/40 to-transparent"
+                    animate={{ x: ['-100%', '200%'] }}
+                    transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+                  />
+                )}
               </div>
             )}
           </div>
@@ -1580,8 +1678,8 @@ ${html}
               </h3>
               <p className="text-slate-500 dark:text-slate-400 max-w-md leading-relaxed mb-8">
                 Select materials from your notebooks, and the system will generate a personalized
-                learning plan. Through interactive pages and intelligent Q&A, you&apos;ll master all the
-                content step by step.
+                learning plan. Through interactive pages and intelligent Q&A, you&apos;ll master all
+                the content step by step.
               </p>
               <div className="flex items-center gap-6 text-sm text-slate-400 dark:text-slate-500">
                 <div className="flex items-center gap-2">

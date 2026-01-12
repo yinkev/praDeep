@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
+import { motion, AnimatePresence, type Variants } from 'framer-motion'
 import {
   BookOpen,
   BookmarkPlus,
@@ -58,6 +59,90 @@ interface RecommendationResult {
 }
 
 type RecommendationType = 'hybrid' | 'semantic' | 'citation'
+
+// ============================================================================
+// Animation Variants
+// ============================================================================
+
+const fadeInUp: Variants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0 },
+}
+
+const scaleIn: Variants = {
+  hidden: { opacity: 0, scale: 0.95 },
+  visible: { opacity: 1, scale: 1 },
+}
+
+const slideInRight: Variants = {
+  hidden: { opacity: 0, x: 20 },
+  visible: { opacity: 1, x: 0 },
+}
+
+const staggerContainer: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.08,
+      delayChildren: 0.1,
+    },
+  },
+}
+
+const paperCardVariants: Variants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      type: 'spring',
+      stiffness: 350,
+      damping: 30,
+    },
+  },
+  exit: {
+    opacity: 0,
+    y: -12,
+    transition: {
+      duration: 0.2,
+    },
+  },
+}
+
+const expandVariants: Variants = {
+  collapsed: {
+    opacity: 0,
+    height: 0,
+    marginTop: 0,
+    transition: {
+      duration: 0.3,
+      ease: [0.4, 0.0, 0.2, 1],
+    },
+  },
+  expanded: {
+    opacity: 1,
+    height: 'auto',
+    marginTop: '1rem',
+    transition: {
+      duration: 0.4,
+      ease: [0.4, 0.0, 0.2, 1],
+    },
+  },
+}
+
+const badgeVariants: Variants = {
+  hidden: { opacity: 0, scale: 0.8 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    transition: {
+      type: 'spring',
+      stiffness: 500,
+      damping: 30,
+    },
+  },
+}
 
 // ============================================================================
 // Helpers
@@ -320,9 +405,7 @@ export default function RecommendationPage() {
           <CardHeader padding="none" className="px-5 py-4">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-                  Search
-                </div>
+                <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">Search</div>
                 <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
                   Use a topic, a question, or a paper title.
                 </div>
@@ -525,13 +608,12 @@ export default function RecommendationPage() {
           <CardHeader padding="none" className="px-5 py-4">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-                  Results
-                </div>
+                <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">Results</div>
                 <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
                   {result ? (
                     <>
-                      Ranked papers for <span className="text-zinc-700 dark:text-zinc-200">“{result.query}”</span>
+                      Ranked papers for{' '}
+                      <span className="text-zinc-700 dark:text-zinc-200">“{result.query}”</span>
                     </>
                   ) : (
                     'Run a search to see ranked papers.'
@@ -572,7 +654,9 @@ export default function RecommendationPage() {
                   <X className="mt-0.5 h-4 w-4 flex-shrink-0" />
                   <div className="min-w-0">
                     <div className="font-medium">Something went wrong</div>
-                    <div className="mt-0.5 text-xs text-red-700/80 dark:text-red-200/80">{error}</div>
+                    <div className="mt-0.5 text-xs text-red-700/80 dark:text-red-200/80">
+                      {error}
+                    </div>
                   </div>
                 </div>
               ) : null}
@@ -581,32 +665,52 @@ export default function RecommendationPage() {
 
           <CardBody padding="none" className="pt-2">
             {hasPapers ? (
-              <ol className="divide-y divide-zinc-200/60 dark:divide-white/10">
+              <motion.ol
+                variants={staggerContainer}
+                initial="hidden"
+                animate="visible"
+                className="divide-y divide-zinc-200/60 dark:divide-white/10"
+              >
                 {papers.map((paper, index) => {
                   const expanded = expandedPapers.has(paper.paper_id)
                   const isSaved = savedPapers.has(paper.paper_id)
                   const combined = clamp01(paper.combined_score)
 
                   return (
-                    <li
+                    <motion.li
                       key={paper.paper_id}
-                      className="px-5 py-4 transition-colors hover:bg-white/40 dark:hover:bg-white/5"
+                      variants={paperCardVariants}
+                      layout
+                      className="group relative px-5 py-4 transition-all duration-300 ease-out hover:bg-white/40 dark:hover:bg-white/5"
                     >
                       <div className="flex items-start gap-4">
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/55 bg-white/60 text-xs font-bold text-zinc-700 shadow-glass-sm backdrop-blur-md dark:border-white/10 dark:bg-white/5 dark:text-zinc-200">
+                        <motion.div
+                          initial={{ scale: 0.8, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          transition={{
+                            type: 'spring',
+                            stiffness: 400,
+                            damping: 25,
+                            delay: index * 0.05,
+                          }}
+                          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/55 bg-white/60 text-xs font-bold text-zinc-700 shadow-glass-sm backdrop-blur-md transition-all duration-300 group-hover:scale-105 group-hover:shadow-lg group-hover:border-blue-500/30 dark:border-white/10 dark:bg-white/5 dark:text-zinc-200"
+                        >
                           {index + 1}
-                        </div>
+                        </motion.div>
 
                         <div className="min-w-0 flex-1">
                           <div className="flex items-start justify-between gap-4">
                             <div className="min-w-0">
-                              <button
+                              <motion.button
                                 type="button"
                                 onClick={() => openExternal(paper.url)}
-                                className="block text-left text-sm font-semibold text-zinc-900 hover:text-blue-700 dark:text-zinc-50 dark:hover:text-blue-300"
+                                whileHover={{ x: 2 }}
+                                whileTap={{ scale: 0.98 }}
+                                transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                                className="block text-left text-sm font-semibold text-zinc-900 transition-colors duration-200 hover:text-blue-700 dark:text-zinc-50 dark:hover:text-blue-300"
                               >
                                 <span className="line-clamp-2">{paper.title}</span>
-                              </button>
+                              </motion.button>
 
                               <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-zinc-500 dark:text-zinc-400">
                                 <span className="text-zinc-600 dark:text-zinc-300">
@@ -632,7 +736,8 @@ export default function RecommendationPage() {
                                   {getSourceLabel(paper.source)}
                                 </span>
 
-                                {paper.citation_count !== undefined && paper.citation_count !== null ? (
+                                {paper.citation_count !== undefined &&
+                                paper.citation_count !== null ? (
                                   <span className="inline-flex items-center rounded-full border border-zinc-200/70 bg-white/60 px-2.5 py-1 text-xs text-zinc-600 shadow-glass-sm backdrop-blur-md dark:border-white/10 dark:bg-white/5 dark:text-zinc-300">
                                     {paper.citation_count} citations
                                   </span>
@@ -657,11 +762,19 @@ export default function RecommendationPage() {
                                 <IconButton
                                   size="sm"
                                   variant={isSaved ? 'secondary' : 'outline'}
-                                  icon={isSaved ? <Check className="h-4 w-4" /> : <BookmarkPlus className="h-4 w-4" />}
+                                  icon={
+                                    isSaved ? (
+                                      <Check className="h-4 w-4" />
+                                    ) : (
+                                      <BookmarkPlus className="h-4 w-4" />
+                                    )
+                                  }
                                   aria-label={isSaved ? 'Saved' : 'Save paper'}
                                   onClick={() => savePaper(paper)}
                                   disabled={isSaved}
-                                  className={isSaved ? 'text-blue-700 dark:text-blue-200' : undefined}
+                                  className={
+                                    isSaved ? 'text-blue-700 dark:text-blue-200' : undefined
+                                  }
                                 />
 
                                 <IconButton
@@ -675,7 +788,13 @@ export default function RecommendationPage() {
                                 <IconButton
                                   size="sm"
                                   variant="ghost"
-                                  icon={expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                                  icon={
+                                    expanded ? (
+                                      <ChevronUp className="h-4 w-4" />
+                                    ) : (
+                                      <ChevronDown className="h-4 w-4" />
+                                    )
+                                  }
                                   aria-label={expanded ? 'Collapse details' : 'Expand details'}
                                   aria-expanded={expanded}
                                   onClick={() => togglePaperExpand(paper.paper_id)}
@@ -747,7 +866,9 @@ export default function RecommendationPage() {
                                           <div className="h-2 flex-1 overflow-hidden rounded-full bg-zinc-200/60 dark:bg-white/10">
                                             <div
                                               className="h-full rounded-full bg-gradient-to-r from-blue-600 to-indigo-600"
-                                              style={{ width: `${Math.round(clamp01(metric.value) * 100)}%` }}
+                                              style={{
+                                                width: `${Math.round(clamp01(metric.value) * 100)}%`,
+                                              }}
                                             />
                                           </div>
                                           <div className="w-10 text-right text-xs font-medium text-zinc-700 dark:text-zinc-200">
@@ -766,7 +887,9 @@ export default function RecommendationPage() {
                                       <dl className="mt-2 space-y-1 text-xs text-zinc-600 dark:text-zinc-300">
                                         {paper.arxiv_id ? (
                                           <div className="flex justify-between gap-3">
-                                            <dt className="text-zinc-500 dark:text-zinc-400">arXiv</dt>
+                                            <dt className="text-zinc-500 dark:text-zinc-400">
+                                              arXiv
+                                            </dt>
                                             <dd className="font-medium text-zinc-700 dark:text-zinc-200">
                                               {paper.arxiv_id}
                                             </dd>
@@ -774,7 +897,9 @@ export default function RecommendationPage() {
                                         ) : null}
                                         {paper.doi ? (
                                           <div className="flex justify-between gap-3">
-                                            <dt className="text-zinc-500 dark:text-zinc-400">DOI</dt>
+                                            <dt className="text-zinc-500 dark:text-zinc-400">
+                                              DOI
+                                            </dt>
                                             <dd className="font-medium text-zinc-700 dark:text-zinc-200">
                                               {paper.doi}
                                             </dd>

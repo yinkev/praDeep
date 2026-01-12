@@ -1,10 +1,19 @@
 'use client'
 
 import type { ComponentType } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { motion, type Variants } from 'framer-motion'
-import { ArrowRight, Database, FolderOpen, Microscope, SlidersHorizontal, Sparkles, Workflow } from 'lucide-react'
+import { motion, type Variants, useMotionValue, useSpring } from 'framer-motion'
+import {
+  ArrowRight,
+  Database,
+  FolderOpen,
+  Microscope,
+  SlidersHorizontal,
+  Sparkles,
+  Workflow,
+} from 'lucide-react'
 import { useGlobal } from '@/context/GlobalContext'
 import { getTranslation } from '@/lib/i18n'
 import PageWrapper, { PageHeader } from '@/components/ui/PageWrapper'
@@ -33,21 +42,90 @@ const containerVariants: Variants = {
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.08,
-      delayChildren: 0.08,
+      staggerChildren: 0.065,
+      delayChildren: 0.12,
     },
   },
 }
 
 const itemVariants: Variants = {
-  hidden: { opacity: 0, y: 14 },
+  hidden: { opacity: 0, y: 18, scale: 0.96 },
   visible: {
     opacity: 1,
     y: 0,
+    scale: 1,
     transition: {
       type: 'spring' as const,
-      stiffness: 420,
-      damping: 30,
+      stiffness: 380,
+      damping: 28,
+      mass: 0.8,
+    },
+  },
+}
+
+const timelineNodeVariants: Variants = {
+  hidden: { opacity: 0, x: -12, scale: 0.94 },
+  visible: {
+    opacity: 1,
+    x: 0,
+    scale: 1,
+    transition: {
+      type: 'spring' as const,
+      stiffness: 340,
+      damping: 26,
+      mass: 0.9,
+    },
+  },
+}
+
+const iconHoverVariants: Variants = {
+  rest: { scale: 1, rotate: 0 },
+  hover: {
+    scale: 1.12,
+    rotate: [0, -8, 8, 0],
+    transition: {
+      duration: 0.5,
+      rotate: {
+        duration: 0.6,
+        ease: [0.34, 1.56, 0.64, 1],
+      },
+    },
+  },
+}
+
+const stepBadgeVariants: Variants = {
+  rest: { scale: 1 },
+  hover: {
+    scale: 1.08,
+    transition: {
+      type: 'spring' as const,
+      stiffness: 500,
+      damping: 15,
+    },
+  },
+}
+
+const arrowVariants: Variants = {
+  rest: { x: 0, opacity: 0.6 },
+  hover: {
+    x: 3,
+    opacity: 1,
+    transition: {
+      type: 'spring' as const,
+      stiffness: 400,
+      damping: 20,
+    },
+  },
+}
+
+const pulseVariants: Variants = {
+  pulse: {
+    scale: [1, 1.15, 1],
+    opacity: [0.5, 0.8, 0.5],
+    transition: {
+      duration: 2.5,
+      repeat: Infinity,
+      ease: 'easeInOut',
     },
   },
 }
@@ -56,13 +134,7 @@ const itemVariants: Variants = {
 // Components
 // ============================================================================
 
-function TimelineNode({
-  node,
-  isLast,
-}: {
-  node: WorkflowNode
-  isLast: boolean
-}) {
+function TimelineNode({ node, isLast }: { node: WorkflowNode; isLast: boolean }) {
   return (
     <motion.div variants={itemVariants} className="relative flex gap-4">
       <div className="relative flex flex-col items-center">
@@ -70,7 +142,9 @@ function TimelineNode({
           <node.icon className="h-5 w-5 text-blue-600 dark:text-blue-300" />
         </div>
 
-        {!isLast && <div aria-hidden="true" className="mt-2 w-px flex-1 bg-zinc-200/70 dark:bg-white/10" />}
+        {!isLast && (
+          <div aria-hidden="true" className="mt-2 w-px flex-1 bg-zinc-200/70 dark:bg-white/10" />
+        )}
       </div>
 
       <Link
@@ -165,14 +239,23 @@ export default function WorkflowInsightsPage() {
             <Button variant="secondary" size="sm" onClick={() => router.push('/guide')}>
               {t('View guide')}
             </Button>
-            <Button size="sm" onClick={() => router.push('/knowledge')} iconRight={<ArrowRight className="h-4 w-4" />}>
+            <Button
+              size="sm"
+              onClick={() => router.push('/knowledge')}
+              iconRight={<ArrowRight className="h-4 w-4" />}
+            >
               {t('Start with KB')}
             </Button>
           </div>
         }
       />
 
-      <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-8">
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className="space-y-8"
+      >
         <motion.div variants={itemVariants} className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <Card
             variant="glass"
@@ -195,7 +278,9 @@ export default function WorkflowInsightsPage() {
                 {t('Four modules. One clean loop.')}
               </h2>
               <p className="mt-2 text-sm leading-relaxed text-zinc-500 dark:text-zinc-400">
-                {t('Start by grounding the system in your sources, then solve, research, and review outputs — repeat as you learn.')}
+                {t(
+                  'Start by grounding the system in your sources, then solve, research, and review outputs — repeat as you learn.'
+                )}
               </p>
 
               <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -238,18 +323,16 @@ export default function WorkflowInsightsPage() {
             />
 
             <div className="relative">
-              <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">{t('Timeline')}</div>
+              <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+                {t('Timeline')}
+              </div>
               <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
                 {t('Follow the path top-to-bottom — each step links to the module.')}
               </p>
 
               <motion.div variants={containerVariants} className="mt-6 space-y-5">
                 {nodes.map((node, idx) => (
-                  <TimelineNode
-                    key={node.id}
-                    node={node}
-                    isLast={idx === nodes.length - 1}
-                  />
+                  <TimelineNode key={node.id} node={node} isLast={idx === nodes.length - 1} />
                 ))}
               </motion.div>
             </div>
@@ -257,15 +340,29 @@ export default function WorkflowInsightsPage() {
         </motion.div>
 
         <motion.div variants={itemVariants}>
-          <Card variant="glass" padding="lg" interactive={false} className="border-white/55 dark:border-white/10">
+          <Card
+            variant="glass"
+            padding="lg"
+            interactive={false}
+            className="border-white/55 dark:border-white/10"
+          >
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0">
-                <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">{t('Tip')}</div>
+                <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+                  {t('Tip')}
+                </div>
                 <div className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-                  {t('If you are unsure where to start, begin with the Knowledge Base — it improves everything else downstream.')}
+                  {t(
+                    'If you are unsure where to start, begin with the Knowledge Base — it improves everything else downstream.'
+                  )}
                 </div>
               </div>
-              <Button variant="outline" size="sm" onClick={() => router.push('/history')} iconRight={<ArrowRight className="h-4 w-4" />}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => router.push('/history')}
+                iconRight={<ArrowRight className="h-4 w-4" />}
+              >
                 {t('Go to history')}
               </Button>
             </div>
