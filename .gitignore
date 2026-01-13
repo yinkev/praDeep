@@ -104,6 +104,12 @@ cache/
 # Cursor
 .cursor/
 
+# ============================================
+# Git Worktrees
+# ============================================
+.worktrees/
+worktrees/
+
 # PyCharm / IntelliJ IDEA
 .idea/
 *.iml
