@@ -22,6 +22,7 @@ async def complete(
     api_key: Optional[str] = None,
     base_url: Optional[str] = None,
     binding: str = "openai",
+    messages: Optional[List[Dict[str, str]]] = None,
     **kwargs,
 ) -> str:
     """
@@ -60,6 +61,7 @@ async def complete(
         system_prompt=system_prompt,
         api_key=api_key,
         base_url=base_url,
+        messages=messages,
         **kwargs,
     )
 
@@ -122,6 +124,7 @@ async def _openai_complete(
     system_prompt: str,
     api_key: Optional[str],
     base_url: Optional[str],
+    messages: Optional[List[Dict[str, str]]] = None,
     **kwargs,
 ) -> str:
     """OpenAI-compatible completion."""
@@ -137,6 +140,7 @@ async def _openai_complete(
             system_prompt=system_prompt,
             api_key=api_key,
             base_url=base_url,
+            messages=messages,
             **kwargs,
         )
         if response:
@@ -156,7 +160,9 @@ async def _openai_complete(
 
         data = {
             "model": model,
-            "messages": [
+            "messages": messages
+            if messages
+            else [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": prompt},
             ],

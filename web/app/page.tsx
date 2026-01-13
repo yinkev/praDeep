@@ -44,6 +44,7 @@ import PageWrapper from '@/components/ui/PageWrapper'
 import Button from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { useToast } from '@/components/ui/Toast'
+import CouncilDetails from '@/components/CouncilDetails'
 
 // ============================================================================
 // Types
@@ -159,7 +160,14 @@ const messageVariants = {
 // ============================================================================
 
 export default function HomePage() {
-  const { chatState, setChatState, sendChatMessage, newChatSession, uiSettings } = useGlobal()
+  const {
+    chatState,
+    setChatState,
+    sendChatMessage,
+    verifyChatMessage,
+    newChatSession,
+    uiSettings,
+  } = useGlobal()
   const t = useCallback(
     (key: string) => getTranslation(uiSettings.language, key),
     [uiSettings.language]
@@ -1391,6 +1399,31 @@ export default function HomePage() {
                                 ))}
                               </motion.div>
                             )}
+
+                          {/* Actions */}
+                          {!msg.isStreaming && (
+                            <div className="flex flex-wrap items-center gap-2">
+                              {msg.meta?.verified ? (
+                                <>
+                                  <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 dark:border-emerald-500/25 dark:bg-emerald-500/10 dark:text-emerald-200">
+                                    Verified (Council)
+                                  </div>
+                                  {msg.meta.council_id ? (
+                                    <CouncilDetails councilId={msg.meta.council_id} />
+                                  ) : null}
+                                </>
+                              ) : (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => verifyChatMessage(idx)}
+                                  className="text-text-secondary hover:text-accent-primary dark:text-zinc-300 dark:hover:text-blue-300"
+                                >
+                                  Verify (Council)
+                                </Button>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </>
                     )}

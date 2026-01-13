@@ -326,18 +326,15 @@ Format as JSON:
                 user_id=user_id,
             )
 
-            # Store strengths and improvement areas in memory system
+            # Store strengths and improvement areas in learning patterns
             strengths = result.get("strengths", [])
             improvement_areas = result.get("improvement_areas", [])
 
-            self.memory_manager.update_preference(
-                "custom.strength_areas",
-                strengths,
-                user_id=user_id,
-            )
-            self.memory_manager.update_preference(
-                "custom.improvement_areas",
-                improvement_areas,
+            self.memory_manager.update_learning_patterns(
+                {
+                    "strength_areas": strengths,
+                    "improvement_areas": improvement_areas,
+                },
                 user_id=user_id,
             )
 
@@ -354,6 +351,26 @@ Format as JSON:
 
         except Exception as e:
             self.logger.error(f"Behavior insights generation failed: {e}")
+
+            strengths = ["Consistent platform usage" if interaction_count > 10 else "Exploring the platform"]
+            improvement_areas = ["Build more consistent study habits"]
+
+            try:
+                self.memory_manager.update_preference(
+                    "custom.last_behavior_analysis",
+                    time.time(),
+                    user_id=user_id,
+                )
+                self.memory_manager.update_learning_patterns(
+                    {
+                        "strength_areas": strengths,
+                        "improvement_areas": improvement_areas,
+                    },
+                    user_id=user_id,
+                )
+            except Exception as mem_err:
+                self.logger.warning(f"Failed to persist behavior insights: {mem_err}")
+
             return {
                 "user_id": user_id,
                 "analyzed_at": time.time(),
@@ -362,8 +379,8 @@ Format as JSON:
                     "topics_explored": len(topics),
                     "recurring_questions": len(recurring_questions),
                 },
-                "strengths": ["Consistent platform usage" if interaction_count > 10 else "Exploring the platform"],
-                "improvement_areas": ["Build more consistent study habits"],
+                "strengths": strengths,
+                "improvement_areas": improvement_areas,
                 "patterns": {
                     "consistency": "medium",
                     "focus_duration": "Typical session lengths",

@@ -318,6 +318,25 @@ class UserMemoryManager:
             data["preferred_modules"] = {}
         data["preferred_modules"][module] = data["preferred_modules"].get(module, 0) + 1
 
+        # Track session duration statistics when provided
+        if duration_seconds is not None:
+            try:
+                duration_value = float(duration_seconds)
+            except (TypeError, ValueError):
+                duration_value = None
+
+            if duration_value is not None and duration_value >= 0:
+                previous_count = data.get("session_count", 0) or 0
+                previous_avg = data.get("average_session_length", 0) or 0
+
+                new_count = previous_count + 1
+                data["session_count"] = new_count
+                data["average_session_length"] = (
+                    (previous_avg * previous_count + duration_value) / new_count
+                    if new_count > 0
+                    else duration_value
+                )
+
         # Track usage hour
         current_hour = time.localtime().tm_hour
         if "hourly_usage" not in data:
@@ -352,6 +371,25 @@ class UserMemoryManager:
     def get_learning_patterns(self, user_id: str = DEFAULT_USER_ID) -> dict[str, Any]:
         """Get user learning patterns."""
         return self._load_file(self.patterns_file)
+
+    def update_learning_patterns(
+        self,
+        updates: dict[str, Any],
+        user_id: str = DEFAULT_USER_ID,
+    ) -> dict[str, Any]:
+        """
+        Update learning patterns and persist to disk.
+
+        Args:
+            updates: Dict of pattern keys to update
+
+        Returns:
+            Updated learning patterns dict
+        """
+        data = self._load_file(self.patterns_file)
+        data.update(updates)
+        self._save_file(self.patterns_file, data)
+        return data
 
     def get_preferred_modules(self, user_id: str = DEFAULT_USER_ID) -> list[tuple[str, int]]:
         """Get modules sorted by usage frequency."""

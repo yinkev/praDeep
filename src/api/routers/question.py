@@ -271,6 +271,7 @@ async def websocket_question_generate(websocket: WebSocket):
         requirement = data.get("requirement")
         kb_name = data.get("kb_name", "ai_textbook")
         count = data.get("count", 1)
+        enable_council_validation = bool(data.get("enable_council_validation", False))
 
         if not requirement:
             try:
@@ -299,7 +300,12 @@ async def websocket_question_generate(websocket: WebSocket):
         root_dir = Path(__file__).parent.parent.parent.parent
         output_base = root_dir / "data" / "user" / "question"
 
-        coordinator = AgentCoordinator(kb_name=kb_name, max_rounds=10, output_dir=str(output_base))
+        coordinator = AgentCoordinator(
+            kb_name=kb_name,
+            max_rounds=10,
+            output_dir=str(output_base),
+            use_council_validation=enable_council_validation,
+        )
 
         # 3. Setup Log Queue for WebSocket streaming
         log_queue = asyncio.Queue()

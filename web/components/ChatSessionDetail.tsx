@@ -24,6 +24,7 @@ import { getTranslation } from '@/lib/i18n'
 import { Card, CardHeader, CardBody, CardFooter } from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
 import { ReasoningSteps, ConfidenceBadge, type ReasoningStep } from '@/components/ai'
+import CouncilDetails from '@/components/CouncilDetails'
 
 interface ChatMessage {
   role: 'user' | 'assistant'
@@ -32,6 +33,12 @@ interface ChatMessage {
   sources?: {
     rag?: Array<{ kb_name: string; content: string }>
     web?: Array<{ url: string; title?: string }>
+  }
+  meta?: {
+    verified?: boolean
+    council_id?: string
+    council_task?: string
+    status?: string
   }
   // AI transparency features
   reasoning?: ReasoningStep[]
@@ -348,6 +355,16 @@ export default function ChatSessionDetail({
                                   </a>
                                 ))}
                               </div>
+                            </div>
+                          )}
+
+                          {/* Council verification metadata */}
+                          {msg.meta?.verified && msg.meta.council_id && (
+                            <div className="mt-3 space-y-2">
+                              <div className="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-200">
+                                Verified (Council)
+                              </div>
+                              <CouncilDetails councilId={msg.meta.council_id} />
                             </div>
                           )}
 

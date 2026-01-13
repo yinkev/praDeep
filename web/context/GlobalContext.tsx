@@ -131,6 +131,7 @@ interface QuestionState {
   type: string;
   count: number;
   selectedKb: string;
+  enableCouncilValidation: boolean;
   progress: QuestionProgressInfo;
   agentStatus: QuestionAgentStatus;
   tokenStats: QuestionTokenStats;
@@ -229,6 +230,12 @@ interface HomeChatMessage {
   content: string;
   sources?: ChatSource;
   isStreaming?: boolean;
+  meta?: {
+    verified?: boolean;
+    council_id?: string;
+    council_task?: string;
+    status?: string;
+  };
 }
 
 interface ChatState {
@@ -258,6 +265,7 @@ interface GlobalContextType {
     type: string,
     count: number,
     kb: string,
+    enableCouncilValidation?: boolean,
   ) => void;
   startMimicQuestionGen: (
     file: File | null,
@@ -286,6 +294,7 @@ interface GlobalContextType {
   chatState: ChatState;
   setChatState: React.Dispatch<React.SetStateAction<ChatState>>;
   sendChatMessage: (message: string) => void;
+  verifyChatMessage: (targetAssistantIndex: number) => void;
   clearChatHistory: () => void;
   loadChatSession: (sessionId: string) => Promise<void>;
   newChatSession: () => void;
@@ -610,6 +619,7 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
     type: "choice",
     count: 1,
     selectedKb: "",
+    enableCouncilValidation: false,
     progress: {
       stage: null,
       progress: {},
@@ -642,6 +652,7 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
     type: string,
     count: number,
     kb: string,
+    enableCouncilValidation: boolean = false,
   ) => {
     if (questionWs.current) questionWs.current.close();
 
@@ -656,6 +667,7 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
       type,
       count,
       selectedKb: kb,
+      enableCouncilValidation,
       progress: {
         stage: count > 1 ? "planning" : "generating",
         progress: { current: 0, total: count },
@@ -693,6 +705,7 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
           },
           count: count,
           kb_name: kb,
+          enable_council_validation: enableCouncilValidation,
         }),
       );
       addQuestionLog({ type: "system", content: "Initializing Generator..." });
@@ -1575,6 +1588,7 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
               ...lastMessage,
               content: data.content,
               isStreaming: false,
+              meta: data.meta ? { ...(lastMessage.meta || {}), ...data.meta } : lastMessage.meta,
             };
           }
           return {
@@ -1586,15 +1600,27 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
         });
         ws.close();
       } else if (data.type === "error") {
-        setChatState((prev) => ({
-          ...prev,
-          isLoading: false,
-          currentStage: null,
-          messages: [
-            ...prev.messages,
-            { role: "assistant", content: `Error: ${data.message}` },
-          ],
-        }));
+        setChatState((prev) => {
+          const messages = [...prev.messages];
+          const lastMessage = messages[messages.length - 1];
+          if (lastMessage?.role === "assistant" && lastMessage?.isStreaming) {
+            messages[messages.length - 1] = {
+              ...lastMessage,
+              content: `Error: ${data.message}`,
+              isStreaming: false,
+            };
+            return { ...prev, messages, isLoading: false, currentStage: null };
+          }
+          return {
+            ...prev,
+            isLoading: false,
+            currentStage: null,
+            messages: [
+              ...prev.messages,
+              { role: "assistant", content: `Error: ${data.message}` },
+            ],
+          };
+        });
         ws.close();
       }
     };
@@ -1609,6 +1635,160 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
           { role: "assistant", content: "Connection error. Please try again." },
         ],
       }));
+    };
+
+    ws.onclose = () => {
+      if (chatWs.current === ws) {
+        chatWs.current = null;
+      }
+      setChatState((prev) => ({
+        ...prev,
+        isLoading: false,
+        currentStage: null,
+      }));
+    };
+  };
+
+  const verifyChatMessage = (targetAssistantIndex: number) => {
+    if (chatState.isLoading) return;
+
+    const target = chatState.messages[targetAssistantIndex];
+    if (!target || target.role !== "assistant") return;
+    if (target.isStreaming) return;
+    if (target.meta?.verified) return;
+
+    // Find the nearest preceding user message to use as the question.
+    let question = "";
+    let questionIndex = -1;
+    for (let i = targetAssistantIndex; i >= 0; i--) {
+      if (chatState.messages[i]?.role === "user") {
+        question = chatState.messages[i].content;
+        questionIndex = i;
+        break;
+      }
+    }
+    if (!question.trim()) return;
+
+    // History should include conversation up to (but excluding) the target question
+    // to avoid duplicating the question and to avoid biasing with the target answer.
+    const history = chatState.messages.slice(0, Math.max(0, questionIndex)).map((msg) => ({
+      role: msg.role,
+      content: msg.content,
+    }));
+
+    // Add placeholder assistant message
+    setChatState((prev) => ({
+      ...prev,
+      isLoading: true,
+      currentStage: "council",
+      messages: [
+        ...prev.messages,
+        { role: "assistant", content: "", isStreaming: true, meta: { status: "pending" } },
+      ],
+    }));
+
+    // Close existing connection if any
+    if (chatWs.current) {
+      chatWs.current.close();
+    }
+
+    const ws = new WebSocket(wsUrl("/api/v1/chat"));
+    chatWs.current = ws;
+
+    ws.onopen = () => {
+      ws.send(
+        JSON.stringify({
+          action: "verify",
+          target_question: question,
+          target_answer: target.content,
+          session_id: sessionIdRef.current,
+          history,
+          kb_name: chatState.selectedKb,
+          enable_rag: chatState.enableRag,
+          rag_filters: chatState.enableRag ? chatState.ragFilters : null,
+          enable_web_search: chatState.enableWebSearch,
+        })
+      );
+    };
+
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+
+      if (data.type === "session") {
+        sessionIdRef.current = data.session_id;
+        setChatState((prev) => ({
+          ...prev,
+          sessionId: data.session_id,
+        }));
+      } else if (data.type === "status") {
+        setChatState((prev) => ({
+          ...prev,
+          currentStage: data.stage || data.message,
+        }));
+      } else if (data.type === "sources") {
+        setChatState((prev) => {
+          const messages = [...prev.messages];
+          const lastMessage = messages[messages.length - 1];
+          if (lastMessage?.role === "assistant") {
+            messages[messages.length - 1] = {
+              ...lastMessage,
+              sources: { rag: data.rag, web: data.web },
+            };
+          }
+          return { ...prev, messages };
+        });
+      } else if (data.type === "result") {
+        setChatState((prev) => {
+          const messages = [...prev.messages];
+          const lastMessage = messages[messages.length - 1];
+          if (lastMessage?.role === "assistant") {
+            messages[messages.length - 1] = {
+              ...lastMessage,
+              content: data.content,
+              isStreaming: false,
+              meta: data.meta ? { ...(lastMessage.meta || {}), ...data.meta } : lastMessage.meta,
+            };
+          }
+          return {
+            ...prev,
+            messages,
+            isLoading: false,
+            currentStage: null,
+          };
+        });
+        ws.close();
+      } else if (data.type === "error") {
+        setChatState((prev) => {
+          const messages = [...prev.messages];
+          const lastMessage = messages[messages.length - 1];
+          if (lastMessage?.role === "assistant") {
+            messages[messages.length - 1] = {
+              ...lastMessage,
+              content: `Error: ${data.message}`,
+              isStreaming: false,
+            };
+            return { ...prev, messages, isLoading: false, currentStage: null };
+          }
+          return { ...prev, isLoading: false, currentStage: null };
+        });
+        ws.close();
+      }
+    };
+
+    ws.onerror = () => {
+      setChatState((prev) => {
+        const messages = [...prev.messages];
+        const lastMessage = messages[messages.length - 1];
+        if (lastMessage?.role === "assistant" && lastMessage.isStreaming) {
+          messages[messages.length - 1] = {
+            ...lastMessage,
+            content: "Connection error. Please try again.",
+            isStreaming: false,
+          };
+          return { ...prev, messages, isLoading: false, currentStage: null };
+        }
+        return { ...prev, isLoading: false, currentStage: null };
+      });
     };
 
     ws.onclose = () => {
@@ -1666,6 +1846,7 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
         role: msg.role,
         content: msg.content,
         sources: msg.sources,
+        meta: msg.meta,
         isStreaming: false,
       }));
 
@@ -1716,6 +1897,7 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
         chatState,
         setChatState,
         sendChatMessage,
+        verifyChatMessage,
         clearChatHistory,
         loadChatSession,
         newChatSession,

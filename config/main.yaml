@@ -1,6 +1,28 @@
 system:
   language: en
 
+# Council Mode Configuration (On-demand verification)
+# - Used by chat "Verify (Council)" and optional question validation modes
+council:
+  enabled: true
+  models:
+    chairman: gpt-5.1
+    reviewer: gemini-2.5-flash-lite
+    members:
+      - gemini-3-pro-preview
+      - claude-sonnet-4-5-20250929
+  budgets:
+    max_rounds: 2
+    max_cross_exam_questions_per_round: 20
+    max_seconds_total: 45
+    member_max_tokens: 1200
+    reviewer_max_tokens: 1200
+    cross_exam_max_tokens: 800
+    chairman_max_tokens: 1600
+    member_temperature: 0.2
+    reviewer_temperature: 0.2
+    chairman_temperature: 0.2
+
 # Rate Limiting Configuration
 rate_limiting:
   enabled: true

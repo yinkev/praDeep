@@ -218,6 +218,7 @@ async def complete(
             api_key=api_key,
             base_url=base_url,
             binding=binding or "openai",
+            messages=messages,
             **kwargs,
         )
 

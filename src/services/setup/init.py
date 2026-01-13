@@ -82,6 +82,7 @@ def init_user_directories(project_root: Path | None = None) -> None:
         "guide",  # Guided learning outputs
         "notebook",  # Notebook data
         "co-writer",  # Co-writer outputs
+        "council",  # Council mode transcripts
         "logs",  # User logs
         "run_code_workspace",  # Code execution workspace
     ]
@@ -95,6 +96,11 @@ def init_user_directories(project_root: Path | None = None) -> None:
     research_subdirs = [
         "cache",  # Research cache
         "reports",  # Research reports
+    ]
+
+    council_subdirs = [
+        "chat_verify",  # Verify (Council) transcripts from chat
+        "question_validate",  # Council-backed question validation transcripts
     ]
 
     # Check if user directory exists and is empty
@@ -144,6 +150,13 @@ def init_user_directories(project_root: Path | None = None) -> None:
             subdir_path.mkdir(parents=True, exist_ok=True)
             logger.success(f"Created: research/{subdir_name}/")
 
+        # Create council subdirectories
+        council_dir = user_data_dir / "council"
+        for subdir_name in council_subdirs:
+            subdir_path = council_dir / subdir_name
+            subdir_path.mkdir(parents=True, exist_ok=True)
+            logger.success(f"Created: council/{subdir_name}/")
+
         # Create user_history.json if it doesn't exist
         user_history_file = user_data_dir / "user_history.json"
         if not user_history_file.exists():
@@ -185,6 +198,12 @@ def init_user_directories(project_root: Path | None = None) -> None:
         research_dir = user_data_dir / "research"
         for subdir_name in research_subdirs:
             subdir_path = research_dir / subdir_name
+            subdir_path.mkdir(parents=True, exist_ok=True)
+
+        # Ensure council subdirectories exist
+        council_dir = user_data_dir / "council"
+        for subdir_name in council_subdirs:
+            subdir_path = council_dir / subdir_name
             subdir_path.mkdir(parents=True, exist_ok=True)
 
         # Ensure user_history.json exists

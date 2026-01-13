@@ -223,7 +223,8 @@ export default function QuestionPage() {
         questionState.difficulty,
         questionState.type,
         Math.max(1, questionState.count),
-        questionState.selectedKb
+        questionState.selectedKb,
+        questionState.enableCouncilValidation
       )
     } else {
       startMimicQuestionGen(
@@ -559,6 +560,42 @@ export default function QuestionPage() {
                         className="w-full accent-blue-600 h-2 bg-zinc-200/70 dark:bg-white/10 rounded-lg appearance-none cursor-pointer"
                       />
                     </div>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setQuestionState(prev => ({
+                          ...prev,
+                          enableCouncilValidation: !prev.enableCouncilValidation,
+                        }))
+                      }
+                      aria-pressed={questionState.enableCouncilValidation}
+                      className={cn(
+                        'flex w-full items-start justify-between gap-4 rounded-2xl border p-4 text-left transition-colors shadow-xs backdrop-blur-md',
+                        questionState.enableCouncilValidation
+                          ? 'border-emerald-300/70 bg-emerald-50/70 dark:border-emerald-400/25 dark:bg-emerald-500/10'
+                          : 'border-white/55 bg-white/55 hover:bg-white/70 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10'
+                      )}
+                    >
+                      <div className="min-w-0">
+                        <p className="font-semibold text-zinc-900 dark:text-zinc-50">
+                          High accuracy validation (Council)
+                        </p>
+                        <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                          Uses multiple models to cross-check and synthesize the validation decision (slower).
+                        </p>
+                      </div>
+                      <span
+                        className={cn(
+                          'shrink-0 rounded-full px-3 py-1 text-xs font-semibold',
+                          questionState.enableCouncilValidation
+                            ? 'bg-emerald-600 text-white'
+                            : 'bg-zinc-200 text-zinc-700 dark:bg-white/10 dark:text-zinc-200'
+                        )}
+                      >
+                        {questionState.enableCouncilValidation ? 'On' : 'Off'}
+                      </span>
+                    </button>
                   </div>
                 )}
 

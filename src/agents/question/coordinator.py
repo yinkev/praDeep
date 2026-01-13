@@ -93,6 +93,7 @@ class AgentCoordinator:
         max_rounds: int = 10,
         kb_name: str | None = None,
         output_dir: str | None = None,
+        use_council_validation: bool = False,
         *,
         container: Container | None = None,
         metrics_service: Any | None = None,
@@ -151,6 +152,7 @@ class AgentCoordinator:
             base_url=base_url,
             kb_name=kb_name,
             token_stats_callback=self.update_token_stats,
+            use_council_validation=use_council_validation,
             container=self.container,
             metrics_service=self.metrics_service,
         )

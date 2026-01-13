@@ -188,6 +188,8 @@ class SessionManager:
         role: str,
         content: str,
         sources: dict[str, Any] | None = None,
+        meta: dict[str, Any] | None = None,
+        exclude_from_history: bool = False,
     ) -> dict[str, Any] | None:
         """
         Add a single message to a session.
@@ -197,6 +199,8 @@ class SessionManager:
             role: Message role ('user' or 'assistant')
             content: Message content
             sources: Optional sources dict (for assistant messages)
+            meta: Optional metadata to attach to the message (stored but not rendered by default)
+            exclude_from_history: If True, omit this message from future LLM history
 
         Returns:
             Updated session or None if not found
@@ -212,6 +216,10 @@ class SessionManager:
         }
         if sources:
             message["sources"] = sources
+        if meta:
+            message["meta"] = meta
+        if exclude_from_history:
+            message["exclude_from_history"] = True
 
         messages = session.get("messages", [])
         messages.append(message)

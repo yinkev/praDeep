@@ -16,13 +16,18 @@ function detectInstalled(): boolean {
   return Boolean(isStandalone || isIOSStandalone);
 }
 
-export function usePWA() {
+export interface UsePWAOptions {
+  registerServiceWorker?: boolean;
+}
+
+export function usePWA(options: UsePWAOptions = {}) {
   const [isInstalled, setIsInstalled] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [swStatus, setSwStatus] = useState<SWStatus>("idle");
   const [updateAvailable, setUpdateAvailable] = useState(false);
 
+  const shouldRegisterServiceWorker = options.registerServiceWorker ?? true;
   const canUsePwaApis = useMemo(() => typeof window !== "undefined", []);
 
   useEffect(() => {
@@ -65,6 +70,7 @@ export function usePWA() {
 
   useEffect(() => {
     if (!canUsePwaApis) return;
+    if (!shouldRegisterServiceWorker) return;
     if (!("serviceWorker" in navigator)) return;
 
     let isCancelled = false;
@@ -110,8 +116,7 @@ export function usePWA() {
       isCancelled = true;
       navigator.serviceWorker.removeEventListener("controllerchange", onControllerChange);
     };
-  }, [canUsePwaApis]);
+  }, [canUsePwaApis, shouldRegisterServiceWorker]);
 
   return { isInstalled, isOnline, installPrompt, swStatus, updateAvailable };
 }
-

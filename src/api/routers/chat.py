@@ -37,6 +37,23 @@ memory_manager = get_user_memory_manager()
 # =============================================================================
 
 
+@router.get("/chat/council/{council_id}")
+async def get_council_log(council_id: str):
+    """
+    Fetch a stored Council log by id.
+
+    Council logs are stored separately (data/user/council/<task>/<council_id>.json)
+    to avoid bloating chat_sessions.json.
+    """
+    from src.services.council import CouncilLogStore
+
+    store = CouncilLogStore()
+    run = store.load(council_id, task="chat_verify")
+    if not run:
+        raise HTTPException(status_code=404, detail="Council log not found")
+    return run.model_dump()
+
+
 @router.get("/chat/sessions")
 async def list_sessions(limit: int = 20):
     """
@@ -96,12 +113,16 @@ async def websocket_chat(websocket: WebSocket):
 
     Message format:
     {
+        "action": "chat" | "verify", # Optional. Defaults to "chat".
         "message": str,              # User message
         "session_id": str | null,    # Session ID (null for new session)
         "history": [...] | null,     # Optional: explicit history override
         "kb_name": str,              # Knowledge base name (for RAG)
         "enable_rag": bool,          # Enable RAG retrieval
-        "enable_web_search": bool    # Enable Web Search
+        "enable_web_search": bool,   # Enable Web Search
+        # Verify action only:
+        "target_question": str,      # Question to verify
+        "target_answer": str | null  # Existing assistant answer (optional baseline)
     }
 
     Response format:
@@ -121,12 +142,17 @@ async def websocket_chat(websocket: WebSocket):
         while True:
             # Receive message
             data = await websocket.receive_json()
-            message = data.get("message", "").strip()
+            action = (data.get("action") or "chat").strip().lower()
+            if action == "verify":
+                message = (data.get("target_question") or "").strip()
+            else:
+                message = (data.get("message") or "").strip()
             session_id = data.get("session_id")
             explicit_history = data.get("history")  # Optional override
             kb_name = data.get("kb_name", "")
             enable_rag = data.get("enable_rag", False)
             enable_web_search = data.get("enable_web_search", False)
+            target_answer = data.get("target_answer") if action == "verify" else None
 
             if not message:
                 await websocket.send_json({"type": "error", "message": "Message is required"})
@@ -134,7 +160,7 @@ async def websocket_chat(websocket: WebSocket):
 
             logger.info(
                 f"Chat request: session={session_id}, "
-                f"message={message[:50]}..., rag={enable_rag}, web={enable_web_search}"
+                f"action={action}, message={message[:50]}..., rag={enable_rag}, web={enable_web_search}"
             )
 
             try:
@@ -177,17 +203,22 @@ async def websocket_chat(websocket: WebSocket):
                     history = explicit_history
                 else:
                     # Get history from session messages
-                    history = [
-                        {"role": msg["role"], "content": msg["content"]}
-                        for msg in session.get("messages", [])
-                    ]
+                    history = []
+                    for msg in session.get("messages", []):
+                        if msg.get("exclude_from_history"):
+                            continue
+                        role = msg.get("role")
+                        if role not in ("user", "assistant"):
+                            continue
+                        history.append({"role": role, "content": msg.get("content", "")})
 
-                # Add user message to session
-                session_manager.add_message(
-                    session_id=session_id,
-                    role="user",
-                    content=message,
-                )
+                # Add user message to session (chat action only)
+                if action != "verify":
+                    session_manager.add_message(
+                        session_id=session_id,
+                        role="user",
+                        content=message,
+                    )
 
                 # Initialize ChatAgent
                 agent = ChatAgent(language=language, config=config)
@@ -214,56 +245,153 @@ async def websocket_chat(websocket: WebSocket):
                 await websocket.send_json(
                     {
                         "type": "status",
-                        "stage": "generating",
-                        "message": "Generating response...",
+                        "stage": "generating" if action != "verify" else "council",
+                        "message": "Generating response..."
+                        if action != "verify"
+                        else "Starting council verification...",
                     }
                 )
 
-                # Process with streaming
                 full_response = ""
                 sources = {"rag": [], "web": []}
 
-                stream_generator = await agent.process(
-                    message=message,
-                    history=history,
-                    kb_name=kb_name,
-                    enable_rag=enable_rag,
-                    enable_web_search=enable_web_search,
-                    stream=True,
-                )
+                if action == "verify":
+                    # Council verification path (non-streaming for MVP)
+                    await websocket.send_json(
+                        {
+                            "type": "status",
+                            "stage": "council_draft",
+                            "message": "Council drafting...",
+                        }
+                    )
 
-                async for chunk_data in stream_generator:
-                    if chunk_data["type"] == "chunk":
-                        await websocket.send_json(
-                            {
-                                "type": "stream",
-                                "content": chunk_data["content"],
-                            }
-                        )
-                        full_response += chunk_data["content"]
-                    elif chunk_data["type"] == "complete":
-                        full_response = chunk_data["response"]
-                        sources = chunk_data.get("sources", {"rag": [], "web": []})
+                    # Reuse ChatAgent retrieval + message building to preserve context and history
+                    truncated_history = agent.truncate_history(history)
+                    context, sources = await agent.retrieve_context(
+                        message=message,
+                        kb_name=kb_name,
+                        enable_rag=enable_rag,
+                        enable_web_search=enable_web_search,
+                    )
+                    chat_messages = agent.build_messages(
+                        message=message, history=truncated_history, context=context
+                    )
 
-                # Send sources if any
-                if sources.get("rag") or sources.get("web"):
-                    await websocket.send_json({"type": "sources", **sources})
+                    await websocket.send_json(
+                        {
+                            "type": "status",
+                            "stage": "council_review",
+                            "message": "Council reviewing...",
+                        }
+                    )
 
-                # Send final result
-                await websocket.send_json(
-                    {
-                        "type": "result",
-                        "content": full_response,
-                    }
-                )
+                    from src.services.council import CouncilLogStore, CouncilOrchestrator, load_council_config
 
-                # Save assistant message to session
-                session_manager.add_message(
-                    session_id=session_id,
-                    role="assistant",
-                    content=full_response,
-                    sources=sources if (sources.get("rag") or sources.get("web")) else None,
-                )
+                    council_cfg = load_council_config(project_root)
+                    orchestrator = CouncilOrchestrator(council_cfg)
+                    run = await orchestrator.run_chat_verify(
+                        question=message,
+                        chat_messages=chat_messages,
+                        context=context,
+                        sources=sources,
+                        kb_name=kb_name,
+                        enable_rag=enable_rag,
+                        enable_web_search=enable_web_search,
+                        language=language,
+                        existing_answer=target_answer,
+                    )
+
+                    # Persist log and attach reference to the assistant message
+                    store = CouncilLogStore()
+                    store.save(run)
+
+                    await websocket.send_json(
+                        {
+                            "type": "status",
+                            "stage": "council_synthesis",
+                            "message": "Chairman synthesizing...",
+                        }
+                    )
+
+                    full_response = (run.final.content if run.final else "").strip() or "Verification failed."
+
+                    # Send sources if any
+                    if sources.get("rag") or sources.get("web"):
+                        await websocket.send_json({"type": "sources", **sources})
+
+                    # Send final result with metadata (frontend may render council details)
+                    await websocket.send_json(
+                        {
+                            "type": "result",
+                            "content": full_response,
+                            "meta": {
+                                "verified": True,
+                                "council_id": run.council_id,
+                                "council_task": run.task,
+                                "status": run.status,
+                            },
+                        }
+                    )
+
+                    # Save assistant message to session (excluded from future LLM history by default)
+                    session_manager.add_message(
+                        session_id=session_id,
+                        role="assistant",
+                        content=full_response,
+                        sources=sources if (sources.get("rag") or sources.get("web")) else None,
+                        meta={
+                            "verified": True,
+                            "council_id": run.council_id,
+                            "council_task": run.task,
+                            "status": run.status,
+                        },
+                        exclude_from_history=True,
+                    )
+
+                else:
+                    # Standard chat path (streaming)
+                    stream_generator = await agent.process(
+                        message=message,
+                        history=history,
+                        kb_name=kb_name,
+                        enable_rag=enable_rag,
+                        enable_web_search=enable_web_search,
+                        stream=True,
+                    )
+
+                    async for chunk_data in stream_generator:
+                        if chunk_data["type"] == "chunk":
+                            await websocket.send_json(
+                                {
+                                    "type": "stream",
+                                    "content": chunk_data["content"],
+                                }
+                            )
+                            full_response += chunk_data["content"]
+                        elif chunk_data["type"] == "complete":
+                            full_response = chunk_data["response"]
+                            sources = chunk_data.get("sources", {"rag": [], "web": []})
+
+                if action != "verify":
+                    # Send sources if any
+                    if sources.get("rag") or sources.get("web"):
+                        await websocket.send_json({"type": "sources", **sources})
+
+                    # Send final result
+                    await websocket.send_json(
+                        {
+                            "type": "result",
+                            "content": full_response,
+                        }
+                    )
+
+                    # Save assistant message to session
+                    session_manager.add_message(
+                        session_id=session_id,
+                        role="assistant",
+                        content=full_response,
+                        sources=sources if (sources.get("rag") or sources.get("web")) else None,
+                    )
 
                 logger.info(f"Chat completed: session={session_id}, {len(full_response)} chars")
 

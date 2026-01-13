@@ -9,6 +9,7 @@ from collections.abc import Callable
 import json
 import os
 from pathlib import Path
+import re
 import sys
 from typing import Any
 
@@ -38,6 +39,7 @@ class QuestionValidationWorkflow:
         kb_name: str | None = None,
         token_stats_callback: Callable | None = None,
         language: str = "en",
+        use_council_validation: bool = False,
         *,
         container: Container | None = None,
         prompt_manager: Any | None = None,
@@ -71,6 +73,7 @@ class QuestionValidationWorkflow:
         self.kb_name = kb_name
         self.token_stats_callback = token_stats_callback
         self.language = language
+        self.use_council_validation = use_council_validation
         self.container = container or get_container()
         self.prompt_manager = prompt_manager or self.container.prompt_manager()
         self.metrics_service = metrics_service or self.container.metrics_service()
@@ -89,7 +92,11 @@ class QuestionValidationWorkflow:
         self._config = load_config_with_main("question_config.yaml", project_root)
 
     async def validate(
-        self, question: dict[str, Any], reference_question: str | None = None
+        self,
+        question: dict[str, Any],
+        reference_question: str | None = None,
+        *,
+        use_council_validation: bool | None = None,
     ) -> dict[str, Any]:
         """
         Validate question - fixed pipeline: retrieve → validate → return
@@ -124,9 +131,19 @@ class QuestionValidationWorkflow:
 
         # Step 2: Validate question
         logger.info("Step 2/2: Validating question")
-        validation_result = await self._validate_question(
-            question, retrieved_knowledge, reference_question
+        use_council = (
+            self.use_council_validation
+            if use_council_validation is None
+            else bool(use_council_validation)
         )
+        if use_council:
+            validation_result = await self._validate_question_with_council(
+                question, retrieved_knowledge, reference_question
+            )
+        else:
+            validation_result = await self._validate_question(
+                question, retrieved_knowledge, reference_question
+            )
         logger.info(f"Validation decision: {validation_result['decision']}")
 
         # Add retrieved knowledge to result
@@ -135,6 +152,102 @@ class QuestionValidationWorkflow:
         logger.success("Validation completed")
 
         return validation_result
+
+    async def _validate_question_with_council(
+        self,
+        question: dict[str, Any],
+        retrieved_knowledge: list[dict[str, Any]],
+        reference_question: str = None,
+    ) -> dict[str, Any]:
+        """Validate question via Council Mode and return the final decision JSON."""
+        knowledge_str = self._format_knowledge(retrieved_knowledge)
+        question_str = json.dumps(question, ensure_ascii=False, indent=2)
+
+        reference_section = ""
+        innovation_section = ""
+        if reference_question:
+            reference_section = f"""Reference question (for comparison):
+{reference_question}
+"""
+            innovation_section = self._prompts.get("innovation_section", "")
+
+        prompt_template = self._prompts.get("validate", "")
+        prompt = prompt_template.format(
+            question=question_str,
+            reference_section=reference_section,
+            innovation_section=innovation_section,
+            validation_knowledge=knowledge_str,
+        )
+
+        try:
+            from src.services.council import CouncilLogStore, CouncilOrchestrator, load_council_config
+
+            council_cfg = load_council_config(project_root)
+            orchestrator = CouncilOrchestrator(council_cfg, container=self.container)
+            run = await orchestrator.run_question_validate(
+                validation_prompt=prompt,
+                question_text=question.get("question", "") or question_str,
+                validation_knowledge=knowledge_str,
+                kb_name=self.kb_name,
+                language=self.language,
+            )
+
+            # Persist log for UI/debugging
+            store = CouncilLogStore()
+            store.save(run)
+
+            # Approximate token stats for UI (best-effort)
+            if self.token_stats_callback:
+                for council_round in run.rounds:
+                    for call in council_round.member_answers + council_round.cross_exam_answers:
+                        if call.estimated_prompt_tokens is None or call.estimated_completion_tokens is None:
+                            continue
+                        self.token_stats_callback(
+                            input_tokens=call.estimated_prompt_tokens,
+                            output_tokens=call.estimated_completion_tokens,
+                            model=call.model,
+                        )
+                    if council_round.review and council_round.review.estimated_prompt_tokens is not None and council_round.review.estimated_completion_tokens is not None:
+                        self.token_stats_callback(
+                            input_tokens=council_round.review.estimated_prompt_tokens,
+                            output_tokens=council_round.review.estimated_completion_tokens,
+                            model=council_round.review.model,
+                        )
+                if run.final and run.final.estimated_prompt_tokens is not None and run.final.estimated_completion_tokens is not None:
+                    self.token_stats_callback(
+                        input_tokens=run.final.estimated_prompt_tokens,
+                        output_tokens=run.final.estimated_completion_tokens,
+                        model=run.final.model,
+                    )
+
+            final_text = (run.final.content if run.final else "").strip()
+            result = _extract_json_object(final_text) or {}
+
+            issues = result.get("issues", [])
+            if not isinstance(issues, list):
+                issues = [issues] if isinstance(issues, dict) else []
+
+            suggestions = result.get("suggestions", [])
+            if not isinstance(suggestions, list):
+                suggestions = [suggestions] if isinstance(suggestions, dict) else []
+
+            return {
+                "decision": result.get("decision", "request_regeneration"),
+                "issues": issues,
+                "suggestions": suggestions,
+                "reasoning": result.get("reasoning", ""),
+                "council_id": run.council_id,
+                "council_status": run.status,
+            }
+
+        except Exception as e:
+            logger.warning(f"Council validation failed: {e!s}")
+            return {
+                "decision": "request_regeneration",
+                "issues": [f"Council validation error: {e!s}"],
+                "suggestions": ["Please regenerate the question"],
+                "reasoning": "An error occurred during council validation",
+            }
 
     async def _generate_retrieval_query(self, question: dict[str, Any]) -> str:
         """Use LLM to generate retrieval query"""
@@ -370,6 +483,29 @@ Output the retrieval query directly, no additional content.
         return (
             "\n".join(knowledge_parts) if knowledge_parts else "No validation knowledge retrieved"
         )
+
+
+def _extract_json_object(text: str) -> dict[str, Any] | None:
+    """Best-effort parse of a JSON object from model output (supports fenced ```json blocks)."""
+    if not text:
+        return None
+    fenced = re.search(r"```json\\s*(\\{.*?\\})\\s*```", text, flags=re.DOTALL | re.IGNORECASE)
+    if fenced:
+        try:
+            return json.loads(fenced.group(1))
+        except Exception:
+            return None
+    start = text.find("{")
+    end = text.rfind("}")
+    if start != -1 and end != -1 and end > start:
+        try:
+            return json.loads(text[start : end + 1])
+        except Exception:
+            return None
+    try:
+        return json.loads(text)
+    except Exception:
+        return None
 
     async def analyze_extension(
         self, question: dict[str, Any], shared_context: str
