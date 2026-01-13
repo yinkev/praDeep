@@ -326,9 +326,20 @@ Format as JSON:
                 user_id=user_id,
             )
 
-            # Store strengths and improvement areas
-            patterns["strength_areas"] = result.get("strengths", [])
-            patterns["improvement_areas"] = result.get("improvement_areas", [])
+            # Store strengths and improvement areas in memory system
+            strengths = result.get("strengths", [])
+            improvement_areas = result.get("improvement_areas", [])
+
+            self.memory_manager.update_preference(
+                "custom.strength_areas",
+                strengths,
+                user_id=user_id,
+            )
+            self.memory_manager.update_preference(
+                "custom.improvement_areas",
+                improvement_areas,
+                user_id=user_id,
+            )
 
             return {
                 "user_id": user_id,
