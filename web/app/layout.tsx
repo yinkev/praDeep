@@ -7,6 +7,7 @@ import ThemeScript from '@/components/ThemeScript'
 import { ToastProvider } from '@/components/ui/Toast'
 import MotionProvider from '@/components/MotionProvider'
 import { APP_DESCRIPTION, APP_NAME, APP_TITLE } from '@/lib/app-meta'
+import { PWAProvider } from './PWAProvider'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -74,6 +75,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       >
         <MotionProvider>
           <ToastProvider>
+            <PWAProvider />
             <GlobalProvider>
               <div className="flex h-dvh w-full overflow-hidden">
                 <Sidebar />
