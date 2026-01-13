@@ -192,7 +192,10 @@ export default function ConfidenceBadge({
       {!compact && (
         <div className="flex-shrink-0 w-12 h-1.5 bg-white/30 dark:bg-black/20 rounded-full overflow-hidden">
           <motion.div
-            className={cn('h-full rounded-full', styles.text.replace('text-', 'bg-'))}
+            className={cn(
+              'h-full rounded-full',
+              styles.text.replace(/\bdark:text-/g, 'dark:bg-').replace(/\btext-/g, 'bg-')
+            )}
             initial={{ width: 0 }}
             animate={{ width: `${percentage}%` }}
             transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
@@ -228,7 +231,10 @@ export function ConfidenceMeter({ confidence, label, className }: ConfidenceMete
       )}
       <div className="relative w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
         <motion.div
-          className={cn('h-full rounded-full', styles.text.replace('text-', 'bg-'))}
+          className={cn(
+            'h-full rounded-full',
+            styles.text.replace(/\bdark:text-/g, 'dark:bg-').replace(/\btext-/g, 'bg-')
+          )}
           initial={{ width: 0 }}
           animate={{ width: `${percentage}%` }}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
