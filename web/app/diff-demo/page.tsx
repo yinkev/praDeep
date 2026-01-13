@@ -1,0 +1,245 @@
+'use client'
+
+import { useState } from 'react'
+import { DiffViewer, Deletion, Addition, CodeDiff } from '@/components/ui/DiffViewer'
+import {
+  AIContentHighlight,
+  AIInlineHighlight,
+  AIModification,
+} from '@/components/ui/AIContentHighlight'
+import { AcceptRejectControls, InlineAcceptReject } from '@/components/AcceptRejectControls'
+
+export default function DiffDemoPage() {
+  const [acceptedItems, setAcceptedItems] = useState<Set<string>>(new Set())
+  const [rejectedItems, setRejectedItems] = useState<Set<string>>(new Set())
+
+  const handleAccept = (id: string) => {
+    setAcceptedItems(prev => new Set(prev).add(id))
+    setRejectedItems(prev => {
+      const next = new Set(prev)
+      next.delete(id)
+      return next
+    })
+  }
+
+  const handleReject = (id: string) => {
+    setRejectedItems(prev => new Set(prev).add(id))
+    setAcceptedItems(prev => {
+      const next = new Set(prev)
+      next.delete(id)
+      return next
+    })
+  }
+
+  const getItemState = (id: string) => {
+    if (acceptedItems.has(id)) return 'accepted'
+    if (rejectedItems.has(id)) return 'rejected'
+    return 'pending'
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 p-8">
+      <div className="max-w-5xl mx-auto space-y-12">
+        {/* Header */}
+        <div className="text-center space-y-3">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+            Visual Diff for AI Outputs
+          </h1>
+          <p className="text-slate-600 dark:text-slate-400 text-lg">
+            Notion-style transparency for AI-generated content
+          </p>
+        </div>
+
+        {/* Inline Diff Example */}
+        <section className="space-y-4">
+          <h2 className="text-2xl font-semibold text-slate-800 dark:text-slate-200">Inline Diff</h2>
+          <DiffViewer mode="inline">
+            <p>
+              The <Deletion>quick brown fox jumps over the lazy dog</Deletion>{' '}
+              <Addition>agile crimson fox leaps over the sleepy canine</Addition>.
+            </p>
+            <p className="mt-2">
+              This is a demonstration of <Addition>how AI can enhance your writing</Addition> with{' '}
+              <Deletion>simple text changes</Deletion> <Addition>intelligent suggestions</Addition>.
+            </p>
+          </DiffViewer>
+
+          <div className="flex justify-end">
+            <AcceptRejectControls
+              onAccept={() => handleAccept('inline-1')}
+              onReject={() => handleReject('inline-1')}
+              disabled={getItemState('inline-1') !== 'pending'}
+            />
+          </div>
+
+          {getItemState('inline-1') !== 'pending' && (
+            <div
+              className={`text-center p-4 rounded-lg ${
+                getItemState('inline-1') === 'accepted'
+                  ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300'
+                  : 'bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-300'
+              }`}
+            >
+              Changes {getItemState('inline-1')}!
+            </div>
+          )}
+        </section>
+
+        {/* Split Diff Example */}
+        <section className="space-y-4">
+          <h2 className="text-2xl font-semibold text-slate-800 dark:text-slate-200">
+            Split View Diff
+          </h2>
+          <CodeDiff
+            before={['function calculate(x, y) {', '  return x + y;', '}']}
+            after={[
+              'function calculateSum(x: number, y: number): number {',
+              '  const result = x + y;',
+              '  return result;',
+              '}',
+            ]}
+            showLineNumbers={true}
+          />
+
+          <div className="flex justify-end">
+            <AcceptRejectControls
+              onAccept={() => handleAccept('split-1')}
+              onReject={() => handleReject('split-1')}
+              onRevert={() => {
+                setAcceptedItems(prev => {
+                  const next = new Set(prev)
+                  next.delete('split-1')
+                  return next
+                })
+                setRejectedItems(prev => {
+                  const next = new Set(prev)
+                  next.delete('split-1')
+                  return next
+                })
+              }}
+              disabled={getItemState('split-1') !== 'pending'}
+              layout="horizontal"
+            />
+          </div>
+        </section>
+
+        {/* AI Content Highlight Examples */}
+        <section className="space-y-4">
+          <h2 className="text-2xl font-semibold text-slate-800 dark:text-slate-200">
+            AI Content Highlighting
+          </h2>
+
+          <div className="space-y-4">
+            <AIContentHighlight variant="default">
+              <h3 className="font-semibold mb-2">Default Highlight</h3>
+              <p>
+                This content was generated by AI. The blue highlight and badge indicate that this is
+                machine-generated content, providing transparency to the user.
+              </p>
+            </AIContentHighlight>
+
+            <AIContentHighlight variant="subtle" showBadge={false}>
+              <h3 className="font-semibold mb-2">Subtle Variant</h3>
+              <p>
+                This uses a more subtle styling with a left border accent. Great for less prominent
+                AI suggestions.
+              </p>
+            </AIContentHighlight>
+
+            <AIContentHighlight variant="prominent">
+              <h3 className="font-semibold mb-2">Prominent Variant</h3>
+              <p>
+                This variant uses stronger colors and borders for important AI-generated content
+                that needs attention.
+              </p>
+            </AIContentHighlight>
+          </div>
+        </section>
+
+        {/* Inline AI Highlight */}
+        <section className="space-y-4">
+          <h2 className="text-2xl font-semibold text-slate-800 dark:text-slate-200">
+            Inline AI Highlights
+          </h2>
+
+          <div className="p-6 bg-white dark:bg-slate-800 rounded-xl shadow-sm">
+            <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
+              You can highlight <AIInlineHighlight>specific AI-generated phrases</AIInlineHighlight>{' '}
+              within regular text to show exactly{' '}
+              <AIInlineHighlight>which parts were modified</AIInlineHighlight> by the AI assistant.
+            </p>
+
+            <div className="flex justify-end mt-4">
+              <InlineAcceptReject
+                onAccept={() => handleAccept('inline-2')}
+                onReject={() => handleReject('inline-2')}
+                disabled={getItemState('inline-2') !== 'pending'}
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* AI Modification with Metadata */}
+        <section className="space-y-4">
+          <h2 className="text-2xl font-semibold text-slate-800 dark:text-slate-200">
+            AI Modifications with Metadata
+          </h2>
+
+          <AIModification timestamp={new Date()} modelName="Claude Sonnet 4.5">
+            <h3 className="font-semibold mb-2">Enhanced Product Description</h3>
+            <p>
+              Our premium wireless headphones deliver crystal-clear audio with active noise
+              cancellation. Experience up to 30 hours of playtime on a single charge, and enjoy
+              seamless connectivity with Bluetooth 5.0 technology. Perfect for music lovers and
+              professionals alike.
+            </p>
+          </AIModification>
+
+          <div className="flex justify-end">
+            <AcceptRejectControls
+              onAccept={() => handleAccept('mod-1')}
+              onReject={() => handleReject('mod-1')}
+              showPreview={true}
+              disabled={getItemState('mod-1') !== 'pending'}
+            />
+          </div>
+        </section>
+
+        {/* Compact Controls */}
+        <section className="space-y-4">
+          <h2 className="text-2xl font-semibold text-slate-800 dark:text-slate-200">
+            Compact Controls
+          </h2>
+
+          <div className="flex items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-lg">
+            <p className="text-slate-700 dark:text-slate-300">
+              Quick suggestion: Improve readability
+            </p>
+            <AcceptRejectControls
+              onAccept={() => console.log('Accepted')}
+              onReject={() => console.log('Rejected')}
+              layout="compact"
+            />
+          </div>
+        </section>
+
+        {/* Design Notes */}
+        <section className="mt-16 p-6 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-xl border border-blue-200 dark:border-blue-800">
+          <h3 className="text-xl font-semibold text-blue-900 dark:text-blue-100 mb-3">
+            Design Implementation Notes
+          </h3>
+          <ul className="space-y-2 text-sm text-blue-800 dark:text-blue-200">
+            <li>✓ Liquid Glass aesthetic with backdrop blur and gradients</li>
+            <li>✓ Fast animations (120-200ms) with fluid easing [0.2, 0.8, 0.2, 1]</li>
+            <li>✓ Blue highlights for AI-generated content</li>
+            <li>✓ Gray deletions with line-through</li>
+            <li>✓ Accept/Reject controls with hover states</li>
+            <li>✓ Inline and block-level variants</li>
+            <li>✓ Metadata display (model name, timestamp)</li>
+            <li>✓ Dark mode support</li>
+          </ul>
+        </section>
+      </div>
+    </div>
+  )
+}
