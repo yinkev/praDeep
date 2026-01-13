@@ -21,6 +21,7 @@ from src.api.routers import (
     memory,
     metrics,
     notebook,
+    personalization,
     playground,
     question,
     # rate_limit,  # Temporarily disabled
@@ -87,6 +88,7 @@ app.include_router(chat.router, prefix="/api/v1", tags=["chat"])
 app.include_router(question.router, prefix="/api/v1/question", tags=["question"])
 app.include_router(research.router, prefix="/api/v1/research", tags=["research"])
 app.include_router(recommendation.router, prefix="/api/v1/recommendation", tags=["recommendation"])
+app.include_router(personalization.router, prefix="/api/v1/personalization", tags=["personalization"])
 app.include_router(knowledge.router, prefix="/api/v1/knowledge", tags=["knowledge"])
 app.include_router(dashboard.router, prefix="/api/v1/dashboard", tags=["dashboard"])
 app.include_router(co_writer.router, prefix="/api/v1/co_writer", tags=["co_writer"])
