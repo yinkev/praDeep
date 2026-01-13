@@ -23,6 +23,9 @@ import 'katex/dist/katex.min.css'
 import AddToNotebookModal from '@/components/AddToNotebookModal'
 import { Mermaid } from '@/components/Mermaid'
 import { ResearchDashboard } from '@/components/research/ResearchDashboard'
+import { SourcePanel } from '@/components/research/SourcePanel'
+import type { Citation } from '@/components/research/Citations'
+import { SplitPane } from '@/components/ui/SplitPane'
 import { Card, CardBody, CardFooter, CardHeader } from '@/components/ui/Card'
 import PageWrapper, { PageHeader } from '@/components/ui/PageWrapper'
 import Button from '@/components/ui/Button'
@@ -90,6 +93,34 @@ export default function ResearchPage() {
   // PDF export state
   const [isExportingPdf, setIsExportingPdf] = useState(false)
   const reportContentRef = useRef<HTMLDivElement>(null)
+
+  // Mock data for Citations and Related Questions (to be replaced with real data)
+  const [mockCitations] = useState<Citation[]>([
+    {
+      id: '1',
+      title: 'Introduction to Deep Research Methodologies',
+      url: 'https://example.com/research-methods',
+      source: 'Research Methods Journal',
+    },
+    {
+      id: '2',
+      title: 'AI-Powered Knowledge Discovery',
+      url: 'https://example.com/ai-knowledge',
+      source: 'AI Research Database',
+    },
+    {
+      id: '3',
+      title: 'Systematic Literature Review Techniques',
+      url: 'https://example.com/literature-review',
+      source: 'Academic Research Portal',
+    },
+  ])
+
+  const [mockRelatedQuestions] = useState<string[]>([
+    'What are the latest advancements in this field?',
+    'How does this compare to traditional approaches?',
+    'What are the practical applications of these findings?',
+  ])
 
   // WebSocket Ref
   const wsRef = useRef<WebSocket | null>(null)
@@ -360,9 +391,12 @@ export default function ResearchPage() {
             />
           </motion.div>
 
-          <motion.div className="grid flex-1 min-h-0 gap-6 lg:grid-cols-12" variants={itemVariants}>
+          <motion.div
+            className="flex flex-1 min-h-0 flex-col gap-6 lg:flex-row"
+            variants={itemVariants}
+          >
             {/* LEFT: Search + Controls */}
-            <div className="lg:col-span-5 flex min-h-0 flex-col gap-4">
+            <div className="lg:w-[42%] flex min-h-0 flex-col gap-4 shrink-0">
               <Card
                 variant="glass"
                 padding="none"
@@ -690,236 +724,251 @@ export default function ResearchPage() {
               </Card>
             </div>
 
-            {/* RIGHT: Results */}
-            <div className="lg:col-span-7 min-h-0">
-              <Card
-                variant="glass"
-                padding="none"
-                interactive={false}
-                className="relative flex h-full min-h-0 flex-col overflow-hidden border-white/55 dark:border-white/10"
-              >
-                <ResearchDashboard
-                  state={state}
-                  selectedTaskId={selectedTaskId}
-                  onTaskSelect={setSelectedTaskId}
-                  onAddToNotebook={() => setShowNotebookModal(true)}
-                  onExportMarkdown={() => {
-                    const blob = new Blob([state.reporting.generatedReport || ''], {
-                      type: 'text/markdown',
-                    })
-                    const url = URL.createObjectURL(blob)
-                    const a = document.createElement('a')
-                    a.href = url
-                    a.download = `${state.planning.originalTopic || 'report'}.md`
-                    a.click()
-                  }}
-                  onExportPdf={handleExportPdf}
-                  isExportingPdf={isExportingPdf}
-                />
+            {/* RIGHT: Results with Split Pane */}
+            <div className="flex-1 min-h-0">
+              <SplitPane
+                leftPanel={
+                  <Card
+                    variant="glass"
+                    padding="none"
+                    interactive={false}
+                    className="relative flex h-full min-h-0 flex-col overflow-hidden border-white/55 dark:border-white/10"
+                  >
+                    <ResearchDashboard
+                      state={state}
+                      selectedTaskId={selectedTaskId}
+                      onTaskSelect={setSelectedTaskId}
+                      onAddToNotebook={() => setShowNotebookModal(true)}
+                      onExportMarkdown={() => {
+                        const blob = new Blob([state.reporting.generatedReport || ''], {
+                          type: 'text/markdown',
+                        })
+                        const url = URL.createObjectURL(blob)
+                        const a = document.createElement('a')
+                        a.href = url
+                        a.download = `${state.planning.originalTopic || 'report'}.md`
+                        a.click()
+                      }}
+                      onExportPdf={handleExportPdf}
+                      isExportingPdf={isExportingPdf}
+                    />
+                  </Card>
+                }
+                rightPanel={
+                  <SourcePanel
+                    citations={mockCitations}
+                    relatedQuestions={mockRelatedQuestions}
+                    onCitationClick={citation => {
+                      window.open(citation.url, '_blank', 'noopener,noreferrer')
+                    }}
+                    onQuestionClick={question => {
+                      setInputTopic(question)
+                    }}
+                  />
+                }
+                defaultRightWidth={360}
+                collapsible
+                className="h-full"
+              />
 
-                {/* Hidden Render Div for PDF */}
+              {/* Hidden Render Div for PDF */}
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '-9999px',
+                  left: '-9999px',
+                  width: '800px',
+                }}
+              >
                 <div
+                  ref={reportContentRef}
+                  className="bg-white"
                   style={{
-                    position: 'absolute',
-                    top: '-9999px',
-                    left: '-9999px',
-                    width: '800px',
+                    padding: '50px 40px',
+                    fontFamily: 'ui-sans-serif, system-ui, sans-serif',
+                    fontSize: '14px',
+                    lineHeight: '1.7',
+                    color: '#18181b',
                   }}
                 >
-                  <div
-                    ref={reportContentRef}
-                    className="bg-white"
-                    style={{
-                      padding: '50px 40px',
-                      fontFamily: 'ui-sans-serif, system-ui, sans-serif',
-                      fontSize: '14px',
-                      lineHeight: '1.7',
-                      color: '#18181b',
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm, remarkMath]}
+                    rehypePlugins={[rehypeKatex, rehypeRaw]}
+                    components={{
+                      h1: ({ node, ...props }) => (
+                        <h1
+                          style={{
+                            fontSize: '26px',
+                            fontWeight: 'bold',
+                            marginBottom: '20px',
+                            paddingBottom: '10px',
+                            borderBottom: '2px solid #e4e4e7',
+                          }}
+                          {...props}
+                        />
+                      ),
+                      h2: ({ node, ...props }) => (
+                        <h2
+                          style={{
+                            fontSize: '20px',
+                            fontWeight: 'bold',
+                            marginTop: '28px',
+                            marginBottom: '14px',
+                            color: '#2563eb',
+                          }}
+                          {...props}
+                        />
+                      ),
+                      h3: ({ node, ...props }) => (
+                        <h3
+                          style={{
+                            fontSize: '16px',
+                            fontWeight: '600',
+                            marginTop: '20px',
+                            marginBottom: '10px',
+                          }}
+                          {...props}
+                        />
+                      ),
+                      p: ({ node, ...props }) => <p style={{ marginBottom: '14px' }} {...props} />,
+                      table: ({ node, ...props }) => (
+                        <table
+                          style={{
+                            width: '100%',
+                            borderCollapse: 'collapse',
+                            margin: '18px 0',
+                            fontSize: '13px',
+                          }}
+                          {...props}
+                        />
+                      ),
+                      th: ({ node, ...props }) => (
+                        <th
+                          style={{
+                            border: '1px solid #e4e4e7',
+                            padding: '10px',
+                            backgroundColor: '#f4f4f5',
+                            fontWeight: '600',
+                            textAlign: 'left',
+                          }}
+                          {...props}
+                        />
+                      ),
+                      td: ({ node, ...props }) => (
+                        <td style={{ border: '1px solid #e4e4e7', padding: '10px' }} {...props} />
+                      ),
+                      a: ({ node, href, ...props }) => (
+                        <a
+                          href={href}
+                          style={{ color: '#2563eb', textDecoration: 'underline' }}
+                          {...props}
+                        />
+                      ),
+                      blockquote: ({ node, ...props }) => (
+                        <blockquote
+                          style={{
+                            borderLeft: '4px solid #93c5fd',
+                            paddingLeft: '16px',
+                            margin: '18px 0',
+                            color: '#52525b',
+                            fontStyle: 'italic',
+                          }}
+                          {...props}
+                        />
+                      ),
+                      ul: ({ node, ...props }) => (
+                        <ul style={{ marginLeft: '24px', marginBottom: '14px' }} {...props} />
+                      ),
+                      ol: ({ node, ...props }) => (
+                        <ol style={{ marginLeft: '24px', marginBottom: '14px' }} {...props} />
+                      ),
+                      li: ({ node, ...props }) => <li style={{ marginBottom: '6px' }} {...props} />,
+                      details: ({ node, children, ...props }) => (
+                        <details
+                          style={{
+                            marginTop: '8px',
+                            marginBottom: '8px',
+                            paddingLeft: '12px',
+                            borderLeft: '2px solid #e4e4e7',
+                          }}
+                          {...props}
+                        >
+                          {children}
+                        </details>
+                      ),
+                      summary: ({ node, children, ...props }) => (
+                        <summary
+                          style={{
+                            fontWeight: '600',
+                            color: '#3f3f46',
+                            marginBottom: '8px',
+                          }}
+                          {...props}
+                        >
+                          {children}
+                        </summary>
+                      ),
+                      code: ({ node, className, children, ...props }) => {
+                        const match = /language-(\w+)/.exec(className || '')
+                        const language = match ? match[1] : ''
+                        const isInline = !match
+
+                        if (language === 'mermaid') {
+                          const chartCode = String(children).replace(/\n$/, '')
+                          return <Mermaid chart={chartCode} />
+                        }
+
+                        return isInline ? (
+                          <code
+                            style={{
+                              backgroundColor: '#f4f4f5',
+                              padding: '2px 6px',
+                              borderRadius: '4px',
+                              fontSize: '13px',
+                              fontFamily: 'monospace',
+                            }}
+                            {...props}
+                          >
+                            {children}
+                          </code>
+                        ) : (
+                          <code
+                            style={{
+                              display: 'block',
+                              backgroundColor: '#18181b',
+                              color: '#f4f4f5',
+                              padding: '16px',
+                              borderRadius: '8px',
+                              fontSize: '13px',
+                              fontFamily: 'monospace',
+                              overflowX: 'auto',
+                              whiteSpace: 'pre',
+                            }}
+                            {...props}
+                          >
+                            {children}
+                          </code>
+                        )
+                      },
+                      pre: ({ node, children, ...props }) => {
+                        const child = React.Children.toArray(children)[0] as React.ReactElement<{
+                          className?: string
+                        }>
+                        if (child?.props?.className?.includes('language-mermaid')) {
+                          return <>{children}</>
+                        }
+                        return (
+                          <pre style={{ margin: '18px 0' }} {...props}>
+                            {children}
+                          </pre>
+                        )
+                      },
                     }}
                   >
-                    <ReactMarkdown
-                      remarkPlugins={[remarkGfm, remarkMath]}
-                      rehypePlugins={[rehypeKatex, rehypeRaw]}
-                      components={{
-                        h1: ({ node, ...props }) => (
-                          <h1
-                            style={{
-                              fontSize: '26px',
-                              fontWeight: 'bold',
-                              marginBottom: '20px',
-                              paddingBottom: '10px',
-                              borderBottom: '2px solid #e4e4e7',
-                            }}
-                            {...props}
-                          />
-                        ),
-                        h2: ({ node, ...props }) => (
-                          <h2
-                            style={{
-                              fontSize: '20px',
-                              fontWeight: 'bold',
-                              marginTop: '28px',
-                              marginBottom: '14px',
-                              color: '#2563eb',
-                            }}
-                            {...props}
-                          />
-                        ),
-                        h3: ({ node, ...props }) => (
-                          <h3
-                            style={{
-                              fontSize: '16px',
-                              fontWeight: '600',
-                              marginTop: '20px',
-                              marginBottom: '10px',
-                            }}
-                            {...props}
-                          />
-                        ),
-                        p: ({ node, ...props }) => (
-                          <p style={{ marginBottom: '14px' }} {...props} />
-                        ),
-                        table: ({ node, ...props }) => (
-                          <table
-                            style={{
-                              width: '100%',
-                              borderCollapse: 'collapse',
-                              margin: '18px 0',
-                              fontSize: '13px',
-                            }}
-                            {...props}
-                          />
-                        ),
-                        th: ({ node, ...props }) => (
-                          <th
-                            style={{
-                              border: '1px solid #e4e4e7',
-                              padding: '10px',
-                              backgroundColor: '#f4f4f5',
-                              fontWeight: '600',
-                              textAlign: 'left',
-                            }}
-                            {...props}
-                          />
-                        ),
-                        td: ({ node, ...props }) => (
-                          <td style={{ border: '1px solid #e4e4e7', padding: '10px' }} {...props} />
-                        ),
-                        a: ({ node, href, ...props }) => (
-                          <a
-                            href={href}
-                            style={{ color: '#2563eb', textDecoration: 'underline' }}
-                            {...props}
-                          />
-                        ),
-                        blockquote: ({ node, ...props }) => (
-                          <blockquote
-                            style={{
-                              borderLeft: '4px solid #93c5fd',
-                              paddingLeft: '16px',
-                              margin: '18px 0',
-                              color: '#52525b',
-                              fontStyle: 'italic',
-                            }}
-                            {...props}
-                          />
-                        ),
-                        ul: ({ node, ...props }) => (
-                          <ul style={{ marginLeft: '24px', marginBottom: '14px' }} {...props} />
-                        ),
-                        ol: ({ node, ...props }) => (
-                          <ol style={{ marginLeft: '24px', marginBottom: '14px' }} {...props} />
-                        ),
-                        li: ({ node, ...props }) => (
-                          <li style={{ marginBottom: '6px' }} {...props} />
-                        ),
-                        details: ({ node, children, ...props }) => (
-                          <details
-                            style={{
-                              marginTop: '8px',
-                              marginBottom: '8px',
-                              paddingLeft: '12px',
-                              borderLeft: '2px solid #e4e4e7',
-                            }}
-                            {...props}
-                          >
-                            {children}
-                          </details>
-                        ),
-                        summary: ({ node, children, ...props }) => (
-                          <summary
-                            style={{
-                              fontWeight: '600',
-                              color: '#3f3f46',
-                              marginBottom: '8px',
-                            }}
-                            {...props}
-                          >
-                            {children}
-                          </summary>
-                        ),
-                        code: ({ node, className, children, ...props }) => {
-                          const match = /language-(\w+)/.exec(className || '')
-                          const language = match ? match[1] : ''
-                          const isInline = !match
-
-                          if (language === 'mermaid') {
-                            const chartCode = String(children).replace(/\n$/, '')
-                            return <Mermaid chart={chartCode} />
-                          }
-
-                          return isInline ? (
-                            <code
-                              style={{
-                                backgroundColor: '#f4f4f5',
-                                padding: '2px 6px',
-                                borderRadius: '4px',
-                                fontSize: '13px',
-                                fontFamily: 'monospace',
-                              }}
-                              {...props}
-                            >
-                              {children}
-                            </code>
-                          ) : (
-                            <code
-                              style={{
-                                display: 'block',
-                                backgroundColor: '#18181b',
-                                color: '#f4f4f5',
-                                padding: '16px',
-                                borderRadius: '8px',
-                                fontSize: '13px',
-                                fontFamily: 'monospace',
-                                overflowX: 'auto',
-                                whiteSpace: 'pre',
-                              }}
-                              {...props}
-                            >
-                              {children}
-                            </code>
-                          )
-                        },
-                        pre: ({ node, children, ...props }) => {
-                          const child = React.Children.toArray(children)[0] as React.ReactElement<{
-                            className?: string
-                          }>
-                          if (child?.props?.className?.includes('language-mermaid')) {
-                            return <>{children}</>
-                          }
-                          return (
-                            <pre style={{ margin: '18px 0' }} {...props}>
-                              {children}
-                            </pre>
-                          )
-                        },
-                      }}
-                    >
-                      {preprocessMarkdownForPdf(state.reporting.generatedReport || '')}
-                    </ReactMarkdown>
-                  </div>
+                    {preprocessMarkdownForPdf(state.reporting.generatedReport || '')}
+                  </ReactMarkdown>
                 </div>
-              </Card>
+              </div>
             </div>
           </motion.div>
 
