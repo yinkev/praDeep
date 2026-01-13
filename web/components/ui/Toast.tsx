@@ -57,27 +57,25 @@ const variantStyles = {
   success: {
     accentBorder: 'border-l-emerald-500 dark:border-l-emerald-400',
     iconWrap: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-300',
-    progressBar:
-      'bg-gradient-to-r from-emerald-500 to-emerald-400 dark:from-emerald-400 dark:to-emerald-300',
+    progressBar: 'bg-emerald-500 dark:bg-emerald-400',
     icon: <CheckCircle className="h-5 w-5" />,
   },
   error: {
     accentBorder: 'border-l-red-500 dark:border-l-red-400',
     iconWrap: 'bg-red-50 text-red-600 dark:bg-red-500/20 dark:text-red-300',
-    progressBar: 'bg-gradient-to-r from-red-500 to-red-400 dark:from-red-400 dark:to-red-300',
+    progressBar: 'bg-red-500 dark:bg-red-400',
     icon: <AlertCircle className="h-5 w-5" />,
   },
   warning: {
     accentBorder: 'border-l-amber-500 dark:border-l-amber-400',
     iconWrap: 'bg-amber-50 text-amber-700 dark:bg-amber-500/20 dark:text-amber-200',
-    progressBar:
-      'bg-gradient-to-r from-amber-500 to-amber-400 dark:from-amber-400 dark:to-amber-300',
+    progressBar: 'bg-amber-500 dark:bg-amber-400',
     icon: <AlertTriangle className="h-5 w-5" />,
   },
   info: {
     accentBorder: 'border-l-blue-500 dark:border-l-blue-400',
     iconWrap: 'bg-blue-50 text-blue-600 dark:bg-blue-500/20 dark:text-blue-300',
-    progressBar: 'bg-gradient-to-r from-blue-500 to-blue-400 dark:from-blue-400 dark:to-blue-300',
+    progressBar: 'bg-blue-500 dark:bg-blue-400',
     icon: <Info className="h-5 w-5" />,
   },
 } satisfies Record<ToastVariant, VariantStyle>
@@ -183,22 +181,20 @@ function ToastItem({ toast, onRemove, index }: ToastItemProps) {
         reduceMotion
           ? { duration: 0.12 }
           : {
-              type: 'spring',
-              stiffness: 400,
-              damping: 30,
-              mass: 0.8,
+              duration: 0.18,
+              ease: [0.2, 0.8, 0.2, 1],
               delay: index * 0.04,
             }
       }
-      whileHover={reduceMotion ? undefined : { y: -2, scale: 1.015 }}
+      whileHover={reduceMotion ? undefined : { y: -2, scale: 1.01 }}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       role="status"
       aria-atomic="true"
       className={cn(
         'relative w-[360px] max-w-[calc(100vw-2.5rem)] overflow-hidden',
-        'ui-frame rounded-lg bg-white dark:bg-zinc-950/80',
-        'shadow-lg transition-shadow duration-200 ease-out',
+        'ui-frame rounded-2xl bg-white/70 backdrop-blur-xl dark:bg-zinc-950/70',
+        'shadow-lg transition-shadow duration-150 ease-out',
         'border border-border/80 dark:border-white/10 border-l-4',
         styles.accentBorder,
         // Subtle glow on hover
@@ -240,7 +236,7 @@ function ToastItem({ toast, onRemove, index }: ToastItemProps) {
           onClick={handleDismiss}
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
-          transition={{ type: 'spring', stiffness: 500, damping: 25 }}
+          transition={{ duration: 0.12, ease: [0.2, 0.8, 0.2, 1] }}
           className={cn(
             'absolute right-3 top-3 grid h-8 w-8 place-items-center rounded-md',
             'border border-border/70 bg-white text-zinc-500',

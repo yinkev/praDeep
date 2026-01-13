@@ -306,42 +306,25 @@
   /* Standard dot grid */
   .bg-dot-grid {
     background-color: hsl(var(--background));
-    background-image: radial-gradient(
-      var(--dot-color) var(--dot-size),
-      transparent var(--dot-size)
-    );
-    background-size: var(--dot-spacing) var(--dot-spacing);
+    background-image: none;
   }
 
   /* Dense dot grid */
   .bg-dot-grid-dense {
     background-color: hsl(var(--background));
-    background-image: radial-gradient(
-      var(--dot-color) var(--dot-size),
-      transparent var(--dot-size)
-    );
-    background-size: 16px 16px;
+    background-image: none;
   }
 
   /* Dot grid with fade edges */
   .bg-dot-grid-fade {
     background-color: hsl(var(--background));
-    background-image:
-      radial-gradient(var(--dot-color) var(--dot-size), transparent var(--dot-size)),
-      radial-gradient(ellipse at center, transparent 0%, hsl(var(--background)) 70%);
-    background-size:
-      var(--dot-spacing) var(--dot-spacing),
-      100% 100%;
+    background-image: none;
   }
 
   /* Dot grid on elevated surface */
   .bg-dot-grid-elevated {
     background-color: hsl(var(--background-elevated));
-    background-image: radial-gradient(
-      var(--dot-color) var(--dot-size),
-      transparent var(--dot-size)
-    );
-    background-size: var(--dot-spacing) var(--dot-spacing);
+    background-image: none;
   }
 
   /* ========================================================================
@@ -407,14 +390,7 @@
     left: 0;
     right: 0;
     height: 1px;
-    background: linear-gradient(
-      90deg,
-      transparent,
-      hsl(var(--glow-primary) / 0.4) 20%,
-      hsl(var(--glow-cyan) / 0.6) 50%,
-      hsl(var(--glow-primary) / 0.4) 80%,
-      transparent
-    );
+    background: hsl(var(--primary) / 0.18);
     box-shadow: 0 0 8px hsl(var(--glow-cyan) / 0.3);
   }
 
@@ -458,34 +434,16 @@
     border-radius: var(--radius);
     overflow: hidden;
     border: 1px solid hsl(var(--border));
+    transition:
+      border-color var(--transition-fast) var(--ease-out-expo),
+      box-shadow var(--transition-base) var(--ease-out-expo);
   }
 
-  .card-glow-border::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    padding: 1px;
-    border-radius: inherit;
-    background: linear-gradient(
-      135deg,
-      hsl(var(--border)) 0%,
-      hsl(var(--primary) / 0.3) 50%,
-      hsl(var(--border)) 100%
-    );
-    -webkit-mask:
-      linear-gradient(#fff 0 0) content-box,
-      linear-gradient(#fff 0 0);
-    mask:
-      linear-gradient(#fff 0 0) content-box,
-      linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    opacity: 0;
-    transition: opacity var(--transition-base) var(--ease-out-expo);
-  }
-
-  .card-glow-border:hover::before {
-    opacity: 1;
+  .card-glow-border:hover {
+    border-color: hsl(var(--border-hover));
+    box-shadow:
+      0 0 0 1px hsl(var(--primary) / 0.08),
+      0 10px 24px hsl(var(--primary) / 0.06);
   }
 
   /* ========================================================================
@@ -521,26 +479,14 @@
 
   /* Shimmer loading effect */
   .shimmer {
-    background: linear-gradient(
-      90deg,
-      hsl(var(--border)) 0%,
-      hsl(var(--background-secondary)) 50%,
-      hsl(var(--border)) 100%
-    );
-    background-size: 200% 100%;
-    animation: shimmer 1.5s ease-in-out infinite;
+    background: hsl(var(--background-secondary));
+    animation: surface-pulse 1.2s ease-in-out infinite;
   }
 
   /* Skeleton loading effect */
   .skeleton {
-    background: linear-gradient(
-      90deg,
-      hsl(var(--background-secondary)) 0%,
-      hsl(var(--border)) 50%,
-      hsl(var(--background-secondary)) 100%
-    );
-    background-size: 200% 100%;
-    animation: shimmer 1.5s ease-in-out infinite;
+    background: hsl(var(--background-secondary));
+    animation: surface-pulse 1.2s ease-in-out infinite;
     border-radius: var(--radius-sm);
   }
 
@@ -594,12 +540,13 @@
     }
   }
 
-  @keyframes shimmer {
-    0% {
-      background-position: 200% 0;
-    }
+  @keyframes surface-pulse {
+    0%,
     100% {
-      background-position: -200% 0;
+      opacity: 0.65;
+    }
+    50% {
+      opacity: 1;
     }
   }
 
@@ -757,28 +704,28 @@
 
   /* Animation classes */
   .animate-fade-in {
-    animation: fade-in 0.4s var(--ease-out-expo) forwards;
+    animation: fade-in 0.18s var(--ease-out-expo) forwards;
   }
   .animate-fade-out {
-    animation: fade-out 0.4s var(--ease-out-expo) forwards;
+    animation: fade-out 0.18s var(--ease-out-expo) forwards;
   }
   .animate-slide-up {
-    animation: slide-up 0.5s var(--ease-out-expo) forwards;
+    animation: slide-up 0.22s var(--ease-out-expo) forwards;
   }
   .animate-slide-down {
-    animation: slide-down 0.5s var(--ease-out-expo) forwards;
+    animation: slide-down 0.22s var(--ease-out-expo) forwards;
   }
   .animate-slide-in-left {
-    animation: slide-in-left 0.5s var(--ease-out-expo) forwards;
+    animation: slide-in-left 0.22s var(--ease-out-expo) forwards;
   }
   .animate-slide-in-right {
-    animation: slide-in-right 0.5s var(--ease-out-expo) forwards;
+    animation: slide-in-right 0.22s var(--ease-out-expo) forwards;
   }
   .animate-scale-in {
-    animation: scale-in 0.3s var(--ease-spring) forwards;
+    animation: scale-in 0.18s var(--ease-spring) forwards;
   }
   .animate-scale-out {
-    animation: scale-out 0.3s var(--ease-spring) forwards;
+    animation: scale-out 0.18s var(--ease-spring) forwards;
   }
   .animate-bounce {
     animation: bounce-subtle 0.6s var(--ease-out-expo) infinite;
@@ -795,10 +742,7 @@
      ======================================================================== */
 
   .text-gradient {
-    background: linear-gradient(135deg, hsl(var(--glow-primary)), hsl(var(--glow-cyan)));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: hsl(var(--primary));
   }
 
   .text-balance {
@@ -1096,13 +1040,5 @@
     }
   }
 
-  /* Premium shimmer animation for loading skeletons */
-  @keyframes shimmer {
-    0% {
-      transform: translateX(-100%);
-    }
-    100% {
-      transform: translateX(100%);
-    }
-  }
+  /* (No shimmer gradients by design) */
 }

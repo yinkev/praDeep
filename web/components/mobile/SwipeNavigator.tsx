@@ -1,97 +1,106 @@
 'use client'
 
-import { type HTMLAttributes, type ReactNode } from 'react'
-import { useSwipeGesture } from '@/hooks/useSwipeGesture'
-import { motion, useReducedMotion, AnimatePresence } from 'framer-motion'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { useCallback, type HTMLAttributes, type ReactNode, type TouchEventHandler } from 'react'
+import { motion, useReducedMotion } from 'framer-motion'
+import { useSwipeGesture, type SwipeGestureConfig } from '@/hooks/useSwipeGesture'
+import { cn } from '@/lib/utils'
 
 export interface SwipeNavigatorProps
-  extends Omit<
-    HTMLAttributes<HTMLDivElement>,
-    | 'children'
-    | 'onTouchStart'
-    | 'onTouchMove'
-    | 'onTouchEnd'
-    | 'onAnimationStart'
-    | 'onAnimationEnd'
-    | 'onAnimationIteration'
-    | 'onDrag'
-    | 'onDragStart'
-    | 'onDragEnd'
-  > {
+  extends SwipeGestureConfig,
+    Omit<
+      HTMLAttributes<HTMLDivElement>,
+      | 'children'
+      | 'onTouchStart'
+      | 'onTouchMove'
+      | 'onTouchEnd'
+      | 'onTouchCancel'
+      | 'onAnimationStart'
+      | 'onAnimationEnd'
+      | 'onAnimationIteration'
+      | 'onDrag'
+      | 'onDragStart'
+      | 'onDragEnd'
+    > {
   children: ReactNode
-  onSwipeLeft?: () => void
-  onSwipeRight?: () => void
-  onSwipeUp?: () => void
-  onSwipeDown?: () => void
-  threshold?: number
-  showHints?: boolean
+  disabled?: boolean
+  onTouchStart?: TouchEventHandler<HTMLDivElement>
+  onTouchMove?: TouchEventHandler<HTMLDivElement>
+  onTouchEnd?: TouchEventHandler<HTMLDivElement>
+  onTouchCancel?: TouchEventHandler<HTMLDivElement>
 }
 
 export function SwipeNavigator({
   children,
+  className,
+  disabled = false,
+  threshold,
+  onSwipeDown,
   onSwipeLeft,
   onSwipeRight,
   onSwipeUp,
-  onSwipeDown,
-  threshold = 50,
-  showHints = false,
-  className = '',
+  onTouchCancel,
+  onTouchEnd,
+  onTouchMove,
+  onTouchStart,
+  ...rest
 }: SwipeNavigatorProps): ReactNode {
-  const prefersReducedMotion = useReducedMotion()
-
-  const { handlers, swipeState } = useSwipeGesture({
+  const reduceMotion = useReducedMotion()
+  const { handlers } = useSwipeGesture({
     threshold,
-    onSwipeLeft,
-    onSwipeRight,
-    onSwipeUp,
-    onSwipeDown,
+    onSwipeDown: disabled ? undefined : onSwipeDown,
+    onSwipeLeft: disabled ? undefined : onSwipeLeft,
+    onSwipeRight: disabled ? undefined : onSwipeRight,
+    onSwipeUp: disabled ? undefined : onSwipeUp,
   })
 
-  const opacity = swipeState.isSwiping ? 0.7 : 1
-  const scale = swipeState.isSwiping ? 0.98 : 1
+  const handleTouchStart = useCallback<TouchEventHandler<HTMLDivElement>>(
+    event => {
+      onTouchStart?.(event)
+      if (disabled || event.defaultPrevented) return
+      handlers.onTouchStart(event)
+    },
+    [disabled, handlers, onTouchStart],
+  )
+
+  const handleTouchMove = useCallback<TouchEventHandler<HTMLDivElement>>(
+    event => {
+      onTouchMove?.(event)
+      if (disabled || event.defaultPrevented) return
+      handlers.onTouchMove(event)
+    },
+    [disabled, handlers, onTouchMove],
+  )
+
+  const handleTouchEnd = useCallback<TouchEventHandler<HTMLDivElement>>(
+    event => {
+      onTouchEnd?.(event)
+      if (disabled || event.defaultPrevented) return
+      handlers.onTouchEnd(event)
+    },
+    [disabled, handlers, onTouchEnd],
+  )
+
+  const handleTouchCancel = useCallback<TouchEventHandler<HTMLDivElement>>(
+    event => {
+      onTouchCancel?.(event)
+      if (disabled || event.defaultPrevented) return
+      handlers.onTouchEnd(event)
+    },
+    [disabled, handlers, onTouchCancel],
+  )
 
   return (
     <motion.div
-      {...handlers}
-      className={`relative touch-pan-y select-none ${className}`}
-      style={{ opacity, scale }}
-      animate={{ opacity, scale }}
-      transition={{ duration: prefersReducedMotion ? 0 : 0.15 }}
+      className={cn('touch-manipulation', className)}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchCancel}
+      whileTap={reduceMotion ? undefined : { scale: 0.995 }}
+      {...rest}
     >
       {children}
-
-      {showHints && (
-        <div className="pointer-events-none absolute inset-y-0 left-0 right-0 flex items-center justify-between px-4">
-          <AnimatePresence>
-            {onSwipeRight && (
-              <motion.div
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 0.5, x: 0 }}
-                exit={{ opacity: 0, x: -10 }}
-                transition={{ duration: 0.3 }}
-                className="rounded-full bg-slate-900/60 p-2 backdrop-blur-sm dark:bg-slate-100/60"
-              >
-                <ChevronLeft className="h-5 w-5 text-white dark:text-slate-900" />
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          <AnimatePresence>
-            {onSwipeLeft && (
-              <motion.div
-                initial={{ opacity: 0, x: 10 }}
-                animate={{ opacity: 0.5, x: 0 }}
-                exit={{ opacity: 0, x: 10 }}
-                transition={{ duration: 0.3 }}
-                className="rounded-full bg-slate-900/60 p-2 backdrop-blur-sm dark:bg-slate-100/60"
-              >
-                <ChevronRight className="h-5 w-5 text-white dark:text-slate-900" />
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      )}
     </motion.div>
   )
 }
+

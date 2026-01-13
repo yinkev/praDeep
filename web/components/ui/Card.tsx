@@ -63,8 +63,8 @@ const variantStyles: Record<CardVariant, string> = {
     'dark:shadow-zinc-950/60'
   ),
   glass: cn(
-    'bg-white/80 dark:bg-zinc-950/80',
-    'backdrop-blur-sm',
+    'bg-white/70 dark:bg-zinc-950/70',
+    'backdrop-blur-md',
     'text-text-primary',
     'shadow-sm',
     'dark:shadow-zinc-950/40'
@@ -127,7 +127,7 @@ const CardRoot = React.forwardRef<HTMLDivElement, CardProps>(
         ref={ref}
         className={cn(
           // Base - rounded-lg (12px) for card aesthetic
-          'relative overflow-hidden rounded-lg',
+          'relative overflow-hidden rounded-2xl',
           // Variant styles
           variantStyles[variant],
           // Border
@@ -137,9 +137,9 @@ const CardRoot = React.forwardRef<HTMLDivElement, CardProps>(
           !hasHeader && paddingStyles[padding],
           // Interactive states with premium micro-interactions
           interactive && [
-            // Smooth transitions with out-expo easing (300ms)
-            'transition-all duration-300',
-            '[transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
+            // Smooth transitions (120–200ms)
+            'transition-all duration-200',
+            '[transition-timing-function:cubic-bezier(0.2,0.8,0.2,1)]',
             // Hover: -2px lift, shadow increase, border glow
             'hover:-translate-y-[2px]',
             interactiveHoverStyles[variant],

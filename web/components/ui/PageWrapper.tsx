@@ -45,9 +45,12 @@ export default function PageWrapper({
 }: PageWrapperProps) {
   return (
     <div className="relative min-h-full w-full">
-      {/* Dotted grid background */}
+      {/* Subtle background wash (no patterns / no gradients) */}
       {showPattern && (
-        <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-dot-grid" />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 bg-surface-secondary/35 dark:bg-white/[0.03]"
+        />
       )}
 
       <div

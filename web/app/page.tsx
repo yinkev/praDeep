@@ -15,6 +15,8 @@ import {
   ExternalLink,
   BookOpen,
   Sparkles,
+  SlidersHorizontal,
+  ChevronDown,
   Edit3,
   GraduationCap,
   PenTool,
@@ -33,15 +35,15 @@ import {
   useReducedMotion,
   useScroll,
   useSpring,
-  useTransform,
 } from 'framer-motion'
 import { useGlobal } from '@/context/GlobalContext'
 import { apiUrl } from '@/lib/api'
 import { parseKnowledgeBaseList, type KnowledgeBaseListItem } from '@/lib/knowledge'
 import { processLatexContent } from '@/lib/latex'
 import { getTranslation } from '@/lib/i18n'
+import { cn } from '@/lib/utils'
 import PageWrapper from '@/components/ui/PageWrapper'
-import Button from '@/components/ui/Button'
+import Button, { IconButton } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { useToast } from '@/components/ui/Toast'
 import CouncilDetails from '@/components/CouncilDetails'
@@ -77,34 +79,32 @@ const containerVariants = {
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.08,
-      delayChildren: 0.15,
+      staggerChildren: 0.06,
+      delayChildren: 0.06,
     },
   },
 }
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
+  hidden: { opacity: 0, y: 12 },
   visible: {
     opacity: 1,
     y: 0,
     transition: {
-      type: 'spring' as const,
-      stiffness: 350,
-      damping: 30,
-      mass: 0.8,
+      duration: 0.22,
+      ease: [0.2, 0.8, 0.2, 1] as const,
     },
   },
 }
 
 const fadeInUp = {
-  hidden: { opacity: 0, y: 28 },
+  hidden: { opacity: 0, y: 16 },
   visible: {
     opacity: 1,
     y: 0,
     transition: {
-      duration: 0.6,
-      ease: [0.16, 1, 0.3, 1] as const,
+      duration: 0.24,
+      ease: [0.2, 0.8, 0.2, 1] as const,
     },
   },
 }
@@ -122,36 +122,33 @@ const headlineVariants = {
 const headlineLineVariants = {
   hidden: {
     opacity: 0,
-    y: 24,
-    clipPath: 'inset(0 0 100% 0)',
+    y: 12,
   },
   visible: {
     opacity: 1,
     y: 0,
-    clipPath: 'inset(0 0 0% 0)',
     transition: {
-      duration: 0.8,
-      ease: [0.16, 1, 0.3, 1] as const,
+      duration: 0.24,
+      ease: [0.2, 0.8, 0.2, 1] as const,
     },
   },
 }
 
 const messageVariants = {
-  hidden: { opacity: 0, y: 16, scale: 0.98 },
+  hidden: { opacity: 0, y: 12, scale: 0.99 },
   visible: {
     opacity: 1,
     y: 0,
     scale: 1,
     transition: {
-      type: 'spring' as const,
-      stiffness: 400,
-      damping: 25,
+      duration: 0.22,
+      ease: [0.2, 0.8, 0.2, 1] as const,
     },
   },
   exit: {
     opacity: 0,
-    scale: 0.98,
-    transition: { duration: 0.15 },
+    scale: 0.99,
+    transition: { duration: 0.12, ease: [0.2, 0.8, 0.2, 1] as const },
   },
 }
 
@@ -211,22 +208,6 @@ export default function HomePage() {
     damping: 30,
     restDelta: 0.001,
   })
-
-  const backgroundGridY = useTransform(pageScrollProgressSpring, [0, 1], [0, 120])
-  const backgroundGridOpacity = useTransform(pageScrollProgressSpring, [0, 0.22], [0.32, 0.18])
-
-  const { scrollYProgress: heroScrollProgress } = useScroll({
-    container: scrollRootRef,
-    target: heroSectionRef,
-    offset: ['start start', 'end start'],
-  })
-
-  const heroCopyY = useTransform(heroScrollProgress, [0, 1], [0, 72])
-  const heroCopyOpacity = useTransform(heroScrollProgress, [0, 0.85], [1, 0])
-  const heroCopyScale = useTransform(heroScrollProgress, [0, 1], [1, 0.98])
-  const heroPanelY = useTransform(heroScrollProgress, [0, 1], [0, -48])
-  const heroOrbTopParallaxY = useTransform(heroScrollProgress, [0, 1], [0, 140])
-  const heroOrbBottomParallaxY = useTransform(heroScrollProgress, [0, 1], [0, -120])
 
   // Fetch knowledge bases
   useEffect(() => {
@@ -350,11 +331,19 @@ export default function HomePage() {
   }, [kbs, t])
 
   // Auto-scroll to bottom when new messages arrive
+  const prevMessageCountRef = useRef(0)
   useEffect(() => {
-    if (chatEndRef.current) {
-      chatEndRef.current.scrollIntoView({ behavior: 'smooth' })
+    const count = chatState.messages.length
+    if (count === 0) {
+      prevMessageCountRef.current = 0
+      return
     }
-  }, [chatState.messages])
+
+    if (count === prevMessageCountRef.current) return
+    prevMessageCountRef.current = count
+
+    chatEndRef.current?.scrollIntoView({ behavior: shouldReduceMotion ? 'auto' : 'smooth' })
+  }, [chatState.messages.length, shouldReduceMotion])
 
   const handleSend = () => {
     if (!inputMessage.trim() || chatState.isLoading) return
@@ -525,42 +514,14 @@ export default function HomePage() {
   if (!hasMessages) {
     return (
       <div className="relative min-h-dvh overflow-x-hidden bg-surface dark:bg-zinc-950">
-        <motion.div
+        <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 [mask-image:radial-gradient(ellipse_at_top,black_35%,transparent_72%)] bg-[linear-gradient(to_right,rgba(24,24,27,0.07)_1px,transparent_1px),linear-gradient(to_bottom,rgba(24,24,27,0.07)_1px,transparent_1px)] bg-[length:56px_56px] dark:bg-[linear-gradient(to_right,rgba(255,255,255,0.07)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.07)_1px,transparent_1px)]"
-          style={{
-            y: shouldReduceMotion ? 0 : backgroundGridY,
-            opacity: shouldReduceMotion ? 0.22 : backgroundGridOpacity,
-          }}
+          className="pointer-events-none absolute -top-48 left-1/2 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-blue-500/12 blur-3xl dark:bg-blue-500/10"
         />
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.08),transparent_55%)] dark:bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.04),transparent_55%)]"
+          className="pointer-events-none absolute -bottom-56 left-8 h-[520px] w-[520px] rounded-full bg-indigo-500/10 blur-3xl dark:bg-indigo-500/10"
         />
-
-        <motion.div
-          aria-hidden="true"
-          className="pointer-events-none absolute -top-48 left-1/2 h-[520px] w-[520px] -translate-x-1/2"
-          style={{ y: shouldReduceMotion ? 0 : heroOrbTopParallaxY }}
-        >
-          <motion.div
-            className="h-full w-full rounded-full bg-blue-500/20 blur-3xl dark:bg-blue-500/15"
-            animate={{ y: [0, 18, 0], opacity: [0.35, 0.5, 0.35] }}
-            transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
-          />
-        </motion.div>
-
-        <motion.div
-          aria-hidden="true"
-          className="pointer-events-none absolute -bottom-56 left-8 h-[520px] w-[520px]"
-          style={{ y: shouldReduceMotion ? 0 : heroOrbBottomParallaxY }}
-        >
-          <motion.div
-            className="h-full w-full rounded-full bg-indigo-500/10 blur-3xl dark:bg-indigo-500/10"
-            animate={{ y: [0, -12, 0], opacity: [0.25, 0.4, 0.25] }}
-            transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
-          />
-        </motion.div>
 
         <div className="sticky top-0 z-40">
           <div className="border-b border-border bg-surface-elevated/75 backdrop-blur-xl dark:border-white/10 dark:bg-zinc-950/55">
@@ -572,14 +533,14 @@ export default function HomePage() {
                     onClick={() => scrollToWelcomeSection('hero')}
                     whileHover={{ y: -1, scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                    transition={{ duration: 0.14, ease: [0.2, 0.8, 0.2, 1] }}
                     aria-current={activeWelcomeSection === 'hero' ? 'page' : undefined}
                     className="relative shrink-0 rounded-full px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors duration-200 hover:text-text-primary dark:text-zinc-200 dark:hover:text-zinc-50"
                   >
                     {activeWelcomeSection === 'hero' && (
                       <motion.span
                         layoutId="welcomeNavActive"
-                        transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+                        transition={{ duration: 0.18, ease: [0.2, 0.8, 0.2, 1] }}
                         className="absolute inset-0 rounded-full bg-surface-elevated/90 shadow-sm dark:bg-zinc-950/60"
                       />
                     )}
@@ -592,14 +553,14 @@ export default function HomePage() {
                       onClick={() => scrollToWelcomeSection('starters')}
                       whileHover={{ y: -1, scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
-                      transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                      transition={{ duration: 0.14, ease: [0.2, 0.8, 0.2, 1] }}
                       aria-current={activeWelcomeSection === 'starters' ? 'page' : undefined}
                       className="relative shrink-0 rounded-full px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors duration-200 hover:text-text-primary dark:text-zinc-200 dark:hover:text-zinc-50"
                     >
                       {activeWelcomeSection === 'starters' && (
                         <motion.span
                           layoutId="welcomeNavActive"
-                          transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+                          transition={{ duration: 0.18, ease: [0.2, 0.8, 0.2, 1] }}
                           className="absolute inset-0 rounded-full bg-surface-elevated/90 shadow-sm dark:bg-zinc-950/60"
                         />
                       )}
@@ -612,14 +573,14 @@ export default function HomePage() {
                     onClick={() => scrollToWelcomeSection('modules')}
                     whileHover={{ y: -1, scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                    transition={{ duration: 0.14, ease: [0.2, 0.8, 0.2, 1] }}
                     aria-current={activeWelcomeSection === 'modules' ? 'page' : undefined}
                     className="relative shrink-0 rounded-full px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors duration-200 hover:text-text-primary dark:text-zinc-200 dark:hover:text-zinc-50"
                   >
                     {activeWelcomeSection === 'modules' && (
                       <motion.span
                         layoutId="welcomeNavActive"
-                        transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+                        transition={{ duration: 0.18, ease: [0.2, 0.8, 0.2, 1] }}
                         className="absolute inset-0 rounded-full bg-surface-elevated/90 shadow-sm dark:bg-zinc-950/60"
                       />
                     )}
@@ -634,7 +595,7 @@ export default function HomePage() {
                 </span>
                 <div className="h-1.5 w-24 overflow-hidden rounded-full bg-border dark:bg-white/10">
                   <motion.div
-                    className="h-full origin-left bg-gradient-to-r from-accent-primary to-accent-primary"
+                    className="h-full origin-left bg-accent-primary"
                     style={{ scaleX: pageScrollProgressSpring }}
                   />
                 </div>
@@ -642,7 +603,7 @@ export default function HomePage() {
             </div>
 
             <motion.div
-              className="h-[2px] origin-left bg-gradient-to-r from-accent-primary via-accent-primary to-accent-primary"
+              className="h-[2px] origin-left bg-accent-primary/70 dark:bg-accent-primary/60"
               style={{ scaleX: pageScrollProgressSpring }}
             />
           </div>
@@ -664,11 +625,6 @@ export default function HomePage() {
                 {/* Hero */}
                 <motion.div
                   className="pt-4 lg:pt-10"
-                  style={{
-                    y: shouldReduceMotion ? 0 : heroCopyY,
-                    opacity: shouldReduceMotion ? 1 : heroCopyOpacity,
-                    scale: shouldReduceMotion ? 1 : heroCopyScale,
-                  }}
                 >
                   <motion.div
                     variants={fadeInUp}
@@ -692,9 +648,7 @@ export default function HomePage() {
                       variants={headlineLineVariants}
                       className="block font-hero tracking-headline"
                     >
-                      <span className="bg-gradient-to-r from-accent-primary via-accent-primary to-accent-primary bg-clip-text text-transparent bg-[length:200%_200%] motion-safe:hover:animate-type-shimmer dark:from-accent-primary dark:via-accent-primary dark:to-accent-primary">
-                        {t('Learn faster.')}
-                      </span>
+                      <span className="text-accent-primary">{t('Learn faster.')}</span>
                     </motion.span>
                   </motion.h1>
 
@@ -770,7 +724,6 @@ export default function HomePage() {
                   variants={itemVariants}
                   ref={chatPanelRef}
                   className="lg:pt-6"
-                  style={{ y: shouldReduceMotion ? 0 : heroPanelY }}
                 >
                   <Card
                     variant="glass"
@@ -778,13 +731,8 @@ export default function HomePage() {
                     interactive={false}
                     className="relative overflow-hidden border-border bg-surface-elevated/40 dark:border-white/10 dark:bg-white/5"
                   >
-                    <div
-                      aria-hidden="true"
-                      className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.12),transparent_55%)]"
-                    />
-
                     <div className="relative">
-                      <div className="flex items-start justify-between gap-4">
+                      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
                         <div>
                           <div className="text-sm font-semibold text-text-primary dark:text-zinc-50">
                             {t('Chat with praDeep')}
@@ -792,115 +740,109 @@ export default function HomePage() {
                           <div className="mt-1 text-xs text-text-tertiary dark:text-zinc-400">
                             {t('RAG + web search, with math rendering.')}
                           </div>
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {chatState.enableRag && chatState.selectedKb ? (
+                              <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-elevated/60 px-3 py-1 text-[11px] font-medium text-text-secondary backdrop-blur-md dark:border-white/10 dark:bg-white/5 dark:text-zinc-200">
+                                <Database className="h-3.5 w-3.5 text-accent-primary" />
+                                <span className="max-w-[160px] truncate">{chatState.selectedKb}</span>
+                              </span>
+                            ) : null}
+                            {chatState.enableWebSearch ? (
+                              <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-elevated/60 px-3 py-1 text-[11px] font-medium text-text-secondary backdrop-blur-md dark:border-white/10 dark:bg-white/5 dark:text-zinc-200">
+                                <Globe className="h-3.5 w-3.5 text-accent-primary" />
+                                {t('Web search')}
+                              </span>
+                            ) : null}
+                            {!chatState.enableRag && !chatState.enableWebSearch ? (
+                              <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-elevated/60 px-3 py-1 text-[11px] font-medium text-text-tertiary backdrop-blur-md dark:border-white/10 dark:bg-white/5 dark:text-zinc-400">
+                                {t('Direct')}
+                              </span>
+                            ) : null}
+                          </div>
                         </div>
 
-                        <div className="flex items-center gap-2">
-                          <motion.button
-                            type="button"
-                            whileHover={{ scale: 1.04, y: -1 }}
-                            whileTap={{ scale: 0.96 }}
-                            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-                            onClick={() =>
-                              setChatState(prev => ({
-                                ...prev,
-                                enableRag: !prev.enableRag,
-                              }))
-                            }
-                            aria-pressed={chatState.enableRag}
-                            className={`
-                            inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium
-                            transition-all duration-300 ease-out will-change-transform
-                            ${
-                              chatState.enableRag
-                                ? 'border-blue-200 bg-blue-50 text-blue-700 shadow-sm shadow-blue-500/20 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-200'
-                                : 'border-border bg-surface-elevated/70 text-text-secondary hover:bg-surface-elevated/90 dark:border-white/10 dark:bg-white/5 dark:text-zinc-200 dark:hover:bg-white/10'
-                            }
-	                          `}
-                          >
-                            <motion.div
-                              animate={
-                                chatState.enableRag ? { rotate: 360, scale: [1, 1.1, 1] } : {}
-                              }
-                              transition={{ duration: 0.5, ease: 'easeOut' }}
-                            >
-                              <Database className="h-3.5 w-3.5" />
-                            </motion.div>
-                            {t('RAG')}
-                          </motion.button>
-
-                          <motion.button
-                            type="button"
-                            whileHover={{ scale: 1.04, y: -1 }}
-                            whileTap={{ scale: 0.96 }}
-                            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-                            onClick={() =>
-                              setChatState(prev => ({
-                                ...prev,
-                                enableWebSearch: !prev.enableWebSearch,
-                              }))
-                            }
-                            aria-pressed={chatState.enableWebSearch}
-                            className={`
-                            inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium
-                            transition-all duration-300 ease-out will-change-transform
-                            ${
-                              chatState.enableWebSearch
-                                ? 'border-blue-200 bg-blue-50 text-blue-700 shadow-sm shadow-blue-500/20 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-200'
-                                : 'border-border bg-surface-elevated/70 text-text-secondary hover:bg-surface-elevated/90 dark:border-white/10 dark:bg-white/5 dark:text-zinc-200 dark:hover:bg-white/10'
-                            }
-	                          `}
-                          >
-                            <motion.div
-                              animate={
-                                chatState.enableWebSearch ? { rotate: 360, scale: [1, 1.1, 1] } : {}
-                              }
-                              transition={{ duration: 0.5, ease: 'easeOut' }}
-                            >
-                              <Globe className="h-3.5 w-3.5" />
-                            </motion.div>
-                            {t('Web')}
-                          </motion.button>
-
-                          <AnimatePresence>
-                            {chatState.enableRag && (
-                              <motion.select
-                                initial={{ opacity: 0, width: 0 }}
-                                animate={{ opacity: 1, width: 'auto' }}
-                                exit={{ opacity: 0, width: 0 }}
-                                value={chatState.selectedKb}
-                                onChange={e =>
+                        <details className="group w-full sm:w-[320px]">
+                          <summary className="flex list-none items-center justify-between rounded-2xl border border-border bg-surface-elevated/60 px-4 py-2 text-sm font-medium text-text-primary shadow-glass-sm backdrop-blur-md transition-colors duration-150 hover:bg-surface-elevated/75 dark:border-white/10 dark:bg-white/5 dark:text-zinc-100 dark:hover:bg-white/10 cursor-pointer">
+                            <span className="inline-flex items-center gap-2">
+                              <SlidersHorizontal className="h-4 w-4 text-text-tertiary dark:text-zinc-400" />
+                              {t('Controls')}
+                            </span>
+                            <ChevronDown className="h-4 w-4 text-text-tertiary transition-transform duration-150 group-open:rotate-180 dark:text-zinc-400" />
+                          </summary>
+                          <div className="mt-3 rounded-2xl border border-border bg-surface-elevated/45 p-4 shadow-glass-sm backdrop-blur-md dark:border-white/10 dark:bg-zinc-950/40">
+                            <div className="flex flex-wrap gap-2">
+                              <Button
+                                size="sm"
+                                variant={chatState.enableRag ? 'primary' : 'secondary'}
+                                iconLeft={<Database className="h-4 w-4" />}
+                                className="!rounded-full"
+                                aria-pressed={chatState.enableRag}
+                                onClick={() =>
                                   setChatState(prev => ({
                                     ...prev,
-                                    selectedKb: e.target.value,
+                                    enableRag: !prev.enableRag,
                                   }))
                                 }
-                                aria-label={t('Knowledge base')}
-                                className="h-8 rounded-lg border border-border bg-surface-elevated/70 px-3 text-xs text-text-primary outline-none backdrop-blur-md dark:border-white/10 dark:bg-zinc-950/50 dark:text-zinc-100"
                               >
-                                {kbs.map(kb => (
-                                  <option key={kb.name} value={kb.name}>
-                                    {kb.name}
-                                  </option>
-                                ))}
-                              </motion.select>
+                                {t('Knowledge')}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant={chatState.enableWebSearch ? 'primary' : 'secondary'}
+                                iconLeft={<Globe className="h-4 w-4" />}
+                                className="!rounded-full"
+                                aria-pressed={chatState.enableWebSearch}
+                                onClick={() =>
+                                  setChatState(prev => ({
+                                    ...prev,
+                                    enableWebSearch: !prev.enableWebSearch,
+                                  }))
+                                }
+                              >
+                                {t('Web')}
+                              </Button>
+                            </div>
+
+                            {chatState.enableRag && (
+                              <div className="mt-4 space-y-1.5">
+                                <label className="text-xs font-semibold text-text-tertiary dark:text-zinc-400">
+                                  {t('Knowledge base')}
+                                </label>
+                                <select
+                                  value={chatState.selectedKb}
+                                  onChange={e =>
+                                    setChatState(prev => ({
+                                      ...prev,
+                                      selectedKb: e.target.value,
+                                    }))
+                                  }
+                                  className="h-9 w-full rounded-xl border border-border bg-surface-elevated/70 px-3 text-sm text-text-primary outline-none backdrop-blur-md transition-colors duration-150 hover:bg-surface-elevated/85 focus:border-blue-400/70 dark:border-white/10 dark:bg-zinc-950/50 dark:text-zinc-100 dark:hover:bg-zinc-950/60"
+                                >
+                                  {kbs.map(kb => (
+                                    <option key={kb.name} value={kb.name}>
+                                      {kb.name}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
                             )}
-                          </AnimatePresence>
-                        </div>
+
+                            <p className="mt-4 text-xs text-text-tertiary dark:text-zinc-400">
+                              {t('Replies include sources + a confidence estimate. Use Council verification for high-stakes answers.')}
+                            </p>
+                          </div>
+                        </details>
                       </div>
 
                       <div className="mt-5">
                         <div className="relative">
-                          <motion.div
-                            animate={
+                          <div
+                            className={cn(
+                              'rounded-2xl transition-shadow duration-150',
                               isFocused
-                                ? {
-                                    boxShadow:
-                                      '0 0 0 4px rgba(59, 130, 246, 0.12), 0 8px 16px -4px rgba(59, 130, 246, 0.1)',
-                                  }
-                                : { boxShadow: '0 0 0 0px rgba(59, 130, 246, 0)' }
-                            }
-                            transition={{ duration: 0.25, ease: 'easeOut' }}
-                            className="rounded-2xl"
+                                ? 'shadow-[0_0_0_4px_rgba(59,130,246,0.10),0_12px_30px_-12px_rgba(59,130,246,0.22)]'
+                                : 'shadow-glass-sm'
+                            )}
                           >
                             <input
                               ref={inputRef}
@@ -917,7 +859,7 @@ export default function HomePage() {
                               }
 	                            focus:outline-none
 	                            shadow-glass-sm
-	                            transition-colors duration-250
+	                            transition-colors duration-150
 	                          `}
                               aria-label={t('Message')}
                               placeholder={t('Ask anything...')}
@@ -929,86 +871,44 @@ export default function HomePage() {
                               disabled={chatState.isLoading}
                               autoComplete="off"
                             />
-                          </motion.div>
+                          </div>
 
-                          <motion.button
-                            type="button"
-                            whileHover={
-                              inputMessage.trim()
-                                ? { scale: 1.05, rotate: [0, -5, 5, 0] }
-                                : { scale: 1.02 }
+                          <IconButton
+                            aria-label={t('Send message')}
+                            icon={
+                              chatState.isLoading ? (
+                                <Loader2 className="h-5 w-5 motion-safe:animate-spin" />
+                              ) : (
+                                <Send className="h-5 w-5" />
+                              )
                             }
-                            whileTap={{ scale: 0.95 }}
-                            animate={
-                              inputMessage.trim() && !chatState.isLoading
-                                ? {
-                                    boxShadow: [
-                                      '0 8px 16px -4px rgba(59, 130, 246, 0.3)',
-                                      '0 12px 24px -4px rgba(59, 130, 246, 0.4)',
-                                      '0 8px 16px -4px rgba(59, 130, 246, 0.3)',
-                                    ],
-                                  }
-                                : { boxShadow: '0 0 0 0 rgba(59, 130, 246, 0)' }
-                            }
-                            transition={{
-                              boxShadow: { duration: 2, repeat: Infinity, ease: 'easeInOut' },
-                            }}
+                            size="md"
+                            variant={inputMessage.trim() ? 'primary' : 'secondary'}
                             onClick={handleSend}
                             disabled={chatState.isLoading || !inputMessage.trim()}
-                            aria-label={t('Send message')}
-                            className={`
-	                            absolute right-2.5 top-1/2 -translate-y-1/2
-	                            flex h-11 w-11 items-center justify-center rounded-xl
-	                            transition-all duration-300 ease-out will-change-transform
-	                            ${
-                                inputMessage.trim()
-                                  ? 'bg-accent-primary text-white'
-                                  : 'bg-surface-elevated/70 text-text-tertiary dark:bg-white/5 dark:text-text-tertiary'
-                              }
-	                            disabled:opacity-50 disabled:cursor-not-allowed
-	                          `}
-                          >
-                            {chatState.isLoading ? (
-                              <Loader2 className="h-5 w-5 animate-spin" />
-                            ) : (
-                              <motion.div
-                                animate={inputMessage.trim() ? { x: [0, 2, 0] } : {}}
-                                transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
-                              >
-                                <Send className="h-5 w-5" />
-                              </motion.div>
+                            className={cn(
+                              'absolute right-2.5 top-1/2 -translate-y-1/2',
+                              '!rounded-xl'
                             )}
-                          </motion.button>
+                          />
                         </div>
 
                         {conversationStarters.length > 0 && (
                           <div className="mt-4 flex flex-wrap gap-2">
                             {conversationStarters.slice(0, 3).map(starter => (
-                              <motion.button
+                              <Button
                                 key={starter.id}
-                                type="button"
-                                whileHover={{
-                                  y: -2,
-                                  scale: 1.02,
-                                  boxShadow: '0 4px 12px -2px rgba(59, 130, 246, 0.2)',
-                                }}
-                                whileTap={{ scale: 0.98 }}
-                                transition={{ type: 'spring', stiffness: 400, damping: 25 }}
                                 onClick={() => {
                                   setInputMessage(starter.prompt)
                                   inputRef.current?.focus()
                                 }}
-                                className="inline-flex items-center gap-2 rounded-full border border-border bg-surface-elevated/60 px-3 py-1.5 text-xs text-text-secondary backdrop-blur-md transition-colors duration-200 hover:bg-surface-elevated/80 hover:text-text-primary will-change-transform dark:border-white/10 dark:bg-white/5 dark:text-zinc-200 dark:hover:bg-white/10 dark:hover:text-zinc-50"
+                                size="sm"
+                                variant="secondary"
+                                iconLeft={starter.icon}
+                                className="!rounded-full"
                               >
-                                <motion.span
-                                  className="text-accent-primary"
-                                  whileHover={{ rotate: [0, -10, 10, 0] }}
-                                  transition={{ duration: 0.4 }}
-                                >
-                                  {starter.icon}
-                                </motion.span>
                                 <span className="max-w-[220px] truncate">{starter.title}</span>
-                              </motion.button>
+                              </Button>
                             ))}
                           </div>
                         )}
@@ -1045,40 +945,33 @@ export default function HomePage() {
                 </motion.div>
 
                 <div className="mt-5 grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
-                  {conversationStarters.map((starter, index) => (
-                    <motion.button
+                  {conversationStarters.map(starter => (
+                    <motion.div
                       key={starter.id}
                       variants={itemVariants}
-                      custom={index}
-                      whileHover={{
-                        y: -4,
-                        scale: 1.01,
-                        transition: { type: 'spring', stiffness: 400, damping: 25 },
-                      }}
-                      whileTap={{ scale: 0.98 }}
+                      className="h-full"
+                    >
+                      <button
                       type="button"
                       data-testid={`conversation-starter-${starter.id}`}
                       onClick={() => {
                         setInputMessage(starter.prompt)
                         focusChat()
                       }}
-                      className="group text-left will-change-transform"
-                    >
+                      className="group h-full w-full text-left"
+                      >
                       <Card
                         variant="glass"
                         padding="md"
-                        className="h-full border-border bg-surface-elevated/40 transition-all duration-300 ease-out group-hover:border-blue-200/50 group-hover:bg-surface-elevated/60 group-hover:shadow-lg group-hover:shadow-blue-500/10 dark:border-white/10 dark:bg-white/5 dark:group-hover:border-blue-400/30 dark:group-hover:bg-white/8"
+                        interactive
+                        className="h-full border-border bg-surface-elevated/40 dark:border-white/10 dark:bg-white/5"
                       >
                         <div className="flex items-start gap-3">
-                          <motion.div
-                            className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-accent-primary transition-all duration-300 ease-out group-hover:bg-blue-100 group-hover:shadow-md group-hover:shadow-blue-500/20 dark:bg-blue-500/15 dark:text-blue-300 dark:group-hover:bg-blue-500/25"
-                            whileHover={{ rotate: [0, -5, 5, 0], scale: 1.1 }}
-                            transition={{ duration: 0.4 }}
-                          >
+                          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-accent-primary dark:bg-blue-500/15 dark:text-blue-300">
                             {starter.icon}
-                          </motion.div>
+                          </div>
                           <div className="min-w-0 flex-1">
-                            <div className="text-sm font-semibold text-text-primary transition-colors duration-200 group-hover:text-accent-primary dark:text-zinc-50 dark:group-hover:text-blue-300">
+                            <div className="text-sm font-semibold text-text-primary dark:text-zinc-50">
                               {starter.title}
                             </div>
                             <div className="mt-1 line-clamp-2 text-xs text-text-tertiary dark:text-zinc-400">
@@ -1087,7 +980,8 @@ export default function HomePage() {
                           </div>
                         </div>
                       </Card>
-                    </motion.button>
+                      </button>
+                    </motion.div>
                   ))}
                 </div>
               </motion.section>
@@ -1118,40 +1012,23 @@ export default function HomePage() {
                   <motion.div
                     key={i}
                     variants={itemVariants}
-                    whileHover={{
-                      y: -4,
-                      scale: 1.01,
-                      transition: { type: 'spring', stiffness: 400, damping: 25 },
-                    }}
-                    className="will-change-transform"
+                    className="h-full"
                   >
                     <Link href={action.href} prefetch={true} className="group block h-full">
                       <Card
                         variant="glass"
                         padding="md"
-                        className="h-full border-border bg-surface-elevated/40 transition-all duration-300 ease-out group-hover:border-blue-200/50 group-hover:bg-surface-elevated/60 group-hover:shadow-lg group-hover:shadow-blue-500/10 dark:border-white/10 dark:bg-white/5 dark:group-hover:border-blue-400/30 dark:group-hover:bg-white/8"
+                        interactive
+                        className="h-full border-border bg-surface-elevated/40 dark:border-white/10 dark:bg-white/5"
                       >
                         <div className="flex items-start justify-between gap-4">
-                          <motion.div
-                            className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-accent-primary transition-all duration-300 ease-out group-hover:bg-blue-100 group-hover:shadow-md group-hover:shadow-blue-500/20 dark:bg-blue-500/15 dark:text-blue-300 dark:group-hover:bg-blue-500/25"
-                            whileHover={{
-                              rotate: [0, -8, 8, 0],
-                              scale: 1.1,
-                            }}
-                            transition={{ duration: 0.5, ease: 'easeOut' }}
-                          >
+                          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-accent-primary dark:bg-blue-500/15 dark:text-blue-300">
                             <action.icon className="h-5 w-5" />
-                          </motion.div>
-                          <motion.div
-                            className="mt-1"
-                            whileHover={{ x: 3, scale: 1.15 }}
-                            transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-                          >
-                            <ArrowRight className="h-4 w-4 text-text-tertiary transition-colors duration-300 ease-out group-hover:text-accent-primary dark:text-text-tertiary dark:group-hover:text-accent-primary" />
-                          </motion.div>
+                          </div>
+                          <ArrowRight className="mt-1 h-4 w-4 text-text-tertiary group-hover:text-accent-primary transition-colors duration-150 ease-out dark:text-zinc-400 dark:group-hover:text-blue-300" />
                         </div>
                         <div className="mt-4">
-                          <h3 className="text-sm font-semibold text-text-primary transition-colors duration-200 group-hover:text-accent-primary dark:text-zinc-50 dark:group-hover:text-blue-300">
+                          <h3 className="text-sm font-semibold text-text-primary transition-colors duration-150 group-hover:text-accent-primary dark:text-zinc-50 dark:group-hover:text-blue-300">
                             {action.label}
                           </h3>
                           <p className="mt-1 text-xs text-text-secondary dark:text-zinc-300">
@@ -1178,118 +1055,136 @@ export default function HomePage() {
     <div className="relative h-dvh overflow-hidden bg-surface dark:bg-zinc-950">
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 opacity-30 [mask-image:radial-gradient(ellipse_at_top,black_40%,transparent_75%)] bg-[linear-gradient(to_right,rgba(24,24,27,0.06)_1px,transparent_1px),linear-gradient(to_bottom,rgba(24,24,27,0.06)_1px,transparent_1px)] bg-[length:56px_56px] dark:opacity-20 dark:bg-[linear-gradient(to_right,rgba(255,255,255,0.06)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.06)_1px,transparent_1px)]"
+        className="pointer-events-none absolute -top-48 left-1/2 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-blue-500/10 blur-3xl dark:bg-blue-500/10"
       />
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.06),transparent_55%)] dark:bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.03),transparent_55%)]"
+        className="pointer-events-none absolute -bottom-56 right-10 h-[520px] w-[520px] rounded-full bg-indigo-500/10 blur-3xl dark:bg-indigo-500/10"
       />
       <PageWrapper maxWidth="full" showPattern={false} className="h-dvh px-0 py-0">
         <div className="relative flex h-dvh flex-col">
           {/* Header Bar */}
           <motion.div
-            initial={{ opacity: 0, y: -20 }}
+            initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
+            transition={
+              shouldReduceMotion ? { duration: 0 } : { duration: 0.22, ease: [0.2, 0.8, 0.2, 1] }
+            }
             className="relative border-b border-border bg-surface-elevated/75 backdrop-blur-xl dark:border-white/10 dark:bg-zinc-950/60"
           >
-            <div className="mx-auto flex max-w-4xl items-center justify-between gap-6 px-6 py-3">
-              <div className="flex items-center gap-3">
-                {/* Mode Toggles */}
-                <motion.button
-                  type="button"
-                  whileHover={{ scale: 1.04, y: -1 }}
-                  whileTap={{ scale: 0.96 }}
-                  transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-                  onClick={() =>
-                    setChatState(prev => ({
-                      ...prev,
-                      enableRag: !prev.enableRag,
-                    }))
-                  }
-                  aria-pressed={chatState.enableRag}
-                  className={`
-	                    flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all duration-300 ease-out will-change-transform
-	                    ${
-                        chatState.enableRag
-                          ? 'bg-blue-50 text-accent-primary border-blue-200 shadow-sm shadow-blue-500/20 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-200'
-                          : 'bg-surface-elevated/70 text-text-secondary border-border hover:bg-surface-elevated/90 dark:bg-white/5 dark:text-zinc-200 dark:border-white/10 dark:hover:bg-white/10'
-                      }
-	                  `}
-                >
-                  <motion.div
-                    animate={chatState.enableRag ? { rotate: 360, scale: [1, 1.1, 1] } : {}}
-                    transition={{ duration: 0.5, ease: 'easeOut' }}
-                  >
-                    <Database className="h-3.5 w-3.5" />
-                  </motion.div>
-                  {t('RAG')}
-                </motion.button>
-
-                <motion.button
-                  type="button"
-                  whileHover={{ scale: 1.04, y: -1 }}
-                  whileTap={{ scale: 0.96 }}
-                  transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-                  onClick={() =>
-                    setChatState(prev => ({
-                      ...prev,
-                      enableWebSearch: !prev.enableWebSearch,
-                    }))
-                  }
-                  aria-pressed={chatState.enableWebSearch}
-                  className={`
-	                    flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all duration-300 ease-out will-change-transform
-	                    ${
-                        chatState.enableWebSearch
-                          ? 'bg-blue-50 text-accent-primary border-blue-200 shadow-sm shadow-blue-500/20 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-200'
-                          : 'bg-surface-elevated/70 text-text-secondary border-border hover:bg-surface-elevated/90 dark:bg-white/5 dark:text-zinc-200 dark:border-white/10 dark:hover:bg-white/10'
-                      }
-	                  `}
-                >
-                  <motion.div
-                    animate={chatState.enableWebSearch ? { rotate: 360, scale: [1, 1.1, 1] } : {}}
-                    transition={{ duration: 0.5, ease: 'easeOut' }}
-                  >
-                    <Globe className="h-3.5 w-3.5" />
-                  </motion.div>
-                  {t('Web Search')}
-                </motion.button>
-
-                <AnimatePresence>
-                  {chatState.enableRag && (
-                    <motion.select
-                      initial={{ opacity: 0, width: 0 }}
-                      animate={{ opacity: 1, width: 'auto' }}
-                      exit={{ opacity: 0, width: 0 }}
-                      value={chatState.selectedKb}
-                      onChange={e =>
-                        setChatState(prev => ({
-                          ...prev,
-                          selectedKb: e.target.value,
-                        }))
-                      }
-                      aria-label={t('Knowledge base')}
-                      className="h-8 rounded-lg border border-border bg-surface-elevated/70 px-3 text-xs text-text-primary outline-none backdrop-blur-md dark:border-white/10 dark:bg-zinc-950/50 dark:text-zinc-100"
-                    >
-                      {kbs.map(kb => (
-                        <option key={kb.name} value={kb.name}>
-                          {kb.name}
-                        </option>
-                      ))}
-                    </motion.select>
-                  )}
-                </AnimatePresence>
+            <div className="mx-auto flex max-w-4xl items-center justify-between gap-4 px-6 py-3">
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border bg-surface-elevated/60 shadow-glass-sm backdrop-blur-md dark:border-white/10 dark:bg-white/5">
+                  <Bot className="h-4 w-4 text-accent-primary" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold text-text-primary dark:text-zinc-50">
+                    {t('Chat')}
+                  </div>
+                  <div className="mt-1 flex flex-wrap gap-2">
+                    {chatState.enableRag && chatState.selectedKb ? (
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-elevated/60 px-3 py-1 text-[11px] font-medium text-text-secondary backdrop-blur-md dark:border-white/10 dark:bg-white/5 dark:text-zinc-200">
+                        <Database className="h-3.5 w-3.5 text-accent-primary" />
+                        <span className="max-w-[180px] truncate">{chatState.selectedKb}</span>
+                      </span>
+                    ) : null}
+                    {chatState.enableWebSearch ? (
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-elevated/60 px-3 py-1 text-[11px] font-medium text-text-secondary backdrop-blur-md dark:border-white/10 dark:bg-white/5 dark:text-zinc-200">
+                        <Globe className="h-3.5 w-3.5 text-accent-primary" />
+                        {t('Web Search')}
+                      </span>
+                    ) : null}
+                    {!chatState.enableRag && !chatState.enableWebSearch ? (
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-elevated/60 px-3 py-1 text-[11px] font-medium text-text-tertiary backdrop-blur-md dark:border-white/10 dark:bg-white/5 dark:text-zinc-400">
+                        {t('Direct')}
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
               </div>
 
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleNewChat}
-                iconLeft={<Trash2 className="h-3.5 w-3.5" />}
-                className="text-text-secondary hover:text-red-600 hover:bg-red-50 dark:text-zinc-300 dark:hover:text-red-300 dark:hover:bg-red-500/10"
-              >
-                {t('New Chat')}
-              </Button>
+              <div className="flex items-center gap-2">
+                <details className="group relative">
+                  <summary className="flex list-none items-center gap-2 rounded-xl border border-border bg-surface-elevated/60 px-3 py-2 text-sm font-medium text-text-primary shadow-glass-sm backdrop-blur-md transition-colors duration-150 hover:bg-surface-elevated/75 dark:border-white/10 dark:bg-white/5 dark:text-zinc-100 dark:hover:bg-white/10 cursor-pointer">
+                    <SlidersHorizontal className="h-4 w-4 text-text-tertiary dark:text-zinc-400" />
+                    {t('Controls')}
+                    <ChevronDown className="ml-1 h-4 w-4 text-text-tertiary transition-transform duration-150 group-open:rotate-180 dark:text-zinc-400" />
+                  </summary>
+
+                  <div className="absolute right-0 mt-2 w-[340px] max-w-[calc(100vw-2.5rem)] rounded-2xl border border-border bg-white/70 p-4 shadow-xl backdrop-blur-xl dark:border-white/10 dark:bg-zinc-950/70 z-50">
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        size="sm"
+                        variant={chatState.enableRag ? 'primary' : 'secondary'}
+                        iconLeft={<Database className="h-4 w-4" />}
+                        className="!rounded-full"
+                        aria-pressed={chatState.enableRag}
+                        onClick={() =>
+                          setChatState(prev => ({
+                            ...prev,
+                            enableRag: !prev.enableRag,
+                          }))
+                        }
+                      >
+                        {t('RAG')}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant={chatState.enableWebSearch ? 'primary' : 'secondary'}
+                        iconLeft={<Globe className="h-4 w-4" />}
+                        className="!rounded-full"
+                        aria-pressed={chatState.enableWebSearch}
+                        onClick={() =>
+                          setChatState(prev => ({
+                            ...prev,
+                            enableWebSearch: !prev.enableWebSearch,
+                          }))
+                        }
+                      >
+                        {t('Web Search')}
+                      </Button>
+                    </div>
+
+                    {chatState.enableRag && (
+                      <div className="mt-4 space-y-1.5">
+                        <label className="text-xs font-semibold text-text-tertiary dark:text-zinc-400">
+                          {t('Select Knowledge Base')}
+                        </label>
+                        <select
+                          value={chatState.selectedKb}
+                          onChange={e =>
+                            setChatState(prev => ({
+                              ...prev,
+                              selectedKb: e.target.value,
+                            }))
+                          }
+                          className="h-9 w-full rounded-xl border border-border bg-surface-elevated/70 px-3 text-sm text-text-primary outline-none backdrop-blur-md transition-colors duration-150 hover:bg-surface-elevated/85 focus:border-blue-400/70 dark:border-white/10 dark:bg-zinc-950/50 dark:text-zinc-100 dark:hover:bg-zinc-950/60"
+                        >
+                          {kbs.map(kb => (
+                            <option key={kb.name} value={kb.name}>
+                              {kb.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
+                    <p className="mt-4 text-xs text-text-tertiary dark:text-zinc-400">
+                      {t('Replies include sources + a confidence estimate. Use Council verification for high-stakes answers.')}
+                    </p>
+                  </div>
+                </details>
+
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleNewChat}
+                  iconLeft={<Trash2 className="h-3.5 w-3.5" />}
+                  className="text-text-secondary hover:text-red-600 hover:bg-red-50 dark:text-zinc-300 dark:hover:text-red-300 dark:hover:bg-red-500/10"
+                >
+                  {t('New Chat')}
+                </Button>
+              </div>
             </div>
           </motion.div>
 
@@ -1506,7 +1401,7 @@ export default function HomePage() {
                         : 'border-border hover:border-border-hover dark:border-white/10 dark:hover:border-white/20'
                     }
 	                  focus:outline-none
-	                  transition-colors duration-250
+	                  transition-colors duration-150
 	                `}
                   aria-label={t('Message')}
                   placeholder={t('Type your message...')}
