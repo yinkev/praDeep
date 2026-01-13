@@ -17,6 +17,8 @@ export interface SwipeState {
   distance: number;
 }
 
+type LockedAxis = "x" | "y" | null;
+
 type TouchLike = {
   timeStamp?: number;
   touches?: ArrayLike<{
@@ -32,6 +34,7 @@ type TouchLike = {
 };
 
 const DEFAULT_THRESHOLD = 50;
+const AXIS_LOCK_THRESHOLD_PX = 8;
 
 function getEventTime(event: TouchLike): number {
   if (typeof event.timeStamp === "number" && Number.isFinite(event.timeStamp)) {
@@ -71,6 +74,26 @@ function getDominantDirection(dx: number, dy: number): { direction: SwipeDirecti
   return { direction: dy > 0 ? "down" : "up", distance: absY };
 }
 
+function getDirectionForLockedAxis(
+  axis: LockedAxis,
+  dx: number,
+  dy: number,
+): { direction: SwipeDirection; distance: number } {
+  if (axis === "x") {
+    const distance = Math.abs(dx);
+    if (distance === 0) return { direction: null, distance: 0 };
+    return { direction: dx > 0 ? "right" : "left", distance };
+  }
+
+  if (axis === "y") {
+    const distance = Math.abs(dy);
+    if (distance === 0) return { direction: null, distance: 0 };
+    return { direction: dy > 0 ? "down" : "up", distance };
+  }
+
+  return getDominantDirection(dx, dy);
+}
+
 export function useSwipeGesture(config: SwipeGestureConfig = {}) {
   const { threshold = DEFAULT_THRESHOLD, onSwipeDown, onSwipeLeft, onSwipeRight, onSwipeUp } =
     config;
@@ -102,6 +125,7 @@ export function useSwipeGesture(config: SwipeGestureConfig = {}) {
   const startRef = useRef<{ x: number; y: number } | null>(null);
   const startTimeRef = useRef<number | null>(null);
   const activeTouchIdRef = useRef<number | null>(null);
+  const lockedAxisRef = useRef<LockedAxis>(null);
   const globalListenersAttachedRef = useRef(false);
   const touchMoveListenerRef = useRef<EventListener | null>(null);
   const touchEndListenerRef = useRef<EventListener | null>(null);
@@ -132,7 +156,17 @@ export function useSwipeGesture(config: SwipeGestureConfig = {}) {
 
     const dx = touch.clientX - start.x;
     const dy = touch.clientY - start.y;
-    const { direction, distance } = getDominantDirection(dx, dy);
+
+    if (lockedAxisRef.current == null) {
+      const absX = Math.abs(dx);
+      const absY = Math.abs(dy);
+      if (absX >= AXIS_LOCK_THRESHOLD_PX || absY >= AXIS_LOCK_THRESHOLD_PX) {
+        if (absX > absY) lockedAxisRef.current = "x";
+        if (absY > absX) lockedAxisRef.current = "y";
+      }
+    }
+
+    const { direction, distance } = getDirectionForLockedAxis(lockedAxisRef.current, dx, dy);
 
     setSwipeState({ isSwiping: true, direction, distance });
   }, []);
@@ -142,6 +176,7 @@ export function useSwipeGesture(config: SwipeGestureConfig = {}) {
     const startTime = startTimeRef.current;
     if (!start || startTime == null) {
       setSwipeState({ isSwiping: false, direction: null, distance: 0 });
+      lockedAxisRef.current = null;
       detachGlobalListeners();
       return;
     }
@@ -155,6 +190,7 @@ export function useSwipeGesture(config: SwipeGestureConfig = {}) {
       startRef.current = null;
       startTimeRef.current = null;
       activeTouchIdRef.current = null;
+      lockedAxisRef.current = null;
       detachGlobalListeners();
       return;
     }
@@ -163,7 +199,7 @@ export function useSwipeGesture(config: SwipeGestureConfig = {}) {
     const dx = touch.clientX - start.x;
     const dy = touch.clientY - start.y;
 
-    const { direction, distance } = getDominantDirection(dx, dy);
+    const { direction, distance } = getDirectionForLockedAxis(lockedAxisRef.current, dx, dy);
     const duration = endTime - startTime;
     const velocity = duration > 0 ? distance / duration : 0;
 
@@ -180,6 +216,7 @@ export function useSwipeGesture(config: SwipeGestureConfig = {}) {
     startRef.current = null;
     startTimeRef.current = null;
     activeTouchIdRef.current = null;
+    lockedAxisRef.current = null;
     detachGlobalListeners();
   }, [detachGlobalListeners]);
 
@@ -205,6 +242,7 @@ export function useSwipeGesture(config: SwipeGestureConfig = {}) {
     activeTouchIdRef.current = touch.identifier ?? null;
     startRef.current = { x: touch.clientX, y: touch.clientY };
     startTimeRef.current = getEventTime(event);
+    lockedAxisRef.current = null;
 
     setSwipeState({ isSwiping: true, direction: null, distance: 0 });
 

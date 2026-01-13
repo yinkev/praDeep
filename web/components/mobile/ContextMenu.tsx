@@ -13,6 +13,7 @@ export type ContextMenuItem = {
 }
 
 export interface ContextMenuProps {
+  isOpen: boolean
   items: ContextMenuItem[]
   position: { x: number; y: number }
   onClose: () => void
@@ -48,12 +49,13 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max)
 }
 
-export function ContextMenu({ items, position, onClose }: ContextMenuProps): ReactNode {
+export function ContextMenu({ isOpen, items, position, onClose }: ContextMenuProps): ReactNode {
   const prefersReducedMotion = useReducedMotion()
   const menuRef = useRef<HTMLDivElement | null>(null)
   const [adjusted, setAdjusted] = useState(position)
 
   useLayoutEffect(() => {
+    if (!isOpen) return
     const menuEl = menuRef.current
     if (!menuEl) return
     if (typeof window === 'undefined') return
@@ -77,15 +79,16 @@ export function ContextMenu({ items, position, onClose }: ContextMenuProps): Rea
     top = clamp(top, EDGE_PADDING, Math.max(EDGE_PADDING, viewportHeight - menuHeight - EDGE_PADDING))
 
     setAdjusted({ x: left, y: top })
-  }, [position.x, position.y])
+  }, [isOpen, position.x, position.y])
 
   useEffect(() => {
+    if (!isOpen) return
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose()
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [onClose])
+  }, [isOpen, onClose])
 
   const renderedItems = useMemo(
     () =>
@@ -116,36 +119,40 @@ export function ContextMenu({ items, position, onClose }: ContextMenuProps): Rea
 
   const content = (
     <AnimatePresence>
-      <motion.div
-        data-testid="context-menu-backdrop"
-        className="fixed inset-0 z-[9998] bg-black/20 backdrop-blur-[2px]"
-        variants={backdrop}
-        initial="hidden"
-        animate="visible"
-        exit="exit"
-        onClick={onClose}
-      />
-      <motion.div
-        data-testid="context-menu"
-        ref={menuRef}
-        className={cn(
-          'fixed z-[9999] min-w-[180px] max-w-[280px]',
-          'rounded-xl border border-slate-200/70 dark:border-slate-700/70',
-          'bg-white/95 dark:bg-slate-900/95 shadow-xl',
-          'p-1',
-        )}
-        style={{ left: adjusted.x, top: adjusted.y }}
-        variants={menuMotion}
-        initial="hidden"
-        animate="visible"
-        exit="exit"
-        onClick={event => event.stopPropagation()}
-      >
-        {renderedItems}
-      </motion.div>
+      {isOpen ? (
+        <>
+          <motion.div
+            data-testid="context-menu-backdrop"
+            className="fixed inset-0 z-[9998] bg-black/20 backdrop-blur-[2px]"
+            variants={backdrop}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            onClick={onClose}
+          />
+          <motion.div
+            data-testid="context-menu"
+            ref={menuRef}
+            className={cn(
+              'fixed z-[9999] min-w-[180px] max-w-[280px]',
+              'rounded-xl border border-slate-200/70 dark:border-slate-700/70',
+              'bg-white/95 dark:bg-slate-900/95 shadow-xl',
+              'p-1',
+            )}
+            style={{ left: adjusted.x, top: adjusted.y }}
+            variants={menuMotion}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            onClick={event => event.stopPropagation()}
+          >
+            {renderedItems}
+          </motion.div>
+        </>
+      ) : null}
     </AnimatePresence>
   )
 
+  if (typeof document === 'undefined') return null
   return createPortal(content, document.body)
 }
-

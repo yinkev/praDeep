@@ -38,7 +38,7 @@ export default function TouchTestClient() {
   const longPressHandlers = useMemo(() => {
     const onTouchStart = (event: any) => {
       setMenuPosition(getTouchPoint(event))
-      baseLongPressHandlers.onTouchStart()
+      baseLongPressHandlers.onTouchStart(event)
     }
 
     const onMouseDown = (event: any) => {
@@ -106,9 +106,12 @@ export default function TouchTestClient() {
         />
       </section>
 
-      {menuOpen ? (
-        <ContextMenu items={items} position={menuPosition} onClose={() => setMenuOpen(false)} />
-      ) : null}
+      <ContextMenu
+        isOpen={menuOpen}
+        items={items}
+        position={menuPosition}
+        onClose={() => setMenuOpen(false)}
+      />
     </main>
   )
 }
