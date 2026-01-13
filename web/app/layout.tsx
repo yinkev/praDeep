@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter } from 'next/font/google'
+import { Inter, IBM_Plex_Mono, Cormorant_Garamond } from 'next/font/google'
 import './globals.css'
 import Sidebar from '@/components/Sidebar'
 import { GlobalProvider } from '@/context/GlobalContext'
@@ -13,6 +13,20 @@ const inter = Inter({
   subsets: ['latin'],
   display: 'swap',
   variable: '--font-inter',
+})
+
+const ibmPlexMono = IBM_Plex_Mono({
+  subsets: ['latin'],
+  weight: ['400', '500', '600'],
+  display: 'swap',
+  variable: '--font-ibm-plex-mono',
+})
+
+const cormorantGaramond = Cormorant_Garamond({
+  subsets: ['latin'],
+  weight: ['400', '500', '600'],
+  display: 'swap',
+  variable: '--font-cormorant-garamond',
 })
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL
@@ -66,7 +80,11 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning className={inter.variable}>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`${inter.variable} ${ibmPlexMono.variable} ${cormorantGaramond.variable}`}
+    >
       <head>
         <ThemeScript />
       </head>
