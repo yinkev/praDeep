@@ -188,3 +188,224 @@ curl -s http://localhost:8317/v1/chat/completions \
 2. **Unnecessary timeouts**: Do NOT set `--max-time` or timeout limits on API calls - let them complete naturally
 3. **Rate limiting with Gemini CLI**: Running 10+ parallel `gemini` CLI commands will hit rate limits. Use CLI Proxy API instead for parallel operations
 4. **Listen to user instructions**: When user specifies a model (e.g., "Gemini 3 Pro"), use EXACTLY that model, not a different version
+
+## New UI Components (2026 Research)
+
+Components implementing soft minimalism and speed-focused design:
+
+### ProgressiveDisclosure
+**Purpose**: 2-layer expandable settings/details component with fluid animations.
+
+**Import**: `import { ProgressiveDisclosure } from '@/components/ui/ProgressiveDisclosure'`
+
+**Props**:
+- `title: string` - Header text displayed in uppercase monospace
+- `children: ReactNode` - Content revealed on expand
+- `defaultExpanded?: boolean` - Initial state (default: false)
+- `level?: 1 | 2` - Visual hierarchy (1=larger shadow, 2=subtle)
+
+**Usage Example**:
+```tsx
+<ProgressiveDisclosure title="Advanced Settings" level={1}>
+  <p>Settings content with glass morphism backdrop</p>
+</ProgressiveDisclosure>
+```
+
+**Design Notes**:
+- Glass morphism container with backdrop blur
+- Smooth height/opacity animations (150ms)
+- Chevron rotation on expand
+- Hover shimmer effect with inset white glow
+
+---
+
+### DiffViewer
+**Purpose**: Visual diff display for AI outputs with inline or split modes.
+
+**Import**: `import { DiffViewer, Addition, Deletion, CodeDiff } from '@/components/ui/DiffViewer'`
+
+**Components**:
+1. **DiffViewer** - Container component
+   - Props: `mode?: 'inline' | 'split'`, `showLineNumbers?: boolean`, `className?: string`
+
+2. **Addition** - Highlights added content
+   - Props: `children: ReactNode`, `lineNumber?: number`
+   - Styling: Blue highlight with liquid glass backdrop
+
+3. **Deletion** - Highlights removed content
+   - Props: `children: ReactNode`, `lineNumber?: number`
+   - Styling: Red strikethrough with subtle glow
+
+4. **CodeDiff** - Specialized for code diffs
+   - Props: `before: string[]`, `after: string[]`, `showLineNumbers?: boolean`, `language?: string`
+
+**Usage Example**:
+```tsx
+// Inline mode
+<DiffViewer mode="inline">
+  <Deletion>old text</Deletion>
+  <Addition>new text</Addition>
+</DiffViewer>
+
+// Code diff with split view
+<CodeDiff
+  before={['const x = 5', 'console.log(x)']}
+  after={['let x = 10', 'console.info(x)']}
+  showLineNumbers={true}
+/>
+```
+
+**Design Notes**:
+- Liquid glass aesthetic with blur effects
+- Color-coded additions (blue) and deletions (red)
+- Optional line numbers with monospace font
+- Smooth entrance animations with staggered timing
+
+---
+
+### CommandMenu
+**Purpose**: Notion-style slash command interface for keyboard-driven navigation.
+
+**Import**: `import { CommandMenu, COMMANDS, type Command } from '@/components/ui/CommandMenu'`
+
+**Props**:
+- `isOpen: boolean` - Menu visibility
+- `query: string` - Search filter text
+- `selectedIndex: number` - Currently highlighted command
+- `onSelect: (commandId: string) => void` - Selection callback
+- `onClose: () => void` - Close callback
+- `position?: { top: number; left: number }` - Absolute position
+
+**Default Commands**:
+- `ask` - Ask AI
+- `summarize` - Summarize selected text
+- `explain` - Explain concept in detail
+- `research` - Research a topic with sources
+- `improve` - Improve writing and clarity
+
+**Usage Example**:
+```tsx
+const [menuOpen, setMenuOpen] = useState(false)
+const [selectedCmd, setSelectedCmd] = useState(0)
+
+<CommandMenu
+  isOpen={menuOpen}
+  query={searchText}
+  selectedIndex={selectedCmd}
+  onSelect={(id) => handleCommand(id)}
+  onClose={() => setMenuOpen(false)}
+/>
+```
+
+**Design Notes**:
+- Floating glass container with backdrop blur
+- Keyboard navigation (↑↓ arrows, Enter to select, Esc to close)
+- Icon + description for each command
+- Active item highlighted in blue with white text
+- Smooth scale animations on hover/tap
+- Scrolls selected item into view automatically
+
+---
+
+### CommandInput
+**Purpose**: Text input that detects slash commands and opens CommandMenu.
+
+**Import**: `import { CommandInput, type CommandContext } from '@/components/ui/CommandInput'`
+
+**Props**:
+- `value: string` - Input text value
+- `onChange: (value: string) => void` - Change handler
+- `onCommandSelect?: (commandId: string, context: CommandContext) => void` - Command selection callback
+- `placeholder?: string` - Input placeholder
+- `className?: string` - Additional CSS classes
+- Extends standard HTML input props
+
+**CommandContext**:
+```tsx
+interface CommandContext {
+  text: string        // Input without command
+  selection?: string  // Selected text context
+}
+```
+
+**Usage Example**:
+```tsx
+const [inputValue, setInputValue] = useState('')
+
+<CommandInput
+  value={inputValue}
+  onChange={setInputValue}
+  onCommandSelect={(cmdId, ctx) => {
+    console.log(`Executed ${cmdId} on: "${ctx.text}"`)
+  }}
+  placeholder="Type / for commands..."
+/>
+```
+
+**Design Notes**:
+- Detects `/` at start or after space
+- Shows slash icon hint when empty
+- Closes menu on selection and removes command text
+- Repositions menu on window resize
+- Full keyboard navigation support
+- Arrow keys navigate commands, Enter selects, Escape closes
+
+---
+
+### AIContentHighlight
+**Purpose**: Highlight AI-generated or AI-modified content with visual indicators.
+
+**Import**: `import { AIContentHighlight, AIInlineHighlight, AIModification } from '@/components/ui/AIContentHighlight'`
+
+**Components**:
+1. **AIContentHighlight** - Block-level highlight
+   - Props: `variant?: 'default' | 'subtle' | 'prominent'`, `showBadge?: boolean`, `animated?: boolean`, `className?: string`, `onHoverChange?: (isHovering: boolean) => void`
+
+2. **AIInlineHighlight** - Inline text highlight
+   - Props: `children: ReactNode`, `className?: string`
+
+3. **AIModification** - Block with timestamp and model metadata
+   - Props: `children: ReactNode`, `timestamp?: Date | string`, `modelName?: string`, `className?: string`
+
+**Usage Example**:
+```tsx
+// Block highlight
+<AIContentHighlight variant="default" showBadge={true}>
+  <p>This content was generated by AI</p>
+</AIContentHighlight>
+
+// Inline highlight
+<p>
+  This text contains <AIInlineHighlight>AI-generated</AIInlineHighlight> content.
+</p>
+
+// With metadata
+<AIModification timestamp={new Date()} modelName="Claude 3.5">
+  <p>Modified content with timestamp</p>
+</AIModification>
+```
+
+**Design Notes**:
+- Three variants: default (balanced), subtle (minimal), prominent (attention-grabbing)
+- Liquid glass glow effect that intensifies on hover
+- AI badge with sparkle icon (removable)
+- Smooth entrance animations
+- Variants have different gradient directions and opacity levels
+
+---
+
+### Additional UI Components
+
+**CommonPatterns**:
+- All use `'use client'` directive for client-side interactivity
+- Framer Motion animations with fluid easing: `[0.2, 0.8, 0.2, 1]`
+- Glass morphism with `backdrop-blur-xl` or `backdrop-blur-sm`
+- Lucide icons for consistency
+- Responsive and touch-friendly design
+- Dark mode support via `dark:` Tailwind classes
+
+**Organization**:
+- Location: `web/components/ui/`
+- TypeScript interfaces for all props
+- Accessible with ARIA attributes where relevant
+- No external dependencies beyond React, Framer Motion, Lucide
