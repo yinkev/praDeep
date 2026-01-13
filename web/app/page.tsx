@@ -762,7 +762,7 @@ export default function HomePage() {
                         </div>
 
                         <details className="group w-full sm:w-[320px]">
-                          <summary className="flex list-none items-center justify-between rounded-2xl border border-border bg-surface-elevated/60 px-4 py-2 text-sm font-medium text-text-primary shadow-glass-sm backdrop-blur-md transition-colors duration-150 hover:bg-surface-elevated/75 dark:border-white/10 dark:bg-white/5 dark:text-zinc-100 dark:hover:bg-white/10 cursor-pointer">
+                          <summary className="flex items-center justify-between rounded-2xl border border-border bg-surface-elevated/60 px-4 py-2 text-sm font-medium text-text-primary shadow-glass-sm backdrop-blur-md transition-colors duration-150 hover:bg-surface-elevated/75 dark:border-white/10 dark:bg-white/5 dark:text-zinc-100 dark:hover:bg-white/10 cursor-pointer [&::-webkit-details-marker]:hidden [&::marker]:content-none">
                             <span className="inline-flex items-center gap-2">
                               <SlidersHorizontal className="h-4 w-4 text-text-tertiary dark:text-zinc-400" />
                               {t('Controls')}
@@ -1105,7 +1105,7 @@ export default function HomePage() {
 
               <div className="flex items-center gap-2">
                 <details className="group relative">
-                  <summary className="flex list-none items-center gap-2 rounded-xl border border-border bg-surface-elevated/60 px-3 py-2 text-sm font-medium text-text-primary shadow-glass-sm backdrop-blur-md transition-colors duration-150 hover:bg-surface-elevated/75 dark:border-white/10 dark:bg-white/5 dark:text-zinc-100 dark:hover:bg-white/10 cursor-pointer">
+                  <summary className="flex items-center gap-2 rounded-xl border border-border bg-surface-elevated/60 px-3 py-2 text-sm font-medium text-text-primary shadow-glass-sm backdrop-blur-md transition-colors duration-150 hover:bg-surface-elevated/75 dark:border-white/10 dark:bg-white/5 dark:text-zinc-100 dark:hover:bg-white/10 cursor-pointer [&::-webkit-details-marker]:hidden [&::marker]:content-none">
                     <SlidersHorizontal className="h-4 w-4 text-text-tertiary dark:text-zinc-400" />
                     {t('Controls')}
                     <ChevronDown className="ml-1 h-4 w-4 text-text-tertiary transition-transform duration-150 group-open:rotate-180 dark:text-zinc-400" />
@@ -1222,13 +1222,14 @@ export default function HomePage() {
                     ) : (
                       <>
                         {/* Bot Avatar */}
-                        <motion.div
-                          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-500 shadow-lg shadow-blue-500/25"
-                          animate={msg.isStreaming ? { scale: [1, 1.05, 1] } : {}}
-                          transition={{ duration: 1, repeat: msg.isStreaming ? Infinity : 0 }}
+                        <div
+                          className={cn(
+                            'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-500 shadow-lg shadow-blue-500/20',
+                            msg.isStreaming && 'ring-2 ring-blue-500/20'
+                          )}
                         >
                           <Bot className="h-5 w-5 text-white" />
-                        </motion.div>
+                        </div>
 
                         {/* Bot Message Bubble */}
                         <div className="flex-1 space-y-3">
@@ -1260,40 +1261,144 @@ export default function HomePage() {
                             )}
                           </Card>
 
-                          {/* Sources */}
-                          {msg.sources &&
-                            (msg.sources.rag?.length ?? 0) + (msg.sources.web?.length ?? 0) > 0 && (
-                              <motion.div
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="flex flex-wrap gap-2"
-                              >
-                                {msg.sources.rag?.map((source, i) => (
-                                  <div
-                                    key={`rag-${i}`}
-                                    className="flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs text-accent-primary dark:border-blue-500/25 dark:bg-blue-500/10 dark:text-blue-200"
-                                  >
-                                    <BookOpen className="h-3 w-3" />
-                                    <span>{source.kb_name}</span>
-                                  </div>
-                                ))}
-                                {msg.sources.web?.slice(0, 3).map((source, i) => (
-                                  <a
-                                    key={`web-${i}`}
-                                    href={source.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex items-center gap-1.5 rounded-lg border border-border bg-surface-elevated/60 px-3 py-1.5 text-xs text-text-secondary backdrop-blur-md transition-colors duration-300 ease-out hover:bg-surface-elevated/80 dark:border-white/10 dark:bg-white/5 dark:text-zinc-200 dark:hover:bg-white/10"
-                                  >
-                                    <Globe className="h-3 w-3" />
-                                    <span className="max-w-[150px] truncate">
-                                      {source.title || source.url}
+                          {/* Transparency */}
+                          {(() => {
+                            const ragCount = msg.sources?.rag?.length ?? 0
+                            const webCount = msg.sources?.web?.length ?? 0
+                            const sourceCount = ragCount + webCount
+
+                            const confidence = msg.meta?.verified
+                              ? 0.92
+                              : sourceCount > 0
+                                ? 0.74
+                                : 0.6
+
+                            const confidenceLabel =
+                              confidence >= 0.85 ? 'High' : confidence >= 0.65 ? 'Medium' : 'Low'
+
+                            const method =
+                              ragCount > 0 && webCount > 0
+                                ? 'KB + Web'
+                                : ragCount > 0
+                                  ? 'KB'
+                                  : webCount > 0
+                                    ? 'Web'
+                                    : 'Direct'
+
+                            const kbNames = Array.from(
+                              new Set((msg.sources?.rag ?? []).map(s => s.kb_name).filter(Boolean))
+                            )
+
+                            const webSources = (msg.sources?.web ?? []).slice(0, 6)
+
+                            return (
+                              <details className="group">
+                                <summary className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-surface-elevated/40 px-4 py-2 text-xs text-text-secondary shadow-glass-sm backdrop-blur-md transition-colors duration-150 hover:bg-surface-elevated/55 dark:border-white/10 dark:bg-white/5 dark:text-zinc-200 dark:hover:bg-white/10 cursor-pointer [&::-webkit-details-marker]:hidden [&::marker]:content-none">
+                                  <span className="flex flex-wrap items-center gap-2">
+                                    <span className="inline-flex items-center gap-2 rounded-full border border-border bg-surface-elevated/60 px-3 py-1 font-medium text-text-primary dark:border-white/10 dark:bg-zinc-950/40 dark:text-zinc-100">
+                                      <span className="flex items-center gap-1">
+                                        {[0, 1, 2, 3, 4].map(i => (
+                                          <span
+                                            key={i}
+                                            className={cn(
+                                              'h-3 w-1 rounded-full',
+                                              i < Math.round(confidence * 5)
+                                                ? 'bg-accent-primary/80'
+                                                : 'bg-border/70 dark:bg-white/10'
+                                            )}
+                                          />
+                                        ))}
+                                      </span>
+                                      <span>{confidenceLabel}</span>
+                                      <span className="text-text-tertiary dark:text-zinc-400">
+                                        {Math.round(confidence * 100)}%
+                                      </span>
                                     </span>
-                                    <ExternalLink className="h-3 w-3" />
-                                  </a>
-                                ))}
-                              </motion.div>
-                            )}
+                                    <span className="inline-flex items-center rounded-full border border-border bg-surface-elevated/60 px-3 py-1 font-medium text-text-secondary dark:border-white/10 dark:bg-zinc-950/40 dark:text-zinc-200">
+                                      Method: {method}
+                                    </span>
+                                    <span className="inline-flex items-center rounded-full border border-border bg-surface-elevated/60 px-3 py-1 font-medium text-text-secondary dark:border-white/10 dark:bg-zinc-950/40 dark:text-zinc-200">
+                                      {t('Sources')}: {sourceCount || '—'}
+                                    </span>
+                                  </span>
+                                  <ChevronDown className="h-4 w-4 text-text-tertiary transition-transform duration-150 group-open:rotate-180 dark:text-zinc-400" />
+                                </summary>
+
+                                <div className="mt-2 rounded-2xl border border-border bg-surface-elevated/45 p-4 shadow-glass-sm backdrop-blur-md dark:border-white/10 dark:bg-zinc-950/45">
+                                  <div className="space-y-4">
+                                    <div>
+                                      <p className="text-[11px] font-semibold uppercase tracking-wider text-text-tertiary dark:text-zinc-400">
+                                        Reasoning (high-level)
+                                      </p>
+                                      <ul className="mt-2 space-y-1 text-xs text-text-secondary dark:text-zinc-300">
+                                        {ragCount > 0 ? (
+                                          <li>Grounded the answer using your knowledge base.</li>
+                                        ) : (
+                                          <li>No knowledge-base grounding was used for this reply.</li>
+                                        )}
+                                        {webCount > 0 ? (
+                                          <li>Included web sources to improve freshness and coverage.</li>
+                                        ) : (
+                                          <li>No web sources were used for this reply.</li>
+                                        )}
+                                        <li>
+                                          Confidence is a UI estimate. Verify with Council for high-stakes answers.
+                                        </li>
+                                      </ul>
+                                    </div>
+
+                                    {sourceCount > 0 && (
+                                      <div className="grid gap-4 sm:grid-cols-2">
+                                        {kbNames.length > 0 && (
+                                          <div>
+                                            <p className="text-[11px] font-semibold uppercase tracking-wider text-text-tertiary dark:text-zinc-400">
+                                              {t('From Knowledge Base')}
+                                            </p>
+                                            <div className="mt-2 flex flex-wrap gap-2">
+                                              {kbNames.map(name => (
+                                                <span
+                                                  key={name}
+                                                  className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs text-blue-700 dark:border-blue-500/25 dark:bg-blue-500/10 dark:text-blue-200"
+                                                >
+                                                  <BookOpen className="h-3 w-3" />
+                                                  <span className="max-w-[180px] truncate">{name}</span>
+                                                </span>
+                                              ))}
+                                            </div>
+                                          </div>
+                                        )}
+
+                                        {webSources.length > 0 && (
+                                          <div>
+                                            <p className="text-[11px] font-semibold uppercase tracking-wider text-text-tertiary dark:text-zinc-400">
+                                              {t('From Web')}
+                                            </p>
+                                            <div className="mt-2 space-y-2">
+                                              {webSources.map((source, i) => (
+                                                <a
+                                                  key={`${source.url}-${i}`}
+                                                  href={source.url}
+                                                  target="_blank"
+                                                  rel="noopener noreferrer"
+                                                  className="flex items-center gap-2 rounded-xl border border-border bg-surface-elevated/60 px-3 py-2 text-xs text-text-secondary backdrop-blur-md transition-colors duration-150 hover:bg-surface-elevated/80 dark:border-white/10 dark:bg-white/5 dark:text-zinc-200 dark:hover:bg-white/10"
+                                                >
+                                                  <Globe className="h-3.5 w-3.5 text-text-tertiary" />
+                                                  <span className="min-w-0 flex-1 truncate">
+                                                    {source.title || source.url}
+                                                  </span>
+                                                  <ExternalLink className="h-3.5 w-3.5 text-text-tertiary" />
+                                                </a>
+                                              ))}
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </details>
+                            )
+                          })()}
 
                           {/* Actions */}
                           {!msg.isStreaming && (
@@ -1333,31 +1438,66 @@ export default function HomePage() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
+                    transition={
+                      shouldReduceMotion
+                        ? { duration: 0 }
+                        : { duration: 0.22, ease: [0.2, 0.8, 0.2, 1] }
+                    }
                     className="flex gap-4"
                   >
-                    <motion.div
-                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-500 shadow-lg shadow-blue-500/25"
-                      animate={{ scale: [1, 1.1, 1] }}
-                      transition={{ duration: 0.8, repeat: Infinity }}
-                    >
-                      <Loader2 className="h-5 w-5 animate-spin text-white" />
-                    </motion.div>
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-500 shadow-lg shadow-blue-500/20">
+                      <Loader2 className="h-5 w-5 motion-safe:animate-spin text-white" />
+                    </div>
                     <Card
                       variant="glass"
                       padding="none"
                       interactive={false}
                       className="flex-1 !rounded-2xl !rounded-tl-md border-border bg-surface-elevated/55 px-5 py-4 shadow-glass-sm dark:border-white/10 dark:bg-zinc-950/55"
                     >
-                      <div className="flex items-center gap-3 text-sm text-text-secondary dark:text-zinc-300">
-                        <span className="relative flex h-2.5 w-2.5">
-                          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-500 opacity-75" />
-                          <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-500" />
-                        </span>
-                        {chatState.currentStage === 'rag' && t('Searching knowledge base...')}
-                        {chatState.currentStage === 'web' && t('Searching the web...')}
-                        {chatState.currentStage === 'generating' && t('Generating response...')}
-                        {!['rag', 'web', 'generating'].includes(chatState.currentStage) &&
-                          chatState.currentStage}
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-3 text-sm text-text-secondary dark:text-zinc-300">
+                          <span className="inline-flex h-2.5 w-2.5 rounded-full bg-blue-500" />
+                          {chatState.currentStage === 'rag' && t('Searching knowledge base...')}
+                          {chatState.currentStage === 'web' && t('Searching the web...')}
+                          {chatState.currentStage === 'generating' && t('Generating response...')}
+                          {!['rag', 'web', 'generating'].includes(chatState.currentStage) &&
+                            chatState.currentStage}
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-2 text-[11px]">
+                          <span
+                            className={cn(
+                              'inline-flex items-center rounded-full border px-2.5 py-0.5 font-semibold',
+                              ['rag', 'web'].includes(chatState.currentStage)
+                                ? 'border-blue-200/70 bg-blue-50/70 text-blue-700 dark:border-blue-400/20 dark:bg-blue-500/10 dark:text-blue-200'
+                                : 'border-border bg-surface-elevated/55 text-text-tertiary dark:border-white/10 dark:bg-white/5 dark:text-zinc-400'
+                            )}
+                          >
+                            Retrieve
+                          </span>
+                          <span className="text-text-tertiary/60 dark:text-zinc-500">→</span>
+                          <span
+                            className={cn(
+                              'inline-flex items-center rounded-full border px-2.5 py-0.5 font-semibold',
+                              chatState.currentStage === 'generating'
+                                ? 'border-blue-200/70 bg-blue-50/70 text-blue-700 dark:border-blue-400/20 dark:bg-blue-500/10 dark:text-blue-200'
+                                : 'border-border bg-surface-elevated/55 text-text-tertiary dark:border-white/10 dark:bg-white/5 dark:text-zinc-400'
+                            )}
+                          >
+                            Reason
+                          </span>
+                          <span className="text-text-tertiary/60 dark:text-zinc-500">→</span>
+                          <span
+                            className={cn(
+                              'inline-flex items-center rounded-full border px-2.5 py-0.5 font-semibold',
+                              chatState.currentStage === 'generating'
+                                ? 'border-blue-200/70 bg-blue-50/70 text-blue-700 dark:border-blue-400/20 dark:bg-blue-500/10 dark:text-blue-200'
+                                : 'border-border bg-surface-elevated/55 text-text-tertiary dark:border-white/10 dark:bg-white/5 dark:text-zinc-400'
+                            )}
+                          >
+                            Respond
+                          </span>
+                        </div>
                       </div>
                     </Card>
                   </motion.div>
@@ -1372,20 +1512,19 @@ export default function HomePage() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
+            transition={
+              shouldReduceMotion ? { duration: 0 } : { duration: 0.22, ease: [0.2, 0.8, 0.2, 1] }
+            }
             className="relative border-t border-border bg-surface-elevated/75 px-6 py-4 backdrop-blur-xl dark:border-white/10 dark:bg-zinc-950/60"
           >
             <div className="relative mx-auto max-w-4xl">
-              <motion.div
-                animate={
+              <div
+                className={cn(
+                  'rounded-2xl transition-shadow duration-150',
                   isFocused
-                    ? {
-                        boxShadow:
-                          '0 0 0 4px rgba(59, 130, 246, 0.12), 0 8px 16px -4px rgba(59, 130, 246, 0.1)',
-                      }
-                    : { boxShadow: '0 0 0 0px rgba(59, 130, 246, 0)' }
-                }
-                transition={{ duration: 0.25, ease: 'easeOut' }}
-                className="rounded-2xl"
+                    ? 'shadow-[0_0_0_4px_rgba(59,130,246,0.10),0_12px_30px_-12px_rgba(59,130,246,0.22)]'
+                    : 'shadow-glass-sm'
+                )}
               >
                 <input
                   ref={inputRef}
@@ -1413,54 +1552,23 @@ export default function HomePage() {
                   disabled={chatState.isLoading}
                   autoComplete="off"
                 />
-              </motion.div>
+              </div>
 
-              <motion.button
-                type="button"
-                whileHover={
-                  inputMessage.trim() ? { scale: 1.05, rotate: [0, -5, 5, 0] } : { scale: 1.02 }
+              <IconButton
+                aria-label={t('Send message')}
+                icon={
+                  chatState.isLoading ? (
+                    <Loader2 className="h-5 w-5 motion-safe:animate-spin" />
+                  ) : (
+                    <Send className="h-5 w-5" />
+                  )
                 }
-                whileTap={{ scale: 0.95 }}
-                animate={
-                  inputMessage.trim() && !chatState.isLoading
-                    ? {
-                        boxShadow: [
-                          '0 8px 16px -4px rgba(59, 130, 246, 0.3)',
-                          '0 12px 24px -4px rgba(59, 130, 246, 0.4)',
-                          '0 8px 16px -4px rgba(59, 130, 246, 0.3)',
-                        ],
-                      }
-                    : { boxShadow: '0 0 0 0 rgba(59, 130, 246, 0)' }
-                }
-                transition={{
-                  boxShadow: { duration: 2, repeat: Infinity, ease: 'easeInOut' },
-                }}
+                size="md"
+                variant={inputMessage.trim() ? 'primary' : 'secondary'}
                 onClick={handleSend}
                 disabled={chatState.isLoading || !inputMessage.trim()}
-                aria-label={t('Send message')}
-                className={`
-	                  absolute right-2 top-1/2 -translate-y-1/2
-	                  flex h-10 w-10 items-center justify-center rounded-xl
-	                  transition-all duration-300 ease-out will-change-transform
-	                  ${
-                      inputMessage.trim()
-                        ? 'bg-accent-primary text-white'
-                        : 'bg-surface-elevated/70 text-text-tertiary dark:bg-white/5 dark:text-text-tertiary'
-                    }
-	                  disabled:cursor-not-allowed disabled:opacity-50
-	                `}
-              >
-                {chatState.isLoading ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                ) : (
-                  <motion.div
-                    animate={inputMessage.trim() ? { x: [0, 2, 0] } : {}}
-                    transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
-                  >
-                    <Send className="h-5 w-5" />
-                  </motion.div>
-                )}
-              </motion.button>
+                className={cn('absolute right-2 top-1/2 -translate-y-1/2', '!rounded-xl')}
+              />
             </div>
           </motion.div>
         </div>

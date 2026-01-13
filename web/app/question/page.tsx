@@ -42,16 +42,16 @@ import { useToast } from '@/components/ui/Toast'
 import type { GeneratedQuestion } from '@/types/question'
 
 const slideVariants = {
-  enter: (dir: number) => ({ opacity: 0, x: dir > 0 ? 24 : -24 }),
+  enter: (dir: number) => ({ opacity: 0, x: dir > 0 ? 16 : -16 }),
   center: {
     opacity: 1,
     x: 0,
-    transition: { type: 'spring' as const, stiffness: 340, damping: 32 },
+    transition: { duration: 0.22, ease: [0.2, 0.8, 0.2, 1] as const },
   },
   exit: (dir: number) => ({
     opacity: 0,
-    x: dir > 0 ? -24 : 24,
-    transition: { duration: 0.15 },
+    x: dir > 0 ? -16 : 16,
+    transition: { duration: 0.12, ease: [0.2, 0.8, 0.2, 1] as const },
   }),
 }
 
@@ -59,7 +59,7 @@ const selectClassName = cn(
   'h-10 px-3 text-sm',
   'bg-white/70 dark:bg-white/5 backdrop-blur-md',
   'border border-zinc-200/70 dark:border-white/10',
-  'rounded-lg',
+  'rounded-xl',
   'text-zinc-900 dark:text-zinc-50',
   'outline-none',
   'hover:border-zinc-300 dark:hover:border-white/20',
@@ -123,6 +123,18 @@ export default function QuestionPage() {
     if (!totalQuestions) return 0
     return Math.round((completedCount / totalQuestions) * 100)
   }, [completedCount, totalQuestions])
+
+  const confidenceEstimate = useMemo(() => {
+    if (!currentQuestion) return null
+
+    const rounds = Math.max(1, Number(currentQuestion.rounds || 1))
+    let score = rounds >= 2 ? 0.82 : 0.68
+
+    if (questionState.enableCouncilValidation) score += 0.08
+    if (currentQuestion.validation?.kb_coverage) score += 0.04
+
+    return Math.min(0.95, Math.max(0.55, score))
+  }, [currentQuestion, questionState.enableCouncilValidation])
 
   const currentQuestionTypeLabel = useMemo(
     () => formatQuestionTypeLabel(currentQuestion?.question),
@@ -384,6 +396,7 @@ export default function QuestionPage() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.22, ease: [0.2, 0.8, 0.2, 1] }}
             className="max-w-3xl mx-auto"
           >
             <Card
@@ -561,41 +574,57 @@ export default function QuestionPage() {
                       />
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setQuestionState(prev => ({
-                          ...prev,
-                          enableCouncilValidation: !prev.enableCouncilValidation,
-                        }))
-                      }
-                      aria-pressed={questionState.enableCouncilValidation}
-                      className={cn(
-                        'flex w-full items-start justify-between gap-4 rounded-2xl border p-4 text-left transition-colors shadow-xs backdrop-blur-md',
-                        questionState.enableCouncilValidation
-                          ? 'border-emerald-300/70 bg-emerald-50/70 dark:border-emerald-400/25 dark:bg-emerald-500/10'
-                          : 'border-white/55 bg-white/55 hover:bg-white/70 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10'
-                      )}
-                    >
-                      <div className="min-w-0">
-                        <p className="font-semibold text-zinc-900 dark:text-zinc-50">
-                          High accuracy validation (Council)
-                        </p>
-                        <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-                          Uses multiple models to cross-check and synthesize the validation decision (slower).
-                        </p>
+                    <details className="group rounded-2xl border border-white/55 bg-white/55 shadow-xs backdrop-blur-md dark:border-white/10 dark:bg-white/5">
+                      <summary className="flex cursor-pointer items-center justify-between gap-4 px-4 py-3 [&::-webkit-details-marker]:hidden [&::marker]:content-none">
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+                            Advanced
+                          </p>
+                          <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+                            Slower options for higher confidence.
+                          </p>
+                        </div>
+                        <ChevronDown className="h-4 w-4 text-zinc-400 transition-transform duration-150 group-open:rotate-180 dark:text-zinc-500" />
+                      </summary>
+
+                      <div className="px-4 pb-4 pt-1">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setQuestionState(prev => ({
+                              ...prev,
+                              enableCouncilValidation: !prev.enableCouncilValidation,
+                            }))
+                          }
+                          aria-pressed={questionState.enableCouncilValidation}
+                          className={cn(
+                            'flex w-full items-start justify-between gap-4 rounded-2xl border p-4 text-left transition-colors duration-150 shadow-xs backdrop-blur-md',
+                            questionState.enableCouncilValidation
+                              ? 'border-emerald-300/70 bg-emerald-50/60 dark:border-emerald-400/25 dark:bg-emerald-500/10'
+                              : 'border-border bg-surface-elevated/45 hover:bg-surface-elevated/60 dark:border-white/10 dark:bg-zinc-950/35 dark:hover:bg-zinc-950/45'
+                          )}
+                        >
+                          <div className="min-w-0">
+                            <p className="font-semibold text-zinc-900 dark:text-zinc-50">
+                              High accuracy validation (Council)
+                            </p>
+                            <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                              Uses multiple models to cross-check and synthesize the validation decision (slower).
+                            </p>
+                          </div>
+                          <span
+                            className={cn(
+                              'shrink-0 rounded-full px-3 py-1 text-xs font-semibold',
+                              questionState.enableCouncilValidation
+                                ? 'bg-emerald-600 text-white'
+                                : 'bg-zinc-200 text-zinc-700 dark:bg-white/10 dark:text-zinc-200'
+                            )}
+                          >
+                            {questionState.enableCouncilValidation ? 'On' : 'Off'}
+                          </span>
+                        </button>
                       </div>
-                      <span
-                        className={cn(
-                          'shrink-0 rounded-full px-3 py-1 text-xs font-semibold',
-                          questionState.enableCouncilValidation
-                            ? 'bg-emerald-600 text-white'
-                            : 'bg-zinc-200 text-zinc-700 dark:bg-white/10 dark:text-zinc-200'
-                        )}
-                      >
-                        {questionState.enableCouncilValidation ? 'On' : 'Off'}
-                      </span>
-                    </button>
+                    </details>
                   </div>
                 )}
 
@@ -659,35 +688,54 @@ export default function QuestionPage() {
                       <div className="h-px flex-1 bg-zinc-200/70 dark:bg-white/10" />
                     </div>
 
-                    <Input
-                      label="Pre-parsed Directory (optional)"
-                      floatingLabel
-                      value={questionState.paperPath}
-                      onChange={e =>
-                        setQuestionState(prev => ({
-                          ...prev,
-                          paperPath: e.target.value,
-                          uploadedFile: null,
-                        }))
-                      }
-                      placeholder="e.g. 2211asm1"
-                      className="rounded-2xl"
-                    />
+                    <details className="group rounded-2xl border border-white/55 bg-white/55 shadow-xs backdrop-blur-md dark:border-white/10 dark:bg-white/5">
+                      <summary className="flex cursor-pointer items-center justify-between gap-4 px-4 py-3 [&::-webkit-details-marker]:hidden [&::marker]:content-none">
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+                            Advanced
+                          </p>
+                          <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+                            Optional inputs for faster repeat workflows.
+                          </p>
+                        </div>
+                        <ChevronDown className="h-4 w-4 text-zinc-400 transition-transform duration-150 group-open:rotate-180 dark:text-zinc-500" />
+                      </summary>
 
-                    <Input
-                      label="Max Questions (optional)"
-                      floatingLabel
-                      type="number"
-                      min="1"
-                      max="20"
-                      value={questionState.count || ''}
-                      onChange={e => {
-                        const val = e.target.value ? parseInt(e.target.value) : 0
-                        setQuestionState(prev => ({ ...prev, count: val > 0 ? Math.min(20, val) : 0 }))
-                      }}
-                      helperText="Leave empty to generate all questions."
-                      className="rounded-2xl"
-                    />
+                      <div className="px-4 pb-4 pt-1 space-y-4">
+                        <Input
+                          label="Pre-parsed Directory (optional)"
+                          floatingLabel
+                          value={questionState.paperPath}
+                          onChange={e =>
+                            setQuestionState(prev => ({
+                              ...prev,
+                              paperPath: e.target.value,
+                              uploadedFile: null,
+                            }))
+                          }
+                          placeholder="e.g. 2211asm1"
+                          className="rounded-2xl"
+                        />
+
+                        <Input
+                          label="Max Questions (optional)"
+                          floatingLabel
+                          type="number"
+                          min="1"
+                          max="20"
+                          value={questionState.count || ''}
+                          onChange={e => {
+                            const val = e.target.value ? parseInt(e.target.value) : 0
+                            setQuestionState(prev => ({
+                              ...prev,
+                              count: val > 0 ? Math.min(20, val) : 0,
+                            }))
+                          }}
+                          helperText="Leave empty to generate all questions."
+                          className="rounded-2xl"
+                        />
+                      </div>
+                    </details>
                   </div>
                 )}
               </CardBody>
@@ -715,6 +763,7 @@ export default function QuestionPage() {
             initial={{ opacity: 0, x: 16 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -16 }}
+            transition={{ duration: 0.22, ease: [0.2, 0.8, 0.2, 1] }}
             className="space-y-6"
           >
             {totalQuestions > 0 && (
@@ -771,7 +820,7 @@ export default function QuestionPage() {
 
                   <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-200/70 dark:bg-white/10">
                     <div
-                      className="h-full rounded-full bg-gradient-to-r from-blue-600 to-indigo-600"
+                      className="h-full rounded-full bg-accent-primary transition-[width] duration-200 [transition-timing-function:cubic-bezier(0.2,0.8,0.2,1)]"
                       style={{ width: `${progressPct}%` }}
                     />
                   </div>
@@ -1019,6 +1068,24 @@ export default function QuestionPage() {
                                 {currentQuestion.rounds || 1} round
                                 {(currentQuestion.rounds || 1) > 1 ? 's' : ''}
                               </span>
+                              {confidenceEstimate !== null && (
+                                <span className="hidden sm:inline-flex items-center gap-2 rounded-full border border-white/55 bg-white/55 px-2.5 py-0.5 text-[11px] font-semibold text-zinc-600 dark:border-white/10 dark:bg-white/5 dark:text-zinc-300">
+                                  <span className="flex items-center gap-1">
+                                    {[0, 1, 2, 3, 4].map(i => (
+                                      <span
+                                        key={i}
+                                        className={cn(
+                                          'h-3 w-1 rounded-full',
+                                          i < Math.round(confidenceEstimate * 5)
+                                            ? 'bg-accent-primary'
+                                            : 'bg-zinc-200 dark:bg-white/10'
+                                        )}
+                                      />
+                                    ))}
+                                  </span>
+                                  {Math.round(confidenceEstimate * 100)}% est.
+                                </span>
+                              )}
                             </div>
 
                             <Button
@@ -1026,7 +1093,10 @@ export default function QuestionPage() {
                               size="sm"
                               onClick={() => setShowValidation(v => !v)}
                               iconRight={
-                                <motion.div animate={{ rotate: showValidation ? 180 : 0 }}>
+                                <motion.div
+                                  animate={{ rotate: showValidation ? 180 : 0 }}
+                                  transition={{ duration: 0.15, ease: [0.2, 0.8, 0.2, 1] }}
+                                >
                                   <ChevronDown className="h-4 w-4" />
                                 </motion.div>
                               }
@@ -1041,6 +1111,7 @@ export default function QuestionPage() {
                                 initial={{ height: 0, opacity: 0 }}
                                 animate={{ height: 'auto', opacity: 1 }}
                                 exit={{ height: 0, opacity: 0 }}
+                                transition={{ duration: 0.18, ease: [0.2, 0.8, 0.2, 1] }}
                                 className="overflow-hidden"
                               >
                                 <CardBody padding="md" className="space-y-4">
@@ -1176,6 +1247,7 @@ export default function QuestionPage() {
             initial={{ opacity: 0, x: 16 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -16 }}
+            transition={{ duration: 0.22, ease: [0.2, 0.8, 0.2, 1] }}
           >
             <QuestionDashboard
               state={dashboardState}

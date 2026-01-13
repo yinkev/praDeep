@@ -5,7 +5,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field
 
 
-CouncilRole = Literal["member", "reviewer", "chairman"]
+CouncilRole = Literal["member", "reviewer", "chairman", "user"]
 
 
 class CouncilCall(BaseModel):
@@ -16,6 +16,10 @@ class CouncilCall(BaseModel):
     duration_s: float | None = None
     estimated_prompt_tokens: int | None = None
     estimated_completion_tokens: int | None = None
+    message_id: str | None = None
+    voice: str | None = None
+    audio_url: str | None = None
+    audio_path: str | None = None
 
 
 class CouncilReviewParsed(BaseModel):
@@ -41,6 +45,9 @@ class CouncilFinal(BaseModel):
     duration_s: float | None = None
     estimated_prompt_tokens: int | None = None
     estimated_completion_tokens: int | None = None
+    voice: str | None = None
+    audio_url: str | None = None
+    audio_path: str | None = None
 
 
 class CouncilRun(BaseModel):
@@ -68,4 +75,3 @@ __all__ = [
     "CouncilRound",
     "CouncilRun",
 ]
-

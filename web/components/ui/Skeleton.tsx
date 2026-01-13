@@ -7,7 +7,8 @@ interface SkeletonProps {
   variant?: 'text' | 'circular' | 'rectangular'
   width?: string | number
   height?: string | number
-  animation?: 'pulse' | 'wave' | 'none'
+  animation?: 'pulse' | 'shimmer' | 'none'
+  style?: React.CSSProperties
 }
 
 export function Skeleton({
@@ -15,7 +16,8 @@ export function Skeleton({
   variant = 'rectangular',
   width,
   height,
-  animation = 'pulse',
+  animation = 'shimmer',
+  style,
 }: SkeletonProps) {
   const variantClasses = {
     text: 'h-4 rounded',
@@ -24,15 +26,16 @@ export function Skeleton({
   }
 
   const animationClasses = {
-    pulse: 'animate-pulse',
-    wave: 'animate-pulse',
-    none: '',
+    pulse: 'animate-pulse bg-surface-elevated/60 dark:bg-slate-700',
+    shimmer:
+      'bg-gradient-to-r from-surface-elevated via-border-subtle to-surface-elevated bg-[length:200%_100%] animate-shimmer',
+    none: 'bg-surface-elevated/60 dark:bg-slate-700',
   }
 
   return (
     <div
       className={cn(
-        'bg-slate-200 dark:bg-slate-700',
+        'relative overflow-hidden',
         variantClasses[variant],
         animationClasses[animation],
         className
@@ -40,6 +43,7 @@ export function Skeleton({
       style={{
         width: width ? (typeof width === 'number' ? `${width}px` : width) : undefined,
         height: height ? (typeof height === 'number' ? `${height}px` : height) : undefined,
+        ...style,
       }}
     />
   )

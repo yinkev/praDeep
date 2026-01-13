@@ -27,3 +27,6 @@ export {
 
 // Toast components
 export { ToastProvider, useToast } from './Toast'
+
+// Carousel components
+export { default as Carousel } from './Carousel'

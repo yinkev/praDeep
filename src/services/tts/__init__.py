@@ -12,5 +12,6 @@ Usage:
 """
 
 from .config import get_tts_config
+from .service import synthesize_speech_to_file
 
-__all__ = ["get_tts_config"]
+__all__ = ["get_tts_config", "synthesize_speech_to_file"]

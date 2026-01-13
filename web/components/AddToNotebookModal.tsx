@@ -153,9 +153,9 @@ export default function AddToNotebookModal({
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-in fade-in supports-[backdrop-filter]:bg-black/40 supports-[backdrop-filter]:backdrop-blur-md">
       <div className="bg-white/90 dark:bg-zinc-950/80 dark:text-zinc-50 rounded-2xl shadow-2xl w-[480px] max-w-[calc(100vw-2rem)] max-h-[80vh] flex flex-col animate-in zoom-in-95 border border-white/40 dark:border-white/10 backdrop-blur-2xl">
         {/* Header */}
-        <div className="p-4 border-b border-slate-100 dark:border-white/10 flex items-center justify-between bg-gradient-to-r from-indigo-50/80 to-purple-50/80 dark:from-indigo-500/10 dark:to-purple-500/10 rounded-t-2xl">
+        <div className="p-4 border-b border-slate-100 dark:border-white/10 flex items-center justify-between bg-white/70 dark:bg-white/5 rounded-t-2xl backdrop-blur-xl">
           <h3 className="font-bold text-slate-900 dark:text-zinc-50 flex items-center gap-2">
-            <Book className="w-5 h-5 text-indigo-600" />
+            <Book className="w-5 h-5 text-indigo-600 dark:text-blue-300" />
             Add to Notebook
           </h3>
           <button
