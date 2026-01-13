@@ -1,11 +1,24 @@
 'use client'
 
-import { type ReactNode } from 'react'
+import { type HTMLAttributes, type ReactNode } from 'react'
 import { useSwipeGesture } from '@/hooks/useSwipeGesture'
 import { motion, useReducedMotion, AnimatePresence } from 'framer-motion'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
-export interface SwipeNavigatorProps {
+export interface SwipeNavigatorProps
+  extends Omit<
+    HTMLAttributes<HTMLDivElement>,
+    | 'children'
+    | 'onTouchStart'
+    | 'onTouchMove'
+    | 'onTouchEnd'
+    | 'onAnimationStart'
+    | 'onAnimationEnd'
+    | 'onAnimationIteration'
+    | 'onDrag'
+    | 'onDragStart'
+    | 'onDragEnd'
+  > {
   children: ReactNode
   onSwipeLeft?: () => void
   onSwipeRight?: () => void
@@ -13,7 +26,6 @@ export interface SwipeNavigatorProps {
   onSwipeDown?: () => void
   threshold?: number
   showHints?: boolean
-  className?: string
 }
 
 export function SwipeNavigator({
