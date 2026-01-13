@@ -96,6 +96,19 @@ When delegating to Codex agents:
 
 **Important:** Codex is invoked through the Skills system, NOT through MCP tools. When delegating tasks to Codex, use the Skill tool to invoke the appropriate skill - do not use mcp__codex__codex directly.
 
+## Reading Large Agent Output Files
+
+Agent output files can exceed the 256KB Read tool threshold. Use Bash instead:
+
+```bash
+tail /tmp/claude/-Users-kyin-Projects-praDeep/tasks/<task-id>.output
+```
+
+Or search for specific content:
+```bash
+grep -i "completed\|error\|summary" /tmp/claude/-Users-kyin-Projects-praDeep/tasks/<task-id>.output
+```
+
 ## Gemini CLI / CLI Proxy API Usage
 
 ### Correct Model Names
