@@ -34,9 +34,11 @@ pkill -f 'node.*next' || true && pkill -f 'uvicorn' || true && source .venv/bin/
 
 ## Project Structure
 
-- `web/` - Next.js 16 + React 19 frontend
+- `web/` - Next.js 16 + React 19 frontend (PWA-enabled)
 - `src/api/` - FastAPI backend
 - `src/agents/` - Multi-agent AI system
+- `src/services/council/` - Multi-agent deliberation system
+- `src/agents/personalization/` - User behavior tracking and adaptive learning
 - `scripts/start_web.py` - Starts both frontend and backend
 
 ## Ports
@@ -84,6 +86,25 @@ for (const item of data) {
 }
 ```
 
+### Mobile Touch Components
+Mobile components (PullToRefresh, SwipeNavigator, ContextMenu) require careful TypeScript handling:
+- Exclude Framer Motion drag handlers from component props using `Omit`
+- Use proper touch event types (`TouchEvent<HTMLDivElement>`)
+- Example: `type SwipeNavigatorProps = Omit<ComponentProps<typeof motion.div>, 'drag' | 'dragConstraints'>`
+
+### PWA Components
+PWA-related components must be client-only:
+- Use `'use client'` directive for components accessing browser APIs
+- Example: `PWAInit` component handles service worker registration
+- Keep PWA logic separate from server components
+
+### Testing
+Run end-to-end tests with Playwright:
+```bash
+npm run test:e2e
+```
+Includes regression tests for personalization, PWA functionality, and mobile interactions.
+
 ## Codex Agent Guidelines
 
 When delegating to Codex agents:
@@ -95,6 +116,40 @@ When delegating to Codex agents:
 ## Codex Usage
 
 **Important:** Codex is invoked through the Skills system, NOT through MCP tools. When delegating tasks to Codex, use the Skill tool to invoke the appropriate skill - do not use mcp__codex__codex directly.
+
+## New Features
+
+### Council System
+Multi-agent deliberation system for complex decisions requiring consensus:
+- Location: `src/services/council/`
+- Enables multiple AI agents to deliberate and reach consensus
+- Used for high-stakes decisions in agent workflows
+- Tracks voting, reasoning, and final decisions
+
+### Personalization Engine
+Adaptive learning system that tracks user behavior and preferences:
+- Location: `src/agents/personalization/`
+- `BehaviorTrackerAgent` - Monitors interaction patterns
+- Persistent storage in `data/user/memory/`
+- Adapts UI and recommendations based on user history
+- Privacy-focused: all data stored locally
+
+### PWA Support
+Progressive Web App capabilities for offline-first experience:
+- Service worker registration in `web/app/pwa-init.tsx`
+- Offline caching strategy
+- App installation support (Add to Home Screen)
+- Background sync for pending operations
+- Health check endpoint: `/api/health`
+
+### Mobile Touch Interactions
+Touch-optimized components for mobile devices:
+- `PullToRefresh` - Pull-down refresh gesture
+- `SwipeNavigator` - Swipe-based navigation
+- `ContextMenu` - Long-press context menus
+- Location: `web/components/mobile/`
+- Haptic feedback support
+- Gesture conflict resolution
 
 ## Reading Large Agent Output Files
 

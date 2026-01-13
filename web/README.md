@@ -29,9 +29,12 @@ The UI follows a “Liquid Glass” aesthetic with a light/dark theme:
 
 The internal component library lives in `components/ui/` and is exported via `components/ui/index.ts`. It provides primitives and building blocks used across feature components:
 
-- Primitives: `Button`/`IconButton`, `Input`/`Textarea`, `Card`, `Modal`, `Toast`, `LoadingState`, `PageWrapper`
-- Conventions: Tailwind-first styling and class composition via `cn()` (`lib/utils.ts` uses `clsx` + `tailwind-merge`)
-- Feature components live in `components/` (e.g. dashboards, editors, and module-specific UI)
+- **Primitives**: `Button`/`IconButton`, `Input`/`Textarea`, `Card`, `Modal`, `Toast`, `LoadingState`, `PageWrapper`
+- **AI Components**: AI reasoning displays, confidence badges, council details (in `components/ai/`)
+- **Mobile Components**: `PullToRefresh`, `SwipeNavigator`, `ContextMenu` (in `components/mobile/`)
+- **PWA Components**: Service worker initialization, offline indicators (in `components/pwa/`)
+- **Conventions**: Tailwind-first styling and class composition via `cn()` (`lib/utils.ts` uses `clsx` + `tailwind-merge`)
+- **Feature components** live in `components/` (e.g. dashboards, editors, and module-specific UI)
 
 ## Getting started
 
@@ -67,3 +70,16 @@ npm run dev
 - `npm run build` — production build
 - `npm start` — start production server (after build)
 - `npm run lint` — run Next.js/ESLint linting
+- `npm run test:e2e` — run Playwright end-to-end tests
+- `npm run test:e2e:ui` — run Playwright tests with UI
+
+## Testing
+
+End-to-end tests are located in `tests/` and use Playwright. Test suites include:
+
+- **Personalization verification** - Tests behavior tracking and user memory persistence
+- **PWA functionality** - Tests offline capabilities, service worker registration, app installation
+- **Mobile interactions** - Tests touch gestures, swipe navigation, pull-to-refresh
+- **Regression tests** - Automated checks for previously fixed bugs
+
+Run tests with `npm run test:e2e` or use `npm run test:e2e:ui` for interactive debugging.
