@@ -20,7 +20,7 @@ FROM node:22-slim AS frontend-builder
 WORKDIR /app/web
 
 # Accept build argument for backend port
-ARG BACKEND_PORT=8001
+ARG BACKEND_PORT=8783
 
 # Copy package files first for better caching
 COPY web/package.json web/package-lock.json* ./
@@ -94,8 +94,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONIOENCODING=utf-8 \
     NODE_ENV=production \
     # Default ports (can be overridden)
-    BACKEND_PORT=8001 \
-    FRONTEND_PORT=3782
+    BACKEND_PORT=8783 \
+    FRONTEND_PORT=3783
 
 WORKDIR /app
 
@@ -193,7 +193,7 @@ COPY <<'EOF' /app/start-backend.sh
 #!/bin/bash
 set -e
 
-BACKEND_PORT=${BACKEND_PORT:-8001}
+BACKEND_PORT=${BACKEND_PORT:-8783}
 
 echo "[Backend]  🚀 Starting FastAPI backend on port ${BACKEND_PORT}..."
 
@@ -211,9 +211,9 @@ COPY <<'EOF' /app/start-frontend.sh
 #!/bin/bash
 set -e
 
-# Get the backend port (default to 8001)
-BACKEND_PORT=${BACKEND_PORT:-8001}
-FRONTEND_PORT=${FRONTEND_PORT:-3782}
+# Get the backend port (default to 8783)
+BACKEND_PORT=${BACKEND_PORT:-8783}
+FRONTEND_PORT=${FRONTEND_PORT:-3783}
 
 # Determine the API base URL with multiple fallback options
 # Priority: NEXT_PUBLIC_API_BASE_EXTERNAL > NEXT_PUBLIC_API_BASE > auto-detect
@@ -260,8 +260,8 @@ echo "🚀 Starting praDeep"
 echo "============================================"
 
 # Set default ports if not provided
-export BACKEND_PORT=${BACKEND_PORT:-8001}
-export FRONTEND_PORT=${FRONTEND_PORT:-3782}
+export BACKEND_PORT=${BACKEND_PORT:-8783}
+export FRONTEND_PORT=${FRONTEND_PORT:-3783}
 
 echo "📌 Backend Port: ${BACKEND_PORT}"
 echo "📌 Frontend Port: ${FRONTEND_PORT}"
@@ -302,11 +302,11 @@ EOF
 RUN chmod +x /app/entrypoint.sh
 
 # Expose ports
-EXPOSE 8001 3782
+EXPOSE 8783 3783
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -f http://localhost:${BACKEND_PORT:-8001}/ || exit 1
+    CMD curl -f http://localhost:${BACKEND_PORT:-8783}/ || exit 1
 
 # Set entrypoint
 ENTRYPOINT ["/app/entrypoint.sh"]
@@ -349,7 +349,7 @@ stderr_logfile_maxbytes=0
 environment=PYTHONPATH="/app",PYTHONUNBUFFERED="1"
 
 [program:frontend]
-command=/bin/bash -c "cd /app/web && node node_modules/next/dist/bin/next dev -H 0.0.0.0 -p ${FRONTEND_PORT:-3782}"
+command=/bin/bash -c "cd /app/web && node node_modules/next/dist/bin/next dev -H 0.0.0.0 -p ${FRONTEND_PORT:-3783}"
 directory=/app/web
 autostart=true
 autorestart=true
@@ -362,4 +362,4 @@ environment=NODE_ENV="development"
 EOF
 
 # Development ports
-EXPOSE 8001 3782
+EXPOSE 8783 3783

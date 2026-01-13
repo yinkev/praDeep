@@ -5,8 +5,8 @@ Setup Service
 System setup and initialization for praDeep.
 
 Port configuration is done via .env file:
-    BACKEND_PORT=8001   (default: 8001)
-    FRONTEND_PORT=3782  (default: 3782)
+    BACKEND_PORT=8783   (default: 8783)
+    FRONTEND_PORT=3783  (default: 3783)
 
 Usage:
     from src.services.setup import init_user_directories, get_backend_port

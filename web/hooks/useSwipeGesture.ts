@@ -220,18 +220,6 @@ export function useSwipeGesture(config: SwipeGestureConfig = {}) {
     detachGlobalListeners();
   }, [detachGlobalListeners]);
 
-  if (!touchMoveListenerRef.current) {
-    touchMoveListenerRef.current = ((event: Event) => {
-      onTouchMove(event as unknown as TouchLike);
-    }) as EventListener;
-  }
-
-  if (!touchEndListenerRef.current) {
-    touchEndListenerRef.current = ((event: Event) => {
-      onTouchEnd(event as unknown as TouchLike);
-    }) as EventListener;
-  }
-
   const onTouchStart = useCallback((event: TouchLike) => {
     const touch =
       findTouchByIdentifier(event.changedTouches, null) ??
@@ -247,6 +235,18 @@ export function useSwipeGesture(config: SwipeGestureConfig = {}) {
     setSwipeState({ isSwiping: true, direction: null, distance: 0 });
 
     if (typeof window !== "undefined" && !globalListenersAttachedRef.current) {
+      if (touchMoveListenerRef.current == null) {
+        touchMoveListenerRef.current = ((listenerEvent: Event) => {
+          onTouchMove(listenerEvent as unknown as TouchLike);
+        }) as EventListener;
+      }
+
+      if (touchEndListenerRef.current == null) {
+        touchEndListenerRef.current = ((listenerEvent: Event) => {
+          onTouchEnd(listenerEvent as unknown as TouchLike);
+        }) as EventListener;
+      }
+
       if (touchMoveListenerRef.current) {
         window.addEventListener("touchmove", touchMoveListenerRef.current, { passive: true });
       }
@@ -256,7 +256,7 @@ export function useSwipeGesture(config: SwipeGestureConfig = {}) {
       }
       globalListenersAttachedRef.current = true;
     }
-  }, []);
+  }, [onTouchEnd, onTouchMove]);
 
   useEffect(() => detachGlobalListeners, [detachGlobalListeners]);
 

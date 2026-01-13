@@ -28,12 +28,12 @@ EMBEDDING_DIMENSION=3072
 ### Optional
 
 ```bash
-# Server ports (defaults: 8001/3782)
-BACKEND_PORT=8001
-FRONTEND_PORT=3782
+# Server ports (defaults: 8783/3783)
+BACKEND_PORT=8783
+FRONTEND_PORT=3783
 
 # Remote access
-NEXT_PUBLIC_API_BASE=http://your-server-ip:8001
+NEXT_PUBLIC_API_BASE=http://your-server-ip:8783
 
 # Web search
 SEARCH_PROVIDER=perplexity  # or: baidu
@@ -43,7 +43,10 @@ PERPLEXITY_API_KEY=your_key
 TTS_MODEL=
 TTS_URL=
 TTS_API_KEY=
+TTS_VOICE=alloy
 ```
+
+To enable Council audio output, configure TTS above and turn on **Council audio (TTS)** in **Settings → Council Verification** (or in Chat Controls).
 
 ## Agent Parameters
 

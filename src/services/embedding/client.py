@@ -168,10 +168,12 @@ class EmbeddingClient:
             EmbeddingFunc instance
         """
         from lightrag.utils import EmbeddingFunc
+        import numpy as np
 
         # Create async wrapper that uses our adapter system
-        async def embedding_wrapper(texts: List[str]) -> List[List[float]]:
-            return await self.embed(texts)
+        async def embedding_wrapper(texts: List[str]) -> "np.ndarray":
+            embeddings = await self.embed(texts)
+            return np.asarray(embeddings, dtype=np.float32)
 
         return EmbeddingFunc(
             embedding_dim=self.config.dim,

@@ -10,7 +10,7 @@ type CouncilRun = {
   question: string
   models?: Record<string, any>
   budgets?: Record<string, any>
-  status?: 'ok' | 'partial' | 'error'
+  status?: 'ok' | 'partial' | 'error' | 'canceled'
   errors?: string[]
   rounds?: Array<{
     round_index: number
@@ -26,7 +26,13 @@ type CouncilRun = {
     cross_exam_questions?: string[]
     cross_exam_answers?: Array<{ model: string; content?: string; error?: string }>
   }>
-  final?: { model: string; content: string }
+  final?: {
+    model: string
+    content: string
+    voice?: string
+    audio_url?: string
+    audio_error?: string
+  }
 }
 
 export default function CouncilDetails({
@@ -179,6 +185,12 @@ export default function CouncilDetails({
                 <summary className="cursor-pointer text-xs text-text-secondary dark:text-zinc-300">
                   Final synthesis ({run.final.model})
                 </summary>
+                {run.final.audio_url ? (
+                  <audio className="mt-2 w-full" controls preload="none" src={apiUrl(run.final.audio_url)} />
+                ) : null}
+                {run.final.audio_error ? (
+                  <div className="mt-2 text-xs text-red-600 dark:text-red-300">{run.final.audio_error}</div>
+                ) : null}
                 <pre className="mt-2 whitespace-pre-wrap text-xs leading-relaxed">{run.final.content}</pre>
               </details>
             ) : null}
@@ -188,4 +200,3 @@ export default function CouncilDetails({
     </details>
   )
 }
-

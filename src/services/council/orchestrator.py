@@ -5,7 +5,7 @@ import json
 import re
 import time
 import uuid
-from typing import Any
+from typing import Any, Awaitable, Callable
 
 from src.di import Container, get_container
 from src.logging import estimate_tokens, get_logger
@@ -14,6 +14,7 @@ from src.services.llm import get_llm_config, get_token_limit_kwargs
 from src.services.prompt import PromptManager
 
 from .config import CouncilConfig
+from .interactive_utils import extract_interjection_lines, merge_cross_exam_questions
 from .types import CouncilCall, CouncilFinal, CouncilReviewParsed, CouncilRound, CouncilRun
 
 
@@ -59,6 +60,7 @@ class CouncilOrchestrator:
         enable_web_search: bool,
         language: str = "en",
         existing_answer: str | None = None,
+        checkpoint_callback: Callable[[dict[str, Any]], Awaitable[dict[str, Any] | None]] | None = None,
     ) -> CouncilRun:
         """
         Verify a chat answer using the council.
@@ -99,21 +101,14 @@ class CouncilOrchestrator:
         prompts = self.prompt_manager.load_prompts(
             module_name="chat", agent_name="council", language=language
         )
-        member_instructions = self._get_prompt(
-            prompts,
-            key="member_instructions",
-            fallback=_DEFAULT_MEMBER_INSTRUCTIONS,
-        )
-        reviewer_instructions = self._get_prompt(
-            prompts,
-            key="reviewer_instructions",
-            fallback=_DEFAULT_REVIEWER_INSTRUCTIONS,
-        )
-        chairman_instructions = self._get_prompt(
-            prompts,
-            key="chairman_instructions",
-            fallback=_DEFAULT_CHAIRMAN_INSTRUCTIONS,
-        )
+        try:
+            member_instructions = self._require_prompt(prompts, key="member_instructions")
+            reviewer_instructions = self._require_prompt(prompts, key="reviewer_instructions")
+            chairman_instructions = self._require_prompt(prompts, key="chairman_instructions")
+        except ValueError as e:
+            run.status = "error"
+            run.errors.append(str(e))
+            return run
 
         budgets = self.council_config.budgets
 
@@ -187,16 +182,63 @@ class CouncilOrchestrator:
 
             rounds.append(council_round)
 
+            reviewer_questions = parsed.cross_exam_questions or []
+            user_questions: list[str] = []
+
+            # Optional checkpoint: allow user interjections before cross-exam continues.
+            if (
+                checkpoint_callback is not None
+                and round_index < max(1, budgets.max_rounds)
+            ):
+                try:
+                    decision = await checkpoint_callback(
+                        {
+                            "council_id": council_id,
+                            "task": run.task,
+                            "round_index": round_index,
+                            "review_parsed": parsed.model_dump(),
+                            "cross_exam_questions": list(reviewer_questions),
+                            "limit": max(1, budgets.max_cross_exam_questions_per_round),
+                        }
+                    )
+                except Exception as e:
+                    run.errors.append(f"Checkpoint callback failed: {e}")
+                    decision = None
+
+                if isinstance(decision, dict):
+                    action = str(decision.get("action") or "").strip().lower()
+                    if action in {"cancel", "stop"}:
+                        run.status = "canceled"
+                        run.errors.append("Council canceled by user.")
+                        run.rounds = rounds
+                        return run
+
+                    raw_questions = decision.get("user_questions")
+                    if isinstance(raw_questions, str):
+                        user_questions = extract_interjection_lines(raw_questions)
+                    elif isinstance(raw_questions, list):
+                        user_questions = [str(q).strip() for q in raw_questions if str(q).strip()]
+
+                    notes = decision.get("notes_for_chairman")
+                    if isinstance(notes, str) and notes.strip():
+                        reviewer_notes_for_chairman = (
+                            (reviewer_notes_for_chairman or "").rstrip() + "\n\n" + notes.strip()
+                        ).strip()
+
+            merged_questions = merge_cross_exam_questions(
+                reviewer_questions,
+                user_questions,
+                limit=max(1, budgets.max_cross_exam_questions_per_round),
+            )
+
             # Decide whether to continue cross-exam.
-            if parsed.resolved:
+            if parsed.resolved and not merged_questions:
                 break
 
-            # If the reviewer provided questions, use them (bounded by budget).
-            questions = parsed.cross_exam_questions or []
-            if not questions:
+            if not merged_questions:
                 break
 
-            cross_exam_questions = questions[: max(1, budgets.max_cross_exam_questions_per_round)]
+            cross_exam_questions = merged_questions
 
         run.rounds = rounds
 
@@ -262,31 +304,16 @@ class CouncilOrchestrator:
         prompts = self.prompt_manager.load_prompts(
             module_name="question", agent_name="council_validation", language=language
         )
-        member_instructions = self._get_prompt(
-            prompts,
-            key="member_instructions",
-            fallback=_DEFAULT_QV_MEMBER_INSTRUCTIONS,
-        )
-        reviewer_instructions = self._get_prompt(
-            prompts,
-            key="reviewer_instructions",
-            fallback=_DEFAULT_QV_REVIEWER_INSTRUCTIONS,
-        )
-        chairman_instructions = self._get_prompt(
-            prompts,
-            key="chairman_instructions",
-            fallback=_DEFAULT_QV_CHAIRMAN_INSTRUCTIONS,
-        )
-        cross_exam_template = self._get_prompt(
-            prompts,
-            key="cross_exam_user_template",
-            fallback=_DEFAULT_QV_CROSS_EXAM_TEMPLATE,
-        )
-        chairman_template = self._get_prompt(
-            prompts,
-            key="chairman_user_template",
-            fallback=_DEFAULT_QV_CHAIRMAN_TEMPLATE,
-        )
+        try:
+            member_instructions = self._require_prompt(prompts, key="member_instructions")
+            reviewer_instructions = self._require_prompt(prompts, key="reviewer_instructions")
+            chairman_instructions = self._require_prompt(prompts, key="chairman_instructions")
+            cross_exam_template = self._require_prompt(prompts, key="cross_exam_user_template")
+            chairman_template = self._require_prompt(prompts, key="chairman_user_template")
+        except ValueError as e:
+            run.status = "error"
+            run.errors.append(str(e))
+            return run
 
         budgets = self.council_config.budgets
         deadline = time.monotonic() + max(5.0, budgets.max_seconds_total)
@@ -341,8 +368,11 @@ class CouncilOrchestrator:
             : max(1, budgets.max_cross_exam_questions_per_round)
         ]
         if cross_exam_questions and time.monotonic() <= deadline and budgets.max_rounds >= 2:
-            cross_exam_prompt = cross_exam_template.format(
-                questions="\n".join(f"{i}. {q}" for i, q in enumerate(cross_exam_questions, start=1))
+            cross_exam_prompt = self._render_template(
+                cross_exam_template,
+                questions="\n".join(
+                    f"{i}. {q}" for i, q in enumerate(cross_exam_questions, start=1)
+                ),
             )
             cross_exam_calls = await self._run_cross_exam_with_prompt(
                 base_chat_messages=base_messages,
@@ -370,7 +400,8 @@ class CouncilOrchestrator:
             return run
 
         # Chairman: final decision JSON
-        chairman_user_prompt = chairman_template.format(
+        chairman_user_prompt = self._render_template(
+            chairman_template,
             member_outputs=self._format_member_outputs(member_outputs),
             reviewer_notes=(review_parsed.notes_for_chairman or "").strip(),
         )
@@ -579,9 +610,21 @@ class CouncilOrchestrator:
     # ---------------------------------------------------------------------
 
     @staticmethod
-    def _get_prompt(prompts: dict[str, Any], *, key: str, fallback: str) -> str:
+    def _require_prompt(prompts: dict[str, Any], *, key: str) -> str:
         value = prompts.get(key)
-        return value if isinstance(value, str) and value.strip() else fallback
+        if not isinstance(value, str) or not value.strip():
+            raise ValueError(f"Missing required prompt key: {key}")
+        return value.strip()
+
+    @staticmethod
+    def _render_template(template: str, **replacements: str) -> str:
+        """
+        Render prompt templates without `str.format()` so JSON braces remain literal.
+        """
+        rendered = template
+        for key, value in replacements.items():
+            rendered = rendered.replace(f"{{{key}}}", str(value))
+        return rendered
 
     @staticmethod
     def _with_system_addendum(

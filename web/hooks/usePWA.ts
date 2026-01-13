@@ -28,6 +28,7 @@ export function usePWA(options: UsePWAOptions = {}) {
   const [updateAvailable, setUpdateAvailable] = useState(false);
 
   const shouldRegisterServiceWorker = options.registerServiceWorker ?? true;
+  const shouldInterceptInstallPrompt = process.env.NODE_ENV === "production";
   const canUsePwaApis = useMemo(() => typeof window !== "undefined", []);
 
   useEffect(() => {
@@ -44,6 +45,7 @@ export function usePWA(options: UsePWAOptions = {}) {
     const handleOffline = () => setIsOnline(false);
 
     const handleBeforeInstallPrompt = (event: Event) => {
+      if (!shouldInterceptInstallPrompt) return;
       event.preventDefault();
       setInstallPrompt(event as BeforeInstallPromptEvent);
     };
@@ -66,7 +68,7 @@ export function usePWA(options: UsePWAOptions = {}) {
       window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
       window.removeEventListener("appinstalled", handleAppInstalled);
     };
-  }, [canUsePwaApis]);
+  }, [canUsePwaApis, shouldInterceptInstallPrompt]);
 
   useEffect(() => {
     if (!canUsePwaApis) return;

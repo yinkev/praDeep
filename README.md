@@ -275,7 +275,7 @@ cp .env.example .env
 | `BACKEND_PORT` | No | Backend port (default: `8783`) |
 | `FRONTEND_PORT` | No | Frontend port (default: `3783`) |
 | `NEXT_PUBLIC_API_BASE` | No | **Frontend API URL** - Set this for remote/LAN access (e.g., `http://192.168.1.100:8783`) |
-| `TTS_*` | No | Text-to-Speech settings |
+| `TTS_*` | No | Text-to-Speech settings (Co-Writer + Council audio) |
 | `SEARCH_PROVIDER` | No | Search provider (options: `perplexity`, `baidu`, default: `perplexity`) |
 | `PERPLEXITY_API_KEY` | No | For Perplexity web search |
 | `BAIDU_API_KEY` | No | For Baidu AI search |
@@ -408,22 +408,29 @@ docker run -d --name deeptutor \
 conda create -n deeptutor python=3.10 && conda activate deeptutor
 
 # Or using venv
-python -m venv .venv && source .venv/bin/activate  # Windows: .venv\Scripts\activate
+python3 -m venv .venv && source .venv/bin/activate  # Windows: .venv\Scripts\activate
 ```
 
 **2. Install Dependencies**:
 
 ```bash
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 npm install --prefix web
 ```
 
 **3. Launch**:
 
 ```bash
-python scripts/start_web.py    # Start frontend + backend
+./scripts/start    # Start frontend + backend (auto-uses .venv if present)
 # Or: python scripts/start.py  # CLI only
-# Stop: Ctrl+C
+# Stop: ./scripts/stop
+```
+
+**One-liner (Makefile)**:
+
+```bash
+make start   # start all services
+make stop    # stop all services
 ```
 
 <details>
@@ -1206,7 +1213,7 @@ netstat -ano | findstr :8783
 taskkill /PID <PID> /F
 ```
 
-Then restart the service with `python scripts/start_web.py`.
+Then restart the service with `./scripts/start`.
 
 </details>
 
@@ -1215,7 +1222,7 @@ Then restart the service with `python scripts/start_web.py`.
 
 **Problem**
 
-Running `scripts/start_web.py` shows `npm: command not found` or exit status 127.
+Running `./scripts/start` shows `npm: command not found` or exit status 127.
 
 **Checklist**
 - Check if npm is installed: `npm --version`

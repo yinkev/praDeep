@@ -48,7 +48,7 @@ This is the “communication layer”: reviewer → cross-exam questions → mem
 
 `src/services/council/` contains:
 
-- `config.py`: dataclass config (`CouncilConfig`, `CouncilModels`, `CouncilBudgets`) loaded from `config/main.yaml`.
+- `config.py`: dataclass config (`CouncilConfig`, `CouncilModels`, `CouncilBudgets`) loaded from `solve_config.yaml`.
 - `types.py`: Pydantic models for logs (`CouncilRun`, `CouncilRound`, `CouncilCall`, etc.).
 - `storage.py`: `CouncilLogStore` for saving/loading council transcripts.
 
@@ -94,7 +94,7 @@ Key constraints:
 
 ## Configuration (models + budgets)
 
-`config/main.yaml` provides:
+`solve_config.yaml` provides:
 
 - `council.enabled`
 - `council.models.{chairman, reviewer, members[]}`
@@ -107,7 +107,7 @@ The intent is to let you swap providers/models via your OpenAI-compatible endpoi
 Council calls use the same OpenAI-compatible client configuration as the rest of praDeep:
 
 - `.env`: `LLM_HOST` (e.g. `http://localhost:8317/v1`) and `LLM_API_KEY` (whatever your proxy expects)
-- `config/main.yaml`: `council.models.*` should be model IDs that your proxy can route
+- `solve_config.yaml`: `council.models.*` should be model IDs that your proxy can route
 
 ## Extending Council Mode (recommended next features)
 

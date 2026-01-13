@@ -23,12 +23,15 @@ cp .env.example .env
 
 # Install and launch
 bash scripts/install_all.sh
-python scripts/start_web.py
+./scripts/start
+
+# Stop
+./scripts/stop
 ```
 
 ```bash [Docker]
 docker run -d --name pradeep \
-  -p 8001:8001 -p 3782:3782 \
+  -p 8783:8783 -p 3783:3783 \
   -e LLM_MODEL=gpt-4o \
   -e LLM_API_KEY=your-key \
   -e LLM_HOST=https://api.openai.com/v1 \
@@ -59,12 +62,12 @@ EMBEDDING_HOST=https://api.openai.com/v1
 
 | Service | URL |
 |:--------|:----|
-| **Web App** | http://localhost:3782 |
-| **API Docs** | http://localhost:8001/docs |
+| **Web App** | http://localhost:3783 |
+| **API Docs** | http://localhost:8783/docs |
 
 ## Your First Knowledge Base
 
-1. Navigate to http://localhost:3782/knowledge
+1. Navigate to http://localhost:3783/knowledge
 2. Click **"New Knowledge Base"**
 3. Upload PDF, TXT, or Markdown files
 4. Wait for processing to complete

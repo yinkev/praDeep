@@ -58,7 +58,7 @@ convert logo.png -resize 180x180 apple-touch-icon.png
 
 ## Current Status
 
-⚠️ **TODO**: Icon files need to be created. The PWA manifest is configured but icons are not yet generated.
+✅ Icon files are present and referenced by `web/public/manifest.json`.
 
 ## Testing Icons
 

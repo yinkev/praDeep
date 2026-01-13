@@ -90,33 +90,13 @@ export function useSlashCommand({
   )
 
   /**
-   * Handle keyboard navigation
+   * Close menu
    */
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (!showMenu) return
-
-      const commandCount = filteredCommands.length
-
-      if (e.key === 'ArrowDown') {
-        e.preventDefault()
-        setSelectedIndex(prev => Math.min(prev + 1, commandCount - 1))
-      } else if (e.key === 'ArrowUp') {
-        e.preventDefault()
-        setSelectedIndex(prev => Math.max(prev - 1, 0))
-      } else if (e.key === 'Enter') {
-        e.preventDefault()
-        const selectedCommand = filteredCommands[selectedIndex]
-        if (selectedCommand) {
-          selectCommand(selectedCommand.id)
-        }
-      } else if (e.key === 'Escape') {
-        e.preventDefault()
-        closeMenu()
-      }
-    },
-    [showMenu, filteredCommands, selectedIndex]
-  )
+  const closeMenu = useCallback(() => {
+    setShowMenu(false)
+    setQuery('')
+    setSelectedIndex(0)
+  }, [])
 
   /**
    * Select a command
@@ -151,13 +131,33 @@ export function useSlashCommand({
   )
 
   /**
-   * Close menu
+   * Handle keyboard navigation
    */
-  const closeMenu = useCallback(() => {
-    setShowMenu(false)
-    setQuery('')
-    setSelectedIndex(0)
-  }, [])
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (!showMenu) return
+
+      const commandCount = filteredCommands.length
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        setSelectedIndex(prev => Math.min(prev + 1, commandCount - 1))
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        setSelectedIndex(prev => Math.max(prev - 1, 0))
+      } else if (e.key === 'Enter') {
+        e.preventDefault()
+        const selectedCommand = filteredCommands[selectedIndex]
+        if (selectedCommand) {
+          selectCommand(selectedCommand.id)
+        }
+      } else if (e.key === 'Escape') {
+        e.preventDefault()
+        closeMenu()
+      }
+    },
+    [closeMenu, filteredCommands, selectedIndex, selectCommand, showMenu]
+  )
 
   return {
     showMenu,

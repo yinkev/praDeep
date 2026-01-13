@@ -231,8 +231,8 @@ def init_user_directories(project_root: Path | None = None) -> None:
 # Port Configuration Management
 # ============================================================================
 # Ports are configured via environment variables in .env file:
-#   BACKEND_PORT=8001   (default: 8001)
-#   FRONTEND_PORT=3782  (default: 3782)
+#   BACKEND_PORT=8783   (default: 8783)
+#   FRONTEND_PORT=3783  (default: 3783)
 # ============================================================================
 
 
@@ -240,36 +240,36 @@ def get_backend_port(project_root: Path | None = None) -> int:
     """
     Get backend port from environment variable.
 
-    Configure in .env file: BACKEND_PORT=8001
+    Configure in .env file: BACKEND_PORT=8783
 
     Returns:
-        Backend port number (default: 8001)
+        Backend port number (default: 8783)
     """
-    env_port = os.environ.get("BACKEND_PORT", "8001")
+    env_port = os.environ.get("BACKEND_PORT", "8783")
     try:
         return int(env_port)
     except ValueError:
         logger = _get_setup_logger()
-        logger.warning(f"Invalid BACKEND_PORT: {env_port}, using default 8001")
-        return 8001
+        logger.warning(f"Invalid BACKEND_PORT: {env_port}, using default 8783")
+        return 8783
 
 
 def get_frontend_port(project_root: Path | None = None) -> int:
     """
     Get frontend port from environment variable.
 
-    Configure in .env file: FRONTEND_PORT=3782
+    Configure in .env file: FRONTEND_PORT=3783
 
     Returns:
-        Frontend port number (default: 3782)
+        Frontend port number (default: 3783)
     """
-    env_port = os.environ.get("FRONTEND_PORT", "3782")
+    env_port = os.environ.get("FRONTEND_PORT", "3783")
     try:
         return int(env_port)
     except ValueError:
         logger = _get_setup_logger()
-        logger.warning(f"Invalid FRONTEND_PORT: {env_port}, using default 3782")
-        return 3782
+        logger.warning(f"Invalid FRONTEND_PORT: {env_port}, using default 3783")
+        return 3783
 
 
 def get_ports(project_root: Path | None = None) -> tuple[int, int]:

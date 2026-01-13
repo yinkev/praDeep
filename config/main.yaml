@@ -1,16 +1,13 @@
 system:
   language: en
-
-# Council Mode Configuration (On-demand verification)
-# - Used by chat "Verify (Council)" and optional question validation modes
 council:
   enabled: true
   models:
     chairman: gpt-5.1
     reviewer: gemini-2.5-flash-lite
     members:
-      - gemini-3-pro-preview
-      - claude-sonnet-4-5-20250929
+    - gemini-3-pro-preview
+    - claude-sonnet-4-5-20250929
   budgets:
     max_rounds: 2
     max_cross_exam_questions_per_round: 20
@@ -22,11 +19,9 @@ council:
     member_temperature: 0.2
     reviewer_temperature: 0.2
     chairman_temperature: 0.2
-
-# Rate Limiting Configuration
 rate_limiting:
   enabled: true
-  backend: memory # "memory" or "redis"
+  backend: memory
   redis_url: redis://localhost:6379/0
   default_plan: free
   include_headers: true
@@ -70,16 +65,15 @@ rate_limiting:
     /api/v1/knowledge/upload:
       limit_multiplier: 0.2
     /api/v1/settings:
-      limit_multiplier: 2.0
+      limit_multiplier: 2
     /api/v1/dashboard:
-      limit_multiplier: 2.0
+      limit_multiplier: 2
     /api/v1/analytics:
-      limit_multiplier: 2.0
+      limit_multiplier: 2
     /api/v1/system:
       exempt: true
     /health:
       exempt: true
-
 paths:
   user_data_dir: ./data/user
   knowledge_bases_dir: ./data/knowledge_bases
@@ -97,8 +91,8 @@ tools:
   run_code:
     workspace: ./data/user/run_code_workspace
     allowed_roots:
-      - ./data/user
-      - ./src/tools
+    - ./data/user
+    - ./src/tools
   web_search:
     enabled: true
   query_item:
@@ -140,18 +134,15 @@ solve:
       enabled: true
 research:
   default_preset: auto
-
-# Shared, cross-process cache for per-run agent memory JSON (optional).
-# Keeps JSON-on-disk as the source of truth; this is a best-effort accelerator.
 agent_memory_shared_storage:
   enabled: true
-  backend: shared_memory # shared_memory | redis | disabled
+  backend: shared_memory
   store_dir: ./data/.shared_agent_memory
-  max_bytes: 268435456 # 256 MiB
+  max_bytes: 268435456
   high_watermark: 0.9
   low_watermark: 0.7
   redis_url: redis://localhost:6379/0
-  redis_key_prefix: "pradeep:agentmem:"
+  redis_key_prefix: 'pradeep:agentmem:'
   planning:
     rephrase:
       enabled: true

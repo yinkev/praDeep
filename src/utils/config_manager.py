@@ -150,7 +150,11 @@ class ConfigManager:
             }
         except Exception as e:
             # Fallback to env_vars (parsed from .env file)
-            dim_str = env_vars.get("EMBEDDING_DIM") or os.environ.get("EMBEDDING_DIM", "1536")
+            dim_str = (
+                env_vars.get("EMBEDDING_DIMENSION")
+                or os.environ.get("EMBEDDING_DIMENSION")
+                or "1536"
+            )
             try:
                 dim = int(dim_str)
             except (ValueError, TypeError):

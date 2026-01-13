@@ -15,6 +15,7 @@ import {
   Database,
   Search,
   Volume2,
+  Microscope,
   Cpu,
   Key,
   Brain,
@@ -50,6 +51,10 @@ interface UISettings {
   theme: 'light' | 'dark'
   language: 'zh' | 'en'
   output_language: 'zh' | 'en'
+  council_depth: 'standard' | 'quick' | 'deep'
+  enable_council_interaction: boolean
+  enable_council_audio: boolean
+  council_checkpoint_timeout_s: number
 }
 
 interface EnvInfo {
@@ -1527,6 +1532,97 @@ export default function SettingsPage() {
                         <option value="en">{t('English')}</option>
                         <option value="zh">{t('Chinese')}</option>
                       </select>
+                    </div>
+                  </CardBody>
+                </Card>
+
+                {/* Council Defaults */}
+                <Card variant="glass" padding="none" interactive={false}>
+                  <CardHeader>
+                    <div className="flex items-center gap-2">
+                      <Microscope className="w-4 h-4 text-blue-600" />
+                      <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
+                        Council Verification
+                      </h2>
+                    </div>
+                  </CardHeader>
+                  <CardBody className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-2">
+                        Council depth
+                      </label>
+                      <select
+                        value={editedUI.council_depth}
+                        onChange={e =>
+                          handleUIChange(
+                            'council_depth',
+                            e.target.value === 'standard' ||
+                              e.target.value === 'quick' ||
+                              e.target.value === 'deep'
+                              ? e.target.value
+                              : 'standard'
+                          )
+                        }
+                        className={selectClassName}
+                      >
+                        <option value="standard">Standard (recommended)</option>
+                        <option value="quick">Quick</option>
+                        <option value="deep">Deep</option>
+                      </select>
+                      <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
+                        Applies to “Verify with Council” in Chat.
+                      </p>
+                    </div>
+
+	                    <div className="flex items-center justify-between gap-3 rounded-xl border border-zinc-200/70 bg-white/70 px-3 py-2 dark:border-white/10 dark:bg-zinc-950/40">
+	                      <div className="min-w-0">
+	                        <div className="text-xs font-semibold text-zinc-900 dark:text-zinc-50">
+	                          Interactive checkpoints
+	                        </div>
+	                        <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
+	                          Pause between review and cross-exam so you can inject questions.
+	                        </div>
+	                      </div>
+	                      <ToggleSwitch
+	                        checked={editedUI.enable_council_interaction}
+	                        onChange={checked => handleUIChange('enable_council_interaction', checked)}
+	                      />
+	                    </div>
+
+	                    <div className="flex items-center justify-between gap-3 rounded-xl border border-zinc-200/70 bg-white/70 px-3 py-2 dark:border-white/10 dark:bg-zinc-950/40">
+	                      <div className="min-w-0">
+	                        <div className="text-xs font-semibold text-zinc-900 dark:text-zinc-50">
+	                          Council audio (TTS)
+	                        </div>
+	                        <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
+	                          Generate a voice track for the final verified answer (uses your TTS settings).
+	                        </div>
+	                      </div>
+	                      <ToggleSwitch
+	                        checked={editedUI.enable_council_audio}
+	                        onChange={checked => handleUIChange('enable_council_audio', checked)}
+	                      />
+	                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-2">
+                        Checkpoint timeout (seconds)
+                      </label>
+                      <input
+                        type="number"
+                        min={5}
+                        max={600}
+                        value={editedUI.council_checkpoint_timeout_s}
+                        onChange={e => {
+                          const raw = Number(e.target.value || 0)
+                          const clamped = Math.max(5, Math.min(600, Number.isFinite(raw) ? raw : 180))
+                          handleUIChange('council_checkpoint_timeout_s', clamped)
+                        }}
+                        className={selectClassName}
+                      />
+                      <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
+                        If you don’t respond, the council continues automatically.
+                      </p>
                     </div>
                   </CardBody>
                 </Card>

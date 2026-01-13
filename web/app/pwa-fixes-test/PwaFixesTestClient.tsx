@@ -8,9 +8,9 @@ export default function PwaFixesTestClient() {
 
   const steps: ReasoningStep[] = useMemo(
     () => [
-      { step: 'Parse the question and extract constraints.', confidence: 0.9, timestamp: Date.now() - 5000 },
-      { step: 'Choose the most direct solution path.', confidence: 0.78, timestamp: Date.now() - 2500 },
-      { step: 'Validate edge cases and return the result.', confidence: 0.86, timestamp: Date.now() },
+      { step: 'Parse the question and extract constraints.', confidence: 0.9, timestamp: 0 },
+      { step: 'Choose the most direct solution path.', confidence: 0.78, timestamp: 2500 },
+      { step: 'Validate edge cases and return the result.', confidence: 0.86, timestamp: 5000 },
     ],
     [],
   )

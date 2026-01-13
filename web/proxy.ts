@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 const STATIC_ASSET_EXTENSIONS = /\.(?:png|jpg|jpeg|gif|webp|svg|ico|woff2?|ttf|eot|css|js)$/i
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
   const response = NextResponse.next()
 
@@ -27,3 +27,4 @@ export function middleware(request: NextRequest) {
 export const config = {
   matcher: '/:path*',
 }
+

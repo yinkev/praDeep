@@ -11,7 +11,7 @@ The API module is built on FastAPI and provides:
 - CORS middleware for cross-origin requests
 - Unified error handling and logging
 
-## 🏗�?Architecture
+## 🏗️ Architecture
 
 ```
 api/
@@ -19,17 +19,17 @@ api/
 ├── main.py                  # FastAPI application setup
 ├── run_server.py            # Server startup script
 ├── routers/                 # API route modules
-�?  ├── solve.py            # Problem solving endpoints
-�?  ├── question.py         # Question generation endpoints
-�?  ├── research.py         # Research endpoints
-�?  ├── knowledge.py        # Knowledge base endpoints
-�?  ├── guide.py            # Guided learning endpoints
-�?  ├── co_writer.py        # Co-Writer endpoints
-�?  ├── notebook.py         # Notebook endpoints
-�?  ├── ideagen.py          # Idea generation endpoints
-�?  ├── dashboard.py        # Dashboard endpoints
-�?  ├── settings.py         # Settings endpoints
-�?  └── system.py           # System endpoints
+│   ├── solve.py            # Problem solving endpoints
+│   ├── question.py         # Question generation endpoints
+│   ├── research.py         # Research endpoints
+│   ├── knowledge.py        # Knowledge base endpoints
+│   ├── guide.py            # Guided learning endpoints
+│   ├── co_writer.py        # Co-Writer endpoints
+│   ├── notebook.py         # Notebook endpoints
+│   ├── ideagen.py          # Idea generation endpoints
+│   ├── dashboard.py        # Dashboard endpoints
+│   ├── settings.py         # Settings endpoints
+│   └── system.py           # System endpoints
 └── utils/                   # API utilities
     ├── history.py          # Activity history management
     ├── log_interceptor.py  # Log interception for streaming
@@ -221,12 +221,11 @@ The API serves static files from `data/user/` via `/api/outputs/`:
 
 The backend runs on **port 8783** by default.
 
-Configured in `config/main.yaml`:
+Configured via `.env`:
 
-```yaml
-server:
-  backend_port: 8783
-  frontend_port: 3782
+```bash
+BACKEND_PORT=8783
+FRONTEND_PORT=3783
 ```
 
 ### API Documentation
@@ -288,7 +287,7 @@ python src/api/main.py
 - **Tools**: `src/tools/` - Tool implementations
 - **Frontend**: `web/` - Next.js frontend
 
-## 🛠�?Development
+## 🛠️ Development
 
 ### Adding a New Endpoint
 

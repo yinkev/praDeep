@@ -109,7 +109,7 @@ class Qwen3VLEmbeddingAdapter(BaseEmbeddingAdapter):
             self._processor = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 
         self._model = AutoModel.from_pretrained(
-            model_name, trust_remote_code=True, torch_dtype=self._dtype
+            model_name, trust_remote_code=True, dtype=self._dtype
         )
         self._model.to(self._device)
         self._model.eval()

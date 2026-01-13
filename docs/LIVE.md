@@ -75,7 +75,7 @@ LLM_API_KEY=sk-proxy
 # Embedding (local Qwen3-VL)
 EMBEDDING_BINDING=qwen3_vl
 EMBEDDING_MODEL=Qwen/Qwen3-VL-Embedding-8B
-EMBEDDING_DIM=2048
+EMBEDDING_DIMENSION=2048
 
 # Reranker (local Qwen3-VL)
 RERANKER_BINDING=qwen3_vl

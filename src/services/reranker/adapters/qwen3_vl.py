@@ -103,7 +103,7 @@ class Qwen3VLRerankerAdapter(BaseRerankerAdapter):
 
         self._tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
         self._model = AutoModelForSequenceClassification.from_pretrained(
-            model_name, trust_remote_code=True, torch_dtype=self._dtype
+            model_name, trust_remote_code=True, dtype=self._dtype
         )
         self._model.to(self._device)
         self._model.eval()

@@ -20,6 +20,17 @@ class CouncilLogStore:
 
         if base_dir is not None:
             self._base_dir = Path(base_dir)
+            # Best-effort URL generation for tests/custom stores.
+            # In the default configuration, council artifacts live under:
+            #   <user_data_dir>/council/<task>/<council_id>/...
+            # and /api/outputs serves from <user_data_dir>.
+            #
+            # When base_dir is provided, infer an appropriate user_data_dir so
+            # outputs_url_for_path can still return a stable URL.
+            if self._base_dir.name == "council":
+                self._user_data_dir = self._base_dir.parent
+            else:
+                self._user_data_dir = self._base_dir
             return
 
         config = load_config_with_main("solve_config.yaml", self._project_root)

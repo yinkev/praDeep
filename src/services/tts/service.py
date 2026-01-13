@@ -64,12 +64,15 @@ async def synthesize_speech_to_file(
 
     def _run() -> None:
         client = client_factory(base_url=base_url, api_key=api_key)
-        response = client.audio.speech.create(model=model, voice=voice_id, input=input_text)
-        response.stream_to_file(out_path)
+        with client.audio.speech.with_streaming_response.create(
+            model=model,
+            voice=voice_id,
+            input=input_text,
+        ) as response:
+            response.stream_to_file(out_path)
 
     await asyncio.to_thread(_run)
     return out_path
 
 
 __all__ = ["synthesize_speech_to_file"]
-

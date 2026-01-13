@@ -71,7 +71,7 @@ class CouncilConfig:
 
 def load_council_config(project_root: Path | None = None) -> CouncilConfig:
     """
-    Load Council configuration from config/main.yaml (via load_config_with_main).
+    Load Council configuration from solve_config.yaml (via load_config_with_main).
 
     This intentionally keeps the config object as dataclasses so internal code can use
     attribute access and also safely serialize budgets via __dict__.
@@ -156,4 +156,3 @@ __all__ = [
     "CouncilModels",
     "load_council_config",
 ]
-

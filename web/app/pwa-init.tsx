@@ -10,6 +10,7 @@ export function PWAInit() {
   const { isInstalled, isOnline, installPrompt } = usePWA({ registerServiceWorker: false })
 
   useEffect(() => {
+    if (process.env.NODE_ENV !== 'production') return
     void registerServiceWorker()
   }, [])
 

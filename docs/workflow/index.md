@@ -39,11 +39,11 @@ How we develop and maintain praDeep.
    ollama serve
 
    # Start CLI Proxy API (port 8317)
-   # Start backend (port 8001)
-   python src/api/main.py
+   # Start praDeep (backend 8783 + frontend 3783)
+   ./scripts/start
 
-   # Start frontend (port 3782)
-   cd web && npm run dev
+   # Stop praDeep
+   ./scripts/stop
    ```
 
 ### Research Workflow
@@ -100,8 +100,8 @@ Supports: Gemini, GPT, Claude, etc.
 
 | Service | Port |
 |---------|------|
-| Backend API | 8001 |
-| Frontend | 3782 |
+| Backend API | 8783 |
+| Frontend | 3783 |
 | CLI Proxy | 8317 |
 | Ollama | 11434 |
 
@@ -116,5 +116,5 @@ LLM_MODEL=gemini-2.5-pro-preview
 # Embedding (Qwen3-VL-Embedding-8B)
 EMBEDDING_BINDING=qwen3_vl
 EMBEDDING_MODEL=Qwen/Qwen3-VL-Embedding-8B
-EMBEDDING_DIMENSION=4096
+EMBEDDING_DIMENSION=2048
 ```

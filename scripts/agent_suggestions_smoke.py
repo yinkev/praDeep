@@ -1,21 +1,26 @@
 #!/usr/bin/env python3
 """
-Test script for Agent Suggestions API endpoints
+Smoke test script for Agent Suggestions API endpoints.
+
+This is intentionally not collected by pytest (it is a manual script).
 """
 
 import asyncio
+from pathlib import Path
 import sys
-sys.path.insert(0, '/Users/kyin/Projects/praDeep')
 
-from src.api.routers.agent_config import (
-    suggest_agents,
+project_root = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(project_root))
+
+from src.api.routers.agent_config import (  # noqa: E402
+    AgentSuggestionRequest,
     get_agent_capabilities,
-    AgentSuggestionRequest
+    suggest_agents,
 )
 
 
-async def test_suggestions():
-    """Test agent suggestion matching"""
+async def main():
+    """Run agent suggestion matching smoke test."""
     print("=" * 60)
     print("Testing Agent Suggestion System")
     print("=" * 60)
@@ -55,8 +60,8 @@ async def test_suggestions():
         print(f"  - {cap.label_key} ({cap.agent_type})")
         print(f"    Keywords: {len(cap.keywords)} | Use cases: {len(cap.use_cases)}")
 
-    print("\n✅ All tests completed successfully!")
+    print("\n✅ Smoke test completed successfully!")
 
 
 if __name__ == "__main__":
-    asyncio.run(test_suggestions())
+    asyncio.run(main())

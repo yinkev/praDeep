@@ -83,6 +83,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html
       lang="en"
       suppressHydrationWarning
+      data-scroll-behavior="smooth"
       className={`${inter.variable} ${ibmPlexMono.variable} ${cormorantGaramond.variable}`}
     >
       <head>

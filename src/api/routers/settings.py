@@ -169,6 +169,11 @@ DEFAULT_UI_SETTINGS = {
     "theme": "light",
     "language": "en",  # Interface language
     "output_language": "en",  # Output preference (legacy, might move to main.yaml)
+    # Chat defaults
+    "council_depth": "standard",  # standard | quick | deep
+    "enable_council_interaction": True,
+    "enable_council_audio": False,
+    "council_checkpoint_timeout_s": 180,
 }
 
 
@@ -176,6 +181,10 @@ class UISettings(BaseModel):
     theme: Literal["light", "dark"] = "light"
     language: Literal["zh", "en"] = "en"
     output_language: Literal["zh", "en"] = "en"
+    council_depth: Literal["standard", "quick", "deep"] = "standard"
+    enable_council_interaction: bool = True
+    enable_council_audio: bool = False
+    council_checkpoint_timeout_s: int = 180
 
 
 class FullSettingsResponse(BaseModel):

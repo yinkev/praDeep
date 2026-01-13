@@ -225,6 +225,22 @@ interface ChatSource {
   web?: Array<{ url: string; title?: string; snippet?: string }>;
 }
 
+interface CouncilCheckpoint {
+  checkpoint_id: string;
+  council_id?: string;
+  task?: string;
+  round_index: number;
+  review_parsed?: {
+    resolved?: boolean;
+    issues?: string[];
+    disagreements?: string[];
+    cross_exam_questions?: string[];
+    notes_for_chairman?: string;
+  };
+  cross_exam_questions?: string[];
+  limit?: number;
+}
+
 interface HomeChatMessage {
   role: "user" | "assistant";
   content: string;
@@ -235,6 +251,9 @@ interface HomeChatMessage {
     council_id?: string;
     council_task?: string;
     status?: string;
+    voice?: string;
+    audio_url?: string;
+    audio_error?: string;
   };
 }
 
@@ -247,6 +266,11 @@ interface ChatState {
   ragFilters: RagFilters | null;
   enableWebSearch: boolean;
   currentStage: string | null;
+  councilDepth: "standard" | "quick" | "deep";
+  enableCouncilInteraction: boolean;
+  enableCouncilAudio: boolean;
+  councilCheckpointTimeoutS: number;
+  councilCheckpoint: CouncilCheckpoint | null;
 }
 
 interface GlobalContextType {
@@ -295,12 +319,24 @@ interface GlobalContextType {
   setChatState: React.Dispatch<React.SetStateAction<ChatState>>;
   sendChatMessage: (message: string) => void;
   verifyChatMessage: (targetAssistantIndex: number) => void;
+  sendCouncilCheckpoint: (payload: {
+    action: "continue" | "cancel";
+    user_questions?: string;
+    notes_for_chairman?: string;
+  }) => void;
   clearChatHistory: () => void;
   loadChatSession: (sessionId: string) => Promise<void>;
   newChatSession: () => void;
 
   // UI Settings
-  uiSettings: { theme: "light" | "dark"; language: "en" | "zh" };
+  uiSettings: {
+    theme: "light" | "dark";
+    language: "en" | "zh";
+    council_depth: "standard" | "quick" | "deep";
+    enable_council_interaction: boolean;
+    enable_council_audio: boolean;
+    council_checkpoint_timeout_s: number;
+  };
   refreshSettings: () => Promise<void>;
 
   // Sidebar
@@ -318,7 +354,18 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
   const [uiSettings, setUiSettings] = useState<{
     theme: "light" | "dark";
     language: "en" | "zh";
-  }>({ theme: "light", language: "en" });
+    council_depth: "standard" | "quick" | "deep";
+    enable_council_interaction: boolean;
+    enable_council_audio: boolean;
+    council_checkpoint_timeout_s: number;
+  }>({
+    theme: "light",
+    language: "en",
+    council_depth: "standard",
+    enable_council_interaction: true,
+    enable_council_audio: false,
+    council_checkpoint_timeout_s: 180,
+  });
 
   const [isInitialized, setIsInitialized] = useState(false);
 
@@ -335,9 +382,30 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
           setUiSettings({
             theme: themeToUse,
             language: data.ui.language,
+            council_depth: data.ui.council_depth ?? "standard",
+            enable_council_interaction: data.ui.enable_council_interaction ?? true,
+            enable_council_audio: data.ui.enable_council_audio ?? false,
+            council_checkpoint_timeout_s: data.ui.council_checkpoint_timeout_s ?? 180,
           });
           // Apply and persist theme
           setTheme(themeToUse);
+
+          setChatState((prev) => ({
+            ...prev,
+            councilDepth: (data.ui.council_depth ?? prev.councilDepth) as ChatState["councilDepth"],
+            enableCouncilInteraction:
+              typeof data.ui.enable_council_interaction === "boolean"
+                ? data.ui.enable_council_interaction
+                : prev.enableCouncilInteraction,
+            enableCouncilAudio:
+              typeof data.ui.enable_council_audio === "boolean"
+                ? data.ui.enable_council_audio
+                : prev.enableCouncilAudio,
+            councilCheckpointTimeoutS:
+              typeof data.ui.council_checkpoint_timeout_s === "number"
+                ? data.ui.council_checkpoint_timeout_s
+                : prev.councilCheckpointTimeoutS,
+          }));
         }
       }
     } catch (e) {
@@ -1484,10 +1552,31 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
     ragFilters: null,
     enableWebSearch: false,
     currentStage: null,
+    councilDepth: "standard",
+    enableCouncilInteraction: true,
+    enableCouncilAudio: false,
+    councilCheckpointTimeoutS: 180,
+    councilCheckpoint: null,
   });
   const chatWs = useRef<WebSocket | null>(null);
   // Use ref to always have the latest sessionId in WebSocket callbacks (avoid closure issues)
   const sessionIdRef = useRef<string | null>(null);
+
+  const sendCouncilCheckpoint = (payload: {
+    action: "continue" | "cancel";
+    user_questions?: string;
+    notes_for_chairman?: string;
+  }) => {
+    const ws = chatWs.current;
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+
+    ws.send(JSON.stringify({ action: "council_checkpoint", payload }));
+    setChatState((prev) => ({
+      ...prev,
+      councilCheckpoint: null,
+      currentStage: "council_resuming",
+    }));
+  };
 
   const sendChatMessage = (message: string) => {
     if (!message.trim() || chatState.isLoading) return;
@@ -1596,6 +1685,7 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
             messages,
             isLoading: false,
             currentStage: null,
+            councilCheckpoint: null,
           };
         });
         ws.close();
@@ -1707,6 +1797,10 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
           enable_rag: chatState.enableRag,
           rag_filters: chatState.enableRag ? chatState.ragFilters : null,
           enable_web_search: chatState.enableWebSearch,
+          council_depth: chatState.councilDepth,
+          enable_council_interaction: chatState.enableCouncilInteraction,
+          enable_council_audio: chatState.enableCouncilAudio,
+          checkpoint_timeout_s: chatState.councilCheckpointTimeoutS,
         })
       );
     };
@@ -1725,6 +1819,24 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
           ...prev,
           currentStage: data.stage || data.message,
         }));
+      } else if (data.type === "checkpoint") {
+        setChatState((prev) => {
+          const messages = [...prev.messages];
+          const lastMessage = messages[messages.length - 1];
+          if (lastMessage?.role === "assistant") {
+            messages[messages.length - 1] = {
+              ...lastMessage,
+              content: "Council paused for your input.",
+              meta: { ...(lastMessage.meta || {}), status: "checkpoint" },
+            };
+          }
+          return {
+            ...prev,
+            currentStage: "council_checkpoint",
+            councilCheckpoint: data.checkpoint as CouncilCheckpoint,
+            messages,
+          };
+        });
       } else if (data.type === "sources") {
         setChatState((prev) => {
           const messages = [...prev.messages];
@@ -1754,6 +1866,7 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
             messages,
             isLoading: false,
             currentStage: null,
+            councilCheckpoint: null,
           };
         });
         ws.close();
@@ -1767,9 +1880,9 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
               content: `Error: ${data.message}`,
               isStreaming: false,
             };
-            return { ...prev, messages, isLoading: false, currentStage: null };
+            return { ...prev, messages, isLoading: false, currentStage: null, councilCheckpoint: null };
           }
-          return { ...prev, isLoading: false, currentStage: null };
+          return { ...prev, isLoading: false, currentStage: null, councilCheckpoint: null };
         });
         ws.close();
       }
@@ -1787,7 +1900,7 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
           };
           return { ...prev, messages, isLoading: false, currentStage: null };
         }
-        return { ...prev, isLoading: false, currentStage: null };
+        return { ...prev, isLoading: false, currentStage: null, councilCheckpoint: null };
       });
     };
 
@@ -1799,6 +1912,7 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
         ...prev,
         isLoading: false,
         currentStage: null,
+        councilCheckpoint: null,
       }));
     };
   };
@@ -1811,6 +1925,7 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
       sessionId: null,
       messages: [],
       currentStage: null,
+      councilCheckpoint: null,
     }));
   };
 
@@ -1828,6 +1943,7 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
       messages: [],
       isLoading: false,
       currentStage: null,
+      councilCheckpoint: null,
     }));
   };
 
@@ -1898,6 +2014,7 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
         setChatState,
         sendChatMessage,
         verifyChatMessage,
+        sendCouncilCheckpoint,
         clearChatHistory,
         loadChatSession,
         newChatSession,

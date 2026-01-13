@@ -6,8 +6,10 @@ WebSocket endpoint for lightweight chat with session management.
 REST endpoints for session operations.
 """
 
+import asyncio
 from pathlib import Path
 import sys
+import time
 
 from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
 
@@ -123,6 +125,10 @@ async def websocket_chat(websocket: WebSocket):
         # Verify action only:
         "target_question": str,      # Question to verify
         "target_answer": str | null  # Existing assistant answer (optional baseline)
+        "council_depth": "standard" | "quick" | "deep",  # Optional: depth preset
+        "enable_council_interaction": bool,              # Optional: checkpoints between steps
+        "enable_council_audio": bool,                    # Optional: generate TTS audio for final output
+        "checkpoint_timeout_s": int | float | null       # Optional: checkpoint wait limit
     }
 
     Response format:
@@ -153,6 +159,10 @@ async def websocket_chat(websocket: WebSocket):
             enable_rag = data.get("enable_rag", False)
             enable_web_search = data.get("enable_web_search", False)
             target_answer = data.get("target_answer") if action == "verify" else None
+            council_depth = str(data.get("council_depth") or "standard").strip().lower()
+            enable_council_interaction = bool(data.get("enable_council_interaction", False))
+            enable_council_audio = bool(data.get("enable_council_audio", False))
+            checkpoint_timeout_s = data.get("checkpoint_timeout_s")
 
             if not message:
                 await websocket.send_json({"type": "error", "message": "Message is required"})
@@ -285,10 +295,77 @@ async def websocket_chat(websocket: WebSocket):
                         }
                     )
 
-                    from src.services.council import CouncilLogStore, CouncilOrchestrator, load_council_config
+                    from src.services.council import (
+                        CouncilLogStore,
+                        CouncilOrchestrator,
+                        load_council_config,
+                    )
+                    from src.services.council.presets import apply_council_preset
 
-                    council_cfg = load_council_config(project_root)
+                    council_cfg = apply_council_preset(
+                        load_council_config(project_root),
+                        preset=council_depth,
+                    )
                     orchestrator = CouncilOrchestrator(council_cfg)
+
+                    async def checkpoint_callback(event: dict[str, object]):
+                        if not enable_council_interaction:
+                            return None
+
+                        timeout = 120.0
+                        if isinstance(checkpoint_timeout_s, (int, float)):
+                            timeout = max(5.0, float(checkpoint_timeout_s))
+
+                        checkpoint = {
+                            "checkpoint_id": f"{event.get('council_id')}_r{event.get('round_index')}",
+                            "council_id": event.get("council_id"),
+                            "task": event.get("task"),
+                            "round_index": event.get("round_index"),
+                            "review_parsed": event.get("review_parsed"),
+                            "cross_exam_questions": event.get("cross_exam_questions") or [],
+                            "limit": event.get("limit"),
+                        }
+
+                        await websocket.send_json({"type": "checkpoint", "checkpoint": checkpoint})
+                        await websocket.send_json(
+                            {
+                                "type": "status",
+                                "stage": "council_checkpoint",
+                                "message": "Council paused for your input.",
+                            }
+                        )
+
+                        deadline = time.monotonic() + timeout
+                        while True:
+                            remaining = deadline - time.monotonic()
+                            if remaining <= 0:
+                                return None
+                            try:
+                                incoming = await asyncio.wait_for(
+                                    websocket.receive_json(), timeout=remaining
+                                )
+                            except asyncio.TimeoutError:
+                                return None
+                            except WebSocketDisconnect:
+                                return {"action": "cancel"}
+
+                            if not isinstance(incoming, dict):
+                                continue
+                            if (
+                                str(incoming.get("action") or "").strip().lower()
+                                != "council_checkpoint"
+                            ):
+                                continue
+
+                            payload = incoming.get("payload")
+                            if not isinstance(payload, dict):
+                                continue
+
+                            decision = str(payload.get("action") or "").strip().lower()
+                            if decision not in {"continue", "cancel"}:
+                                continue
+
+                            return payload
                     run = await orchestrator.run_chat_verify(
                         question=message,
                         chat_messages=chat_messages,
@@ -299,10 +376,47 @@ async def websocket_chat(websocket: WebSocket):
                         enable_web_search=enable_web_search,
                         language=language,
                         existing_answer=target_answer,
+                        checkpoint_callback=checkpoint_callback
+                        if enable_council_interaction
+                        else None,
                     )
 
-                    # Persist log and attach reference to the assistant message
                     store = CouncilLogStore()
+
+                    # Optional: generate TTS audio for the final synthesis (blocking for now)
+                    if (
+                        enable_council_audio
+                        and run.final is not None
+                        and bool((run.final.content or "").strip())
+                    ):
+                        await websocket.send_json(
+                            {
+                                "type": "status",
+                                "stage": "council_audio",
+                                "message": "Generating audio...",
+                            }
+                        )
+                        from src.services.council.audio import (
+                            prepare_final_audio,
+                            synthesize_final_audio,
+                        )
+                        from src.services.tts.config import get_tts_config
+
+                        try:
+                            tts_cfg = get_tts_config()
+                            voice = str(tts_cfg.get("voice") or "").strip()
+                            prepare_final_audio(
+                                run.final,
+                                store=store,
+                                council_id=run.council_id,
+                                task=run.task,
+                                voice=voice,
+                            )
+                            await synthesize_final_audio(run.final, tts_config=tts_cfg)
+                        except Exception as e:
+                            run.final.audio_error = str(e)
+
+                    # Persist log and attach reference to the assistant message
                     store.save(run)
 
                     await websocket.send_json(
@@ -313,7 +427,24 @@ async def websocket_chat(websocket: WebSocket):
                         }
                     )
 
-                    full_response = (run.final.content if run.final else "").strip() or "Verification failed."
+                    if run.status == "canceled":
+                        full_response = "Verification canceled."
+                    else:
+                        full_response = (
+                            (run.final.content if run.final else "").strip()
+                            or "Verification failed."
+                        )
+
+                    verified = bool(run.final and run.final.content and run.status == "ok")
+
+                    audio_meta: dict[str, object] = {}
+                    if run.final:
+                        if run.final.voice:
+                            audio_meta["voice"] = run.final.voice
+                        if run.final.audio_url:
+                            audio_meta["audio_url"] = run.final.audio_url
+                        if run.final.audio_error:
+                            audio_meta["audio_error"] = run.final.audio_error
 
                     # Send sources if any
                     if sources.get("rag") or sources.get("web"):
@@ -325,10 +456,11 @@ async def websocket_chat(websocket: WebSocket):
                             "type": "result",
                             "content": full_response,
                             "meta": {
-                                "verified": True,
+                                "verified": verified,
                                 "council_id": run.council_id,
                                 "council_task": run.task,
                                 "status": run.status,
+                                **audio_meta,
                             },
                         }
                     )
@@ -340,10 +472,11 @@ async def websocket_chat(websocket: WebSocket):
                         content=full_response,
                         sources=sources if (sources.get("rag") or sources.get("web")) else None,
                         meta={
-                            "verified": True,
+                            "verified": verified,
                             "council_id": run.council_id,
                             "council_task": run.task,
                             "status": run.status,
+                            **audio_meta,
                         },
                         exclude_from_history=True,
                     )

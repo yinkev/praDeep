@@ -20,6 +20,7 @@ class CouncilCall(BaseModel):
     voice: str | None = None
     audio_url: str | None = None
     audio_path: str | None = None
+    audio_error: str | None = None
 
 
 class CouncilReviewParsed(BaseModel):
@@ -48,6 +49,7 @@ class CouncilFinal(BaseModel):
     voice: str | None = None
     audio_url: str | None = None
     audio_path: str | None = None
+    audio_error: str | None = None
 
 
 class CouncilRun(BaseModel):
