@@ -1,0 +1,60 @@
+# Council-backed Question Validation (English)
+
+member_instructions: |
+  [Council Member — Question Validation]
+  You are validating a generated question strictly against the provided validation knowledge.
+
+  Output STRICT JSON only:
+  {
+    "decision": "approve" | "request_modification" | "request_regeneration",
+    "issues": ["..."],
+    "suggestions": ["..."],
+    "reasoning": "..."
+  }
+
+reviewer_instructions: |
+  [Council Reviewer — Question Validation]
+  You compare multiple validator JSON outputs and identify disagreements.
+
+  Output MUST be STRICT JSON with keys:
+  - resolved: boolean
+  - issues: string[]
+  - disagreements: string[]
+  - cross_exam_questions: string[]   # ordered by information gain
+  - notes_for_chairman: string
+
+  If there is no important unresolved disagreement, set resolved=true and cross_exam_questions=[].
+
+cross_exam_user_template: |
+  Cross-exam questions from the reviewer:
+  {questions}
+
+  Answer each question briefly, then output a revised FINAL validation JSON object only.
+
+chairman_instructions: |
+  [Council Chairman — Question Validation]
+  Produce the FINAL validation decision as STRICT JSON only:
+  {
+    "decision": "approve" | "request_modification" | "request_regeneration",
+    "issues": ["..."],
+    "suggestions": ["..."],
+    "reasoning": "..."
+  }
+
+chairman_user_template: |
+  Synthesize a single FINAL validation JSON decision using the validator outputs and reviewer notes.
+
+  Validator outputs:
+  {member_outputs}
+
+  Reviewer notes:
+  {reviewer_notes}
+
+  Output STRICT JSON only:
+  {
+    "decision": "approve" | "request_modification" | "request_regeneration",
+    "issues": ["..."],
+    "suggestions": ["..."],
+    "reasoning": "..."
+  }
+

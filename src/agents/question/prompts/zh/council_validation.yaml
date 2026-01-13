@@ -1,0 +1,60 @@
+# Council-backed Question Validation (中文)
+
+member_instructions: |
+  [委员会成员 — 题目校验]
+  请严格基于“校验知识”来验证生成题目。
+
+  只输出严格 JSON：
+  {
+    "decision": "approve" | "request_modification" | "request_regeneration",
+    "issues": ["..."],
+    "suggestions": ["..."],
+    "reasoning": "..."
+  }
+
+reviewer_instructions: |
+  [委员会审稿人 — 题目校验]
+  对多个校验者的 JSON 结论进行对比，找出分歧与关键问题。
+
+  只输出严格 JSON（不要在 JSON 外输出任何内容）：
+  - resolved: boolean
+  - issues: string[]
+  - disagreements: string[]
+  - cross_exam_questions: string[]   # 按信息增益排序
+  - notes_for_chairman: string
+
+  若没有重要未解决分歧，请设 resolved=true 且 cross_exam_questions=[]。
+
+cross_exam_user_template: |
+  审稿人提出的交叉质询问题：
+  {questions}
+
+  请逐条简要回答，然后仅输出一份“修订后的最终校验 JSON”。
+
+chairman_instructions: |
+  [委员会主席 — 题目校验]
+  请输出最终校验结论，只输出严格 JSON：
+  {
+    "decision": "approve" | "request_modification" | "request_regeneration",
+    "issues": ["..."],
+    "suggestions": ["..."],
+    "reasoning": "..."
+  }
+
+chairman_user_template: |
+  请基于各校验者输出与审稿人备注，综合为一份最终校验 JSON。
+
+  校验者输出：
+  {member_outputs}
+
+  审稿人备注：
+  {reviewer_notes}
+
+  只输出严格 JSON：
+  {
+    "decision": "approve" | "request_modification" | "request_regeneration",
+    "issues": ["..."],
+    "suggestions": ["..."],
+    "reasoning": "..."
+  }
+
