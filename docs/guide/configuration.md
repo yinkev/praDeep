@@ -46,7 +46,7 @@ TTS_API_KEY=
 TTS_VOICE=alloy
 ```
 
-To enable Council audio output, configure TTS above and turn on **Council audio (TTS)** in **Settings → Council Verification** (or in Chat Controls).
+To enable Council audio output, configure TTS above and set **Council audio (TTS)** to **Final answer** or **All council messages** in **Settings → Council Verification** (or in Chat Controls).
 
 ## Agent Parameters
 

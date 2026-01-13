@@ -53,7 +53,7 @@ interface UISettings {
   output_language: 'zh' | 'en'
   council_depth: 'standard' | 'quick' | 'deep'
   enable_council_interaction: boolean
-  enable_council_audio: boolean
+  council_audio_mode: 'off' | 'final' | 'all'
   council_checkpoint_timeout_s: number
 }
 
@@ -1589,20 +1589,30 @@ export default function SettingsPage() {
 	                      />
 	                    </div>
 
-	                    <div className="flex items-center justify-between gap-3 rounded-xl border border-zinc-200/70 bg-white/70 px-3 py-2 dark:border-white/10 dark:bg-zinc-950/40">
-	                      <div className="min-w-0">
-	                        <div className="text-xs font-semibold text-zinc-900 dark:text-zinc-50">
-	                          Council audio (TTS)
-	                        </div>
-	                        <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
-	                          Generate a voice track for the final verified answer (uses your TTS settings).
-	                        </div>
-	                      </div>
-	                      <ToggleSwitch
-	                        checked={editedUI.enable_council_audio}
-	                        onChange={checked => handleUIChange('enable_council_audio', checked)}
-	                      />
-	                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-2">
+                        Council audio (TTS)
+                      </label>
+                      <select
+                        value={editedUI.council_audio_mode}
+                        onChange={e =>
+                          handleUIChange(
+                            'council_audio_mode',
+                            e.target.value === 'final' || e.target.value === 'all' || e.target.value === 'off'
+                              ? e.target.value
+                              : 'off'
+                          )
+                        }
+                        className={selectClassName}
+                      >
+                        <option value="off">Off</option>
+                        <option value="final">Final answer</option>
+                        <option value="all">All council messages</option>
+                      </select>
+                      <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
+                        Audio is generated after the council completes; it uses your TTS settings.
+                      </p>
+                    </div>
 
                     <div>
                       <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-2">

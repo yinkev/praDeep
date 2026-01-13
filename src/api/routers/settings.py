@@ -172,7 +172,7 @@ DEFAULT_UI_SETTINGS = {
     # Chat defaults
     "council_depth": "standard",  # standard | quick | deep
     "enable_council_interaction": True,
-    "enable_council_audio": False,
+    "council_audio_mode": "off",  # off | final | all
     "council_checkpoint_timeout_s": 180,
 }
 
@@ -183,7 +183,7 @@ class UISettings(BaseModel):
     output_language: Literal["zh", "en"] = "en"
     council_depth: Literal["standard", "quick", "deep"] = "standard"
     enable_council_interaction: bool = True
-    enable_council_audio: bool = False
+    council_audio_mode: Literal["off", "final", "all"] = "off"
     council_checkpoint_timeout_s: int = 180
 
 
@@ -250,7 +250,14 @@ def load_ui_settings() -> dict:
         try:
             with open(SETTINGS_FILE, encoding="utf-8") as f:
                 saved = json.load(f)
-                return {**DEFAULT_UI_SETTINGS, **saved}
+                merged = {**DEFAULT_UI_SETTINGS, **saved}
+                # One-time migration: legacy boolean -> mode string.
+                if "council_audio_mode" not in saved and "enable_council_audio" in saved:
+                    merged["council_audio_mode"] = (
+                        "final" if bool(saved.get("enable_council_audio")) else "off"
+                    )
+                merged.pop("enable_council_audio", None)
+                return merged
         except Exception:
             pass
     return DEFAULT_UI_SETTINGS.copy()

@@ -876,28 +876,28 @@ export default function HomePage() {
 		                              </Button>
 		                            </div>
 
-		                            <div className="mt-3 flex items-center justify-between rounded-xl border border-border bg-surface-elevated/55 px-3 py-2 text-xs text-text-secondary backdrop-blur-md dark:border-white/10 dark:bg-white/5 dark:text-zinc-300">
-		                              <div>
-		                                <div className="font-semibold text-text-primary dark:text-zinc-100">
-		                                  Council audio (TTS)
-		                                </div>
-		                                <div className="text-[11px] text-text-tertiary dark:text-zinc-400">
-		                                  Generate a voice track for the final verified answer.
-		                                </div>
-		                              </div>
-		                              <Button
-		                                variant={chatState.enableCouncilAudio ? 'primary' : 'secondary'}
-		                                size="sm"
-		                                onClick={() =>
-		                                  setChatState(prev => ({
-		                                    ...prev,
-		                                    enableCouncilAudio: !prev.enableCouncilAudio,
-		                                  }))
-		                                }
-		                              >
-		                                {chatState.enableCouncilAudio ? 'On' : 'Off'}
-		                              </Button>
-		                            </div>
+	                            <div className="mt-3 space-y-1.5">
+	                              <label className="text-xs font-semibold text-text-tertiary dark:text-zinc-400">
+	                                Council audio (TTS)
+	                              </label>
+	                              <select
+	                                value={chatState.councilAudioMode}
+	                                onChange={e =>
+	                                  setChatState(prev => ({
+	                                    ...prev,
+	                                    councilAudioMode: e.target.value as 'off' | 'final' | 'all',
+	                                  }))
+	                                }
+	                                className="h-9 w-full rounded-xl border border-border bg-surface-elevated/70 px-3 text-sm text-text-primary outline-none backdrop-blur-md transition-colors duration-150 hover:bg-surface-elevated/85 focus:border-blue-400/70 dark:border-white/10 dark:bg-zinc-950/50 dark:text-zinc-100 dark:hover:bg-zinc-950/60"
+	                              >
+	                                <option value="off">Off</option>
+	                                <option value="final">Final answer</option>
+	                                <option value="all">All council messages</option>
+	                              </select>
+	                              <div className="text-[11px] leading-relaxed text-text-tertiary dark:text-zinc-400">
+	                                Audio is generated after council completes; it uses your TTS settings.
+	                              </div>
+	                            </div>
 
 	                            <div className="mt-3 space-y-1.5">
 	                              <label className="text-xs font-semibold text-text-tertiary dark:text-zinc-400">
@@ -1320,28 +1320,28 @@ export default function HomePage() {
 	                      </Button>
 	                    </div>
 
-	                    <div className="mt-3 flex items-center justify-between rounded-xl border border-border bg-surface-elevated/55 px-3 py-2 text-xs text-text-secondary backdrop-blur-md dark:border-white/10 dark:bg-white/5 dark:text-zinc-300">
-	                      <div>
-	                        <div className="font-semibold text-text-primary dark:text-zinc-100">
-	                          Council audio (TTS)
-	                        </div>
-	                        <div className="text-[11px] text-text-tertiary dark:text-zinc-400">
-	                          Generate a voice track for the final verified answer.
-	                        </div>
-	                      </div>
-	                      <Button
-	                        variant={chatState.enableCouncilAudio ? 'primary' : 'secondary'}
-	                        size="sm"
-	                        onClick={() =>
-	                          setChatState(prev => ({
-	                            ...prev,
-	                            enableCouncilAudio: !prev.enableCouncilAudio,
-	                          }))
-	                        }
-	                      >
-	                        {chatState.enableCouncilAudio ? 'On' : 'Off'}
-	                      </Button>
-	                    </div>
+                    <div className="mt-3 space-y-1.5">
+                      <label className="text-xs font-semibold text-text-tertiary dark:text-zinc-400">
+                        Council audio (TTS)
+                      </label>
+                      <select
+                        value={chatState.councilAudioMode}
+                        onChange={e =>
+                          setChatState(prev => ({
+                            ...prev,
+                            councilAudioMode: e.target.value as 'off' | 'final' | 'all',
+                          }))
+                        }
+                        className="h-9 w-full rounded-xl border border-border bg-surface-elevated/70 px-3 text-sm text-text-primary outline-none backdrop-blur-md transition-colors duration-150 hover:bg-surface-elevated/85 focus:border-blue-400/70 dark:border-white/10 dark:bg-zinc-950/50 dark:text-zinc-100 dark:hover:bg-zinc-950/60"
+                      >
+                        <option value="off">Off</option>
+                        <option value="final">Final answer</option>
+                        <option value="all">All council messages</option>
+                      </select>
+                      <div className="text-[11px] leading-relaxed text-text-tertiary dark:text-zinc-400">
+                        Audio is generated after council completes; it uses your TTS settings.
+                      </div>
+                    </div>
 
                     <div className="mt-3 space-y-1.5">
                       <label className="text-xs font-semibold text-text-tertiary dark:text-zinc-400">
@@ -1881,7 +1881,12 @@ export default function HomePage() {
 	                    <span className="hidden sm:inline">
 	                      <span className="inline-flex items-center gap-2 rounded-full border border-border bg-surface-elevated/55 px-3 py-1.5 font-medium text-text-secondary backdrop-blur-md dark:border-white/10 dark:bg-white/5 dark:text-zinc-300">
 	                        <Volume2 className="h-3.5 w-3.5 text-accent-primary" />
-	                        Audio: {chatState.enableCouncilAudio ? 'On' : 'Off'}
+	                        Audio:{' '}
+	                        {chatState.councilAudioMode === 'off'
+	                          ? 'Off'
+	                          : chatState.councilAudioMode === 'final'
+	                            ? 'Final'
+	                            : 'All'}
 	                      </span>
 	                    </span>
 	                    <span className="hidden sm:inline">

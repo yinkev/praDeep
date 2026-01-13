@@ -14,8 +14,22 @@ type CouncilRun = {
   errors?: string[]
   rounds?: Array<{
     round_index: number
-    member_answers?: Array<{ model: string; content?: string; error?: string }>
-    review?: { model: string; content?: string; error?: string }
+    member_answers?: Array<{
+      model: string
+      content?: string
+      error?: string
+      voice?: string
+      audio_url?: string
+      audio_error?: string
+    }>
+    review?: {
+      model: string
+      content?: string
+      error?: string
+      voice?: string
+      audio_url?: string
+      audio_error?: string
+    }
     review_parsed?: {
       resolved?: boolean
       issues?: string[]
@@ -24,7 +38,14 @@ type CouncilRun = {
       notes_for_chairman?: string
     }
     cross_exam_questions?: string[]
-    cross_exam_answers?: Array<{ model: string; content?: string; error?: string }>
+    cross_exam_answers?: Array<{
+      model: string
+      content?: string
+      error?: string
+      voice?: string
+      audio_url?: string
+      audio_error?: string
+    }>
   }>
   final?: {
     model: string
@@ -121,6 +142,12 @@ export default function CouncilDetails({
                           {m.model}
                           {m.error ? ' (error)' : ''}
                         </summary>
+                        {m.audio_url ? (
+                          <audio className="mt-2 w-full" controls preload="none" src={apiUrl(m.audio_url)} />
+                        ) : null}
+                        {m.audio_error ? (
+                          <div className="mt-2 text-xs text-red-600 dark:text-red-300">{m.audio_error}</div>
+                        ) : null}
                         <pre className="mt-2 whitespace-pre-wrap text-xs leading-relaxed">
                           {m.error ? m.error : m.content || ''}
                         </pre>
@@ -135,6 +162,12 @@ export default function CouncilDetails({
                       Reviewer ({r.review.model})
                       {r.review.error ? ' (error)' : ''}
                     </summary>
+                    {r.review.audio_url ? (
+                      <audio className="mt-2 w-full" controls preload="none" src={apiUrl(r.review.audio_url)} />
+                    ) : null}
+                    {r.review.audio_error ? (
+                      <div className="mt-2 text-xs text-red-600 dark:text-red-300">{r.review.audio_error}</div>
+                    ) : null}
                     {r.review_parsed ? (
                       <div className="mt-2 text-xs text-text-secondary dark:text-zinc-300">
                         <div>
@@ -170,6 +203,12 @@ export default function CouncilDetails({
                           {m.model}
                           {m.error ? ' (error)' : ''}
                         </summary>
+                        {m.audio_url ? (
+                          <audio className="mt-2 w-full" controls preload="none" src={apiUrl(m.audio_url)} />
+                        ) : null}
+                        {m.audio_error ? (
+                          <div className="mt-2 text-xs text-red-600 dark:text-red-300">{m.audio_error}</div>
+                        ) : null}
                         <pre className="mt-2 whitespace-pre-wrap text-xs leading-relaxed">
                           {m.error ? m.error : m.content || ''}
                         </pre>

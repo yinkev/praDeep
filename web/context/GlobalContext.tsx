@@ -268,7 +268,7 @@ interface ChatState {
   currentStage: string | null;
   councilDepth: "standard" | "quick" | "deep";
   enableCouncilInteraction: boolean;
-  enableCouncilAudio: boolean;
+  councilAudioMode: "off" | "final" | "all";
   councilCheckpointTimeoutS: number;
   councilCheckpoint: CouncilCheckpoint | null;
 }
@@ -334,7 +334,7 @@ interface GlobalContextType {
     language: "en" | "zh";
     council_depth: "standard" | "quick" | "deep";
     enable_council_interaction: boolean;
-    enable_council_audio: boolean;
+    council_audio_mode: "off" | "final" | "all";
     council_checkpoint_timeout_s: number;
   };
   refreshSettings: () => Promise<void>;
@@ -356,14 +356,14 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
     language: "en" | "zh";
     council_depth: "standard" | "quick" | "deep";
     enable_council_interaction: boolean;
-    enable_council_audio: boolean;
+    council_audio_mode: "off" | "final" | "all";
     council_checkpoint_timeout_s: number;
   }>({
     theme: "light",
     language: "en",
     council_depth: "standard",
     enable_council_interaction: true,
-    enable_council_audio: false,
+    council_audio_mode: "off",
     council_checkpoint_timeout_s: 180,
   });
 
@@ -378,13 +378,18 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
           // localStorage takes priority over backend
           const storedTheme = getStoredTheme();
           const themeToUse = storedTheme || data.ui.theme;
+          const councilAudioMode =
+            typeof data.ui.council_audio_mode === "string" &&
+            ["off", "final", "all"].includes(data.ui.council_audio_mode)
+              ? (data.ui.council_audio_mode as "off" | "final" | "all")
+              : "off";
 
           setUiSettings({
             theme: themeToUse,
             language: data.ui.language,
             council_depth: data.ui.council_depth ?? "standard",
             enable_council_interaction: data.ui.enable_council_interaction ?? true,
-            enable_council_audio: data.ui.enable_council_audio ?? false,
+            council_audio_mode: councilAudioMode,
             council_checkpoint_timeout_s: data.ui.council_checkpoint_timeout_s ?? 180,
           });
           // Apply and persist theme
@@ -397,10 +402,10 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
               typeof data.ui.enable_council_interaction === "boolean"
                 ? data.ui.enable_council_interaction
                 : prev.enableCouncilInteraction,
-            enableCouncilAudio:
-              typeof data.ui.enable_council_audio === "boolean"
-                ? data.ui.enable_council_audio
-                : prev.enableCouncilAudio,
+            councilAudioMode:
+              councilAudioMode === "off" || councilAudioMode === "final" || councilAudioMode === "all"
+                ? councilAudioMode
+                : prev.councilAudioMode,
             councilCheckpointTimeoutS:
               typeof data.ui.council_checkpoint_timeout_s === "number"
                 ? data.ui.council_checkpoint_timeout_s
@@ -1554,7 +1559,7 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
     currentStage: null,
     councilDepth: "standard",
     enableCouncilInteraction: true,
-    enableCouncilAudio: false,
+    councilAudioMode: "off",
     councilCheckpointTimeoutS: 180,
     councilCheckpoint: null,
   });
@@ -1799,7 +1804,7 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
           enable_web_search: chatState.enableWebSearch,
           council_depth: chatState.councilDepth,
           enable_council_interaction: chatState.enableCouncilInteraction,
-          enable_council_audio: chatState.enableCouncilAudio,
+          council_audio_mode: chatState.councilAudioMode,
           checkpoint_timeout_s: chatState.councilCheckpointTimeoutS,
         })
       );

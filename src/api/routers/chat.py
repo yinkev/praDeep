@@ -127,7 +127,7 @@ async def websocket_chat(websocket: WebSocket):
         "target_answer": str | null  # Existing assistant answer (optional baseline)
         "council_depth": "standard" | "quick" | "deep",  # Optional: depth preset
         "enable_council_interaction": bool,              # Optional: checkpoints between steps
-        "enable_council_audio": bool,                    # Optional: generate TTS audio for final output
+        "council_audio_mode": "off" | "final" | "all",   # Optional: generate TTS audio for council outputs
         "checkpoint_timeout_s": int | float | null       # Optional: checkpoint wait limit
     }
 
@@ -161,7 +161,11 @@ async def websocket_chat(websocket: WebSocket):
             target_answer = data.get("target_answer") if action == "verify" else None
             council_depth = str(data.get("council_depth") or "standard").strip().lower()
             enable_council_interaction = bool(data.get("enable_council_interaction", False))
-            enable_council_audio = bool(data.get("enable_council_audio", False))
+            council_audio_mode = str(data.get("council_audio_mode") or "").strip().lower()
+            if council_audio_mode not in {"off", "final", "all"}:
+                council_audio_mode = (
+                    "final" if bool(data.get("enable_council_audio", False)) else "off"
+                )
             checkpoint_timeout_s = data.get("checkpoint_timeout_s")
 
             if not message:
@@ -383,12 +387,8 @@ async def websocket_chat(websocket: WebSocket):
 
                     store = CouncilLogStore()
 
-                    # Optional: generate TTS audio for the final synthesis (blocking for now)
-                    if (
-                        enable_council_audio
-                        and run.final is not None
-                        and bool((run.final.content or "").strip())
-                    ):
+                    # Optional: generate TTS audio for council outputs (blocking; persisted to log)
+                    if council_audio_mode != "off":
                         await websocket.send_json(
                             {
                                 "type": "status",
@@ -397,24 +397,87 @@ async def websocket_chat(websocket: WebSocket):
                             }
                         )
                         from src.services.council.audio import (
+                            prepare_call_audio,
                             prepare_final_audio,
+                            synthesize_call_audio,
                             synthesize_final_audio,
                         )
+                        from src.services.council.interactive_utils import normalize_tts_voice_map
                         from src.services.tts.config import get_tts_config
 
                         try:
                             tts_cfg = get_tts_config()
-                            voice = str(tts_cfg.get("voice") or "").strip()
-                            prepare_final_audio(
-                                run.final,
-                                store=store,
-                                council_id=run.council_id,
-                                task=run.task,
-                                voice=voice,
+                            voice_map = normalize_tts_voice_map(
+                                None, member_count=len(council_cfg.models.members)
                             )
-                            await synthesize_final_audio(run.final, tts_config=tts_cfg)
+
+                            member_voices = voice_map.get("members") or []
+                            member_voice_by_model = {
+                                model: str(member_voices[i]).strip()
+                                for i, model in enumerate(council_cfg.models.members)
+                                if i < len(member_voices) and str(member_voices[i]).strip()
+                            }
+
+                            if council_audio_mode == "all":
+                                for council_round in run.rounds:
+                                    for call in council_round.member_answers:
+                                        if not (call.content or "").strip():
+                                            continue
+                                        voice = member_voice_by_model.get(call.model, "")
+                                        prepare_call_audio(
+                                            call,
+                                            store=store,
+                                            council_id=run.council_id,
+                                            task=run.task,
+                                            voice=voice,
+                                        )
+                                        await synthesize_call_audio(call, tts_config=tts_cfg)
+
+                                    if council_round.review and bool(
+                                        (council_round.review.content or "").strip()
+                                    ):
+                                        reviewer_voice = str(voice_map.get("reviewer") or "").strip()
+                                        prepare_call_audio(
+                                            council_round.review,
+                                            store=store,
+                                            council_id=run.council_id,
+                                            task=run.task,
+                                            voice=reviewer_voice,
+                                        )
+                                        await synthesize_call_audio(
+                                            council_round.review, tts_config=tts_cfg
+                                        )
+
+                                    for call in council_round.cross_exam_answers:
+                                        if not (call.content or "").strip():
+                                            continue
+                                        voice = member_voice_by_model.get(call.model, "")
+                                        prepare_call_audio(
+                                            call,
+                                            store=store,
+                                            council_id=run.council_id,
+                                            task=run.task,
+                                            voice=voice,
+                                        )
+                                        await synthesize_call_audio(call, tts_config=tts_cfg)
+
+                            if run.final is not None and bool((run.final.content or "").strip()):
+                                if council_audio_mode == "final":
+                                    final_voice = str(tts_cfg.get("voice") or "").strip()
+                                else:
+                                    final_voice = str(voice_map.get("chairman") or "").strip()
+                                prepare_final_audio(
+                                    run.final,
+                                    store=store,
+                                    council_id=run.council_id,
+                                    task=run.task,
+                                    voice=final_voice,
+                                )
+                                await synthesize_final_audio(run.final, tts_config=tts_cfg)
                         except Exception as e:
-                            run.final.audio_error = str(e)
+                            if run.final is not None:
+                                run.final.audio_error = str(e)
+                            run.errors.append(f"TTS generation failed: {e}")
 
                     # Persist log and attach reference to the assistant message
                     store.save(run)
