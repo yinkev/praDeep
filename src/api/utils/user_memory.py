@@ -9,13 +9,12 @@ This module handles:
 - Providing context for personalized agent responses
 """
 
-import json
 from collections import defaultdict
+import hashlib
+import json
 from pathlib import Path
 import time
 from typing import Any
-import hashlib
-
 
 DEFAULT_USER_ID = "default_user"
 
@@ -410,13 +409,7 @@ class UserMemoryManager:
 
         # Generate a simple hash for pattern matching
         question_normalized = question.lower().strip()
-        try:
-            question_hash = hashlib.md5(
-                question_normalized.encode(), usedforsecurity=False
-            ).hexdigest()[:8]
-        except TypeError:
-            # usedforsecurity is not supported on some platforms/builds
-            question_hash = hashlib.md5(question_normalized.encode()).hexdigest()[:8]
+        question_hash = hashlib.sha256(question_normalized.encode()).hexdigest()[:8]
 
         # Check if similar question exists
         existing_idx = None

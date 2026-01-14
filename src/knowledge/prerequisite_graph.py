@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-import hashlib
-import json
-import re
 from collections import deque
 from dataclasses import dataclass
+import hashlib
+import json
 from pathlib import Path
+import re
 from typing import Iterable
 
 
@@ -32,11 +32,7 @@ def _clean_label(label: str) -> str:
 
 def _stable_id(label: str) -> str:
     data = label.encode("utf-8")
-    try:
-        return hashlib.sha1(data, usedforsecurity=False).hexdigest()[:12]
-    except TypeError:
-        # usedforsecurity is not supported on some platforms/builds
-        return hashlib.sha1(data).hexdigest()[:12]
+    return hashlib.sha256(data).hexdigest()[:12]
 
 
 def _iter_content_list_items(content_list_dir: Path) -> Iterable[dict]:
