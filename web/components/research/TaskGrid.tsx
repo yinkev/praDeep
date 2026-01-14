@@ -39,7 +39,7 @@ const getStatusIcon = (status: TaskState["status"]) => {
 
 const getToolIcon = (toolName: string) => {
   if (toolName.includes("rag"))
-    return <Database className="w-3 h-3 text-blue-500 dark:text-blue-400" />;
+    return <Database className="w-3 h-3 text-sky-500 dark:text-sky-400" />;
   if (toolName.includes("web"))
     return <Globe className="w-3 h-3 text-green-500 dark:text-green-400" />;
   if (toolName.includes("paper"))

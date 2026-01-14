@@ -89,22 +89,22 @@ export function AIContentHighlight({
 
   const variantStyles = {
     default: {
-      bg: 'bg-gradient-to-br from-blue-50/70 to-indigo-50/50 dark:from-blue-950/30 dark:to-indigo-950/20',
-      border: 'border border-blue-200/40 dark:border-blue-800/30',
+      bg: 'bg-gradient-to-br from-sky-50/70 to-indigo-50/50 dark:from-sky-950/30 dark:to-indigo-950/20',
+      border: 'border border-sky-200/40 dark:border-sky-800/30',
       text: 'text-slate-900 dark:text-slate-100',
-      glow: 'bg-blue-400/20',
+      glow: 'bg-sky-400/20',
     },
     subtle: {
-      bg: 'bg-blue-50/30 dark:bg-blue-950/10',
-      border: 'border-l-2 border-blue-400/50 dark:border-blue-600/40',
+      bg: 'bg-sky-50/30 dark:bg-sky-950/10',
+      border: 'border-l-2 border-sky-400/50 dark:border-sky-600/40',
       text: 'text-slate-800 dark:text-slate-200',
-      glow: 'bg-blue-400/10',
+      glow: 'bg-sky-400/10',
     },
     prominent: {
-      bg: 'bg-gradient-to-br from-blue-100/80 to-indigo-100/60 dark:from-blue-900/40 dark:to-indigo-900/30',
-      border: 'border-2 border-blue-300/60 dark:border-blue-700/50',
+      bg: 'bg-gradient-to-br from-sky-100/80 to-indigo-100/60 dark:from-sky-900/40 dark:to-indigo-900/30',
+      border: 'border-2 border-sky-300/60 dark:border-sky-700/50',
       text: 'text-slate-900 dark:text-slate-50',
-      glow: 'bg-blue-400/30',
+      glow: 'bg-sky-400/30',
     },
   }
 
@@ -127,7 +127,7 @@ export function AIContentHighlight({
         ${variant === 'subtle' ? 'pl-4' : ''}
         backdrop-blur-[2px]
         transition-all duration-200
-        hover:shadow-lg hover:shadow-blue-200/30 dark:hover:shadow-blue-900/20
+        hover:shadow-lg hover:shadow-sky-200/30 dark:hover:shadow-sky-900/20
         ${className}
       `
         .trim()
@@ -157,7 +157,7 @@ export function AIContentHighlight({
           variants={badgeVariants}
           initial="hidden"
           animate="visible"
-          className="absolute -top-2.5 -right-2.5 flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-br from-blue-500 to-indigo-600 dark:from-blue-600 dark:to-indigo-700 rounded-full shadow-lg shadow-blue-500/30"
+          className="absolute -top-2.5 -right-2.5 flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-br from-sky-500 to-indigo-600 dark:from-sky-600 dark:to-indigo-700 rounded-full shadow-lg shadow-sky-500/30"
         >
           <Sparkles className="w-3 h-3 text-white" strokeWidth={2.5} />
           <span className="text-[10px] font-bold text-white uppercase tracking-wider">AI</span>
@@ -191,7 +191,7 @@ export function AIInlineHighlight({ children, className = '' }: AIInlineHighligh
         px-1.5 py-0.5
         -mx-0.5
         rounded
-        text-blue-900 dark:text-blue-100
+        text-sky-900 dark:text-sky-100
         font-medium
         ${className}
       `
@@ -201,7 +201,7 @@ export function AIInlineHighlight({ children, className = '' }: AIInlineHighligh
       <span className="relative z-10">{children}</span>
       {/* Subtle glow */}
       <span
-        className="absolute inset-0 blur-[4px] bg-blue-400/15 -z-10 rounded"
+        className="absolute inset-0 blur-[4px] bg-sky-400/15 -z-10 rounded"
         aria-hidden="true"
       />
     </motion.span>
@@ -238,7 +238,7 @@ export function AIModification({
           initial={{ opacity: 0, y: -2 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.15, delay: 0.2, ease: fluidEasing }}
-          className="mt-2 flex items-center gap-2 text-xs text-blue-600/70 dark:text-blue-400/70"
+          className="mt-2 flex items-center gap-2 text-xs text-sky-600/70 dark:text-sky-400/70"
         >
           <Sparkles className="w-3 h-3" strokeWidth={2} />
           <span className="font-medium">{modelName}</span>

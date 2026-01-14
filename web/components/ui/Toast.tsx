@@ -73,9 +73,9 @@ const variantStyles = {
     icon: <AlertTriangle className="h-5 w-5" />,
   },
   info: {
-    accentBorder: 'border-l-blue-500 dark:border-l-blue-400',
-    iconWrap: 'bg-blue-50 text-blue-600 dark:bg-blue-500/20 dark:text-blue-300',
-    progressBar: 'bg-blue-500 dark:bg-blue-400',
+    accentBorder: 'border-l-sky-500 dark:border-l-sky-400',
+    iconWrap: 'bg-sky-50 text-sky-600 dark:bg-sky-500/20 dark:text-sky-300',
+    progressBar: 'bg-sky-500 dark:bg-sky-400',
     icon: <Info className="h-5 w-5" />,
   },
 } satisfies Record<ToastVariant, VariantStyle>
@@ -276,7 +276,8 @@ function ToastContainer({ toasts, onRemove }: ToastContainerProps) {
   return (
     <div
       className={cn(
-        'fixed bottom-4 right-4 z-[100] sm:bottom-6 sm:right-6',
+        // Avoid covering right-rail UI (e.g. homepage co-pilot strip) in compact layouts.
+        'fixed bottom-4 left-4 z-[100] sm:bottom-6 sm:left-6',
         'flex flex-col items-end gap-2.5',
         'pointer-events-none'
       )}

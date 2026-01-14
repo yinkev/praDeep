@@ -101,21 +101,21 @@ export function Addition({ children, lineNumber }: AdditionProps) {
       className="relative inline-block"
     >
       {lineNumber !== undefined && (
-        <span className="absolute -left-12 top-0 text-xs text-blue-500/60 font-mono tabular-nums select-none">
+        <span className="absolute -left-12 top-0 text-xs text-sky-500/60 font-mono tabular-nums select-none">
           {lineNumber}
         </span>
       )}
       <span className="relative inline-block px-1 -mx-1 rounded-sm">
-        <span className="relative z-10 text-blue-700 dark:text-blue-300 font-medium">
+        <span className="relative z-10 text-sky-700 dark:text-sky-300 font-medium">
           {children}
         </span>
         {/* Liquid glass backdrop */}
         <span
-          className="absolute inset-0 bg-gradient-to-br from-blue-100/60 to-blue-50/40 dark:from-blue-500/20 dark:to-blue-600/10 rounded-sm backdrop-blur-[2px] -z-10"
+          className="absolute inset-0 bg-gradient-to-br from-sky-100/60 to-sky-50/40 dark:from-sky-500/20 dark:to-sky-600/10 rounded-sm backdrop-blur-[2px] -z-10"
           aria-hidden="true"
         />
         {/* Subtle glow */}
-        <span className="absolute inset-0 blur-[6px] bg-blue-400/10 -z-20" aria-hidden="true" />
+        <span className="absolute inset-0 blur-[6px] bg-sky-400/10 -z-20" aria-hidden="true" />
       </span>
     </motion.span>
   )
@@ -166,7 +166,7 @@ export function DiffViewer({
             {children}
           </div>
           <div className="space-y-2 pl-3">
-            <div className="text-xs uppercase tracking-wider text-blue-500/70 font-sans font-semibold mb-3">
+            <div className="text-xs uppercase tracking-wider text-sky-500/70 font-sans font-semibold mb-3">
               After
             </div>
             {children}

@@ -164,8 +164,8 @@ export default function NotebookImportModal({
         {/* Header */}
         <div className="p-4 border-b border-slate-100 dark:border-white/10 flex items-center justify-between bg-slate-50/60 dark:bg-white/5">
           <div className="flex items-center gap-2">
-            <div className="p-2 bg-blue-100 dark:bg-blue-500/15 rounded-xl">
-              <BookOpen className="w-5 h-5 text-blue-600" />
+            <div className="p-2 bg-sky-100 dark:bg-sky-500/15 rounded-xl">
+              <BookOpen className="w-5 h-5 text-sky-600" />
             </div>
             <div>
               <h2 className="font-bold text-slate-900 dark:text-zinc-50">{title}</h2>
@@ -202,9 +202,9 @@ export default function NotebookImportModal({
                   type="button"
                   onClick={() => toggleNotebook(nb.id)}
                   aria-expanded={expandedNotebooks.has(nb.id)}
-                  className={`w-full p-3 rounded-xl text-left transition-all border focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-zinc-950 ${
+                  className={`w-full p-3 rounded-xl text-left transition-all border focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/20 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-zinc-950 ${
                     expandedNotebooks.has(nb.id)
-                      ? "bg-white/80 dark:bg-white/5 border-blue-200/80 dark:border-blue-400/30 shadow-sm"
+                      ? "bg-white/80 dark:bg-white/5 border-sky-200/80 dark:border-sky-400/30 shadow-sm"
                       : "bg-transparent hover:bg-white/70 dark:hover:bg-white/5 border-transparent hover:border-slate-200/80 dark:hover:border-white/10"
                   }`}
                 >
@@ -275,18 +275,18 @@ export default function NotebookImportModal({
                               type="button"
                               onClick={() => toggleRecordSelection(record)}
                               aria-pressed={selectedRecords.has(record.id)}
-                              className={`w-full p-3 rounded-xl border text-left transition-all group focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-zinc-950 ${
+                              className={`w-full p-3 rounded-xl border text-left transition-all group focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/20 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-zinc-950 ${
                                 selectedRecords.has(record.id)
-                                  ? "bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-400/30 ring-1 ring-blue-200/80 dark:ring-blue-400/20"
-                                  : "bg-white/80 dark:bg-zinc-950/40 border-slate-200 dark:border-white/10 hover:border-blue-200 dark:hover:border-blue-400/30 hover:shadow-sm dark:hover:bg-white/5"
+                                  ? "bg-sky-50 dark:bg-sky-500/10 border-sky-200 dark:border-sky-400/30 ring-1 ring-sky-200/80 dark:ring-sky-400/20"
+                                  : "bg-white/80 dark:bg-zinc-950/40 border-slate-200 dark:border-white/10 hover:border-sky-200 dark:hover:border-sky-400/30 hover:shadow-sm dark:hover:bg-white/5"
                               }`}
                             >
                               <div className="flex items-start gap-3">
                                 <div
                                   className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 mt-0.5 transition-colors ${
                                     selectedRecords.has(record.id)
-                                      ? "bg-blue-500 border-blue-500 text-white"
-                                      : "border-slate-300 dark:border-white/20 group-hover:border-blue-300 dark:group-hover:border-blue-400/40"
+                                      ? "bg-sky-500 border-sky-500 text-white"
+                                      : "border-slate-300 dark:border-white/20 group-hover:border-sky-300 dark:group-hover:border-sky-400/40"
                                   }`}
                                 >
                                   {selectedRecords.has(record.id) && (
@@ -346,7 +346,7 @@ export default function NotebookImportModal({
             <button
               onClick={handleImport}
               disabled={selectedRecords.size === 0}
-              className="px-4 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-4 py-2 text-sm font-bold text-white bg-sky-600 hover:bg-sky-700 rounded-xl shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               <Check className="w-4 h-4" />
               Import Selected

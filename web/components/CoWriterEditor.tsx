@@ -1058,7 +1058,7 @@ export default function CoWriterEditor({
           left: -3px !important;
           right: -3px !important;
           bottom: -2px !important;
-          border: 2px solid #3b82f6 !important;
+          border: 2px solid #0284c7 !important;
           border-radius: 2px !important;
           transform: rotate(-0.5deg) skewX(-0.5deg) !important;
           pointer-events: none !important;
@@ -1071,7 +1071,7 @@ export default function CoWriterEditor({
           left: -1px !important;
           right: -5px !important;
           bottom: -4px !important;
-          border: 1.5px solid rgba(59, 130, 246, 0.3) !important;
+          border: 1.5px solid rgba(2, 132, 199, 0.3) !important;
           border-radius: 1px !important;
           transform: rotate(0.5deg) !important;
           pointer-events: none !important;
@@ -1366,7 +1366,7 @@ export default function CoWriterEditor({
           {/* Import from Notebook */}
           <button
             onClick={() => setShowImportModal(true)}
-            className="flex items-center gap-1 px-2 py-1 text-xs text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition-all"
+            className="flex items-center gap-1 px-2 py-1 text-xs text-sky-600 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-900/30 rounded transition-all"
             title="Import from Notebook"
           >
             <Import className="w-3.5 h-3.5" />
@@ -1505,7 +1505,7 @@ export default function CoWriterEditor({
                     </button>
                     <button
                       onClick={() => setSource(source === "web" ? null : "web")}
-                      className={`flex-1 flex items-center justify-center gap-1 py-1.5 text-xs border rounded-lg transition-all ${source === "web" ? "bg-blue-50 dark:bg-blue-900/40 border-blue-200 dark:border-blue-700 text-blue-700 dark:text-blue-300" : "bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-600"}`}
+                      className={`flex-1 flex items-center justify-center gap-1 py-1.5 text-xs border rounded-lg transition-all ${source === "web" ? "bg-sky-50 dark:bg-sky-900/40 border-sky-200 dark:border-sky-700 text-sky-700 dark:text-sky-300" : "bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-600"}`}
                     >
                       <Globe className="w-3 h-3" />
                       Web
@@ -1553,7 +1553,7 @@ export default function CoWriterEditor({
                   <button
                     onClick={() => setSelectedAction("expand")}
                     disabled={isProcessing}
-                    className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-all text-[10px] font-medium border-2 ${selectedAction === "expand" ? "bg-blue-50 dark:bg-blue-900/40 border-blue-400 dark:border-blue-600 text-blue-600 dark:text-blue-300" : "border-transparent text-slate-600 dark:text-slate-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-300"}`}
+                    className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-all text-[10px] font-medium border-2 ${selectedAction === "expand" ? "bg-sky-50 dark:bg-sky-900/40 border-sky-400 dark:border-sky-600 text-sky-600 dark:text-sky-300" : "border-transparent text-slate-600 dark:text-slate-400 hover:bg-sky-50 dark:hover:bg-sky-900/30 hover:text-sky-600 dark:hover:text-sky-300"}`}
                   >
                     <Maximize2 className="w-4 h-4" />
                     Expand
@@ -1822,7 +1822,7 @@ export default function CoWriterEditor({
                                     ? "bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300"
                                     : op.action === "automark"
                                       ? "bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300"
-                                      : "bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300"
+                                      : "bg-sky-100 dark:bg-sky-900/50 text-sky-700 dark:text-sky-300"
                               }`}
                             >
                               {op.action}

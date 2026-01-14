@@ -78,7 +78,7 @@ export const Mermaid: React.FC<MermaidProps> = ({ chart, className = '' }) => {
     return (
       <div className={`my-6 flex justify-center items-center min-h-[200px] ${className}`}>
         <div className="flex flex-col items-center gap-3">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600" />
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-sky-200 border-t-sky-600" />
           <p className="text-sm text-slate-500">Loading diagram...</p>
         </div>
       </div>

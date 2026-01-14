@@ -55,10 +55,10 @@ const modelFamilyStyles = {
     icon: 'text-violet-600 dark:text-violet-400',
   },
   gemini: {
-    bg: 'bg-blue-50 dark:bg-blue-500/10',
-    border: 'border-blue-200 dark:border-blue-500/25',
-    text: 'text-blue-700 dark:text-blue-300',
-    icon: 'text-blue-600 dark:text-blue-400',
+    bg: 'bg-sky-50 dark:bg-sky-500/10',
+    border: 'border-sky-200 dark:border-sky-500/25',
+    text: 'text-sky-700 dark:text-sky-300',
+    icon: 'text-sky-600 dark:text-sky-400',
   },
   other: {
     bg: 'bg-zinc-50 dark:bg-zinc-800/50',

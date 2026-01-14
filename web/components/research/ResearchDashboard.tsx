@@ -175,24 +175,24 @@ export const ResearchDashboard: React.FC<ResearchDashboardProps> = ({
         <div
           className={`bg-white dark:bg-slate-800 rounded-xl border shadow-sm p-8 flex flex-col items-center justify-center text-center max-w-2xl w-full ${
             isActive
-              ? "border-blue-200 dark:border-blue-800"
+              ? "border-sky-200 dark:border-sky-800"
               : "border-slate-200 dark:border-slate-700"
           }`}
         >
           <div
             className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 ${
               isActive
-                ? "bg-blue-50 dark:bg-blue-900/40"
+                ? "bg-sky-50 dark:bg-sky-900/40"
                 : "bg-slate-50 dark:bg-slate-700"
             }`}
           >
             <GitBranch
-              className={`w-8 h-8 ${isActive ? "text-blue-500 dark:text-blue-400" : "text-slate-400 dark:text-slate-500"}`}
+              className={`w-8 h-8 ${isActive ? "text-sky-500 dark:text-sky-400" : "text-slate-400 dark:text-slate-500"}`}
             />
           </div>
 
           {isActive && (
-            <Loader2 className="w-6 h-6 text-blue-500 dark:text-blue-400 animate-spin mb-4" />
+            <Loader2 className="w-6 h-6 text-sky-500 dark:text-sky-400 animate-spin mb-4" />
           )}
           {!isActive && currentStageIndex > 0 && (
             <CheckCircle2 className="w-6 h-6 text-emerald-500 dark:text-emerald-400 mb-4" />
@@ -245,7 +245,7 @@ export const ResearchDashboard: React.FC<ResearchDashboardProps> = ({
                 {planning.subTopics.map((topic, i) => (
                   <span
                     key={i}
-                    className="px-3 py-1.5 bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 text-xs rounded-lg border border-blue-100 dark:border-blue-800 font-medium"
+                    className="px-3 py-1.5 bg-sky-50 dark:bg-sky-900/40 text-sky-700 dark:text-sky-300 text-xs rounded-lg border border-sky-100 dark:border-sky-800 font-medium"
                   >
                     {topic.sub_topic}
                   </span>

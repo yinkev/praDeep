@@ -263,8 +263,8 @@ export const ActiveQuestionDetail: React.FC<ActiveQuestionDetailProps> = ({
             )}
 
             {/* Answer */}
-            <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-4 border border-blue-100 dark:border-blue-800">
-              <span className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 block mb-2">
+            <div className="bg-sky-50 dark:bg-sky-900/30 rounded-lg p-4 border border-sky-100 dark:border-sky-800">
+              <span className="text-xs font-bold uppercase tracking-wider text-sky-600 dark:text-sky-400 block mb-2">
                 Correct Answer
               </span>
               <div className="text-sm text-slate-800 dark:text-slate-200 prose prose-sm dark:prose-invert max-w-none">

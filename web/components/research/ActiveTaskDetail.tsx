@@ -21,7 +21,7 @@ const getThoughtIcon = (type: ThoughtEntry["type"]) => {
     case "sufficiency":
       return <BrainCircuit className="w-4 h-4 text-violet-500" />;
     case "plan":
-      return <Search className="w-4 h-4 text-blue-500" />;
+      return <Search className="w-4 h-4 text-sky-500" />;
     case "tool_call":
       return <Database className="w-4 h-4 text-amber-500" />;
     case "note":

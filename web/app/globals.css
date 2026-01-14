@@ -22,10 +22,10 @@
     --border-strong: 240 5% 84%; /* zinc-300 stronger */
     --border-hover: 240 5% 65%; /* zinc-400 interactive */
 
-    /* Primary accent - Blue 500 */
-    --primary: 217 91% 60%; /* #3B82F6 */
-    --primary-hover: 217 91% 55%; /* Slightly darker */
-    --primary-muted: 217 91% 60%; /* For backgrounds */
+    /* Primary accent - Sky 600 */
+    --primary: 199 89% 48%; /* #0284c7 */
+    --primary-hover: 199 89% 43%; /* Slightly darker */
+    --primary-muted: 199 89% 96%; /* For backgrounds */
     --primary-foreground: 0 0% 100%; /* White text on primary */
 
     /* Semantic colors */
@@ -43,7 +43,7 @@
     --info-muted: 199 89% 96%; /* Light sky background */
 
     /* Glow accents */
-    --glow-primary: 217 91% 60%; /* Blue */
+    --glow-primary: 199 89% 48%; /* Sky */
     --glow-cyan: 192 91% 52%; /* Cyan accent */
     --glow-purple: 280 85% 65%; /* Purple accent */
 
@@ -58,7 +58,7 @@
     --glass-border: rgba(0, 0, 0, 0.05);
 
     /* Focus ring - Accessible */
-    --ring: 217 91% 60%; /* Blue-500 */
+    --ring: 199 89% 48%; /* Sky-600 */
     --ring-offset: 0 0% 100%;
     --ring-width: 2px;
     --ring-offset-width: 2px;
@@ -126,10 +126,10 @@
     --border-strong: 240 4% 20%; /* zinc-750 stronger */
     --border-hover: 240 5% 26%; /* zinc-700 interactive */
 
-    /* Primary accent remains same */
-    --primary: 217 91% 60%; /* #3B82F6 */
-    --primary-hover: 217 91% 65%; /* Slightly lighter for dark */
-    --primary-muted: 217 91% 60%;
+    /* Primary accent - Sky 600 */
+    --primary: 199 89% 48%; /* #0284c7 */
+    --primary-hover: 199 89% 55%; /* Slightly lighter for dark */
+    --primary-muted: 199 89% 48%;
     --primary-foreground: 0 0% 100%;
 
     /* Semantic colors - Dark mode */

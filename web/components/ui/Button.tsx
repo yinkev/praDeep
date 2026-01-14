@@ -50,8 +50,8 @@ export interface ButtonProps extends Omit<HTMLMotionProps<'button'>, 'children'>
 const variantStyles: Record<ButtonVariant, string> = {
   primary: cn(
     'bg-accent-primary text-white',
-    'hover:bg-blue-600 hover:brightness-105',
-    'active:bg-blue-700 active:brightness-95'
+    'hover:bg-sky-600 hover:brightness-105',
+    'active:bg-sky-700 active:brightness-95'
   ),
 
   secondary: cn(
@@ -83,8 +83,8 @@ const variantStyles: Record<ButtonVariant, string> = {
   // Legacy variants (no gradients)
   'gradient-blue': cn(
     'bg-accent-primary text-white',
-    'hover:bg-blue-600 hover:brightness-105',
-    'active:bg-blue-700 active:brightness-95'
+    'hover:bg-sky-600 hover:brightness-105',
+    'active:bg-sky-700 active:brightness-95'
   ),
 
   'gradient-purple': cn(

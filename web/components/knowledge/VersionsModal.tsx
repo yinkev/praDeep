@@ -197,8 +197,8 @@ export default function VersionsModal({
   const getVersionTypeBadge = (type: string) => {
     const badges: Record<string, { bg: string; text: string; label: string }> = {
       manual: {
-        bg: 'bg-blue-100 dark:bg-blue-900/40',
-        text: 'text-blue-700 dark:text-blue-300',
+        bg: 'bg-sky-100 dark:bg-sky-900/40',
+        text: 'text-sky-700 dark:text-sky-300',
         label: 'Manual',
       },
       auto_backup: {
@@ -234,8 +234,8 @@ export default function VersionsModal({
         {/* Header */}
         <div className="p-6 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/40 rounded-xl flex items-center justify-center">
-              <History className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            <div className="w-10 h-10 bg-sky-100 dark:bg-sky-900/40 rounded-xl flex items-center justify-center">
+              <History className="w-5 h-5 text-sky-600 dark:text-sky-400" />
             </div>
             <div>
               <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
@@ -269,12 +269,12 @@ export default function VersionsModal({
                 placeholder="Description (optional)"
                 value={description}
                 onChange={e => setDescription(e.target.value)}
-                className="flex-1 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                className="flex-1 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
               />
               <button
                 onClick={handleCreateSnapshot}
                 disabled={creatingSnapshot}
-                className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
+                className="px-4 py-2 bg-sky-600 text-white rounded-xl text-sm font-medium hover:bg-sky-700 disabled:opacity-50 flex items-center gap-2"
               >
                 {creatingSnapshot ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -389,7 +389,7 @@ export default function VersionsModal({
                       <button
                         onClick={() => handleRollback(version.version_id)}
                         disabled={rollingBack === version.version_id}
-                        className="p-2 hover:bg-blue-100 dark:hover:bg-blue-900/40 rounded-xl text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors disabled:opacity-50"
+                        className="p-2 hover:bg-sky-100 dark:hover:bg-sky-900/40 rounded-xl text-slate-500 dark:text-slate-400 hover:text-sky-600 dark:hover:text-sky-400 transition-colors disabled:opacity-50"
                         title="Rollback to this version"
                       >
                         {rollingBack === version.version_id ? (

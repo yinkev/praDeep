@@ -32,7 +32,7 @@ interface AddToNotebookModalProps {
 }
 
 const COLORS = [
-  "#3B82F6",
+  "#0284c7",
   "#8B5CF6",
   "#EC4899",
   "#EF4444",
@@ -62,7 +62,7 @@ export default function AddToNotebookModal({
   const [newNotebook, setNewNotebook] = useState({
     name: "",
     description: "",
-    color: "#3B82F6",
+    color: "#0284c7",
   });
   const [success, setSuccess] = useState(false);
 
@@ -108,7 +108,7 @@ export default function AddToNotebookModal({
         await fetchNotebooks();
         setSelectedIds((prev) => [...prev, data.notebook.id]);
         setShowCreateForm(false);
-        setNewNotebook({ name: "", description: "", color: "#3B82F6" });
+        setNewNotebook({ name: "", description: "", color: "#0284c7" });
       }
     } catch (err) {
       console.error("Failed to create notebook:", err);
@@ -155,7 +155,7 @@ export default function AddToNotebookModal({
         {/* Header */}
         <div className="p-4 border-b border-slate-100 dark:border-white/10 flex items-center justify-between bg-white/70 dark:bg-white/5 rounded-t-2xl backdrop-blur-xl">
           <h3 className="font-bold text-slate-900 dark:text-zinc-50 flex items-center gap-2">
-            <Book className="w-5 h-5 text-indigo-600 dark:text-blue-300" />
+            <Book className="w-5 h-5 text-indigo-600 dark:text-sky-300" />
             Add to Notebook
           </h3>
           <button

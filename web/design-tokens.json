@@ -1,15 +1,15 @@
 {
   "meta": {
-    "name": "Liquid Clarity Design System 2026",
-    "description": "AI-readable design tokens extracted from globals.css and tailwind.config.js. Enables Cursor/v0 integration for 2026 soft minimalism and speed research.",
+    "name": "PraDeep Elite Design System 1.0",
+    "description": "AI-readable design tokens for PraDeep Elite Design System 1.0. Features Liquid Metal & Clinical Precision aesthetic with slate/sky-based color palette for professional minimalism.",
     "version": "1.0.0",
     "lastUpdated": "2026-01-12"
   },
   "colors": {
     "light": {
-      "primary": "#3B82F6",
-      "primaryHover": "#2563EB",
-      "primaryMuted": "#EFF6FF",
+      "primary": "#0284c7",
+      "primaryHover": "#0369a1",
+      "primaryMuted": "#f0f9ff",
       "primaryForeground": "#FFFFFF",
       "background": "#FAFAFA",
       "backgroundElevated": "#FFFFFF",
@@ -29,17 +29,17 @@
       "error": "#EF4444",
       "errorForeground": "#FFFFFF",
       "errorMuted": "#FEE2E2",
-      "info": "#3B82F6",
+      "info": "#0284c7",
       "infoForeground": "#FFFFFF",
       "infoMuted": "#DBEAFE",
-      "glowPrimary": "#3B82F6",
+      "glowPrimary": "#0284c7",
       "glowCyan": "#06B6D4",
       "glowPurple": "#A78BFA"
     },
     "dark": {
-      "primary": "#3B82F6",
+      "primary": "#0284c7",
       "primaryHover": "#60A5FA",
-      "primaryMuted": "#3B82F6",
+      "primaryMuted": "#0284c7",
       "primaryForeground": "#FFFFFF",
       "background": "#000000",
       "backgroundElevated": "#0A0A0A",
@@ -59,10 +59,10 @@
       "error": "#EF5350",
       "errorForeground": "#FFFFFF",
       "errorMuted": "#3D1F1F",
-      "info": "#3B82F6",
+      "info": "#0284c7",
       "infoForeground": "#FFFFFF",
       "infoMuted": "#1E3A5F",
-      "glowPrimary": "#3B82F6",
+      "glowPrimary": "#0284c7",
       "glowCyan": "#06B6D4",
       "glowPurple": "#A78BFA"
     },
@@ -87,7 +87,7 @@
       }
     },
     "accents": {
-      "primaryBlue": "#3B82F6",
+      "primaryBlue": "#0284c7",
       "secondaryIndigo": "#6366F1",
       "tertiaryViolet": "#8B5CF6"
     }
@@ -263,15 +263,15 @@
       "glowPulse": {
         "0%": {
           "opacity": "1",
-          "boxShadow": "0 0 8px hsl(217deg 91% 60% / 0.5), 0 0 16px hsl(217deg 91% 60% / 0.3)"
+          "boxShadow": "0 0 8px hsl(199deg 89% 48% / 0.5), 0 0 16px hsl(199deg 89% 48% / 0.3)"
         },
         "50%": {
           "opacity": "0.7",
-          "boxShadow": "0 0 12px hsl(217deg 91% 60% / 0.7), 0 0 24px hsl(217deg 91% 60% / 0.4)"
+          "boxShadow": "0 0 12px hsl(199deg 89% 48% / 0.7), 0 0 24px hsl(199deg 89% 48% / 0.4)"
         },
         "100%": {
           "opacity": "1",
-          "boxShadow": "0 0 8px hsl(217deg 91% 60% / 0.5), 0 0 16px hsl(217deg 91% 60% / 0.3)"
+          "boxShadow": "0 0 8px hsl(199deg 89% 48% / 0.5), 0 0 16px hsl(199deg 89% 48% / 0.3)"
         }
       },
       "surfacePulse": {
@@ -285,7 +285,7 @@
       },
       "borderGlow": {
         "0%": { "borderColor": "hsl(var(--border))" },
-        "50%": { "borderColor": "hsl(217deg 91% 60% / 0.5)" },
+        "50%": { "borderColor": "hsl(199deg 89% 48% / 0.5)" },
         "100%": { "borderColor": "hsl(var(--border))" }
       },
       "bounceSubtle": {
@@ -343,7 +343,7 @@
       "borderRadius": "12px"
     },
     "hoverGlow": {
-      "boxShadow": "0 0 0 1px hsl(217deg 91% 60% / 0.1), 0 0 20px hsl(217deg 91% 60% / 0.08), 0 8px 32px hsl(217deg 91% 60% / 0.06)",
+      "boxShadow": "0 0 0 1px hsl(199deg 89% 48% / 0.1), 0 0 20px hsl(199deg 89% 48% / 0.08), 0 8px 32px hsl(199deg 89% 48% / 0.06)",
       "transition": "box-shadow 200ms cubic-bezier(0.16, 1, 0.3, 1)"
     },
     "hoverLift": {
@@ -381,7 +381,7 @@
   },
   "accessibility": {
     "focus": {
-      "ring": "#3B82F6",
+      "ring": "#0284c7",
       "ringWidth": "2px",
       "ringOffset": "2px",
       "ringOffsetColor": "#FFFFFF"
@@ -433,9 +433,9 @@
     }
   },
   "designNotes": {
-    "philosophy": "Liquid Clarity - Professional minimalism with subtle depth and micro-interactions. Linear/Notion/Vercel aesthetic.",
+    "philosophy": "PraDeep Elite Design System 1.0 - Liquid Metal & Clinical Precision aesthetic with professional minimalism, subtle depth, and micro-interactions. Slate/sky-based color palette for modern, refined UI.",
     "gridSystem": "8px base grid for all spacing and sizing",
-    "colorPalette": "Zinc-based scales with blue accents. Different shadows for light and dark modes.",
+    "colorPalette": "Zinc-based scales with sky accents. Different shadows for light and dark modes.",
     "typography": "Fluid scaling typography using clamp() for responsive text. Inter Variable sans-serif with JetBrains Mono for code.",
     "motionPrinciples": "Out-expo easing for snappy, professional feel. Spring easing for delightful micro-interactions.",
     "darkMode": "Full dark mode support with adjusted shadows and dot grid opacity.",
