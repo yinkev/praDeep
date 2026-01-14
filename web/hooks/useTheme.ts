@@ -29,7 +29,7 @@ export function useTheme() {
     theme: theme || "light",
     isLoaded,
     setTheme: updateTheme,
-    isDark: theme === "dark",
-    isLight: theme === "light",
+    isDark: theme ? /dark$/.test(theme) : false,
+    isLight: theme === "light" || theme === "custom-light" || theme === "high-contrast-light",
   };
 }

@@ -11,186 +11,132 @@ module.exports = {
   theme: {
     extend: {
       // ========================================
-      // LIQUID CLOUD DESIGN SYSTEM - 2026
-      // Production-ready tokens with 8px grid
+      // PRADEEP ELITE • DESIGN SYSTEM 1.0
+      // Liquid Metal & Clinical Precision
       // ========================================
       colors: {
-        // Surface colors - soft whites with subtle hierarchy
+        // Slate neutrals - main palette
+        slate: {
+          50: '#f8fafc',
+          300: '#cbd5e1',
+          400: '#94a3b8',
+          500: '#64748b',
+          900: '#0f172a',
+        },
+        // Sky blues - primary brand
+        sky: {
+          50: '#f0f9ff',
+          100: '#e0f2fe',
+          600: '#0284c7',
+        },
+        // Semantic colors
+        amber: {
+          500: '#f59e0b',
+        },
+        emerald: {
+          600: '#059669',
+        },
+        // Surface colors - Clinical precision
         surface: {
-          primary: '#FAFBFC',
-          secondary: '#F8FAFC',
-          tertiary: '#FFFFFF',
-          elevated: '#FFFFFF',
+          main: '#f8fafc', // bg-slate-50
+          white: '#ffffff',
+          elevated: '#ffffff',
         },
-        // Text hierarchy - zinc-based scale
-        text: {
-          primary: '#18181B', // zinc-900
-          secondary: '#3F3F46', // zinc-700
-          tertiary: '#71717A', // zinc-500
-          quaternary: '#A1A1AA', // zinc-400
-        },
-        // Border system with clear hierarchy
+        // Border system - Milled edges
         border: {
-          DEFAULT: '#E4E4E7', // zinc-200
-          subtle: '#F4F4F5', // zinc-100
-          strong: '#D4D4D8', // zinc-300
-          focus: '#3B82F6', // blue-500
+          DEFAULT: '#cbd5e1', // slate-300
+          hover: '#94a3b8', // slate-400
+          subtle: '#e2e8f0',
         },
-        // Accent colors - primary blue with variants
-        accent: {
-          primary: '#3B82F6', // blue-500
-          secondary: '#6366F1', // indigo-500
-          tertiary: '#8B5CF6', // violet-500
-          'primary-soft': '#EFF6FF', // blue-50
-          'secondary-soft': '#EEF2FF', // indigo-50
-          'tertiary-soft': '#F5F3FF', // violet-50
-        },
-        // Semantic colors with background variants
-        semantic: {
-          success: '#22C55E', // green-500
-          'success-bg': '#DCFCE7', // green-100
-          'success-border': '#BBF7D0', // green-200
-          warning: '#F59E0B', // amber-500
-          'warning-bg': '#FEF3C7', // amber-100
-          'warning-border': '#FDE68A', // amber-200
-          error: '#EF4444', // red-500
-          'error-bg': '#FEE2E2', // red-100
-          'error-border': '#FECACA', // red-200
-          info: '#3B82F6', // blue-500
-          'info-bg': '#DBEAFE', // blue-100
-          'info-border': '#BFDBFE', // blue-200
-        },
-        // Glass surfaces for glassmorphism effects
-        glass: {
-          DEFAULT: 'rgba(255, 255, 255, 0.60)',
-          strong: 'rgba(255, 255, 255, 0.72)',
-          border: 'rgba(255, 255, 255, 0.45)',
-          highlight: 'rgba(255, 255, 255, 0.85)',
+        // Text hierarchy
+        text: {
+          body: '#0f172a', // slate-900
+          muted: '#64748b', // slate-500
+          subtle: '#94a3b8', // slate-400
         },
       },
-      // Typography - Inter Variable + JetBrains Mono
+      // Typography - Inter font with role-based styles
       fontFamily: {
-        sans: ['Inter Variable', 'Inter', 'system-ui', 'sans-serif'],
+        sans: ['Inter', 'system-ui', 'sans-serif'],
         mono: ['JetBrains Mono', 'Menlo', 'Monaco', 'Courier New', 'monospace'],
       },
-      // Font size scale with proper line-height and letter-spacing
       fontSize: {
-        // Display sizes with fluid scaling
-        display: [
-          'clamp(2.5rem, 1.7rem + 3.3vw, 4.5rem)',
-          { lineHeight: '1.02', letterSpacing: '-0.04em' },
-        ],
-        headline: [
-          'clamp(1.875rem, 1.35rem + 2.0vw, 3rem)',
-          { lineHeight: '1.08', letterSpacing: '-0.035em' },
-        ],
-        title: [
-          'clamp(1.5rem, 1.23rem + 1.1vw, 2.25rem)',
-          { lineHeight: '1.15', letterSpacing: '-0.022em' },
-        ],
-        subtitle: [
-          'clamp(1.125rem, 1.06rem + 0.35vw, 1.375rem)',
-          { lineHeight: '1.35', letterSpacing: '-0.012em' },
-        ],
-        // Body sizes
-        'body-lg': [
-          'clamp(1.0625rem, 1.02rem + 0.25vw, 1.25rem)',
-          { lineHeight: '1.6', letterSpacing: '-0.012em' },
-        ],
-        body: [
-          'clamp(1rem, 0.97rem + 0.15vw, 1.125rem)',
-          { lineHeight: '1.65', letterSpacing: '-0.011em' },
-        ],
-        // Supporting sizes
-        meta: ['0.875rem', { lineHeight: '1.5', letterSpacing: '-0.006em' }],
-        micro: ['0.75rem', { lineHeight: '1.35', letterSpacing: '0.02em' }],
+        // Headers: bold, compact
+        'header-lg': ['2rem', { lineHeight: '1.15', letterSpacing: '-0.022em', fontWeight: '700' }],
+        'header-md': ['1.5rem', { lineHeight: '1.2', letterSpacing: '-0.018em', fontWeight: '700' }],
+        'header-sm': ['1.25rem', { lineHeight: '1.25', letterSpacing: '-0.012em', fontWeight: '700' }],
+        // Body: clean readable
+        'body-base': ['0.875rem', { lineHeight: '1.75', letterSpacing: '-0.011em' }],
+        'body-sm': ['0.8125rem', { lineHeight: '1.6', letterSpacing: '-0.008em' }],
+        // Micro-labels: uppercase technical
+        'micro-label': ['0.625rem', { lineHeight: '1.35', letterSpacing: '0.1em', fontWeight: '700' }],
       },
-      // Spacing - 8px grid system (extends Tailwind's default scale)
+      // Spacing - maintains 8px grid
       spacing: {
         18: '4.5rem', // 72px
         22: '5.5rem', // 88px
         26: '6.5rem', // 104px
         30: '7.5rem', // 120px
-        34: '8.5rem', // 136px
-        38: '9.5rem', // 152px
       },
-      // Border radius - consistent scale
+      // Hybrid Geometry
       borderRadius: {
-        sm: '4px',
-        DEFAULT: '6px',
-        md: '8px',
-        lg: '12px',
-        xl: '16px',
-        '2xl': '20px',
-        '3xl': '24px',
+        'container': '1rem', // rounded-2xl for containers (Cards, Sidebar)
+        'action': '0.375rem', // rounded-md for actions (Buttons, Inputs, List Items)
+        sm: '0.125rem', // rounded-sm for badges
+        DEFAULT: '0.375rem',
+        md: '0.5rem',
+        lg: '0.75rem',
+        xl: '1rem',
+        '2xl': '1rem',
+        '3xl': '1.5rem',
       },
-      // Box shadows - layered elevation system
+      // Shadows - Milled Edge & Recessed Input
       boxShadow: {
-        // Light mode shadows
+        // The "Milled Edge" - 1px darker ring + 1px inner white highlight + subtle lift
+        'milled-edge': 'inset 0 1px 0 0 #ffffff, 0 0 0 1px #cbd5e1, 0 2px 6px 0 rgba(0,0,0,0.02)',
+        // Recessed Input - tactile depth
+        'recessed-input': 'inset 0 2px 4px 0 rgba(0,0,0,0.02), 0 1px 0 0 #ffffff',
+        // Lift variations
+        'lift-sm': '0 1px 2px rgba(0, 0, 0, 0.05)',
+        'lift-md': '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)',
+        'lift-lg': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1)',
+        // Legacy shadows (preserved for compatibility)
         xs: '0 1px 2px rgba(2, 6, 23, 0.04)',
         sm: '0 1px 3px rgba(2, 6, 23, 0.06), 0 1px 2px rgba(2, 6, 23, 0.04)',
         md: '0 6px 14px rgba(2, 6, 23, 0.06), 0 2px 6px rgba(2, 6, 23, 0.04)',
         lg: '0 14px 30px rgba(2, 6, 23, 0.08), 0 6px 14px rgba(2, 6, 23, 0.05)',
         xl: '0 22px 50px rgba(2, 6, 23, 0.10), 0 10px 22px rgba(2, 6, 23, 0.06)',
-        '2xl': '0 40px 90px rgba(2, 6, 23, 0.14)',
-        // Dark mode shadows
-        'dark-xs': '0 1px 2px rgba(0, 0, 0, 0.12)',
-        'dark-sm': '0 1px 3px rgba(0, 0, 0, 0.16), 0 1px 2px rgba(0, 0, 0, 0.12)',
-        'dark-md': '0 6px 14px rgba(0, 0, 0, 0.18), 0 2px 6px rgba(0, 0, 0, 0.14)',
-        'dark-lg': '0 14px 30px rgba(0, 0, 0, 0.24), 0 6px 14px rgba(0, 0, 0, 0.18)',
-        'dark-xl': '0 22px 50px rgba(0, 0, 0, 0.30), 0 10px 22px rgba(0, 0, 0, 0.22)',
-        'dark-2xl': '0 40px 90px rgba(0, 0, 0, 0.40)',
-        // Glass effects with inner highlights
-        'glass-sm': '0 1px 0 rgba(255, 255, 255, 0.60) inset, 0 10px 24px rgba(2, 6, 23, 0.06)',
-        glass: '0 1px 0 rgba(255, 255, 255, 0.65) inset, 0 16px 40px rgba(2, 6, 23, 0.08)',
-        'glass-lg': '0 1px 0 rgba(255, 255, 255, 0.70) inset, 0 26px 70px rgba(2, 6, 23, 0.10)',
-        // Glow effects
-        'glow-blue': '0 0 24px rgba(59, 130, 246, 0.24)',
-        'glow-indigo': '0 0 24px rgba(99, 102, 241, 0.24)',
-        'glow-violet': '0 0 24px rgba(139, 92, 246, 0.24)',
-        'glow-green': '0 0 24px rgba(34, 197, 94, 0.24)',
-        'glow-red': '0 0 24px rgba(239, 68, 68, 0.18)',
-        // Special effects
-        inner: 'inset 0 1px 2px rgba(2, 6, 23, 0.06)',
-      },
-      // Backdrop blur for glassmorphism
-      backdropBlur: {
-        xs: '4px',
-        sm: '8px',
-        md: '12px',
-        lg: '16px',
-        xl: '24px',
-      },
-      // Background patterns
-      backgroundImage: {
-        // Micro-industrialism grid pattern
-        cloud:
-          'repeating-linear-gradient(to right, hsl(var(--border) / 0.35) 0, hsl(var(--border) / 0.35) 1px, transparent 1px, transparent 16px), repeating-linear-gradient(to bottom, hsl(var(--border) / 0.35) 0, hsl(var(--border) / 0.35) 1px, transparent 1px, transparent 16px), repeating-linear-gradient(to right, hsl(var(--border-strong) / 0.40) 0, hsl(var(--border-strong) / 0.40) 1px, transparent 1px, transparent 64px), repeating-linear-gradient(to bottom, hsl(var(--border-strong) / 0.40) 0, hsl(var(--border-strong) / 0.40) 1px, transparent 1px, transparent 64px)',
       },
       // Animation timing
       transitionTimingFunction: {
-        'out-expo': 'cubic-bezier(0.16, 1, 0.3, 1)',
-        spring: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
+        'smooth': 'cubic-bezier(0.4, 0, 0.2, 1)',
+        'spring': 'cubic-bezier(0.34, 1.56, 0.64, 1)',
       },
       transitionDuration: {
         fastest: '150ms',
-        fast: '250ms',
-        DEFAULT: '300ms',
-        slow: '500ms',
+        fast: '200ms',
+        DEFAULT: '250ms',
+        slow: '300ms',
       },
-      // Animations
+      // Animations - including Sheen effect
       animation: {
+        'sheen': 'sheen 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
+        'tactile-lift': 'tactile-lift 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
         'fade-in': 'fade-in 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
         'slide-up': 'slide-up 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
         'scale-in': 'scale-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
-        'glow-pulse': 'glow-pulse 2s ease-in-out infinite',
-        shimmer: 'shimmer 1.25s cubic-bezier(0.16, 1, 0.3, 1) infinite',
-        'type-shimmer': 'shimmer 5s linear infinite',
-        shake: 'shake 0.34s cubic-bezier(0.36, 0.07, 0.19, 0.97) both',
-        pop: 'pop 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) both',
-        'type-rise': 'type-rise 0.7s cubic-bezier(0.16, 1, 0.3, 1) both',
       },
       keyframes: {
+        // Sheen effect - diagonal gloss sweep on primary buttons
+        'sheen': {
+          '0%': { transform: 'translateX(-150%) skewX(-20deg)' },
+          '100%': { transform: 'translateX(200%) skewX(-20deg)' },
+        },
+        // Tactile lift - cards move up 1px on hover
+        'tactile-lift': {
+          '0%': { transform: 'translateY(0)' },
+          '100%': { transform: 'translateY(-1px)' },
+        },
         'fade-in': {
           '0%': { opacity: '0' },
           '100%': { opacity: '1' },
@@ -202,30 +148,6 @@ module.exports = {
         'scale-in': {
           '0%': { opacity: '0', transform: 'scale(0.96)' },
           '100%': { opacity: '1', transform: 'scale(1)' },
-        },
-        'glow-pulse': {
-          '0%, 100%': { boxShadow: '0 0 20px rgba(59,130,246,0.2)' },
-          '50%': { boxShadow: '0 0 30px rgba(59,130,246,0.4)' },
-        },
-        shimmer: {
-          '0%': { backgroundPosition: '200% 0' },
-          '100%': { backgroundPosition: '-200% 0' },
-        },
-        shake: {
-          '0%, 100%': { transform: 'translateX(0)' },
-          '20%': { transform: 'translateX(-3px)' },
-          '40%': { transform: 'translateX(3px)' },
-          '60%': { transform: 'translateX(-2px)' },
-          '80%': { transform: 'translateX(2px)' },
-        },
-        pop: {
-          '0%': { transform: 'scale(0.94)' },
-          '60%': { transform: 'scale(1.06)' },
-          '100%': { transform: 'scale(1)' },
-        },
-        'type-rise': {
-          '0%': { opacity: '0', transform: 'translateY(10px)' },
-          '100%': { opacity: '1', transform: 'translateY(0)' },
         },
       },
     },

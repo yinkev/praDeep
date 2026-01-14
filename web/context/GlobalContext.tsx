@@ -330,7 +330,7 @@ interface GlobalContextType {
 
   // UI Settings
   uiSettings: {
-    theme: "light" | "dark";
+    theme: Theme;
     language: "en" | "zh";
     council_depth: "standard" | "quick" | "deep";
     enable_council_interaction: boolean;
@@ -352,7 +352,7 @@ const GlobalContext = createContext<GlobalContextType | undefined>(undefined);
 export function GlobalProvider({ children }: { children: React.ReactNode }) {
   // --- UI Settings Logic ---
   const [uiSettings, setUiSettings] = useState<{
-    theme: "light" | "dark";
+    theme: Theme;
     language: "en" | "zh";
     council_depth: "standard" | "quick" | "deep";
     enable_council_interaction: boolean;

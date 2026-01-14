@@ -606,7 +606,7 @@ function AgentPerformanceTable({
                   Calls
                 </th>
                 <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400 sm:px-6">
-                  Avg
+                  Avg Time
                 </th>
                 <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400 sm:px-6">
                   Tokens
@@ -689,7 +689,7 @@ function ActivityFeed({ history }: { history: HistoryEntry[] }) {
             <Clock className="h-5 w-5" />
           </div>
           <div>
-            <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">Recent activity</h2>
+            <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">Recent Activity</h2>
             <p className="mt-0.5 text-sm text-zinc-500 dark:text-zinc-400">Last {rows.length} events</p>
           </div>
         </div>
@@ -697,7 +697,7 @@ function ActivityFeed({ history }: { history: HistoryEntry[] }) {
 
       <CardContent padding="none">
         {rows.length === 0 ? (
-          <div className="px-6 py-12 text-center text-sm text-zinc-500 dark:text-zinc-400">No recent activity</div>
+          <div className="px-6 py-12 text-center text-sm text-zinc-500 dark:text-zinc-400">No recent events</div>
         ) : (
           <div className="divide-y divide-zinc-200/60 dark:divide-white/10">
             {rows.map((entry, idx) => (
@@ -920,7 +920,7 @@ export default function MetricsPage() {
     <PageWrapper maxWidth="wide" showPattern breadcrumbs={[{ label: t('Metrics') }]}>
       <PageHeader
         title={t('Performance Metrics')}
-        description={t('Real-time agent performance monitoring with live data streaming')}
+        description={t('Real-time agent performance monitoring with data streaming')}
         icon={<Activity className="h-5 w-5 text-blue-600 dark:text-blue-300" />}
         className="flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
         actions={
@@ -938,6 +938,7 @@ export default function MetricsPage() {
               size="sm"
               iconLeft={<RefreshCw className={cn('h-4 w-4', autoRefresh && 'animate-spin')} />}
               onClick={() => setAutoRefresh(prev => !prev)}
+              aria-label={t('Auto update')}
             >
               {t('Auto-refresh')}
             </Button>
@@ -1121,7 +1122,7 @@ export default function MetricsPage() {
                       <BarChart3 className="h-5 w-5" />
                     </div>
                     <div>
-                      <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">Modules</h2>
+                      <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">Module Statistics</h2>
                       <p className="mt-0.5 text-sm text-zinc-500 dark:text-zinc-400">{modulesSubtext}</p>
                     </div>
                   </div>

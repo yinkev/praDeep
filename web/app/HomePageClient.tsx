@@ -8,6 +8,7 @@ import {
   User,
   Database,
   Globe,
+  Mic,
   Calculator,
   Microscope,
   Lightbulb,
@@ -23,6 +24,7 @@ import {
   MessageCircle,
   Zap,
   ArrowRight,
+  Sigma,
   Volume2,
 } from 'lucide-react'
 import Link from 'next/link'
@@ -47,7 +49,16 @@ import PageWrapper from '@/components/ui/PageWrapper'
 import Button, { IconButton } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { useToast } from '@/components/ui/Toast'
+import Modal from '@/components/ui/Modal'
+import { EliteBackground } from '@/components/ui/EliteBackground'
+import { Tabs, type TabsItem } from '@/components/ui/Tabs'
 import CouncilDetails from '@/components/CouncilDetails'
+import { eliteTheme } from '@/lib/elite-theme'
+
+type TranscriptResponse = {
+  text?: string
+  language?: string
+}
 
 // ============================================================================
 // Types
@@ -174,6 +185,14 @@ export default function HomePage() {
   const toast = useToast()
 
   const [inputMessage, setInputMessage] = useState('')
+  const [equationEditorOpen, setEquationEditorOpen] = useState(false)
+  const [equationLatex, setEquationLatex] = useState('')
+
+  const [voiceRecording, setVoiceRecording] = useState(false)
+  const voiceRecorderRef = useRef<MediaRecorder | null>(null)
+  const voiceStreamRef = useRef<MediaStream | null>(null)
+  const voiceChunksRef = useRef<Blob[]>([])
+
   const [checkpointUserQuestions, setCheckpointUserQuestions] = useState('')
   const [checkpointNotes, setCheckpointNotes] = useState('')
   const [kbs, setKbs] = useState<KnowledgeBaseListItem[]>([])
@@ -354,6 +373,84 @@ export default function HomePage() {
     chatEndRef.current?.scrollIntoView({ behavior: shouldReduceMotion ? 'auto' : 'smooth' })
   }, [chatState.messages.length, shouldReduceMotion])
 
+  const handleOpenEquationEditor = useCallback(() => {
+    setEquationLatex('')
+    setEquationEditorOpen(true)
+  }, [])
+
+  const handleInsertEquation = useCallback(() => {
+    const next = equationLatex.trim()
+    setEquationEditorOpen(false)
+
+    if (!next) {
+      inputRef.current?.focus()
+      return
+    }
+
+    const fragment = `$${next}$`
+    setInputMessage(prev => (prev.trim() ? `${prev.trimEnd()} ${fragment}` : fragment))
+    queueMicrotask(() => inputRef.current?.focus())
+  }, [equationLatex])
+
+  const cleanupVoiceStream = useCallback(() => {
+    voiceStreamRef.current?.getTracks().forEach(track => track.stop())
+    voiceStreamRef.current = null
+  }, [])
+
+  const handleToggleVoiceInput = useCallback(async () => {
+    const recorder = voiceRecorderRef.current
+    if (recorder && recorder.state !== 'inactive') {
+      recorder.stop()
+      return
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      voiceStreamRef.current = stream
+      voiceChunksRef.current = []
+
+      const nextRecorder = new MediaRecorder(stream)
+      voiceRecorderRef.current = nextRecorder
+      setVoiceRecording(true)
+
+      nextRecorder.ondataavailable = (event: { data: Blob }) => {
+        if (event.data.size > 0) voiceChunksRef.current.push(event.data)
+      }
+
+      nextRecorder.onstop = async () => {
+        setVoiceRecording(false)
+
+        const blob = new Blob(voiceChunksRef.current, { type: 'audio/webm' })
+        cleanupVoiceStream()
+
+        try {
+          const form = new FormData()
+          form.append('audio', blob, 'voice.webm')
+
+          const res = await fetch(apiUrl('/api/v1/speech/transcribe'), {
+            method: 'POST',
+            body: form,
+          })
+
+          if (!res.ok) return
+          const json = (await res.json()) as TranscriptResponse
+          const transcript = (json.text || '').trim()
+          if (!transcript) return
+
+          setInputMessage(prev => (prev.trim() ? `${prev.trimEnd()} ${transcript}` : transcript))
+          queueMicrotask(() => inputRef.current?.focus())
+        } catch {
+          // Best-effort: voice input should never crash the home screen.
+        }
+      }
+
+      nextRecorder.start()
+    } catch {
+      cleanupVoiceStream()
+      setVoiceRecording(false)
+    }
+  }, [cleanupVoiceStream])
+
   const handleSend = () => {
     if (!inputMessage.trim() || chatState.isLoading) return
     sendChatMessage(inputMessage)
@@ -456,6 +553,18 @@ export default function HomePage() {
     heroSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
+  const welcomeTabs = useCallback((): TabsItem[] => {
+    const tabs: TabsItem[] = [
+      { id: 'hero', label: t('Overview') },
+      ...(conversationStarters.length > 0
+        ? [{ id: 'starters', label: t('Conversation Starters') }]
+        : []),
+      { id: 'modules', label: t('Explore modules') },
+    ]
+
+    return tabs
+  }, [conversationStarters.length, t])
+
   useEffect(() => {
     if (hasMessages) return
 
@@ -543,80 +652,19 @@ export default function HomePage() {
 
   if (!hasMessages) {
     return (
-      <div className="relative min-h-dvh overflow-x-hidden bg-surface dark:bg-zinc-950">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -top-48 left-1/2 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-blue-500/12 blur-3xl dark:bg-blue-500/10"
-        />
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -bottom-56 left-8 h-[520px] w-[520px] rounded-full bg-indigo-500/10 blur-3xl dark:bg-indigo-500/10"
-        />
+      <div className={cn('relative min-h-dvh overflow-x-hidden', eliteTheme.surface)}>
+        <EliteBackground />
 
         <div className="sticky top-0 z-40">
           <div className="border-b border-border bg-surface-elevated/75 backdrop-blur-xl dark:border-white/10 dark:bg-zinc-950/55">
-            <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-3">
+            <div className={cn('mx-auto flex max-w-6xl items-center justify-between gap-4', eliteTheme.density.compact.pageX, eliteTheme.density.compact.headerY)}>
               <div className="flex min-w-0 items-center gap-2">
-                <div className="relative flex max-w-full items-center gap-1 rounded-full border border-border bg-surface-elevated/70 p-1 shadow-glass-sm backdrop-blur-md dark:border-white/10 dark:bg-white/5">
-                  <motion.button
-                    type="button"
-                    onClick={() => scrollToWelcomeSection('hero')}
-                    whileHover={{ y: -1, scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    transition={{ duration: 0.14, ease: [0.2, 0.8, 0.2, 1] }}
-                    aria-current={activeWelcomeSection === 'hero' ? 'page' : undefined}
-                    className="relative shrink-0 rounded-full px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors duration-200 hover:text-text-primary dark:text-zinc-200 dark:hover:text-zinc-50"
-                  >
-                    {activeWelcomeSection === 'hero' && (
-                      <motion.span
-                        layoutId="welcomeNavActive"
-                        transition={{ duration: 0.18, ease: [0.2, 0.8, 0.2, 1] }}
-                        className="absolute inset-0 rounded-full bg-surface-elevated/90 shadow-sm dark:bg-zinc-950/60"
-                      />
-                    )}
-                    <span className="relative">{t('Overview')}</span>
-                  </motion.button>
-
-                  {conversationStarters.length > 0 && (
-                    <motion.button
-                      type="button"
-                      onClick={() => scrollToWelcomeSection('starters')}
-                      whileHover={{ y: -1, scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      transition={{ duration: 0.14, ease: [0.2, 0.8, 0.2, 1] }}
-                      aria-current={activeWelcomeSection === 'starters' ? 'page' : undefined}
-                      className="relative shrink-0 rounded-full px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors duration-200 hover:text-text-primary dark:text-zinc-200 dark:hover:text-zinc-50"
-                    >
-                      {activeWelcomeSection === 'starters' && (
-                        <motion.span
-                          layoutId="welcomeNavActive"
-                          transition={{ duration: 0.18, ease: [0.2, 0.8, 0.2, 1] }}
-                          className="absolute inset-0 rounded-full bg-surface-elevated/90 shadow-sm dark:bg-zinc-950/60"
-                        />
-                      )}
-                      <span className="relative">{t('Conversation Starters')}</span>
-                    </motion.button>
-                  )}
-
-                  <motion.button
-                    type="button"
-                    onClick={() => scrollToWelcomeSection('modules')}
-                    whileHover={{ y: -1, scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    transition={{ duration: 0.14, ease: [0.2, 0.8, 0.2, 1] }}
-                    aria-current={activeWelcomeSection === 'modules' ? 'page' : undefined}
-                    className="relative shrink-0 rounded-full px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors duration-200 hover:text-text-primary dark:text-zinc-200 dark:hover:text-zinc-50"
-                  >
-                    {activeWelcomeSection === 'modules' && (
-                      <motion.span
-                        layoutId="welcomeNavActive"
-                        transition={{ duration: 0.18, ease: [0.2, 0.8, 0.2, 1] }}
-                        className="absolute inset-0 rounded-full bg-surface-elevated/90 shadow-sm dark:bg-zinc-950/60"
-                      />
-                    )}
-                    <span className="relative">{t('Explore modules')}</span>
-                  </motion.button>
-                </div>
+                <Tabs
+                  tabs={welcomeTabs()}
+                  activeTab={activeWelcomeSection}
+                  onTabChange={id => scrollToWelcomeSection(id as WelcomeSection)}
+                  layoutId="welcomeNavActive"
+                />
               </div>
 
               <div className="flex items-center gap-3">
@@ -641,7 +689,7 @@ export default function HomePage() {
 
         <PageWrapper maxWidth="full" showPattern={false} className="min-h-dvh px-0 py-0">
           <motion.main
-            className="relative mx-auto max-w-6xl px-6 pb-22 pt-14 sm:px-8"
+            className={cn('relative mx-auto max-w-6xl pb-22 pt-12', eliteTheme.density.compact.pageX, 'sm:px-8')}
             variants={containerVariants}
             initial="hidden"
             animate="visible"
@@ -764,10 +812,11 @@ export default function HomePage() {
                     <div className="relative">
                       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
                         <div>
-                          <div className="text-sm font-semibold text-text-primary dark:text-zinc-50">
-                            {t('Chat with praDeep')}
-                          </div>
-                          <div className="mt-1 text-xs text-text-tertiary dark:text-zinc-400">
+                    <div className={cn('inline-flex items-center gap-2 font-semibold text-text-primary dark:text-zinc-50', eliteTheme.density.compact.monoLabel)}>
+                      <Zap className="h-4 w-4 text-amber-500" />
+                      <span>CO-PILOT ACTIVE</span>
+                    </div>
+                          <div className="mt-2 text-xs text-text-tertiary dark:text-zinc-400">
                             {t('RAG + web search, with math rendering.')}
                           </div>
                           <div className="mt-3 flex flex-wrap gap-2">
@@ -966,7 +1015,7 @@ export default function HomePage() {
                               ref={inputRef}
                               type="text"
                               className={`
-	                            w-full rounded-2xl border px-5 py-4 pr-14 text-base
+	                            w-full rounded-2xl border px-5 py-4 pr-44 text-base
 	                            bg-surface-elevated/70 backdrop-blur-md
 	                            placeholder:text-text-tertiary text-text-primary
 	                            dark:bg-zinc-950/50 dark:placeholder:text-text-tertiary dark:text-zinc-100
@@ -980,7 +1029,7 @@ export default function HomePage() {
 	                            transition-colors duration-150
 	                          `}
                               aria-label={t('Message')}
-                              placeholder={t('Ask anything...')}
+                              placeholder="Ask Co-Pilot..."
                               value={inputMessage}
                               onChange={e => setInputMessage(e.target.value)}
                               onKeyDown={handleKeyDown}
@@ -991,24 +1040,39 @@ export default function HomePage() {
                             />
                           </div>
 
-                          <IconButton
-                            aria-label={t('Send message')}
-                            icon={
-                              chatState.isLoading ? (
-                                <Loader2 className="h-5 w-5 motion-safe:animate-spin" />
-                              ) : (
-                                <Send className="h-5 w-5" />
-                              )
-                            }
-                            size="md"
-                            variant={inputMessage.trim() ? 'primary' : 'secondary'}
-                            onClick={handleSend}
-                            disabled={chatState.isLoading || !inputMessage.trim()}
-                            className={cn(
-                              'absolute right-2.5 top-1/2 -translate-y-1/2',
-                              '!rounded-xl'
-                            )}
-                          />
+                          <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                            <IconButton
+                              aria-label="Voice input"
+                              icon={<Mic className={cn('h-5 w-5', voiceRecording && 'text-rose-500')} />}
+                              size="md"
+                              variant="secondary"
+                              onClick={handleToggleVoiceInput}
+                              className={cn('!rounded-xl', voiceRecording && 'ring-2 ring-rose-500/20')}
+                            />
+                            <IconButton
+                              aria-label="Insert equation"
+                              icon={<Sigma className="h-5 w-5" />}
+                              size="md"
+                              variant="secondary"
+                              onClick={handleOpenEquationEditor}
+                              className="!rounded-xl"
+                            />
+                            <IconButton
+                              aria-label={t('Send message')}
+                              icon={
+                                chatState.isLoading ? (
+                                  <Loader2 className="h-5 w-5 motion-safe:animate-spin" />
+                                ) : (
+                                  <Send className="h-5 w-5" />
+                                )
+                              }
+                              size="md"
+                              variant={inputMessage.trim() ? 'primary' : 'secondary'}
+                              onClick={handleSend}
+                              disabled={chatState.isLoading || !inputMessage.trim()}
+                              className="!rounded-xl"
+                            />
+                          </div>
                         </div>
 
                         {conversationStarters.length > 0 && (
@@ -1161,6 +1225,41 @@ export default function HomePage() {
             </motion.section>
           </motion.main>
         </PageWrapper>
+
+        <Modal
+          isOpen={equationEditorOpen}
+          onClose={() => setEquationEditorOpen(false)}
+          title="Equation editor"
+        >
+          <div className="space-y-4">
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                onClick={() => setEquationLatex(prev => `${prev}${prev ? ' ' : ''}\\alpha`)}
+              >
+                Alpha
+              </Button>
+            </div>
+
+            <div
+              className={cn('rounded-xl px-4 py-3 font-mono text-sm tabular-nums', eliteTheme.recessed)}
+              data-testid="equation-latex"
+            >
+              {equationLatex}
+            </div>
+
+            <div className="flex items-center justify-end gap-2">
+              <Button type="button" variant="secondary" onClick={() => setEquationEditorOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="button" variant="primary" onClick={handleInsertEquation}>
+                Insert
+              </Button>
+            </div>
+          </div>
+        </Modal>
       </div>
     )
   }
@@ -1170,11 +1269,8 @@ export default function HomePage() {
   // ============================================================================
 
   return (
-    <div className="relative h-dvh overflow-hidden bg-surface dark:bg-zinc-950">
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute -top-48 left-1/2 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-blue-500/10 blur-3xl dark:bg-blue-500/10"
-      />
+    <div className={cn('relative h-dvh overflow-hidden', eliteTheme.surface)}>
+      <EliteBackground />
       <div
         aria-hidden="true"
         className="pointer-events-none absolute -bottom-56 right-10 h-[520px] w-[520px] rounded-full bg-indigo-500/10 blur-3xl dark:bg-indigo-500/10"
@@ -1917,7 +2013,7 @@ export default function HomePage() {
                   ref={inputRef}
                   type="text"
                   className={`
-	                  w-full rounded-2xl border px-5 py-4 pr-14
+	                  w-full rounded-2xl border px-5 py-4 pr-44
 	                  bg-surface-elevated/70 backdrop-blur-md
 	                  placeholder:text-text-tertiary text-text-primary
 	                  dark:bg-zinc-950/50 dark:placeholder:text-text-tertiary dark:text-zinc-100
@@ -1930,7 +2026,7 @@ export default function HomePage() {
 	                  transition-colors duration-150
 	                `}
                   aria-label={t('Message')}
-                  placeholder={t('Type your message...')}
+                  placeholder="Ask Co-Pilot..."
                   value={inputMessage}
                   onChange={e => setInputMessage(e.target.value)}
                   onKeyDown={handleKeyDown}
@@ -1941,25 +2037,78 @@ export default function HomePage() {
                 />
               </div>
 
-              <IconButton
-                aria-label={t('Send message')}
-                icon={
-                  chatState.isLoading ? (
-                    <Loader2 className="h-5 w-5 motion-safe:animate-spin" />
-                  ) : (
-                    <Send className="h-5 w-5" />
-                  )
-                }
-                size="md"
-                variant={inputMessage.trim() ? 'primary' : 'secondary'}
-                onClick={handleSend}
-                disabled={chatState.isLoading || !inputMessage.trim()}
-                className={cn('absolute right-2 top-1/2 -translate-y-1/2', '!rounded-xl')}
-              />
+              <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                <IconButton
+                  aria-label="Voice input"
+                  icon={<Mic className={cn('h-5 w-5', voiceRecording && 'text-rose-500')} />}
+                  size="md"
+                  variant="secondary"
+                  onClick={handleToggleVoiceInput}
+                  className={cn('!rounded-xl', voiceRecording && 'ring-2 ring-rose-500/20')}
+                />
+                <IconButton
+                  aria-label="Insert equation"
+                  icon={<Sigma className="h-5 w-5" />}
+                  size="md"
+                  variant="secondary"
+                  onClick={handleOpenEquationEditor}
+                  className="!rounded-xl"
+                />
+                <IconButton
+                  aria-label={t('Send message')}
+                  icon={
+                    chatState.isLoading ? (
+                      <Loader2 className="h-5 w-5 motion-safe:animate-spin" />
+                    ) : (
+                      <Send className="h-5 w-5" />
+                    )
+                  }
+                  size="md"
+                  variant={inputMessage.trim() ? 'primary' : 'secondary'}
+                  onClick={handleSend}
+                  disabled={chatState.isLoading || !inputMessage.trim()}
+                  className="!rounded-xl"
+                />
+              </div>
             </div>
           </motion.div>
         </div>
       </PageWrapper>
+
+      <Modal
+        isOpen={equationEditorOpen}
+        onClose={() => setEquationEditorOpen(false)}
+        title="Equation editor"
+      >
+        <div className="space-y-4">
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={() => setEquationLatex(prev => `${prev}${prev ? ' ' : ''}\\alpha`)}
+            >
+              Alpha
+            </Button>
+          </div>
+
+          <div
+            className={cn('rounded-xl px-4 py-3 font-mono text-sm tabular-nums', eliteTheme.recessed)}
+            data-testid="equation-latex"
+          >
+            {equationLatex}
+          </div>
+
+          <div className="flex items-center justify-end gap-2">
+            <Button type="button" variant="secondary" onClick={() => setEquationEditorOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="button" variant="primary" onClick={handleInsertEquation}>
+              Insert
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }

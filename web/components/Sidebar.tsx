@@ -140,6 +140,7 @@ const NAV_GROUP_DEFINITIONS: readonly NavGroupDefinition[] = [
 
 export default function Sidebar({ collapsible = true }: SidebarProps) {
   const pathname = usePathname()
+
   const { uiSettings, sidebarCollapsed, toggleSidebar } = useGlobal()
   const lang = uiSettings.language
   const isCollapsed = collapsible ? sidebarCollapsed : false

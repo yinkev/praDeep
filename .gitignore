@@ -9,6 +9,7 @@
 data/user/
 data/knowledge_bases/
 run_code_workspace/
+scripts/data/
 src/agents/question/reference_papers/
 tests/
 
@@ -64,6 +65,12 @@ web/.next/
 out/
 web/out/
 
+# Playwright
+test-results/
+playwright-report/
+web/test-results/
+web/playwright-report/
+
 # TypeScript build info
 *.tsbuildinfo
 
@@ -103,6 +110,9 @@ cache/
 
 # Cursor
 .cursor/
+
+# Code (Codex fork) workspace artifacts
+.code/
 
 # ============================================
 # Git Worktrees

@@ -9,7 +9,8 @@ import { setTheme, type Theme } from "./theme";
  * Toggle theme between light and dark
  */
 export function toggleTheme(currentTheme: Theme): Theme {
-  const newTheme = currentTheme === "light" ? "dark" : "light";
+  const isDark = /dark$/.test(currentTheme);
+  const newTheme: Theme = isDark ? "light" : "dark";
   setTheme(newTheme);
   return newTheme;
 }
@@ -32,14 +33,14 @@ export function setDarkTheme(): void {
  * Get CSS class for theme-aware styling
  */
 export function getThemeClass(theme: Theme): string {
-  return theme === "dark" ? "dark" : "";
+  return /dark$/.test(theme) ? "dark" : "";
 }
 
 /**
  * Get contrast color for theme
  */
 export function getTextColorForTheme(theme: Theme): string {
-  return theme === "dark"
+  return /dark$/.test(theme)
     ? "text-slate-100 dark:text-slate-100"
     : "text-slate-900 dark:text-slate-900";
 }
@@ -48,7 +49,7 @@ export function getTextColorForTheme(theme: Theme): string {
  * Get background color for theme
  */
 export function getBackgroundForTheme(theme: Theme): string {
-  return theme === "dark" ? "dark:bg-slate-800" : "bg-white";
+  return /dark$/.test(theme) ? "dark:bg-slate-800" : "bg-white";
 }
 
 /**
@@ -56,11 +57,8 @@ export function getBackgroundForTheme(theme: Theme): string {
  */
 export function onThemeChange(callback: (theme: Theme) => void): () => void {
   const handleStorageChange = (e: StorageEvent) => {
-    if (
-      e.key === "deeptutor-theme" &&
-      (e.newValue === "light" || e.newValue === "dark")
-    ) {
-      callback(e.newValue);
+    if (e.key === "deeptutor-theme" && e.newValue) {
+      callback(e.newValue as Theme);
     }
   };
 

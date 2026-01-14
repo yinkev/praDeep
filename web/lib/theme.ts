@@ -1,11 +1,24 @@
 /**
  * Theme persistence utilities
- * Handles light/dark theme with localStorage fallback and system preference detection
+ *
+ * Supports built-in themes (light/dark) plus extended modes such as:
+ * - high-contrast-dark
+ * - custom-light
+ *
+ * The ThemeScript runs before hydration; this module keeps React state in sync
+ * without clobbering extended modes.
  */
 
-export type Theme = "light" | "dark";
+export type Theme =
+  | "light"
+  | "dark"
+  | "high-contrast-dark"
+  | "high-contrast-light"
+  | "custom-light"
+  | "custom-dark";
 
 export const THEME_STORAGE_KEY = "deeptutor-theme";
+export const THEME_CUSTOM_STORAGE_KEY = "deeptutor-theme-custom";
 
 type ThemeChangeListener = (theme: Theme) => void;
 const themeListeners = new Set<ThemeChangeListener>();
@@ -35,8 +48,23 @@ export function getStoredTheme(): Theme | null {
 
   try {
     const stored = localStorage.getItem(THEME_STORAGE_KEY);
-    if (stored === "light" || stored === "dark") {
+    if (!stored) return null;
+
+    // Accept explicit known themes.
+    if (
+      stored === "light" ||
+      stored === "dark" ||
+      stored === "high-contrast-dark" ||
+      stored === "high-contrast-light" ||
+      stored === "custom-light" ||
+      stored === "custom-dark"
+    ) {
       return stored;
+    }
+
+    // Be forward-compatible: accept any <name>-dark|<name>-light without overwriting.
+    if (/-(dark|light)$/.test(stored)) {
+      return stored as Theme;
     }
   } catch (e) {
     // Silently fail - localStorage may be disabled
@@ -78,10 +106,31 @@ export function applyThemeToDocument(theme: Theme): void {
   if (typeof document === "undefined") return;
 
   const html = document.documentElement;
-  if (theme === "dark") {
-    html.classList.add("dark");
+
+  html.setAttribute("data-theme", theme);
+
+  const isDark = /dark$/.test(theme);
+  if (isDark) html.classList.add("dark");
+  else html.classList.remove("dark");
+
+  if (theme.startsWith("high-contrast")) html.classList.add("high-contrast");
+  else html.classList.remove("high-contrast");
+
+  const shouldApplyCustom = theme.startsWith("custom-");
+  if (shouldApplyCustom) {
+    try {
+      const raw = localStorage.getItem(THEME_CUSTOM_STORAGE_KEY);
+      if (raw) {
+        const custom = JSON.parse(raw) as { primary?: string; ring?: string };
+        if (custom?.primary) html.style.setProperty("--primary", String(custom.primary));
+        if (custom?.ring) html.style.setProperty("--ring", String(custom.ring));
+      }
+    } catch {
+      // Ignore malformed custom settings.
+    }
   } else {
-    html.classList.remove("dark");
+    html.style.removeProperty("--primary");
+    html.style.removeProperty("--ring");
   }
 }
 

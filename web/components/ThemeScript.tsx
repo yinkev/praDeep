@@ -39,20 +39,45 @@ export default function ThemeScript() {
           }
         }
 
-        const stored = localStorage.getItem('deeptutor-theme');
+        var theme = localStorage.getItem('deeptutor-theme');
 
-        if (stored === 'dark') {
-          document.documentElement.classList.add('dark');
-        } else if (stored === 'light') {
-          document.documentElement.classList.remove('dark');
-        } else {
+        if (!theme) {
           // Use system preference if not set
-          if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-            document.documentElement.classList.add('dark');
-            localStorage.setItem('deeptutor-theme', 'dark');
-          } else {
-            localStorage.setItem('deeptutor-theme', 'light');
+          theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+          localStorage.setItem('deeptutor-theme', theme);
+        }
+
+        // Persisted theme attribute used by tests + CSS.
+        document.documentElement.setAttribute('data-theme', theme);
+
+        // Dark-mode class.
+        var isDark = /dark$/.test(theme);
+        if (isDark) document.documentElement.classList.add('dark');
+        else document.documentElement.classList.remove('dark');
+
+        // High contrast.
+        if (theme.indexOf('high-contrast') === 0) {
+          document.documentElement.classList.add('high-contrast');
+        } else {
+          document.documentElement.classList.remove('high-contrast');
+        }
+
+        // Custom overrides.
+        var customRaw = localStorage.getItem('deeptutor-theme-custom');
+        var shouldApplyCustom = theme.indexOf('custom-') === 0;
+
+        if (shouldApplyCustom && customRaw) {
+          try {
+            var custom = JSON.parse(customRaw) || {};
+            if (custom.primary) document.documentElement.style.setProperty('--primary', String(custom.primary));
+            if (custom.ring) document.documentElement.style.setProperty('--ring', String(custom.ring));
+          } catch (e) {
+            // Ignore malformed custom settings.
           }
+        } else {
+          // Avoid leaking a previous custom theme into non-custom modes.
+          document.documentElement.style.removeProperty('--primary');
+          document.documentElement.style.removeProperty('--ring');
         }
       } catch (e) {
         // Silently fail - localStorage may be disabled

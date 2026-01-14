@@ -128,7 +128,7 @@ function SegmentedControl<TValue extends string>({
   return (
     <div className={cn('relative', className)}>
       <div
-        role="tablist"
+        role="group"
         aria-label={ariaLabel}
         onKeyDown={e => {
           if (!options.length) return
@@ -172,15 +172,13 @@ function SegmentedControl<TValue extends string>({
                 optionRefs.current[index] = el
               }}
               type="button"
-              role="tab"
-              aria-selected={isActive}
-              tabIndex={isActive ? 0 : -1}
+              aria-pressed={isActive}
               onClick={() => onChange(option.value)}
               className={cn(
                 'relative z-10 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors duration-200',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30',
                 isActive
-                  ? 'text-blue-700 dark:text-blue-300'
+                  ? 'text-blue-700 dark:text-blue-300 shadow-sm'
                   : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'
               )}
             >
@@ -566,7 +564,7 @@ export default function AnalyticsPage() {
                         {t('Activity Breakdown')}
                       </h2>
                       <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                        {t('Total Activities')}: {totalActivities.toLocaleString()}
+                        {t('Activities total')}: {totalActivities.toLocaleString()}
                       </p>
                     </div>
                   </div>
@@ -682,7 +680,7 @@ export default function AnalyticsPage() {
                         {t('Strength Areas')}
                       </h2>
                       <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                        {t('Topics Covered')}: {(topics?.total_topics ?? 0).toLocaleString()}
+                        {t('Topics')}: {(topics?.total_topics ?? 0).toLocaleString()}
                       </p>
                     </div>
                   </div>
@@ -798,7 +796,7 @@ export default function AnalyticsPage() {
                         {t('All Topics')}
                       </h2>
                       <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                        {t('Topics Covered')}: {(topics?.total_topics ?? 0).toLocaleString()}
+                        {t('Topics')}: {(topics?.total_topics ?? 0).toLocaleString()}
                       </p>
                     </div>
                   </div>
