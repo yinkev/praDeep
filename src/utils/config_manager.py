@@ -2,7 +2,7 @@ import logging
 import os
 from pathlib import Path
 import tempfile
-from threading import Lock
+from threading import RLock
 from typing import Any, Dict, List, Optional
 
 from dotenv import dotenv_values, load_dotenv
@@ -33,15 +33,25 @@ class ConfigManager:
     """
 
     _instance: Optional["ConfigManager"] = None
-    _lock = Lock()
+    _lock = RLock()
 
     def __new__(cls, project_root: Optional[Path] = None):
-        if cls._instance is None:
-            with cls._lock:
-                if cls._instance is None:
+        # This manager is effectively a singleton per project root.
+        root = Path(project_root).resolve() if project_root is not None else None
+
+        with cls._lock:
+            if cls._instance is None:
+                cls._instance = super(ConfigManager, cls).__new__(cls)
+                cls._instance._initialized = False
+                return cls._instance
+
+            if root is not None:
+                current_root = getattr(cls._instance, "project_root", None)
+                if current_root is None or Path(current_root).resolve() != root:
                     cls._instance = super(ConfigManager, cls).__new__(cls)
                     cls._instance._initialized = False
-        return cls._instance
+
+            return cls._instance
 
     def __init__(self, project_root: Optional[Path] = None):
         if getattr(self, "_initialized", False):

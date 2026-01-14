@@ -76,6 +76,73 @@ class DenseRetriever(BaseComponent):
         kb_dir = Path(self.kb_base_dir) / kb_name / "vector_store"
         metadata_file = kb_dir / "metadata.json"
         info_file = kb_dir / "info.json"
+        legacy_index_file = kb_dir / "index.json"
+
+        # Support legacy vector_store/index.json format (used by some tests and older KBs).
+        if not metadata_file.exists() and legacy_index_file.exists():
+            with open(legacy_index_file, "r", encoding="utf-8") as f:
+                legacy_items = json.load(f) or []
+
+            embeddings = np.asarray(
+                [item.get("embedding", []) for item in legacy_items], dtype=np.float32
+            )
+
+            try:
+                from src.services.reranker import get_reranker_service
+
+                reranker = get_reranker_service()
+            except Exception:
+                reranker = None
+
+            passages = [str(item.get("content") or "") for item in legacy_items]
+            if reranker is not None:
+                reranked = await reranker.rerank(query, passages)
+                results = []
+                for item in reranked[:top_k]:
+                    idx = int(item.index)
+                    if idx < 0 or idx >= len(legacy_items):
+                        continue
+                    results.append((float(item.score), legacy_items[idx]))
+            else:
+                # Fallback to cosine similarity ordering if reranker not available.
+                if embeddings.size == 0:
+                    return self._empty_response(query)
+                query_norm = np.linalg.norm(query_embedding)
+                query_vec = query_embedding / query_norm if query_norm > 0 else query_embedding
+                norms = np.linalg.norm(embeddings, axis=1, keepdims=True)
+                norms = np.where(norms == 0, 1, norms)
+                doc_vecs = embeddings / norms
+                similarities = np.dot(doc_vecs, query_vec)
+                top_indices = np.argsort(similarities)[::-1][:top_k]
+                results = [(float(similarities[idx]), legacy_items[idx]) for idx in top_indices]
+
+            sources = [
+                {
+                    "content": (item.get("content") or "").strip(),
+                    "score": score,
+                    "metadata": item.get("metadata", {}),
+                }
+                for score, item in results
+                if (item.get("content") or "").strip()
+            ]
+            scored_parts = [
+                f"[Score: {score:.3f}] {(item.get('content') or '').strip()}"
+                for score, item in results
+                if (item.get("content") or "").strip()
+            ]
+            clean_parts = [
+                (item.get("content") or "").strip()
+                for _, item in results
+                if (item.get("content") or "").strip()
+            ]
+            return {
+                "query": query,
+                "answer": "\n\n".join(clean_parts),
+                "content": "\n\n".join(scored_parts),
+                "mode": "dense",
+                "provider": "llamaindex",
+                "results": sources,
+            }
 
         if not metadata_file.exists():
             self.logger.warning(f"No vector index found at {kb_dir}")

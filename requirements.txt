@@ -41,7 +41,9 @@ pydantic>=2.0.0
 # RAG and knowledge base
 # ============================================
 lightrag-hku>=1.0.0
-raganything>=0.1.0
+# raganything is optional (pulls heavy MinerU/torch deps).
+# Install only if you need the multimodal RAG-Anything pipeline.
+# raganything>=0.1.0
 
 # ============================================
 # Academic and research tools
