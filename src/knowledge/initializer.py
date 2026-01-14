@@ -17,31 +17,15 @@ import json
 import os
 from pathlib import Path
 import shutil
-import sys
 
-project_root = Path(__file__).parent.parent.parent
-sys.path.insert(0, str(project_root))
-# Add raganything module path
-raganything_path = project_root.parent / "raganything" / "RAG-Anything"
-if raganything_path.exists():
-    sys.path.insert(0, str(raganything_path))
-
-from dotenv import load_dotenv
-from lightrag.llm.openai import openai_complete_if_cache
-from lightrag.utils import EmbeddingFunc
-from raganything import RAGAnything, RAGAnythingConfig
-
-from src.services.embedding import get_embedding_client, get_embedding_config
+from src.logging import get_logger
+from src.services.embedding import get_embedding_config
 from src.services.llm import get_llm_config
-
-load_dotenv(dotenv_path=".env", override=False)
-
-from src.logging import LightRAGLogContext, get_logger
+from src.services.rag.service import RAGService
 
 logger = get_logger("KnowledgeInit")
 
 # Import numbered items extraction functionality
-from src.knowledge.document_tracker import DocumentStatus, DocumentTracker
 from src.knowledge.extract_numbered_items import process_content_list
 from src.knowledge.progress_tracker import ProgressStage, ProgressTracker
 
@@ -53,9 +37,10 @@ class KnowledgeBaseInitializer:
         self,
         kb_name: str,
         base_dir="./data/knowledge_bases",
-        api_key: str = None,
-        base_url: str = None,
-        progress_tracker: ProgressTracker = None,
+        api_key: str | None = None,
+        base_url: str | None = None,
+        progress_tracker: ProgressTracker | None = None,
+        rag_provider: str | None = None,
     ):
         self.kb_name = kb_name
         self.base_dir = Path(base_dir)
@@ -71,16 +56,7 @@ class KnowledgeBaseInitializer:
         self.base_url = base_url
         self.embedding_cfg = get_embedding_config()
         self.progress_tracker = progress_tracker or ProgressTracker(kb_name, self.base_dir)
-
-        # Document tracker will be initialized after directory structure is created
-        self._document_tracker = None
-
-    @property
-    def document_tracker(self) -> DocumentTracker:
-        """Lazy initialize document tracker after KB directory exists"""
-        if self._document_tracker is None and self.kb_dir.exists():
-            self._document_tracker = DocumentTracker(self.kb_dir)
-        return self._document_tracker
+        self.rag_provider = rag_provider
 
     def _register_to_config(self):
         """Register KB to kb_config.json."""
@@ -116,6 +92,26 @@ class KnowledgeBaseInitializer:
         else:
             logger.info("  ✓ Already registered in kb_config.json")
 
+    def _update_metadata_with_provider(self, provider: str):
+        """Update metadata.json with the RAG provider used."""
+        metadata_file = self.kb_dir / "metadata.json"
+        try:
+            if metadata_file.exists():
+                with open(metadata_file, encoding="utf-8") as f:
+                    metadata = json.load(f)
+            else:
+                metadata = {}
+
+            metadata["rag_provider"] = provider
+            metadata["last_updated"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+            with open(metadata_file, "w", encoding="utf-8") as f:
+                json.dump(metadata, indent=2, ensure_ascii=False, fp=f)
+
+            logger.info(f"  ✓ Updated metadata with RAG provider: {provider}")
+        except Exception as e:
+            logger.warning(f"Failed to update metadata with provider: {e}")
+
     def create_directory_structure(self):
         """Create knowledge base directory structure"""
         logger.info(f"Creating directory structure for knowledge base: {self.kb_name}")
@@ -135,6 +131,7 @@ class KnowledgeBaseInitializer:
             "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "description": f"Knowledge base: {self.kb_name}",
             "version": "1.0",
+            "rag_provider": None,  # Will be set during document processing
         }
 
         metadata_file = self.kb_dir / "metadata.json"
@@ -165,11 +162,14 @@ class KnowledgeBaseInitializer:
         return copied_files
 
     async def process_documents(self):
-        """Process documents using RAG-Anything"""
-        logger.info("Processing documents with RAG-Anything...")
+        """Process documents using RAGService with dynamic provider selection"""
+        # Use the provider passed during initialization, or fallback to env var
+        provider = self.rag_provider or os.getenv("RAG_PROVIDER", "raganything")
+        logger.info(f"Processing documents with RAG provider: {provider}")
+
         self.progress_tracker.update(
             ProgressStage.PROCESSING_DOCUMENTS,
-            "Starting to process documents...",
+            f"Starting to process documents with {provider} provider...",
             current=0,
             total=0,
         )
@@ -194,327 +194,71 @@ class KnowledgeBaseInitializer:
             total=len(doc_files),
         )
 
-        # Create RAGAnything configuration
-        config = RAGAnythingConfig(
-            working_dir=str(self.rag_storage_dir),
-            parser="mineru",
-            enable_image_processing=True,
-            enable_table_processing=True,
-            enable_equation_processing=True,
+        # Initialize RAGService with the selected provider
+        rag_service = RAGService(
+            kb_base_dir=str(
+                self.base_dir
+            ),  # Base directory for all KBs (e.g., data/knowledge_bases)
+            provider=provider,
         )
 
-        # Get LLM configuration from env_config
-        llm_cfg = get_llm_config()
-        llm_model = llm_cfg.model
-        api_key = self.api_key or llm_cfg.api_key
-        base_url = self.base_url or llm_cfg.base_url
+        # Convert Path objects to strings for file paths
+        file_paths = [str(doc_file) for doc_file in doc_files]
 
-        # Define LLM model function
-        def llm_model_func(prompt, system_prompt=None, history_messages=[], **kwargs):
-            return openai_complete_if_cache(
-                llm_model,
-                prompt,
-                system_prompt=system_prompt,
-                history_messages=history_messages,
-                api_key=api_key,
-                base_url=base_url,
-                **kwargs,
+        try:
+            # Process all documents using the RAGService
+            success = await rag_service.initialize(
+                kb_name=self.kb_name,
+                file_paths=file_paths,
+                extract_numbered_items=True,  # Enable numbered items extraction
             )
 
-        # Define vision model function for image processing
-        def vision_model_func(
-            prompt,
-            system_prompt=None,
-            history_messages=[],
-            image_data=None,
-            messages=None,
-            **kwargs,
-        ):
-            # If messages format is provided, use it directly
-            if messages:
-                # Remove 'messages' and other message-related params from kwargs to avoid duplicate parameter
-                clean_kwargs = {
-                    k: v
-                    for k, v in kwargs.items()
-                    if k not in ["messages", "prompt", "system_prompt", "history_messages"]
-                }
-                return openai_complete_if_cache(
-                    llm_model,
-                    prompt="",  # Empty prompt when using messages
-                    system_prompt=None,
-                    history_messages=[],
-                    messages=messages,
-                    api_key=api_key,
-                    base_url=base_url,
-                    **clean_kwargs,
+            if success:
+                logger.info("✓ Document processing completed!")
+
+                # Update metadata with the RAG provider used
+                self._update_metadata_with_provider(provider)
+
+                self.progress_tracker.update(
+                    ProgressStage.PROCESSING_DOCUMENTS,
+                    "Documents processed successfully",
+                    current=len(doc_files),
+                    total=len(doc_files),
                 )
-            # Traditional single image format
-            if image_data:
-                # Remove message-related params from kwargs to avoid duplicate parameter
-                clean_kwargs = {
-                    k: v
-                    for k, v in kwargs.items()
-                    if k not in ["messages", "prompt", "system_prompt", "history_messages"]
-                }
-                return openai_complete_if_cache(
-                    llm_model,
-                    prompt="",  # Empty prompt when using messages
-                    system_prompt=None,
-                    history_messages=[],
-                    messages=[
-                        {"role": "system", "content": system_prompt} if system_prompt else None,
-                        (
-                            {
-                                "role": "user",
-                                "content": [
-                                    {"type": "text", "text": prompt},
-                                    {
-                                        "type": "image_url",
-                                        "image_url": {
-                                            "url": f"data:image/jpeg;base64,{image_data}"
-                                        },
-                                    },
-                                ],
-                            }
-                            if image_data
-                            else {"role": "user", "content": prompt}
-                        ),
-                    ],
-                    api_key=api_key,
-                    base_url=base_url,
-                    **clean_kwargs,
+            else:
+                logger.error("Document processing failed")
+                self.progress_tracker.update(
+                    ProgressStage.ERROR,
+                    "Document processing failed",
+                    error="RAG pipeline returned failure",
                 )
-            # Pure text format
-            return llm_model_func(prompt, system_prompt, history_messages, **kwargs)
 
-        # Define embedding function using unified EmbeddingClient
-        # Reset client to pick up latest config (including active provider from UI)
-        from src.services.embedding import reset_embedding_client
-
-        reset_embedding_client()
-
-        embedding_cfg = get_embedding_config()  # Reload config
-        embedding_client = get_embedding_client()  # Get fresh client with new config
-
-        logger.info(
-            f"Using embedding: {embedding_cfg.model} "
-            f"({embedding_cfg.dim}D, {embedding_cfg.binding})"
-        )
-
-        # Create async wrapper compatible with LightRAG's expected signature
-        async def unified_embed_func(texts):
-            """
-            Unified embedding function using EmbeddingClient.
-            Supports multiple providers: OpenAI, Cohere, Jina, Ollama, etc.
-
-            IMPORTANT: Must return numpy.ndarray, not List[List[float]].
-            LightRAG internally calls .size on the embedding result to determine
-            dimensions. If we return a plain Python list, this causes:
-                AttributeError: 'list' object has no attribute 'size'
-            Converting to np.array() provides the .size attribute LightRAG expects.
-            """
-            try:
-                import numpy as np
-
-                embeddings = await embedding_client.embed(texts)
-                # Convert to numpy array - LightRAG requires .size attribute
-                return np.array(embeddings)
-            except Exception as e:
-                logger.error(f"Embedding failed: {e}")
-                raise
-
-        embedding_func = EmbeddingFunc(
-            embedding_dim=embedding_cfg.dim,
-            max_token_size=embedding_cfg.max_tokens,
-            func=unified_embed_func,
-        )
-
-        # Initialize RAGAnything with log forwarding
-        with LightRAGLogContext(scene="knowledge_init"):
-            rag = RAGAnything(
-                config=config,
-                llm_model_func=llm_model_func,
-                vision_model_func=vision_model_func,
-                embedding_func=embedding_func,
-            )
-
-        # Ensure LightRAG is initialized
-        await rag._ensure_lightrag_initialized()
-
-        # Process each document using RAGAnything's process_document_complete
-        for idx, doc_file in enumerate(doc_files, 1):
-            logger.info(f"\nProcessing: {doc_file.name}")
-
-            is_pdf = doc_file.suffix.lower() == ".pdf"
-            file_message = (
-                "Parsing PDF with MinerU (this can take several minutes)..."
-                if is_pdf
-                else "Parsing document & building index..."
-            )
-
+        except asyncio.TimeoutError:
+            error_msg = "Processing timeout (>10 minutes)"
+            logger.error("✗ Timeout processing documents")
+            logger.error("Possible causes: Large files, slow embedding API, network issues")
             self.progress_tracker.update(
-                ProgressStage.PROCESSING_FILE,
-                file_message,
-                current=idx,
-                total=len(doc_files),
-                file_name=doc_file.name,
+                ProgressStage.ERROR,
+                "Timeout processing documents",
+                error=error_msg,
+            )
+        except Exception as e:
+            error_msg = str(e)
+            logger.error(f"✗ Error processing documents: {error_msg}")
+            import traceback
+
+            logger.error(traceback.format_exc())
+            self.progress_tracker.update(
+                ProgressStage.ERROR,
+                "Failed to process documents",
+                error=error_msg,
             )
 
-            # Track document as processing
-            if self.document_tracker:
-                self.document_tracker.track_document(
-                    doc_file,
-                    status=DocumentStatus.PROCESSING,
-                )
-
-            async def _heartbeat():
-                # Keep the timestamp fresh during long MinerU/embedding runs so the UI doesn't look stuck.
-                while True:
-                    await asyncio.sleep(15)
-                    self.progress_tracker.update(
-                        ProgressStage.PROCESSING_FILE,
-                        file_message,
-                        current=idx,
-                        total=len(doc_files),
-                        file_name=doc_file.name,
-                    )
-
-            try:
-                # Use RAGAnything's process_document_complete method
-                # This method handles document parsing, content extraction, and insertion
-                logger.info("  → Starting document processing...")
-                heartbeat_task = asyncio.create_task(_heartbeat())
-                try:
-                    await asyncio.wait_for(
-                        rag.process_document_complete(
-                            file_path=str(doc_file),
-                            output_dir=str(self.content_list_dir),
-                            parse_method="auto",
-                        ),
-                        timeout=600.0,  # 10 minute timeout
-                    )
-                finally:
-                    heartbeat_task.cancel()
-                    try:
-                        await heartbeat_task
-                    except asyncio.CancelledError:
-                        pass
-                logger.info(f"  ✓ Successfully processed: {doc_file.name}")
-
-                # Track document with hash after successful processing
-                if self.document_tracker:
-                    self.document_tracker.track_document(
-                        doc_file,
-                        status=DocumentStatus.INDEXED,
-                    )
-                    logger.info(f"  ✓ Document hash tracked: {doc_file.name}")
-
-                # Content list should be automatically saved in output_dir
-                doc_name = doc_file.stem
-                content_list_file = self.content_list_dir / f"{doc_name}.json"
-                if content_list_file.exists():
-                    logger.info(f"  ✓ Content list saved: {content_list_file.name}")
-
-            except asyncio.TimeoutError:
-                error_msg = "Processing timeout (>10 minutes)"
-                logger.error(f"  ✗ Timeout processing {doc_file.name}")
-                logger.error(
-                    "  Possible causes: Large PDF (MinerU parsing), slow embedding API, network issues"
-                )
-
-                # Track error status
-                if self.document_tracker:
-                    self.document_tracker.track_document(
-                        doc_file,
-                        status=DocumentStatus.ERROR,
-                        error_message=error_msg,
-                    )
-
-                self.progress_tracker.update(
-                    ProgressStage.ERROR,
-                    f"Timeout processing: {doc_file.name}",
-                    current=idx,
-                    total=len(doc_files),
-                    file_name=doc_file.name,
-                    error=error_msg,
-                )
-            except Exception as e:
-                error_msg = str(e)
-                logger.error(f"  ✗ Error processing {doc_file.name}: {error_msg}")
-                import traceback
-
-                logger.error(traceback.format_exc())
-
-                # Track error status
-                if self.document_tracker:
-                    self.document_tracker.track_document(
-                        doc_file,
-                        status=DocumentStatus.ERROR,
-                        error_message=error_msg,
-                    )
-
-                self.progress_tracker.update(
-                    ProgressStage.ERROR,
-                    f"Failed to process file: {doc_file.name}",
-                    current=idx,
-                    total=len(doc_files),
-                    file_name=doc_file.name,
-                    error=error_msg,
-                )
-
-        # Copy extracted images
-        rag_images_dir = self.rag_storage_dir / "images"
-        if rag_images_dir.exists():
-            logger.info(f"\nCopying extracted images to {self.images_dir}")
-            for img_file in rag_images_dir.glob("*"):
-                if img_file.is_file():
-                    dest = self.images_dir / img_file.name
-                    shutil.copy2(img_file, dest)
-            logger.info("  ✓ Copied images")
-
-        logger.info("\n✓ Document processing completed!")
-
-        # Fix structure: flatten nested content_list directories
+        # Fix structure: flatten nested content_list directories (for RAGAnything compatibility)
         await self.fix_structure()
 
         # Display statistics
-        await self.display_statistics(rag)
-
-    def _find_mineru_output_dir(self, doc_dir: Path) -> Path | None:
-        """Find MinerU output directory (auto, hybrid_auto, txt, ocr, etc.)"""
-        # MinerU output patterns in order of preference
-        # hybrid-auto-engine backend creates "hybrid_auto" directory
-        # vlm backends create "vlm" directory
-        patterns = ["hybrid_auto", "auto", "txt", "ocr", "vlm"]
-
-        # Debug: list what's in doc_dir
-        try:
-            doc_dir_contents = list(doc_dir.iterdir())
-            logger.info(
-                f"    _find_mineru_output_dir: {doc_dir.name} contains: {[p.name for p in doc_dir_contents]}"
-            )
-        except Exception as e:
-            logger.error(f"    _find_mineru_output_dir: Failed to list {doc_dir}: {e}")
-
-        for pattern in patterns:
-            output_dir = doc_dir / pattern
-            if output_dir.exists() and output_dir.is_dir():
-                logger.info(f"    Found MinerU output dir (pattern={pattern}): {output_dir}")
-                return output_dir
-
-        # Fallback: find any directory that contains _content_list.json
-        try:
-            for subdir in doc_dir.iterdir():
-                if subdir.is_dir():
-                    content_list_files = list(subdir.glob("*_content_list.json"))
-                    if content_list_files:
-                        logger.info(f"    Found MinerU output dir (fallback): {subdir}")
-                        return subdir
-        except (OSError, StopIteration):
-            pass
-
-        logger.info(f"    No MinerU output dir found in: {doc_dir}")
-        return None
+        await self.display_statistics_generic()
 
     async def fix_structure(self):
         """
@@ -522,33 +266,21 @@ class KnowledgeBaseInitializer:
         Flattens content_list directories and moves images to the correct location.
         """
         logger.info("\nFixing directory structure...")
-        logger.info(f"  content_list_dir: {self.content_list_dir}")
-        logger.info(f"  images_dir: {self.images_dir}")
-
-        # List what's in content_list_dir for debugging
-        content_list_contents = list(self.content_list_dir.glob("*"))
-        logger.info(f"  Content list directory contains: {[p.name for p in content_list_contents]}")
 
         # Find nested content lists
         content_list_moves = []
         for doc_dir in self.content_list_dir.glob("*"):
             if not doc_dir.is_dir():
-                logger.debug(f"  Skipping non-directory: {doc_dir.name}")
                 continue
 
-            logger.info(f"  Processing doc_dir: {doc_dir.name}")
-            output_dir = self._find_mineru_output_dir(doc_dir)
-            if not output_dir:
-                logger.warning(f"  No MinerU output dir found for: {doc_dir.name}")
+            auto_dir = doc_dir / "auto"
+            if not auto_dir.exists():
                 continue
-
-            logger.info(f"  Found MinerU output: {output_dir.name}")
 
             # Find the _content_list.json file
-            for json_file in output_dir.glob("*_content_list.json"):
+            for json_file in auto_dir.glob("*_content_list.json"):
                 target_file = self.content_list_dir / f"{doc_dir.name}.json"
                 content_list_moves.append((json_file, target_file))
-                logger.info(f"  Will move: {json_file.name} -> {target_file.name}")
 
         # Move content list files
         for source, target in content_list_moves:
@@ -559,35 +291,21 @@ class KnowledgeBaseInitializer:
                 logger.error(f"  ✗ Error moving {source.name}: {e!s}")
 
         # Find and move nested images
-        logger.info("  Scanning for nested images...")
-        doc_dirs_found = list(self.content_list_dir.glob("*"))
-        logger.info(f"  Found {len(doc_dirs_found)} items in content_list_dir for image scan")
-
-        for doc_dir in doc_dirs_found:
+        for doc_dir in self.content_list_dir.glob("*"):
             if not doc_dir.is_dir():
-                logger.debug(f"  Skipping non-directory for images: {doc_dir.name}")
                 continue
 
-            logger.info(f"  Checking doc_dir for images: {doc_dir.name}")
-            output_dir = self._find_mineru_output_dir(doc_dir)
-            if not output_dir:
-                logger.info(f"    No MinerU output dir found in {doc_dir.name}")
+            auto_dir = doc_dir / "auto"
+            if not auto_dir.exists():
                 continue
 
-            logger.info(f"    Found output_dir: {output_dir}")
-            images_dir = output_dir / "images"
-            logger.info(f"    Looking for images at: {images_dir}")
-            logger.info(f"    images_dir.exists(): {images_dir.exists()}")
-
+            images_dir = auto_dir / "images"
             if images_dir.exists() and images_dir.is_dir():
-                image_files = list(images_dir.glob("*"))
-                logger.info(f"    Found {len(image_files)} files in images_dir")
-
                 image_count = 0
                 # Ensure target directory exists
                 self.images_dir.mkdir(parents=True, exist_ok=True)
 
-                for img_file in image_files:
+                for img_file in images_dir.glob("*"):
                     if img_file.is_file() and img_file.exists():
                         target_img = self.images_dir / img_file.name
                         if not target_img.exists():
@@ -604,17 +322,9 @@ class KnowledgeBaseInitializer:
                                 )
                             except Exception as e:
                                 logger.error(f"  ✗ Error moving image {img_file.name}: {e!s}")
-                        else:
-                            logger.debug(f"    Image already exists: {img_file.name}")
 
                 if image_count > 0:
-                    logger.info(
-                        f"  ✓ Moved {image_count} images from {doc_dir.name}/{output_dir.name}/images/"
-                    )
-                else:
-                    logger.info(f"    No new images to move from {doc_dir.name}")
-            else:
-                logger.info(f"    No images directory found at {images_dir}")
+                    logger.info(f"  ✓ Moved {image_count} images from {doc_dir.name}/auto/images/")
 
         # Clean up nested directories
         for doc_dir in self.content_list_dir.glob("*"):
@@ -713,8 +423,12 @@ class KnowledgeBaseInitializer:
                 ProgressStage.ERROR, "Numbered items extraction failed", error=error_msg
             )
 
-    async def display_statistics(self, rag: RAGAnything):
-        """Display knowledge base statistics"""
+    async def display_statistics(self, rag):
+        """Display knowledge base statistics (legacy - for RAGAnything)"""
+        await self.display_statistics_generic()
+
+    async def display_statistics_generic(self):
+        """Display knowledge base statistics (provider-agnostic)"""
         logger.info("\n" + "=" * 50)
         logger.info("Knowledge Base Statistics")
         logger.info("=" * 50)
@@ -728,32 +442,55 @@ class KnowledgeBaseInitializer:
         logger.info(f"Extracted images: {len(image_files)}")
         logger.info(f"Content lists: {len(content_files)}")
 
-        # RAG storage info
-        if hasattr(rag, "lightrag") and rag.lightrag:
+        # Read provider from metadata instead of env var
+        provider = self.rag_provider or os.getenv("RAG_PROVIDER", "raganything")
+
+        # Try to read from metadata.json if available
+        metadata_file = self.kb_dir / "metadata.json"
+        if metadata_file.exists():
             try:
-                # Try to get entity and relation counts
-                entities_file = self.rag_storage_dir / "kv_store_full_entities.json"
-                relations_file = self.rag_storage_dir / "kv_store_full_relations.json"
-                chunks_file = self.rag_storage_dir / "kv_store_text_chunks.json"
+                with open(metadata_file, encoding="utf-8") as f:
+                    metadata = json.load(f)
+                    if "rag_provider" in metadata and metadata["rag_provider"]:
+                        provider = metadata["rag_provider"]
+            except Exception:
+                pass
 
-                if entities_file.exists():
-                    with open(entities_file, encoding="utf-8") as f:
-                        entities = json.load(f)
-                        logger.info(f"Knowledge entities: {len(entities)}")
+        # RAGAnything/LightRAG format
+        entities_file = self.rag_storage_dir / "kv_store_full_entities.json"
+        relations_file = self.rag_storage_dir / "kv_store_full_relations.json"
+        chunks_file = self.rag_storage_dir / "kv_store_text_chunks.json"
 
-                if relations_file.exists():
-                    with open(relations_file, encoding="utf-8") as f:
-                        relations = json.load(f)
-                        logger.info(f"Knowledge relations: {len(relations)}")
+        # LlamaIndex format
+        vector_store_dir = self.base_dir / self.kb_name / "vector_store"
 
-                if chunks_file.exists():
-                    with open(chunks_file, encoding="utf-8") as f:
-                        chunks = json.load(f)
-                        logger.info(f"Text chunks: {len(chunks)}")
+        try:
+            if entities_file.exists():
+                with open(entities_file, encoding="utf-8") as f:
+                    entities = json.load(f)
+                    logger.info(f"Knowledge entities: {len(entities)}")
 
-            except Exception as e:
-                logger.warning(f"Could not retrieve statistics: {e!s}")
+            if relations_file.exists():
+                with open(relations_file, encoding="utf-8") as f:
+                    relations = json.load(f)
+                    logger.info(f"Knowledge relations: {len(relations)}")
 
+            if chunks_file.exists():
+                with open(chunks_file, encoding="utf-8") as f:
+                    chunks = json.load(f)
+                    logger.info(f"Text chunks: {len(chunks)}")
+
+            if vector_store_dir.exists():
+                metadata_file = vector_store_dir / "metadata.json"
+                if metadata_file.exists():
+                    with open(metadata_file, encoding="utf-8") as f:
+                        metadata = json.load(f)
+                        logger.info(f"Vector embeddings: {metadata.get('num_embeddings', 0)}")
+                        logger.info(f"Embedding dimension: {metadata.get('dimension', 0)}")
+        except Exception as e:
+            logger.warning(f"Could not retrieve statistics: {e!s}")
+
+        logger.info(f"Provider used: {provider}")
         logger.info("=" * 50)
 
 

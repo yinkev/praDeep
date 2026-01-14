@@ -7,6 +7,7 @@ Handles knowledge base CRUD operations, file uploads, and initialization.
 
 import asyncio
 from datetime import datetime
+import os
 from pathlib import Path
 import shutil
 import sys
@@ -27,16 +28,11 @@ from pydantic import BaseModel
 from src.api.utils.progress_broadcaster import ProgressBroadcaster
 from src.api.utils.task_id_manager import TaskIDManager
 from src.knowledge.add_documents import DocumentAdder
-from src.knowledge.document_tracker import DocumentTracker
 from src.knowledge.initializer import KnowledgeBaseInitializer
 from src.knowledge.manager import KnowledgeBaseManager
 from src.knowledge.progress_tracker import ProgressStage, ProgressTracker
-from src.knowledge.version_manager import VersionManager, VersionType
-from src.knowledge.prerequisite_graph import (
-    build_concept_hierarchy_graph,
-    extract_subgraph,
-    match_focus_nodes,
-)
+from src.utils.document_validator import DocumentValidator
+from src.utils.error_utils import format_exception_message
 
 _project_root = Path(__file__).parent.parent.parent.parent
 sys.path.insert(0, str(_project_root))
@@ -51,6 +47,21 @@ log_dir = config.get("paths", {}).get("user_log_dir") or config.get("logging", {
 logger = get_logger("Knowledge", level="INFO", log_dir=log_dir)
 
 router = APIRouter()
+
+# Constants for byte conversions
+BYTES_PER_GB = 1024**3
+BYTES_PER_MB = 1024**2
+
+
+def format_bytes_human_readable(size_bytes: int) -> str:
+    """Format bytes into human-readable string (GB, MB, or bytes)."""
+    if size_bytes >= BYTES_PER_GB:
+        return f"{size_bytes / BYTES_PER_GB:.1f} GB"
+    elif size_bytes >= BYTES_PER_MB:
+        return f"{size_bytes / BYTES_PER_MB:.1f} MB"
+    else:
+        return f"{size_bytes} bytes"
+
 
 _kb_base_dir = _project_root / "data" / "knowledge_bases"
 
@@ -70,31 +81,6 @@ class KnowledgeBaseInfo(BaseModel):
     name: str
     is_default: bool
     statistics: dict
-
-
-class RefreshOptions(BaseModel):
-    full: bool = False
-    no_backup: bool = False
-    skip_extract: bool = False
-    batch_size: int = 20
-
-
-class PrerequisiteGraphNode(BaseModel):
-    id: str
-    label: str
-
-
-class PrerequisiteGraphEdge(BaseModel):
-    source: str
-    target: str
-
-
-class PrerequisiteGraphResponse(BaseModel):
-    kb_name: str
-    query: str
-    focus_node_ids: list[str]
-    nodes: list[PrerequisiteGraphNode]
-    edges: list[PrerequisiteGraphEdge]
 
 
 async def run_initialization_task(initializer: KnowledgeBaseInitializer):
@@ -135,7 +121,12 @@ async def run_initialization_task(initializer: KnowledgeBaseInitializer):
 
 
 async def run_upload_processing_task(
-    kb_name: str, base_dir: str, api_key: str, base_url: str, uploaded_file_paths: list[str]
+    kb_name: str,
+    base_dir: str,
+    api_key: str,
+    base_url: str,
+    uploaded_file_paths: list[str],
+    rag_provider: str = None,
 ):
     """Background task for processing uploaded files"""
     task_manager = TaskIDManager.get_instance()
@@ -160,6 +151,7 @@ async def run_upload_processing_task(
             api_key=api_key,
             base_url=base_url,
             progress_tracker=progress_tracker,
+            rag_provider=rag_provider,
         )
 
         new_files = [Path(path) for path in uploaded_file_paths]
@@ -196,129 +188,6 @@ async def run_upload_processing_task(
         )
 
 
-async def run_refresh_task(
-    kb_name: str,
-    base_dir: str,
-    api_key: str,
-    base_url: str,
-    options: RefreshOptions,
-):
-    """Background task for refreshing/rebuilding a knowledge base"""
-    task_manager = TaskIDManager.get_instance()
-    task_id = task_manager.generate_task_id("kb_refresh", kb_name)
-
-    kb_path = Path(base_dir) / kb_name
-    progress_tracker = ProgressTracker(kb_name, Path(base_dir))
-    progress_tracker.task_id = task_id
-
-    try:
-        logger.info(f"[{task_id}] Starting refresh for KB '{kb_name}' (full={options.full})")
-
-        # Step 1: Clean RAG storage (with optional backup)
-        rag_storage_dir = kb_path / "rag_storage"
-        if rag_storage_dir.exists():
-            if not options.no_backup:
-                # Create backup
-                from datetime import datetime as dt
-
-                backup_name = f"rag_storage_backup_{dt.now().strftime('%Y%m%d_%H%M%S')}"
-                backup_dir = kb_path / backup_name
-                logger.info(f"[{task_id}] Creating backup: {backup_name}")
-                progress_tracker.update(
-                    ProgressStage.INITIALIZING,
-                    "Creating backup of RAG storage...",
-                    current=0,
-                    total=0,
-                )
-                shutil.copytree(rag_storage_dir, backup_dir)
-                logger.info(f"[{task_id}] Backup created at {backup_dir}")
-
-            # Remove existing RAG storage
-            logger.info(f"[{task_id}] Removing existing RAG storage")
-            progress_tracker.update(
-                ProgressStage.INITIALIZING,
-                "Cleaning RAG storage...",
-                current=0,
-                total=0,
-            )
-            shutil.rmtree(rag_storage_dir)
-            rag_storage_dir.mkdir(parents=True, exist_ok=True)
-
-        # Step 2: If full refresh, also clean content_list and images
-        if options.full:
-            logger.info(f"[{task_id}] Full refresh: cleaning content_list and images")
-            progress_tracker.update(
-                ProgressStage.INITIALIZING,
-                "Full refresh: cleaning content_list and images...",
-                current=0,
-                total=0,
-            )
-
-            content_list_dir = kb_path / "content_list"
-            if content_list_dir.exists():
-                shutil.rmtree(content_list_dir)
-                content_list_dir.mkdir(parents=True, exist_ok=True)
-
-            images_dir = kb_path / "images"
-            if images_dir.exists():
-                shutil.rmtree(images_dir)
-                images_dir.mkdir(parents=True, exist_ok=True)
-
-            # Also remove numbered_items.json if it exists
-            numbered_items_file = kb_path / "numbered_items.json"
-            if numbered_items_file.exists():
-                numbered_items_file.unlink()
-
-        # Step 3: Process documents using KnowledgeBaseInitializer
-        logger.info(f"[{task_id}] Starting document processing")
-        progress_tracker.update(
-            ProgressStage.PROCESSING_DOCUMENTS,
-            "Starting document processing...",
-            current=0,
-            total=0,
-        )
-
-        initializer = KnowledgeBaseInitializer(
-            kb_name=kb_name,
-            base_dir=base_dir,
-            api_key=api_key,
-            base_url=base_url,
-            progress_tracker=progress_tracker,
-        )
-
-        await initializer.process_documents()
-
-        # Step 4: Extract numbered items (unless skip_extract is True)
-        if not options.skip_extract:
-            logger.info(f"[{task_id}] Extracting numbered items")
-            initializer.extract_numbered_items(batch_size=options.batch_size)
-        else:
-            logger.info(f"[{task_id}] Skipping numbered items extraction")
-
-        progress_tracker.update(
-            ProgressStage.COMPLETED,
-            "Knowledge base refresh complete!",
-            current=1,
-            total=1,
-        )
-
-        logger.success(f"[{task_id}] KB '{kb_name}' refresh completed")
-        task_manager.update_task_status(task_id, "completed")
-
-    except Exception as e:
-        error_msg = str(e)
-        logger.error(f"[{task_id}] KB '{kb_name}' refresh failed: {error_msg}")
-        logger.debug(traceback.format_exc())
-
-        task_manager.update_task_status(task_id, "error", error=error_msg)
-
-        progress_tracker.update(
-            ProgressStage.ERROR,
-            f"Refresh failed: {error_msg}",
-            error=error_msg,
-        )
-
-
 @router.get("/health")
 async def health_check():
     """Health check endpoint"""
@@ -336,6 +205,19 @@ async def health_check():
         }
     except Exception as e:
         return {"status": "error", "error": str(e), "traceback": traceback.format_exc()}
+
+
+@router.get("/rag-providers")
+async def get_rag_providers():
+    """Get list of available RAG providers."""
+    try:
+        from src.services.rag.service import RAGService
+
+        providers = RAGService.list_providers()
+        return {"providers": providers}
+    except Exception as e:
+        logger.error(f"Error getting RAG providers: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/list", response_model=list[KnowledgeBaseInfo])
@@ -408,54 +290,6 @@ async def list_knowledge_bases():
         raise HTTPException(status_code=500, detail=f"Failed to list knowledge bases: {e!s}")
 
 
-@router.get("/prerequisite-graph", response_model=PrerequisiteGraphResponse)
-async def get_prerequisite_graph(
-    kb_name: str,
-    query: str = "",
-    max_nodes: int = 120,
-    ancestor_depth: int = 3,
-    descendant_depth: int = 2,
-):
-    """
-    Build and return a prerequisite-style concept graph from extracted KB content.
-
-    Graph heuristic:
-    - Treat `content_list/*.json` outline levels (`text_level`) as concepts.
-    - Add edges from parent heading -> child heading (prerequisite -> dependent).
-    """
-    manager = get_kb_manager()
-    try:
-        kb_dir = manager.get_knowledge_base_path(kb_name)
-    except Exception as e:
-        raise HTTPException(status_code=404, detail=str(e))
-
-    content_list_dir = kb_dir / "content_list"
-    all_nodes, all_edges = build_concept_hierarchy_graph(content_list_dir)
-
-    focus_node_ids = match_focus_nodes(all_nodes, query)
-    if focus_node_ids:
-        nodes, edges = extract_subgraph(
-            all_nodes,
-            all_edges,
-            focus_node_ids,
-            ancestor_depth=max(0, ancestor_depth),
-            descendant_depth=max(0, descendant_depth),
-            max_nodes=max(10, max_nodes),
-        )
-    else:
-        nodes = sorted(all_nodes, key=lambda n: (n.label.lower(), n.node_id))[: max(10, max_nodes)]
-        selected_ids = {n.node_id for n in nodes}
-        edges = [e for e in all_edges if e.source in selected_ids and e.target in selected_ids]
-
-    return PrerequisiteGraphResponse(
-        kb_name=kb_name,
-        query=query,
-        focus_node_ids=focus_node_ids,
-        nodes=[PrerequisiteGraphNode(id=n.node_id, label=n.label) for n in nodes],
-        edges=[PrerequisiteGraphEdge(source=e.source, target=e.target) for e in edges],
-    )
-
-
 @router.get("/{kb_name}")
 async def get_knowledge_base_details(kb_name: str):
     """Get detailed info for a specific KB."""
@@ -484,118 +318,12 @@ async def delete_knowledge_base(kb_name: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/{kb_name}/refresh")
-async def refresh_knowledge_base(
-    kb_name: str,
-    background_tasks: BackgroundTasks,
-    options: RefreshOptions = None,
-):
-    """Refresh/rebuild a knowledge base by reprocessing all documents.
-
-    This endpoint triggers a background task that clears the RAG storage and
-    reprocesses all documents in the knowledge base. Progress can be tracked
-    via the WebSocket endpoint at `/api/v1/knowledge/{kb_name}/progress/ws`.
-
-    Args:
-        kb_name: Name of the knowledge base to refresh.
-        options: Refresh options (all optional):
-            - full (bool): If True, performs a full refresh that also cleans
-              content_list, images, and numbered_items.json. Default: False.
-            - no_backup (bool): If True, skips creating a backup of RAG storage
-              before cleaning. Default: False (backup is created).
-            - skip_extract (bool): If True, skips the numbered items extraction
-              step after document processing. Default: False.
-            - batch_size (int): Batch size for numbered items extraction.
-              Default: 20.
-
-    Returns:
-        dict: Response containing:
-            - message (str): Status message indicating refresh has started.
-            - name (str): Name of the knowledge base being refreshed.
-            - options (dict): The options used for this refresh operation.
-
-    Raises:
-        HTTPException 404: If the knowledge base does not exist.
-        HTTPException 500: If there's an error starting the refresh task.
-
-    Example:
-        ```python
-        import requests
-
-        # Basic refresh (keeps backup, processes all)
-        response = requests.post(
-            "http://localhost:8783/api/v1/knowledge/my_kb/refresh"
-        )
-
-        # Full refresh with custom options
-        response = requests.post(
-            "http://localhost:8783/api/v1/knowledge/my_kb/refresh",
-            json={
-                "full": True,
-                "no_backup": False,
-                "skip_extract": False,
-                "batch_size": 50
-            }
-        )
-        ```
-    """
-    try:
-        manager = get_kb_manager()
-        kb_path = manager.get_knowledge_base_path(kb_name)
-
-        # Verify KB exists
-        if not kb_path.exists():
-            raise HTTPException(status_code=404, detail=f"Knowledge base '{kb_name}' not found")
-
-        # Get LLM config
-        try:
-            llm_config = get_llm_config()
-            api_key = llm_config.api_key
-            base_url = llm_config.base_url
-        except ValueError as e:
-            raise HTTPException(status_code=500, detail=f"LLM config error: {e!s}")
-
-        # Use default options if none provided
-        if options is None:
-            options = RefreshOptions()
-
-        logger.info(
-            f"Starting refresh for KB '{kb_name}' (full={options.full}, no_backup={options.no_backup})"
-        )
-
-        background_tasks.add_task(
-            run_refresh_task,
-            kb_name=kb_name,
-            base_dir=str(_kb_base_dir),
-            api_key=api_key,
-            base_url=base_url,
-            options=options,
-        )
-
-        return {
-            "message": f"Refresh started for knowledge base '{kb_name}'. Processing in background.",
-            "name": kb_name,
-            "options": {
-                "full": options.full,
-                "no_backup": options.no_backup,
-                "skip_extract": options.skip_extract,
-                "batch_size": options.batch_size,
-            },
-        }
-
-    except HTTPException:
-        raise
-    except ValueError:
-        raise HTTPException(status_code=404, detail=f"Knowledge base '{kb_name}' not found")
-    except Exception as e:
-        logger.error(f"Failed to start refresh for KB '{kb_name}': {e}")
-        logger.debug(traceback.format_exc())
-        raise HTTPException(status_code=500, detail=str(e))
-
-
 @router.post("/{kb_name}/upload")
 async def upload_files(
-    kb_name: str, background_tasks: BackgroundTasks, files: list[UploadFile] = File(...)
+    kb_name: str,
+    background_tasks: BackgroundTasks,
+    files: list[UploadFile] = File(...),
+    rag_provider: str = Form(None),
 ):
     """Upload files to a knowledge base and process them in background."""
     try:
@@ -613,12 +341,50 @@ async def upload_files(
 
         uploaded_files = []
         uploaded_file_paths = []
+
+        # 1. Save files and validate size during streaming
         for file in files:
-            file_path = raw_dir / file.filename
-            with open(file_path, "wb") as buffer:
-                shutil.copyfileobj(file.file, buffer)
-            uploaded_files.append(file.filename)
-            uploaded_file_paths.append(str(file_path))
+            file_path = None
+            try:
+                # Sanitize filename first (without size validation)
+                sanitized_filename = DocumentValidator.validate_upload_safety(file.filename, None)
+                file.filename = sanitized_filename
+
+                # Save file to disk with size checking during streaming
+                file_path = raw_dir / file.filename
+                max_size = DocumentValidator.MAX_FILE_SIZE
+                written_bytes = 0
+                with open(file_path, "wb") as buffer:
+                    for chunk in iter(lambda: file.file.read(8192), b""):
+                        written_bytes += len(chunk)
+                        if written_bytes > max_size:
+                            # Format size in human-readable format
+                            size_str = format_bytes_human_readable(max_size)
+                            raise HTTPException(
+                                status_code=400,
+                                detail=f"File '{file.filename}' exceeds maximum size limit of {size_str}",
+                            )
+                        buffer.write(chunk)
+
+                # Validate with actual size (additional checks)
+                DocumentValidator.validate_upload_safety(file.filename, written_bytes)
+
+                uploaded_files.append(file.filename)
+                uploaded_file_paths.append(str(file_path))
+
+            except Exception as e:
+                # Clean up partially saved file
+                if file_path and file_path.exists():
+                    try:
+                        os.unlink(file_path)
+                    except OSError:
+                        pass
+
+                error_message = (
+                    f"Validation failed for file '{file.filename}': {format_exception_message(e)}"
+                )
+                logger.error(error_message, exc_info=True)
+                raise HTTPException(status_code=400, detail=error_message) from e
 
         logger.info(f"Uploading {len(uploaded_files)} files to KB '{kb_name}'")
 
@@ -629,6 +395,7 @@ async def upload_files(
             api_key=api_key,
             base_url=base_url,
             uploaded_file_paths=uploaded_file_paths,
+            rag_provider=rag_provider,
         )
 
         return {
@@ -638,12 +405,17 @@ async def upload_files(
     except ValueError:
         raise HTTPException(status_code=404, detail=f"Knowledge base '{kb_name}' not found")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        # Unexpected failure (Server error)
+        formatted_error = format_exception_message(e)
+        raise HTTPException(status_code=500, detail=formatted_error) from e
 
 
 @router.post("/create")
 async def create_knowledge_base(
-    background_tasks: BackgroundTasks, name: str = Form(...), files: list[UploadFile] = File(...)
+    background_tasks: BackgroundTasks,
+    name: str = Form(...),
+    files: list[UploadFile] = File(...),
+    rag_provider: str = Form("raganything"),
 ):
     """Create a new knowledge base and initialize it with files."""
     try:
@@ -672,6 +444,7 @@ async def create_knowledge_base(
             api_key=api_key,
             base_url=base_url,
             progress_tracker=progress_tracker,
+            rag_provider=rag_provider,
         )
 
         initializer.create_directory_structure()
@@ -820,459 +593,3 @@ async def websocket_progress(websocket: WebSocket, kb_name: str):
             await websocket.close()
         except:
             pass
-
-
-@router.get("/{kb_name}/documents")
-async def get_document_status(kb_name: str):
-    """
-    Get document tracking status for a knowledge base.
-
-    Returns information about all tracked documents including:
-    - Document hashes for change detection
-    - Processing status (new, indexed, modified, error)
-    - File sizes and timestamps
-
-    This endpoint supports the incremental indexing feature by exposing
-    which documents have been indexed and their content hashes.
-    """
-    try:
-        manager = get_kb_manager()
-        kb_path = manager.get_knowledge_base_path(kb_name)
-
-        tracker = DocumentTracker(kb_path)
-        documents = tracker.get_all_tracked_documents()
-
-        # Convert to serializable format
-        result = {name: info.to_dict() for name, info in documents.items()}
-
-        return {
-            "kb_name": kb_name,
-            "document_count": len(result),
-            "documents": result,
-        }
-    except ValueError:
-        raise HTTPException(status_code=404, detail=f"Knowledge base '{kb_name}' not found")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.get("/{kb_name}/documents/changes")
-async def get_document_changes(kb_name: str):
-    """
-    Detect document changes for incremental indexing.
-
-    Returns a summary of what incremental processing would do:
-    - new_files: Files added but not yet indexed
-    - modified_files: Files with changed content (hash mismatch)
-    - deleted_files: Files removed from disk but still in index
-    - unchanged_files: Files with matching content hashes
-
-    This endpoint allows users to preview what documents would be
-    processed during an incremental update without actually running it.
-    """
-    try:
-        manager = get_kb_manager()
-        kb_path = manager.get_knowledge_base_path(kb_name)
-
-        tracker = DocumentTracker(kb_path)
-        summary = tracker.get_incremental_summary()
-
-        return {
-            "kb_name": kb_name,
-            **summary,
-        }
-    except ValueError:
-        raise HTTPException(status_code=404, detail=f"Knowledge base '{kb_name}' not found")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-# =============================================================================
-# Version Management Endpoints
-# =============================================================================
-
-
-class CreateVersionRequest(BaseModel):
-    """Request body for creating a version snapshot"""
-    description: str = ""
-    created_by: str = "user"
-
-
-class RollbackRequest(BaseModel):
-    """Request body for rollback operation"""
-    backup_current: bool = True
-
-
-class CompareVersionsRequest(BaseModel):
-    """Request body for version comparison"""
-    version_1: str
-    version_2: str
-
-
-@router.post("/{kb_name}/versions")
-async def create_version_snapshot(kb_name: str, request: CreateVersionRequest = None):
-    """
-    Create a new version snapshot of the knowledge base.
-
-    This creates a complete snapshot of the current KB state including:
-    - RAG storage (entities, relations, chunks)
-    - Document tracking metadata
-    - KB metadata
-
-    Args:
-        kb_name: Name of the knowledge base
-        request: Optional request body with description and created_by
-
-    Returns:
-        dict containing version info for the created snapshot
-
-    Raises:
-        HTTPException 404: If the knowledge base does not exist
-        HTTPException 500: If snapshot creation fails
-    """
-    try:
-        manager = get_kb_manager()
-        kb_path = manager.get_knowledge_base_path(kb_name)
-
-        version_manager = VersionManager(kb_path)
-
-        description = request.description if request else ""
-        created_by = request.created_by if request else "user"
-
-        logger.info(f"Creating version snapshot for KB '{kb_name}'")
-
-        version_info = version_manager.create_snapshot(
-            description=description,
-            created_by=created_by,
-            version_type=VersionType.MANUAL,
-        )
-
-        return {
-            "message": "Version snapshot created successfully",
-            "version": version_info.to_dict(),
-        }
-    except ValueError:
-        raise HTTPException(status_code=404, detail=f"Knowledge base '{kb_name}' not found")
-    except Exception as e:
-        logger.error(f"Failed to create version snapshot for KB '{kb_name}': {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.get("/{kb_name}/versions")
-async def list_versions(kb_name: str):
-    """
-    List all available versions for a knowledge base.
-
-    Returns a list of all snapshots, sorted by creation time (newest first).
-
-    Args:
-        kb_name: Name of the knowledge base
-
-    Returns:
-        dict containing list of version info objects
-
-    Raises:
-        HTTPException 404: If the knowledge base does not exist
-    """
-    try:
-        manager = get_kb_manager()
-        kb_path = manager.get_knowledge_base_path(kb_name)
-
-        version_manager = VersionManager(kb_path)
-        versions = version_manager.list_versions()
-
-        return {
-            "kb_name": kb_name,
-            "version_count": len(versions),
-            "versions": [v.to_dict() for v in versions],
-        }
-    except ValueError:
-        raise HTTPException(status_code=404, detail=f"Knowledge base '{kb_name}' not found")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.get("/{kb_name}/versions/{version_id}")
-async def get_version_details(kb_name: str, version_id: str):
-    """
-    Get detailed information for a specific version.
-
-    Args:
-        kb_name: Name of the knowledge base
-        version_id: ID of the version to retrieve
-
-    Returns:
-        dict containing version info
-
-    Raises:
-        HTTPException 404: If KB or version not found
-    """
-    try:
-        manager = get_kb_manager()
-        kb_path = manager.get_knowledge_base_path(kb_name)
-
-        version_manager = VersionManager(kb_path)
-        version_info = version_manager.get_version(version_id)
-
-        if version_info is None:
-            raise HTTPException(status_code=404, detail=f"Version '{version_id}' not found")
-
-        return {
-            "kb_name": kb_name,
-            "version": version_info.to_dict(),
-        }
-    except ValueError:
-        raise HTTPException(status_code=404, detail=f"Knowledge base '{kb_name}' not found")
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-async def run_rollback_task(
-    kb_name: str,
-    base_dir: str,
-    version_id: str,
-    backup_current: bool,
-):
-    """Background task for rolling back to a previous version"""
-    task_manager = TaskIDManager.get_instance()
-    task_id = task_manager.generate_task_id("kb_rollback", f"{kb_name}_{version_id}")
-
-    kb_path = Path(base_dir) / kb_name
-    progress_tracker = ProgressTracker(kb_name, Path(base_dir))
-    progress_tracker.task_id = task_id
-
-    try:
-        logger.info(f"[{task_id}] Starting rollback for KB '{kb_name}' to version '{version_id}'")
-
-        progress_tracker.update(
-            ProgressStage.INITIALIZING,
-            f"Preparing rollback to version {version_id}...",
-            current=0,
-            total=3,
-        )
-
-        version_manager = VersionManager(kb_path)
-
-        if backup_current:
-            progress_tracker.update(
-                ProgressStage.INITIALIZING,
-                "Creating backup of current state...",
-                current=1,
-                total=3,
-            )
-
-        progress_tracker.update(
-            ProgressStage.PROCESSING_DOCUMENTS,
-            "Restoring version data...",
-            current=2,
-            total=3,
-        )
-
-        success = version_manager.rollback_to_version(
-            version_id=version_id,
-            backup_current=backup_current,
-        )
-
-        if success:
-            progress_tracker.update(
-                ProgressStage.COMPLETED,
-                f"Rollback to version {version_id} completed!",
-                current=3,
-                total=3,
-            )
-            logger.success(f"[{task_id}] KB '{kb_name}' rolled back to version '{version_id}'")
-            task_manager.update_task_status(task_id, "completed")
-        else:
-            error_msg = f"Rollback failed for version {version_id}"
-            progress_tracker.update(
-                ProgressStage.ERROR,
-                error_msg,
-                error=error_msg,
-            )
-            task_manager.update_task_status(task_id, "error", error=error_msg)
-
-    except Exception as e:
-        error_msg = f"Rollback failed: {e}"
-        logger.error(f"[{task_id}] {error_msg}")
-
-        task_manager.update_task_status(task_id, "error", error=error_msg)
-
-        progress_tracker.update(
-            ProgressStage.ERROR,
-            error_msg,
-            error=error_msg,
-        )
-
-
-@router.post("/{kb_name}/versions/{version_id}/rollback")
-async def rollback_to_version(
-    kb_name: str,
-    version_id: str,
-    background_tasks: BackgroundTasks,
-    request: RollbackRequest = None,
-):
-    """
-    Rollback knowledge base to a previous version.
-
-    This restores the KB to the state captured in the specified version snapshot.
-    By default, creates a backup of the current state before rollback.
-
-    Args:
-        kb_name: Name of the knowledge base
-        version_id: ID of the version to rollback to
-        request: Optional request body with backup_current flag
-
-    Returns:
-        dict with rollback status message
-
-    Raises:
-        HTTPException 404: If KB or version not found
-        HTTPException 500: If rollback fails to start
-    """
-    try:
-        manager = get_kb_manager()
-        kb_path = manager.get_knowledge_base_path(kb_name)
-
-        # Verify version exists
-        version_manager = VersionManager(kb_path)
-        version_info = version_manager.get_version(version_id)
-
-        if version_info is None:
-            raise HTTPException(status_code=404, detail=f"Version '{version_id}' not found")
-
-        backup_current = request.backup_current if request else True
-
-        logger.info(
-            f"Starting rollback for KB '{kb_name}' to version '{version_id}' (backup={backup_current})"
-        )
-
-        background_tasks.add_task(
-            run_rollback_task,
-            kb_name=kb_name,
-            base_dir=str(_kb_base_dir),
-            version_id=version_id,
-            backup_current=backup_current,
-        )
-
-        return {
-            "message": f"Rollback to version '{version_id}' started. Processing in background.",
-            "kb_name": kb_name,
-            "version_id": version_id,
-            "backup_current": backup_current,
-        }
-    except ValueError:
-        raise HTTPException(status_code=404, detail=f"Knowledge base '{kb_name}' not found")
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Failed to start rollback for KB '{kb_name}': {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.post("/{kb_name}/versions/compare")
-async def compare_versions(kb_name: str, request: CompareVersionsRequest):
-    """
-    Compare two versions and show document changes.
-
-    Returns the differences between two version snapshots including:
-    - Documents added in version 2
-    - Documents deleted in version 2
-    - Documents modified between versions
-    - Documents unchanged
-
-    Args:
-        kb_name: Name of the knowledge base
-        request: Request body with version_1 and version_2 IDs
-
-    Returns:
-        dict with comparison results
-
-    Raises:
-        HTTPException 404: If KB or versions not found
-    """
-    try:
-        manager = get_kb_manager()
-        kb_path = manager.get_knowledge_base_path(kb_name)
-
-        version_manager = VersionManager(kb_path)
-
-        # Verify both versions exist
-        v1_info = version_manager.get_version(request.version_1)
-        v2_info = version_manager.get_version(request.version_2)
-
-        if v1_info is None:
-            raise HTTPException(status_code=404, detail=f"Version '{request.version_1}' not found")
-        if v2_info is None:
-            raise HTTPException(status_code=404, detail=f"Version '{request.version_2}' not found")
-
-        comparison = version_manager.compare_versions(
-            version_id_1=request.version_1,
-            version_id_2=request.version_2,
-        )
-
-        if comparison is None:
-            raise HTTPException(status_code=500, detail="Failed to compare versions")
-
-        return {
-            "kb_name": kb_name,
-            "comparison": comparison.to_dict(),
-            "version_1_info": v1_info.to_dict(),
-            "version_2_info": v2_info.to_dict(),
-        }
-    except ValueError:
-        raise HTTPException(status_code=404, detail=f"Knowledge base '{kb_name}' not found")
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.delete("/{kb_name}/versions/{version_id}")
-async def delete_version(kb_name: str, version_id: str):
-    """
-    Delete a version snapshot.
-
-    Permanently removes the specified version snapshot from the knowledge base.
-
-    Args:
-        kb_name: Name of the knowledge base
-        version_id: ID of the version to delete
-
-    Returns:
-        dict with deletion status
-
-    Raises:
-        HTTPException 404: If KB or version not found
-        HTTPException 500: If deletion fails
-    """
-    try:
-        manager = get_kb_manager()
-        kb_path = manager.get_knowledge_base_path(kb_name)
-
-        version_manager = VersionManager(kb_path)
-
-        # Verify version exists
-        version_info = version_manager.get_version(version_id)
-        if version_info is None:
-            raise HTTPException(status_code=404, detail=f"Version '{version_id}' not found")
-
-        success = version_manager.delete_version(version_id)
-
-        if not success:
-            raise HTTPException(status_code=500, detail="Failed to delete version")
-
-        logger.info(f"Version '{version_id}' deleted from KB '{kb_name}'")
-
-        return {
-            "message": f"Version '{version_id}' deleted successfully",
-            "kb_name": kb_name,
-            "version_id": version_id,
-        }
-    except ValueError:
-        raise HTTPException(status_code=404, detail=f"Knowledge base '{kb_name}' not found")
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))

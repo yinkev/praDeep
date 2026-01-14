@@ -76,6 +76,7 @@ class BaseEmbeddingAdapter(ABC):
         """
         self.api_key = config.get("api_key")
         self.base_url = config.get("base_url")
+        self.api_version = config.get("api_version")
         self.model = config.get("model")
         self.dimensions = config.get("dimensions")
         self.request_timeout = config.get("request_timeout", 30)
