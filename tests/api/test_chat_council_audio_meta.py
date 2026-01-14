@@ -57,7 +57,12 @@ def test_chat_verify_includes_audio_meta_when_enabled(monkeypatch, tmp_path: Pat
 
     monkeypatch.setattr(
         "src.services.tts.config.get_tts_config",
-        lambda: {"model": "tts-1", "api_key": "sk-proxy", "base_url": "http://localhost:8317/v1", "voice": "alloy"},
+        lambda: {
+            "model": "tts-1",
+            "api_key": "sk-proxy",
+            "base_url": "http://localhost:8317/v1",
+            "voice": "alloy",
+        },
     )
 
     async def fake_synthesize_speech_to_file(*, text, voice, output_path, **_kwargs):
@@ -66,7 +71,9 @@ def test_chat_verify_includes_audio_meta_when_enabled(monkeypatch, tmp_path: Pat
         output_path.write_bytes(b"mp3-bytes")
         return output_path
 
-    monkeypatch.setattr("src.services.tts.service.synthesize_speech_to_file", fake_synthesize_speech_to_file)
+    monkeypatch.setattr(
+        "src.services.tts.service.synthesize_speech_to_file", fake_synthesize_speech_to_file
+    )
 
     # ------------------------------------------------------------------
     # Exercise the WebSocket verify flow.

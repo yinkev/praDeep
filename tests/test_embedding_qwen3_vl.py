@@ -1,6 +1,6 @@
-import unittest
 from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
+import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 BASE_PATH = ROOT / "src" / "services" / "embedding" / "adapters" / "base.py"
@@ -25,7 +25,7 @@ class TestQwen3VLEmbeddingAdapter(unittest.TestCase):
 
     def test_provider_mapping_includes_qwen3_vl(self):
         provider_text = PROVIDER_PATH.read_text(encoding="utf-8")
-        self.assertIn("\"qwen3_vl\"", provider_text)
+        self.assertIn('"qwen3_vl"', provider_text)
         self.assertIn("Qwen3VLEmbeddingAdapter", provider_text)
 
     def test_adapter_rejects_empty_inputs(self):

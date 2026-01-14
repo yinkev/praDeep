@@ -75,15 +75,15 @@ class UserMemoryManager:
                     "preferred_explanation_format": "structured",  # narrative, structured, visual
                     "enable_examples": True,
                     "show_sources": True,
-                    "custom": {}
-                }
+                    "custom": {},
+                },
             },
             self.topics_file: {
                 "version": "1.0",
                 "created_at": time.time(),
                 "updated_at": time.time(),
                 "topics": {},  # topic_name -> {frequency, last_accessed, context, related_topics}
-                "categories": {}  # category -> [topics]
+                "categories": {},  # category -> [topics]
             },
             self.patterns_file: {
                 "version": "1.0",
@@ -96,15 +96,15 @@ class UserMemoryManager:
                 "preferred_modules": {},  # module -> usage_count
                 "learning_velocity": {},  # topic -> mastery_rate
                 "strength_areas": [],
-                "improvement_areas": []
+                "improvement_areas": [],
             },
             self.questions_file: {
                 "version": "1.0",
                 "created_at": time.time(),
                 "updated_at": time.time(),
                 "questions": [],  # List of {pattern, examples, frequency, last_asked}
-                "resolved_questions": []  # Questions that user has mastered
-            }
+                "resolved_questions": [],  # Questions that user has mastered
+            },
         }
 
         for file_path, default_data in default_structures.items():
@@ -213,7 +213,7 @@ class UserMemoryManager:
                 "last_accessed": time.time(),
                 "contexts": [],
                 "related_topics": [],
-                "category": category
+                "category": category,
             }
 
         topic_data = data["topics"][topic_lower]
@@ -265,10 +265,7 @@ class UserMemoryManager:
         topics = data.get("topics", {})
 
         # Convert to list with topic names
-        topic_list = [
-            {"name": name, **info}
-            for name, info in topics.items()
-        ]
+        topic_list = [{"name": name, **info} for name, info in topics.items()]
 
         # Filter by category if specified
         if category:
@@ -358,7 +355,7 @@ class UserMemoryManager:
                 data["learning_velocity"][topic_lower] = {
                     "attempts": 0,
                     "successes": 0,
-                    "mastery_score": 0.0
+                    "mastery_score": 0.0,
                 }
             vel = data["learning_velocity"][topic_lower]
             vel["attempts"] += 1
@@ -413,7 +410,13 @@ class UserMemoryManager:
 
         # Generate a simple hash for pattern matching
         question_normalized = question.lower().strip()
-        question_hash = hashlib.md5(question_normalized.encode()).hexdigest()[:8]
+        try:
+            question_hash = hashlib.md5(
+                question_normalized.encode(), usedforsecurity=False
+            ).hexdigest()[:8]
+        except TypeError:
+            # usedforsecurity is not supported on some platforms/builds
+            question_hash = hashlib.md5(question_normalized.encode()).hexdigest()[:8]
 
         # Check if similar question exists
         existing_idx = None
@@ -446,15 +449,17 @@ class UserMemoryManager:
             # Add new question
             if "questions" not in data:
                 data["questions"] = []
-            data["questions"].append({
-                "hash": question_hash,
-                "normalized": question_normalized,
-                "examples": [question],
-                "answers": [answer] if answer else [],
-                "frequency": 1,
-                "first_asked": time.time(),
-                "last_asked": time.time()
-            })
+            data["questions"].append(
+                {
+                    "hash": question_hash,
+                    "normalized": question_normalized,
+                    "examples": [question],
+                    "answers": [answer] if answer else [],
+                    "frequency": 1,
+                    "first_asked": time.time(),
+                    "last_asked": time.time(),
+                }
+            )
 
         # Sort by frequency
         data["questions"].sort(key=lambda x: x.get("frequency", 0), reverse=True)
@@ -515,19 +520,15 @@ class UserMemoryManager:
 
         return {
             "preferences": preferences,
-            "top_topics": [
-                {"name": t["name"], "frequency": t["frequency"]}
-                for t in topics
-            ],
+            "top_topics": [{"name": t["name"], "frequency": t["frequency"]} for t in topics],
             "preferred_modules": patterns.get("preferred_modules", {}),
             "interaction_count": patterns.get("interaction_count", 0),
             "peak_hours": patterns.get("peak_usage_hours", []),
             "recurring_questions": [
-                {"pattern": q["normalized"][:100], "frequency": q["frequency"]}
-                for q in recurring
+                {"pattern": q["normalized"][:100], "frequency": q["frequency"]} for q in recurring
             ],
             "strength_areas": patterns.get("strength_areas", []),
-            "improvement_areas": patterns.get("improvement_areas", [])
+            "improvement_areas": patterns.get("improvement_areas", []),
         }
 
     # ==================== Memory Management ====================
@@ -552,7 +553,7 @@ class UserMemoryManager:
             "preferences": self.preferences_file,
             "topics": self.topics_file,
             "patterns": self.patterns_file,
-            "questions": self.questions_file
+            "questions": self.questions_file,
         }
 
         if memory_type in file_map:
@@ -570,7 +571,7 @@ class UserMemoryManager:
             "preferences": self._load_file(self.preferences_file),
             "topics": self._load_file(self.topics_file),
             "patterns": self._load_file(self.patterns_file),
-            "questions": self._load_file(self.questions_file)
+            "questions": self._load_file(self.questions_file),
         }
 
     def import_memory(self, data: dict[str, Any], user_id: str = DEFAULT_USER_ID) -> bool:

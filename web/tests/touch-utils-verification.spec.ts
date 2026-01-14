@@ -20,18 +20,31 @@ test.describe("Touch utilities", () => {
   });
 
   test("getTouchPoint falls back to mouse coordinates", async () => {
-    const point = getTouchPoint({ clientX: 9, clientY: 7 } as unknown as MouseEvent);
+    const point = getTouchPoint({
+      clientX: 9,
+      clientY: 7,
+    } as unknown as MouseEvent);
 
     expect(point).toEqual({ x: 9, y: 7 });
   });
 
   test("calculateVelocity returns pixels per ms", async () => {
-    const velocity = calculateVelocity({ x: 0, y: 0 }, { x: 100, y: 0 }, 0, 200);
+    const velocity = calculateVelocity(
+      { x: 0, y: 0 },
+      { x: 100, y: 0 },
+      0,
+      200,
+    );
     expect(velocity).toBeCloseTo(0.5, 3);
   });
 
   test("calculateVelocity returns 0 for invalid duration", async () => {
-    const velocity = calculateVelocity({ x: 0, y: 0 }, { x: 100, y: 0 }, 1000, 1000);
+    const velocity = calculateVelocity(
+      { x: 0, y: 0 },
+      { x: 100, y: 0 },
+      1000,
+      1000,
+    );
     expect(velocity).toBe(0);
   });
 
@@ -45,8 +58,10 @@ test.describe("Touch utilities", () => {
     const calls: Array<{ type: "add" | "remove"; args: unknown[] }> = [];
 
     const target = {
-      addEventListener: (...args: unknown[]) => calls.push({ type: "add", args }),
-      removeEventListener: (...args: unknown[]) => calls.push({ type: "remove", args }),
+      addEventListener: (...args: unknown[]) =>
+        calls.push({ type: "add", args }),
+      removeEventListener: (...args: unknown[]) =>
+        calls.push({ type: "remove", args }),
     } as unknown as EventTarget;
 
     const listener = () => {};

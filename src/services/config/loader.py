@@ -9,8 +9,8 @@ Provides YAML configuration loading, path resolution, and language parsing.
 """
 
 import asyncio
-from pathlib import Path
 import os
+from pathlib import Path
 from typing import Any
 
 import yaml
@@ -245,9 +245,7 @@ def get_agent_params(module_name: str) -> dict:
             try:
                 override["temperature"] = float(temperature_raw)
             except ValueError:
-                print(
-                    f"⚠️ Invalid temperature env override: {temperature_raw!r} (ignoring)"
-                )
+                print(f"⚠️ Invalid temperature env override: {temperature_raw!r} (ignoring)")
         if max_tokens_raw is not None and max_tokens_raw != "":
             try:
                 override["max_tokens"] = int(max_tokens_raw)

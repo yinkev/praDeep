@@ -13,24 +13,25 @@ import sys
 
 
 def check_mineru_installed():
-    """Check if MinerU is installed"""
-    try:
-        result = subprocess.run(
-            ["magic-pdf", "--version"], check=False, capture_output=True, text=True, shell=False
-        )
-        if result.returncode == 0:
-            return "magic-pdf"
-    except FileNotFoundError:
-        pass
+    """Check if MinerU is installed."""
 
-    try:
+    def _is_available(command: str) -> bool:
+        command_path = shutil.which(command)
+        if not command_path:
+            return False
         result = subprocess.run(
-            ["mineru", "--version"], check=False, capture_output=True, text=True, shell=False
+            [command_path, "--version"],
+            check=False,
+            capture_output=True,
+            text=True,
+            shell=False,
         )
-        if result.returncode == 0:
-            return "mineru"
-    except FileNotFoundError:
-        pass
+        return result.returncode == 0
+
+    if _is_available("magic-pdf"):
+        return "magic-pdf"
+    if _is_available("mineru"):
+        return "mineru"
 
     return None
 
@@ -198,4 +199,3 @@ Examples:
 
 if __name__ == "__main__":
     main()
-

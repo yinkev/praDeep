@@ -387,6 +387,7 @@ async def websocket_chat(websocket: WebSocket):
                                 continue
 
                             return payload
+
                     run = await orchestrator.run_chat_verify(
                         question=message,
                         chat_messages=chat_messages,
@@ -453,7 +454,9 @@ async def websocket_chat(websocket: WebSocket):
                                     if council_round.review and bool(
                                         (council_round.review.content or "").strip()
                                     ):
-                                        reviewer_voice = str(voice_map.get("reviewer") or "").strip()
+                                        reviewer_voice = str(
+                                            voice_map.get("reviewer") or ""
+                                        ).strip()
                                         prepare_call_audio(
                                             council_round.review,
                                             store=store,
@@ -511,9 +514,8 @@ async def websocket_chat(websocket: WebSocket):
                         full_response = "Verification canceled."
                     else:
                         full_response = (
-                            (run.final.content if run.final else "").strip()
-                            or "Verification failed."
-                        )
+                            run.final.content if run.final else ""
+                        ).strip() or "Verification failed."
 
                     verified = bool(run.final and run.final.content and run.status == "ok")
 

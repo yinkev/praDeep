@@ -236,6 +236,62 @@ async def complete(
     return await _do_complete(**call_kwargs)
 
 
+async def complete_with_vision(
+    prompt: str,
+    images: List[Dict[str, str]],
+    system_prompt: str = "You are a helpful assistant.",
+    model: Optional[str] = None,
+    api_key: Optional[str] = None,
+    base_url: Optional[str] = None,
+    api_version: Optional[str] = None,
+    binding: Optional[str] = None,
+    max_retries: int = DEFAULT_MAX_RETRIES,
+    retry_delay: float = DEFAULT_RETRY_DELAY,
+    exponential_backoff: bool = DEFAULT_EXPONENTIAL_BACKOFF,
+    **kwargs,
+) -> str:
+    """Completion helper for vision/multimodal prompts.
+
+    Builds an OpenAI-compatible `messages` array with `image_url` parts and routes
+    through the regular `complete()` factory so provider selection/retry stays centralized.
+
+    Args:
+        prompt: Text prompt
+        images: List of image dicts with keys: data (base64), mimeType
+    """
+
+    content: list[dict[str, Any]] = [{"type": "text", "text": prompt}]
+    for image in images or []:
+        mime_type = image.get("mimeType") or "image/jpeg"
+        data = image.get("data") or ""
+        content.append(
+            {
+                "type": "image_url",
+                "image_url": {"url": f"data:{mime_type};base64,{data}"},
+            }
+        )
+
+    messages: List[Dict[str, Any]] = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": content},
+    ]
+
+    return await complete(
+        prompt="",
+        system_prompt=system_prompt,
+        model=model,
+        api_key=api_key,
+        base_url=base_url,
+        api_version=api_version,
+        binding=binding,
+        messages=messages,
+        max_retries=max_retries,
+        retry_delay=retry_delay,
+        exponential_backoff=exponential_backoff,
+        **kwargs,
+    )
+
+
 async def stream(
     prompt: str,
     system_prompt: str = "You are a helpful assistant.",

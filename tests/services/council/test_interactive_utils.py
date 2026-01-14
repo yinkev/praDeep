@@ -1,7 +1,6 @@
 from pathlib import Path
 import sys
 
-
 project_root = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(project_root))
 
@@ -54,4 +53,3 @@ def test_normalize_tts_voice_map_defaults_and_cycles():
     assert voices["chairman"] == "onyx"
     assert voices["reviewer"] == "echo"
     assert voices["members"] == ["nova", "fable", "shimmer", "alloy", "nova"]
-

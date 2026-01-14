@@ -6,7 +6,9 @@ test.describe("Mobile touch interactions", () => {
     hasTouch: true,
   });
 
-  test("useSwipeGesture triggers dominant-axis swipe callback", async ({ page }) => {
+  test("useSwipeGesture triggers dominant-axis swipe callback", async ({
+    page,
+  }) => {
     await page.goto("/touch-test");
 
     await expect(page.getByTestId("swipe-last")).toHaveText("none");
@@ -51,7 +53,9 @@ test.describe("Mobile touch interactions", () => {
     await expect(page.getByTestId("swipe-last")).toHaveText("right");
   });
 
-  test("useLongPress opens ContextMenu and backdrop dismiss works", async ({ page }) => {
+  test("useLongPress opens ContextMenu and backdrop dismiss works", async ({
+    page,
+  }) => {
     await page.goto("/touch-test");
 
     await expect(page.getByTestId("menu-open")).toHaveText("false");

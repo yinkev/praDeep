@@ -1,7 +1,7 @@
 import asyncio
 import json
-import re
 from pathlib import Path
+import re
 import sys
 
 project_root = Path(__file__).resolve().parents[3]

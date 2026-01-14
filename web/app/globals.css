@@ -5,7 +5,7 @@
    ============================================================================ */
 
 @config '../tailwind.config.js';
-@import 'tailwindcss';
+@import "tailwindcss";
 
 @layer base {
   :root {
@@ -91,10 +91,14 @@
 
     /* Shadows - Subtle depth */
     --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-    --shadow-base: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
-    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
-    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
-    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    --shadow-base:
+      0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+    --shadow-md:
+      0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+    --shadow-lg:
+      0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+    --shadow-xl:
+      0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
     --shadow-inner: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05);
 
     /* Z-index scale */
@@ -108,8 +112,9 @@
     --z-tooltip: 1600;
 
     /* Fonts */
-    --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, sans-serif;
-    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+    --font-sans:
+      var(--font-inter), ui-sans-serif, system-ui, -apple-system, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, monospace;
   }
 
   .dark {
@@ -159,10 +164,14 @@
 
     /* Shadows - Adjusted for dark with subtle highlights */
     --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
-    --shadow-base: 0 1px 3px 0 rgba(0, 0, 0, 0.4), 0 1px 2px -1px rgba(0, 0, 0, 0.4);
-    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -2px rgba(0, 0, 0, 0.5);
-    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.6), 0 4px 6px -4px rgba(0, 0, 0, 0.6);
-    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.7), 0 8px 10px -6px rgba(0, 0, 0, 0.7);
+    --shadow-base:
+      0 1px 3px 0 rgba(0, 0, 0, 0.4), 0 1px 2px -1px rgba(0, 0, 0, 0.4);
+    --shadow-md:
+      0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -2px rgba(0, 0, 0, 0.5);
+    --shadow-lg:
+      0 10px 15px -3px rgba(0, 0, 0, 0.6), 0 4px 6px -4px rgba(0, 0, 0, 0.6);
+    --shadow-xl:
+      0 20px 25px -5px rgba(0, 0, 0, 0.7), 0 8px 10px -6px rgba(0, 0, 0, 0.7);
     --shadow-inner: inset 0 2px 4px 0 rgba(0, 0, 0, 0.4);
   }
 
@@ -241,8 +250,8 @@
   /* Enhanced focus for buttons and interactive elements */
   button:focus-visible,
   a:focus-visible,
-  [role='button']:focus-visible,
-  [role='link']:focus-visible {
+  [role="button"]:focus-visible,
+  [role="link"]:focus-visible {
     outline: var(--ring-width) solid hsl(var(--ring));
     outline-offset: var(--ring-offset-width);
     box-shadow: 0 0 0 var(--ring-offset-width) hsl(var(--ring-offset));
@@ -251,7 +260,7 @@
   /* Disabled states */
   :disabled,
   [disabled],
-  [aria-disabled='true'] {
+  [aria-disabled="true"] {
     cursor: not-allowed;
     opacity: 0.5;
   }
@@ -353,7 +362,7 @@
   }
 
   .glow-dot::before {
-    content: '';
+    content: "";
     position: absolute;
     width: 6px;
     height: 6px;
@@ -384,7 +393,7 @@
   }
 
   .glow-line::after {
-    content: '';
+    content: "";
     position: absolute;
     bottom: 0;
     left: 0;
@@ -955,11 +964,11 @@
     }
 
     a[href]::after {
-      content: ' (' attr(href) ')';
+      content: " (" attr(href) ")";
     }
 
     abbr[title]::after {
-      content: ' (' attr(title) ')';
+      content: " (" attr(title) ")";
     }
 
     pre,
@@ -1034,8 +1043,8 @@
 
     button,
     a,
-    [role='button'],
-    [role='link'] {
+    [role="button"],
+    [role="link"] {
       outline-width: 3px;
     }
   }

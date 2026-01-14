@@ -92,8 +92,7 @@ repos:
     rev: 1.7.0
     hooks:
       - id: interrogate
-        args: [-v, -q, --exclude=tests/, --exclude=scripts/, --ignore-init-method, --ignore-private]
-        pass_filenames: false
+        args: [-v, -q, --fail-under=60, --exclude=tests/, --exclude=scripts/, --ignore-init-method, --ignore-private]
 
   # ============================================
   # Type checking

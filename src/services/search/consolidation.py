@@ -8,7 +8,7 @@ Supports two strategies:
 
 from typing import Any
 
-from jinja2 import BaseLoader, Environment
+from jinja2 import BaseLoader, Environment, select_autoescape
 
 from src.logging import get_logger
 from src.services.llm import get_llm_client
@@ -165,27 +165,27 @@ class AnswerConsolidator:
         custom_template: str | None = None,
         llm_config: dict[str, Any] | None = None,
         max_results: int = 5,
-        autoescape: bool = True,
     ):
-        """
-        Initialize consolidator.
+        """Initialize consolidator.
 
         Args:
             consolidation_type: "none", "template", or "llm"
             custom_template: Custom Jinja2 template string
             llm_config: Optional overrides (system_prompt, max_tokens, temperature)
             max_results: Maximum results to include in answer
-            autoescape: Whether to enable Jinja2 autoescape for security (default: True)
         """
         self.consolidation_type = consolidation_type
         self.custom_template = custom_template
         self.llm_config = llm_config or {}
         self.max_results = max_results
-        self.jinja_env = Environment(loader=BaseLoader(), autoescape=autoescape)
+        self.jinja_env = Environment(
+            loader=BaseLoader(),
+            autoescape=select_autoescape(default=True, default_for_string=True),
+        )
 
-        if self.custom_template is not None and autoescape:
+        if self.custom_template is not None:
             _logger.warning(
-                "Custom Jinja2 templates are rendered with autoescape=True. "
+                "Custom Jinja2 templates are rendered with autoescape enabled. "
                 "HTML in rendered variables will be escaped by default; use the "
                 "'safe' filter in your template if you intentionally need raw HTML."
             )
@@ -394,4 +394,3 @@ Consolidate these results into structured grounding context."""
 
 
 __all__ = ["AnswerConsolidator", "CONSOLIDATION_TYPES", "PROVIDER_TEMPLATES"]
-

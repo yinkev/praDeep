@@ -2,7 +2,6 @@ import asyncio
 from pathlib import Path
 import sys
 
-
 project_root = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(project_root))
 
@@ -40,7 +39,11 @@ def test_synthesize_speech_to_file_writes_mp3(tmp_path: Path):
             text="hello",
             voice="onyx",
             output_path=out_path,
-            tts_config={"model": "tts-1", "api_key": "sk-proxy", "base_url": "http://localhost:8317/v1"},
+            tts_config={
+                "model": "tts-1",
+                "api_key": "sk-proxy",
+                "base_url": "http://localhost:8317/v1",
+            },
             client_factory=lambda *_args, **_kwargs: DummyClient(),
         )
         assert result == out_path

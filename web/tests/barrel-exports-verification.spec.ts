@@ -8,7 +8,11 @@ test.describe("Component imports (no barrel exports)", () => {
       page.getByPlaceholder("e.g. Gradient Descent Optimization"),
     ).toBeVisible();
 
-    await expect(page.getByRole("button", { name: /^Generate Questions$/ })).toBeVisible();
-    await expect(page.getByRole("button", { name: /^Generate Questions$/ })).toBeDisabled();
+    await expect(
+      page.getByRole("button", { name: /^Generate Questions$/ }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: /^Generate Questions$/ }),
+    ).toBeDisabled();
   });
 });

@@ -31,7 +31,12 @@ def _clean_label(label: str) -> str:
 
 
 def _stable_id(label: str) -> str:
-    return hashlib.sha1(label.encode("utf-8")).hexdigest()[:12]
+    data = label.encode("utf-8")
+    try:
+        return hashlib.sha1(data, usedforsecurity=False).hexdigest()[:12]
+    except TypeError:
+        # usedforsecurity is not supported on some platforms/builds
+        return hashlib.sha1(data).hexdigest()[:12]
 
 
 def _iter_content_list_items(content_list_dir: Path) -> Iterable[dict]:
@@ -52,7 +57,9 @@ def _iter_content_list_items(content_list_dir: Path) -> Iterable[dict]:
     return items
 
 
-def build_concept_hierarchy_graph(content_list_dir: Path) -> tuple[list[ConceptNode], list[ConceptEdge]]:
+def build_concept_hierarchy_graph(
+    content_list_dir: Path,
+) -> tuple[list[ConceptNode], list[ConceptEdge]]:
     """
     Build a simple prerequisite-style graph from KB extracted content lists.
 
@@ -169,11 +176,12 @@ def extract_subgraph(
 
     selected_nodes = [node_map[nid] for nid in selected if nid in node_map]
     selected_edges = [
-        e for e in edge_list if e.source in selected and e.target in selected and e.source != e.target
+        e
+        for e in edge_list
+        if e.source in selected and e.target in selected and e.source != e.target
     ]
 
     # Stable ordering for UI determinism.
     selected_nodes.sort(key=lambda n: (n.label.lower(), n.node_id))
     selected_edges.sort(key=lambda e: (e.source, e.target))
     return selected_nodes, selected_edges
-

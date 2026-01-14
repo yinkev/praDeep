@@ -1,7 +1,5 @@
-import subprocess
 from pathlib import Path
-import sys
-
+import subprocess
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 PYTHON = PROJECT_ROOT / ".venv" / "bin" / "python"

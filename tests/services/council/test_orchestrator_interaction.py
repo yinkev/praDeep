@@ -2,7 +2,6 @@ import asyncio
 from pathlib import Path
 import sys
 
-
 project_root = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(project_root))
 
@@ -38,10 +37,21 @@ def test_run_chat_verify_checkpoint_can_inject_user_questions(monkeypatch):
     seen_questions: list[str] = []
     reviewer_calls = 0
 
-    async def fake_member_drafts(*, base_chat_messages, member_models, member_instructions, max_tokens, temperature):
+    async def fake_member_drafts(
+        *, base_chat_messages, member_models, member_instructions, max_tokens, temperature
+    ):
         return [CouncilCall(role="member", model=m, content=f"draft {m}") for m in member_models]
 
-    async def fake_reviewer(*, base_chat_messages, reviewer_model, reviewer_instructions, member_outputs, existing_answer, max_tokens, temperature):
+    async def fake_reviewer(
+        *,
+        base_chat_messages,
+        reviewer_model,
+        reviewer_instructions,
+        member_outputs,
+        existing_answer,
+        max_tokens,
+        temperature,
+    ):
         nonlocal reviewer_calls
         reviewer_calls += 1
         if reviewer_calls == 1:
@@ -58,11 +68,29 @@ def test_run_chat_verify_checkpoint_can_inject_user_questions(monkeypatch):
             CouncilReviewParsed(resolved=True, cross_exam_questions=[]),
         )
 
-    async def fake_cross_exam(*, base_chat_messages, member_models, member_instructions, questions, max_tokens, temperature):
+    async def fake_cross_exam(
+        *,
+        base_chat_messages,
+        member_models,
+        member_instructions,
+        questions,
+        max_tokens,
+        temperature,
+    ):
         seen_questions.extend(list(questions))
         return [CouncilCall(role="member", model=m, content=f"x {m}") for m in member_models]
 
-    async def fake_chairman(*, base_chat_messages, chairman_model, chairman_instructions, member_outputs, reviewer_notes, existing_answer, max_tokens, temperature):
+    async def fake_chairman(
+        *,
+        base_chat_messages,
+        chairman_model,
+        chairman_instructions,
+        member_outputs,
+        reviewer_notes,
+        existing_answer,
+        max_tokens,
+        temperature,
+    ):
         return CouncilFinal(model=chairman_model, content="final")
 
     orch._run_member_drafts = fake_member_drafts  # type: ignore[method-assign]

@@ -159,8 +159,14 @@ async def _openai_complete(
     if not supports_response_format(binding, model):
         kwargs.pop("response_format", None)
 
+    messages = kwargs.pop("messages", None)
+    image_data = kwargs.pop("image_data", None)
+
     content = None
     try:
+        if messages or image_data:
+            raise RuntimeError("skip cache for multimodal")
+
         # Try using lightrag's openai_complete_if_cache first (has caching)
         # Only pass api_version if it's set (for Azure OpenAI)
         # Standard OpenAI SDK doesn't accept api_version parameter
@@ -197,12 +203,31 @@ async def _openai_complete(
         # Build headers using unified utility
         headers = build_auth_headers(api_key, binding)
 
-        data = {
-            "model": model,
-            "messages": [
+        if messages:
+            msg_list = messages
+        elif image_data:
+            msg_list = [
+                {"role": "system", "content": system_prompt},
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": prompt},
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": f"data:image/jpeg;base64,{image_data}"},
+                        },
+                    ],
+                },
+            ]
+        else:
+            msg_list = [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": prompt},
-            ],
+            ]
+
+        data = {
+            "model": model,
+            "messages": msg_list,
             "temperature": kwargs.get("temperature", 0.7),
         }
 

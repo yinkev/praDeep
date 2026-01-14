@@ -2,7 +2,6 @@ from pathlib import Path
 import sys
 import time
 
-
 project_root = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(project_root))
 
@@ -27,4 +26,3 @@ def test_council_log_store_roundtrip(tmp_path: Path):
     assert loaded.council_id == run.council_id
     assert loaded.task == run.task
     assert loaded.question == run.question
-

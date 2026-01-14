@@ -2,7 +2,6 @@ import asyncio
 from pathlib import Path
 import sys
 
-
 project_root = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(project_root))
 
@@ -49,7 +48,11 @@ def test_prepare_and_synthesize_call_audio_writes_mp3(tmp_path: Path):
     async def run():
         await synthesize_call_audio(
             call,
-            tts_config={"model": "tts-1", "api_key": "sk-proxy", "base_url": "http://localhost:8317/v1"},
+            tts_config={
+                "model": "tts-1",
+                "api_key": "sk-proxy",
+                "base_url": "http://localhost:8317/v1",
+            },
             client_factory=lambda *_args, **_kwargs: DummyClient(),
         )
 
@@ -82,7 +85,11 @@ def test_synthesize_call_audio_records_error(tmp_path: Path):
     async def run():
         await synthesize_call_audio(
             call,
-            tts_config={"model": "tts-1", "api_key": "sk-proxy", "base_url": "http://localhost:8317/v1"},
+            tts_config={
+                "model": "tts-1",
+                "api_key": "sk-proxy",
+                "base_url": "http://localhost:8317/v1",
+            },
             client_factory=failing_factory,
         )
 
@@ -133,7 +140,11 @@ def test_prepare_and_synthesize_final_audio_writes_mp3(tmp_path: Path):
     async def run():
         await synthesize_final_audio(
             final,
-            tts_config={"model": "tts-1", "api_key": "sk-proxy", "base_url": "http://localhost:8317/v1"},
+            tts_config={
+                "model": "tts-1",
+                "api_key": "sk-proxy",
+                "base_url": "http://localhost:8317/v1",
+            },
             client_factory=lambda *_args, **_kwargs: DummyClient(),
         )
 

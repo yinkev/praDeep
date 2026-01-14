@@ -11,4 +11,3 @@ def test_nextjs_uses_proxy_file_convention():
 
     content = proxy.read_text(encoding="utf-8")
     assert "export function proxy" in content
-

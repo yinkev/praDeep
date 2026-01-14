@@ -6,7 +6,6 @@ sys.path.insert(0, str(project_root))
 
 from src.services.reranker.config import get_reranker_config
 
-
 RERANKER_ENV_VARS = [
     "RERANKER_BINDING",
     "RERANKER_MODEL",
