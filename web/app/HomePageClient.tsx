@@ -50,7 +50,6 @@ import Button, { IconButton } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { useToast } from '@/components/ui/Toast'
 import Modal from '@/components/ui/Modal'
-import { EliteBackground } from '@/components/ui/EliteBackground'
 import { Tabs, type TabsItem } from '@/components/ui/Tabs'
 import CouncilDetails from '@/components/CouncilDetails'
 import { eliteTheme } from '@/lib/elite-theme'
@@ -653,8 +652,6 @@ export default function HomePage() {
   if (!hasMessages) {
     return (
       <div className={cn('relative min-h-dvh overflow-x-hidden', eliteTheme.surface)}>
-        <EliteBackground />
-
         <div className="sticky top-0 z-40">
           <div className="border-b border-border bg-surface-elevated/75 backdrop-blur-xl dark:border-white/10 dark:bg-zinc-950/55">
             <div className={cn('mx-auto flex max-w-6xl items-center justify-between gap-4', eliteTheme.density.compact.pageX, eliteTheme.density.compact.headerY)}>
@@ -1270,7 +1267,6 @@ export default function HomePage() {
 
   return (
     <div className={cn('relative h-dvh overflow-hidden', eliteTheme.surface)}>
-      <EliteBackground />
       <div
         aria-hidden="true"
         className="pointer-events-none absolute -bottom-56 right-10 h-[520px] w-[520px] rounded-full bg-indigo-500/10 blur-3xl dark:bg-indigo-500/10"
