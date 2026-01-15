@@ -1,26 +1,4 @@
 # =============================================================================
-# Agent LLM Parameters - CLI Proxy API Models
-# =============================================================================
-# max_tokens by model (latest only):
-#
-#   GEMINI:
-#     gemini-3-flash-preview:    65536
-#     gemini-3-pro-preview:      65536
-#     gemini-2.5-flash:          65536
-#     gemini-2.5-pro:            65536
-#
-#   CLAUDE:
-#     claude-opus-4-5-20251101:  64000
-#     claude-sonnet-4-5-20250929: 64000
-#     claude-haiku-4-5-20251001: 64000
-#
-#   OPENAI:
-#     gpt-5.2:                   100000
-#     gpt-5.1:                   100000
-#     gpt-5:                     100000
-#
-# Current setting: 65536 (Gemini 3 Flash)
-# =============================================================================
 # Unified Agent Parameters Configuration
 # =============================================================================
 # This file serves as the SINGLE source of truth for temperature and max_tokens
@@ -33,37 +11,40 @@
 # Agents: investigate_agent, note_agent, manager_agent, solve_agent, tool_agent, response_agent, precision_answer_agent
 solve:
   temperature: 0.3
-  max_tokens: 65536
+  max_tokens: 8192
+  # NOTE: Valid tools for investigate agent validation are defined in
+  #       config/main.yaml, which is the SINGLE source of truth for valid_tools.
+  #       Do not re-declare valid_tools here to avoid configuration drift.
 
 # Research Module - Deep research agents
 # Agents: rephrase_agent, decompose_agent, manager_agent, research_agent, note_agent, reporting_agent
 research:
   temperature: 0.5
-  max_tokens: 65536
+  max_tokens: 12000
 
 # Question Module - Question generation agents
 # Agents: question_generation_agent, question_validation_agent
 question:
   temperature: 0.7
-  max_tokens: 65536
+  max_tokens: 4096
 
 # Guide Module - Learning guidance agents
 # Agents: locate_agent, interactive_agent, chat_agent, summary_agent
 guide:
   temperature: 0.5
-  max_tokens: 65536
+  max_tokens: 16192
 
 # IdeaGen Module - Idea generation agents
 # Agents: material_organizer_agent, idea_generation workflow
 ideagen:
   temperature: 0.7
-  max_tokens: 65536
+  max_tokens: 4096
 
 # CoWriter Module - Collaborative writing agents
 # Agents: edit_agent
 co_writer:
   temperature: 0.7
-  max_tokens: 65536
+  max_tokens: 4096
 
 # =============================================================================
 # Narrator Agent - Independent configuration for TTS integration

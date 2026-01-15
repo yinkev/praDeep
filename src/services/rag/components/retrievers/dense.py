@@ -2,12 +2,15 @@
 Dense Retriever
 ===============
 
-Dense vector-based retriever.
+Dense vector-based retriever using FAISS or cosine similarity.
 """
 
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+import pickle
+from typing import Any, Dict, Optional
+
+import numpy as np
 
 from ..base import BaseComponent
 
@@ -16,7 +19,8 @@ class DenseRetriever(BaseComponent):
     """
     Dense vector retriever.
 
-    Uses embedding similarity for retrieval.
+    Uses FAISS for fast similarity search or falls back to
+    cosine similarity if FAISS is unavailable.
     """
 
     name = "dense_retriever"
@@ -37,132 +41,227 @@ class DenseRetriever(BaseComponent):
         )
         self.top_k = top_k
 
+        # Try to import FAISS
+        self.use_faiss = False
+        try:
+            import faiss
+
+            self.faiss = faiss
+            self.use_faiss = True
+        except ImportError:
+            self.logger.warning("FAISS not available, using simple cosine similarity")
+
     async def process(self, query: str, kb_name: str, **kwargs) -> Dict[str, Any]:
         """
-        Search using dense embeddings.
+        Search using dense embeddings with FAISS or cosine similarity.
 
         Args:
             query: Search query
             kb_name: Knowledge base name
-            **kwargs: Additional arguments
+            **kwargs: Additional arguments (mode, top_k, etc.)
 
         Returns:
-            Search results dictionary
+            Search results dictionary with answer and sources
         """
-        self.logger.info(f"Dense search in {kb_name}: {query[:50]}...")
+        top_k = kwargs.get("top_k", self.top_k)
+        self.logger.info(f"Dense search in {kb_name}: {query[:50]}... (top_k={top_k})")
 
         from src.services.embedding import get_embedding_client
 
         # Get query embedding
         client = get_embedding_client()
-        query_embedding = (await client.embed([query]))[0]
+        query_embedding = np.array((await client.embed([query]))[0], dtype=np.float32)
 
         # Load index
         kb_dir = Path(self.kb_base_dir) / kb_name / "vector_store"
-        index_file = kb_dir / "index.json"
+        metadata_file = kb_dir / "metadata.json"
+        info_file = kb_dir / "info.json"
+        legacy_index_file = kb_dir / "index.json"
 
-        if not index_file.exists():
-            self.logger.warning(f"No vector index found at {index_file}")
-            return {
-                "query": query,
-                "answer": "No documents indexed.",
-                "content": "",
-                "mode": "dense",
-                "provider": "vector",
-            }
+        # Support legacy vector_store/index.json format (used by some tests and older KBs).
+        if not metadata_file.exists() and legacy_index_file.exists():
+            with open(legacy_index_file, "r", encoding="utf-8") as f:
+                legacy_items = json.load(f) or []
 
-        with open(index_file, "r", encoding="utf-8") as f:
-            index_data = json.load(f)
+            embeddings = np.asarray(
+                [item.get("embedding", []) for item in legacy_items], dtype=np.float32
+            )
 
-        # Compute similarities
-        results = []
-        for item in index_data:
-            if item.get("embedding"):
-                similarity = self._cosine_similarity(query_embedding, item["embedding"])
-                results.append((similarity, item))
-
-        # Sort by similarity
-        results.sort(key=lambda x: x[0], reverse=True)
-
-        top_k_before = max(self.top_k, 20)
-        candidates = results[:top_k_before]
-
-        reranked_results = None
-        used_reranker = False
-
-        if candidates:
             try:
                 from src.services.reranker import get_reranker_service
 
                 reranker = get_reranker_service()
-                if reranker:
-                    passages = [self._build_rerank_passage(item) for _, item in candidates]
-                    rerank_results = await reranker.rerank(query, passages)
-                    reranked_results = []
-                    for rerank_result in rerank_results[: self.top_k]:
-                        _, item = candidates[rerank_result.index]
-                        reranked_results.append((rerank_result.score, item))
-                    used_reranker = True
-            except Exception as exc:
-                self.logger.warning(f"Reranker unavailable, using similarity order: {exc}")
+            except Exception:
+                reranker = None
 
-        if reranked_results is None:
-            reranked_results = candidates[: self.top_k]
+            passages = [str(item.get("content") or "") for item in legacy_items]
+            if reranker is not None:
+                reranked = await reranker.rerank(query, passages)
+                results = []
+                for item in reranked[:top_k]:
+                    idx = int(item.index)
+                    if idx < 0 or idx >= len(legacy_items):
+                        continue
+                    results.append((float(item.score), legacy_items[idx]))
+            else:
+                # Fallback to cosine similarity ordering if reranker not available.
+                if embeddings.size == 0:
+                    return self._empty_response(query)
+                query_norm = np.linalg.norm(query_embedding)
+                query_vec = query_embedding / query_norm if query_norm > 0 else query_embedding
+                norms = np.linalg.norm(embeddings, axis=1, keepdims=True)
+                norms = np.where(norms == 0, 1, norms)
+                doc_vecs = embeddings / norms
+                similarities = np.dot(doc_vecs, query_vec)
+                top_indices = np.argsort(similarities)[::-1][:top_k]
+                results = [(float(similarities[idx]), legacy_items[idx]) for idx in top_indices]
 
-        # Build response
+            sources = [
+                {
+                    "content": (item.get("content") or "").strip(),
+                    "score": score,
+                    "metadata": item.get("metadata", {}),
+                }
+                for score, item in results
+                if (item.get("content") or "").strip()
+            ]
+            scored_parts = [
+                f"[Score: {score:.3f}] {(item.get('content') or '').strip()}"
+                for score, item in results
+                if (item.get("content") or "").strip()
+            ]
+            clean_parts = [
+                (item.get("content") or "").strip()
+                for _, item in results
+                if (item.get("content") or "").strip()
+            ]
+            return {
+                "query": query,
+                "answer": "\n\n".join(clean_parts),
+                "content": "\n\n".join(scored_parts),
+                "mode": "dense",
+                "provider": "llamaindex",
+                "results": sources,
+            }
+
+        if not metadata_file.exists():
+            self.logger.warning(f"No vector index found at {kb_dir}")
+            return {
+                "query": query,
+                "answer": "No documents indexed. Please upload documents first.",
+                "content": "",
+                "mode": "dense",
+                "provider": "llamaindex",
+                "results": [],
+            }
+
+        # Load metadata and info (info.json is optional)
+        with open(metadata_file, "r", encoding="utf-8") as f:
+            metadata = json.load(f)
+
+        if info_file.exists():
+            with open(info_file, "r", encoding="utf-8") as f:
+                info = json.load(f)
+        else:
+            info = {"use_faiss": False}
+
+        use_faiss = info.get("use_faiss", False)
+
+        if use_faiss and self.use_faiss:
+            # Use FAISS for fast search
+            index_file = kb_dir / "index.faiss"
+            if not index_file.exists():
+                self.logger.error(f"FAISS index file not found: {index_file}")
+                return self._empty_response(query)
+
+            # Load FAISS index
+            index = self.faiss.read_index(str(index_file))
+
+            # Normalize query vector for cosine similarity without modifying original
+            norm = np.linalg.norm(query_embedding)
+            if norm > 0:
+                query_vec = (query_embedding / norm).reshape(1, -1)
+            else:
+                query_vec = query_embedding.reshape(1, -1)
+
+            # Search
+            distances, indices = index.search(query_vec, min(top_k, len(metadata)))
+
+            # Build results
+            results = []
+            for dist, idx in zip(distances[0], indices[0]):
+                if idx < len(metadata):  # Valid index
+                    score = 1.0 / (1.0 + dist)  # Convert distance to similarity score
+                    results.append((score, metadata[idx]))
+        else:
+            # Fallback: Load embeddings and use cosine similarity
+            embeddings_file = kb_dir / "embeddings.pkl"
+            if not embeddings_file.exists():
+                self.logger.error(f"Embeddings file not found: {embeddings_file}")
+                return self._empty_response(query)
+
+            with open(embeddings_file, "rb") as f:
+                embeddings = pickle.load(f)
+
+            # Normalize for cosine similarity (avoid division by zero)
+            query_norm = np.linalg.norm(query_embedding)
+            if query_norm > 0:
+                query_vec = query_embedding / query_norm
+            else:
+                query_vec = query_embedding  # Keep as is if zero norm
+
+            norms = np.linalg.norm(embeddings, axis=1, keepdims=True)
+            # Replace zero norms with 1 to avoid division by zero
+            norms = np.where(norms == 0, 1, norms)
+            doc_vecs = embeddings / norms
+
+            # Compute similarities
+            similarities = np.dot(doc_vecs, query_vec)
+
+            # Get top-k results
+            top_indices = np.argsort(similarities)[::-1][:top_k]
+
+            results = []
+            for idx in top_indices:
+                score = float(similarities[idx])
+                results.append((score, metadata[idx]))
+
+        # Build response content
+        # Format chunks cleanly for LLM context (without score annotations)
         content_parts = []
-        for score, item in reranked_results:
-            content_parts.append(f"[Score: {score:.3f}] {item['content'][:500]}")
+        sources = []
+        for score, item in results:
+            content = item.get("content", "").strip()
+            if content:  # Only include non-empty chunks
+                # Add chunk without score prefix for clean LLM input
+                content_parts.append(content)
+                sources.append(
+                    {
+                        "content": content,
+                        "score": score,
+                        "metadata": item.get("metadata", {}),
+                    }
+                )
 
+        # Join chunks with clear separation
         content = "\n\n".join(content_parts)
-
-        response_results = []
-        for score, item in reranked_results:
-            enriched = dict(item)
-            if used_reranker:
-                enriched["rerank_score"] = score
-            response_results.append(enriched)
 
         return {
             "query": query,
-            "answer": content,
+            "answer": content,  # Return clean context for LLM to use
             "content": content,
             "mode": "dense",
-            "provider": "vector",
-            "results": response_results,
+            "provider": "llamaindex",
+            "results": sources,
         }
 
-    def _cosine_similarity(self, a: List[float], b: List[float]) -> float:
-        """Compute cosine similarity between two vectors."""
-        import math
-
-        dot_product = sum(x * y for x, y in zip(a, b))
-        norm_a = math.sqrt(sum(x * x for x in a))
-        norm_b = math.sqrt(sum(x * x for x in b))
-
-        if norm_a == 0 or norm_b == 0:
-            return 0.0
-
-        return dot_product / (norm_a * norm_b)
-
-    def _build_rerank_passage(self, item: Dict[str, Any]) -> str:
-        metadata = item.get("metadata") or {}
-        parts = []
-
-        title = metadata.get("title")
-        if title:
-            parts.append(f"Title: {title}")
-
-        section = metadata.get("section")
-        if section:
-            parts.append(f"Section: {section}")
-
-        if "page" in metadata and metadata.get("page") is not None:
-            parts.append(f"Page: {metadata.get('page')}")
-
-        header = " | ".join(parts)
-        content = item.get("content", "")
-
-        if header:
-            return f"{header}\n\n{content}"
-        return content
+    def _empty_response(self, query: str) -> Dict[str, Any]:
+        """Return empty response when no results found."""
+        return {
+            "query": query,
+            "answer": "No relevant documents found.",
+            "content": "",
+            "mode": "dense",
+            "provider": "llamaindex",
+            "results": [],
+        }

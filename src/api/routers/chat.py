@@ -20,6 +20,7 @@ from src.agents.chat import ChatAgent, SessionManager
 from src.api.utils.user_memory import get_user_memory_manager
 from src.logging import get_logger
 from src.services.config import load_config_with_main
+from src.services.llm.config import get_llm_config
 
 # Initialize logger
 project_root = Path(__file__).parent.parent.parent.parent
@@ -235,7 +236,23 @@ async def websocket_chat(websocket: WebSocket):
                     )
 
                 # Initialize ChatAgent
-                agent = ChatAgent(language=language, config=config)
+                try:
+                    llm_config = get_llm_config()
+                    api_key = llm_config.api_key
+                    base_url = llm_config.base_url
+                    api_version = getattr(llm_config, "api_version", None)
+                except Exception:
+                    api_key = None
+                    base_url = None
+                    api_version = None
+
+                agent = ChatAgent(
+                    language=language,
+                    config=config,
+                    api_key=api_key,
+                    base_url=base_url,
+                    api_version=api_version,
+                )
 
                 # Send status updates
                 if enable_rag and kb_name:
@@ -370,6 +387,7 @@ async def websocket_chat(websocket: WebSocket):
                                 continue
 
                             return payload
+
                     run = await orchestrator.run_chat_verify(
                         question=message,
                         chat_messages=chat_messages,
@@ -436,7 +454,9 @@ async def websocket_chat(websocket: WebSocket):
                                     if council_round.review and bool(
                                         (council_round.review.content or "").strip()
                                     ):
-                                        reviewer_voice = str(voice_map.get("reviewer") or "").strip()
+                                        reviewer_voice = str(
+                                            voice_map.get("reviewer") or ""
+                                        ).strip()
                                         prepare_call_audio(
                                             council_round.review,
                                             store=store,
@@ -494,9 +514,8 @@ async def websocket_chat(websocket: WebSocket):
                         full_response = "Verification canceled."
                     else:
                         full_response = (
-                            (run.final.content if run.final else "").strip()
-                            or "Verification failed."
-                        )
+                            run.final.content if run.final else ""
+                        ).strip() or "Verification failed."
 
                     verified = bool(run.final and run.final.content and run.status == "ok")
 
