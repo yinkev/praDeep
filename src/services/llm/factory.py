@@ -42,8 +42,10 @@ from .config import get_llm_config
 from .exceptions import (
     LLMAPIError,
     LLMAuthenticationError,
+    LLMError,
     LLMRateLimitError,
     LLMTimeoutError,
+    ProviderContextWindowError,
 )
 from .utils import is_local_llm_server
 
@@ -54,6 +56,214 @@ logger = get_logger("LLMFactory")
 DEFAULT_MAX_RETRIES = 3
 DEFAULT_RETRY_DELAY = 1.0  # seconds
 DEFAULT_EXPONENTIAL_BACKOFF = True
+
+# Default context shrink-and-retry configuration (bounded + deterministic)
+DEFAULT_CONTEXT_SHRINK_RETRIES = 3
+DEFAULT_HISTORY_KEEP_LAST_LEVELS = (8, 4, 2)
+DEFAULT_RAG_CONTEXT_MAX_CHARS_LEVELS = (12000, 6000, 2500, 0)
+DEFAULT_USER_SUMMARY_TRIGGER_CHARS = 8000
+DEFAULT_USER_SUMMARY_CHUNK_CHARS = 3500
+DEFAULT_USER_SUMMARY_MAX_CHUNKS = 5
+DEFAULT_USER_SUMMARY_MAX_OUTPUT_CHARS = 1800
+
+
+def _extract_text_content(content: Any) -> str:
+    if isinstance(content, str):
+        return content
+    # OpenAI vision-style content parts: [{type:'text', text:'...'}, {type:'image_url', ...}]
+    if isinstance(content, list):
+        parts: list[str] = []
+        for item in content:
+            if isinstance(item, dict) and item.get("type") == "text":
+                parts.append(str(item.get("text") or ""))
+        return "\n".join(parts)
+    if isinstance(content, dict):
+        # Best-effort; keep deterministic
+        return str(content)
+    return str(content) if content is not None else ""
+
+
+def _message_role(message: Dict[str, Any]) -> str:
+    return str(message.get("role") or "").strip().lower()
+
+
+def _is_rag_context_message(idx: int, message: Dict[str, Any]) -> bool:
+    # Heuristic: a non-primary system message with a large content payload or known markers.
+    if _message_role(message) != "system":
+        return False
+    if idx == 0:
+        return False
+
+    content_text = _extract_text_content(message.get("content"))
+    lowered = content_text.lower()
+
+    markers = (
+        "reference context",
+        "knowledge base",
+        "[knowledge base",
+        "[web search results",
+        "web search results",
+        "rag",
+        "retrieved context",
+    )
+
+    if any(m in lowered for m in markers):
+        return True
+
+    # Also treat very large secondary system messages as likely context.
+    return len(content_text) >= 2000
+
+
+def _is_context_window_error(error: Exception) -> bool:
+    msg = str(error).lower()
+    needles = (
+        "context_length_exceeded",
+        "context length",
+        "maximum context",
+        "maximum context length",
+        "too many tokens",
+        "token limit",
+        "input is too long",
+        "prompt is too long",
+        "reduce the length",
+    )
+    return any(n in msg for n in needles)
+
+
+def _trim_history_messages(
+    messages: List[Dict[str, Any]],
+    keep_last_non_system: int,
+) -> List[Dict[str, Any]]:
+    if keep_last_non_system <= 0:
+        keep_last_non_system = 1
+
+    non_system_indices: list[int] = [
+        i for i, m in enumerate(messages) if _message_role(m) != "system"
+    ]
+    if len(non_system_indices) <= keep_last_non_system:
+        return messages
+
+    kept_set = set(non_system_indices[-keep_last_non_system:])
+    new_messages: list[Dict[str, Any]] = []
+    for i, m in enumerate(messages):
+        if _message_role(m) == "system" or i in kept_set:
+            new_messages.append(m)
+    return new_messages
+
+
+def _truncate_text(text: str, max_chars: int) -> str:
+    if max_chars < 0:
+        max_chars = 0
+    if len(text) <= max_chars:
+        return text
+    if max_chars == 0:
+        return ""
+    return text[:max_chars].rstrip() + "\n...[truncated]"
+
+
+def _shrink_rag_context_messages(
+    messages: List[Dict[str, Any]],
+    max_chars: int,
+) -> List[Dict[str, Any]]:
+    new_messages: list[Dict[str, Any]] = []
+    for idx, m in enumerate(messages):
+        if not _is_rag_context_message(idx, m):
+            new_messages.append(m)
+            continue
+
+        content = m.get("content")
+        # Only truncate string / text-parts deterministically.
+        if isinstance(content, str):
+            truncated = _truncate_text(content, max_chars)
+            if truncated:
+                new_messages.append({**m, "content": truncated})
+            # If max_chars==0, drop the context message.
+            continue
+
+        if isinstance(content, list):
+            new_parts: list[dict[str, Any]] = []
+            for part in content:
+                if not isinstance(part, dict) or part.get("type") != "text":
+                    new_parts.append(part)
+                    continue
+                truncated_text = _truncate_text(str(part.get("text") or ""), max_chars)
+                if truncated_text:
+                    new_parts.append({**part, "text": truncated_text})
+            if new_parts and any(
+                p.get("type") == "text" and str(p.get("text") or "")
+                for p in new_parts
+                if isinstance(p, dict)
+            ):
+                new_messages.append({**m, "content": new_parts})
+            continue
+
+        new_messages.append(m)
+    return new_messages
+
+
+def _split_text_into_chunks(text: str, chunk_chars: int, max_chunks: int) -> list[str]:
+    if chunk_chars <= 0:
+        return [text]
+    if max_chunks <= 0:
+        return []
+    chunks: list[str] = []
+    start = 0
+    while start < len(text) and len(chunks) < max_chunks:
+        end = min(len(text), start + chunk_chars)
+        chunks.append(text[start:end])
+        start = end
+    return chunks
+
+
+async def _summarize_text_chunks_via_llm(
+    *,
+    chunks: list[str],
+    do_complete: Any,
+    base_call_kwargs: Dict[str, Any],
+    max_output_chars: int,
+) -> str:
+    """Summarize text deterministically in bounded chunks.
+
+    Falls back to truncation if summarization fails.
+    """
+
+    if not chunks:
+        return ""
+
+    summary_system = (
+        "You are a precise summarization assistant. "
+        "Summarize the user's text chunk. "
+        "Preserve any questions, constraints, and key identifiers. "
+        "Be concise and factual."
+    )
+
+    per_chunk_summaries: list[str] = []
+    for idx, chunk in enumerate(chunks, start=1):
+        user = (
+            f"Summarize chunk {idx}/{len(chunks)}.\n"
+            "Return a compact summary (max ~12 bullet points).\n\n"
+            f"TEXT:\n{chunk}"
+        )
+
+        try:
+            text = await do_complete(
+                **{
+                    **base_call_kwargs,
+                    "prompt": user,
+                    "system_prompt": summary_system,
+                    "max_tokens": 600,
+                    "temperature": 0,
+                    "messages": None,
+                }
+            )
+            text = (text or "").strip()
+            if text:
+                per_chunk_summaries.append(_truncate_text(text, max_output_chars))
+        except Exception:
+            per_chunk_summaries.append(_truncate_text(chunk, max_output_chars))
+
+    combined = "\n\n".join(per_chunk_summaries).strip()
+    return combined
 
 
 def _is_retriable_error(error: Exception) -> bool:
@@ -124,6 +334,12 @@ async def complete(
     max_retries: int = DEFAULT_MAX_RETRIES,
     retry_delay: float = DEFAULT_RETRY_DELAY,
     exponential_backoff: bool = DEFAULT_EXPONENTIAL_BACKOFF,
+    enable_context_shrink: bool = True,
+    context_shrink_retries: int = DEFAULT_CONTEXT_SHRINK_RETRIES,
+    user_summary_trigger_chars: int = DEFAULT_USER_SUMMARY_TRIGGER_CHARS,
+    user_summary_chunk_chars: int = DEFAULT_USER_SUMMARY_CHUNK_CHARS,
+    user_summary_max_chunks: int = DEFAULT_USER_SUMMARY_MAX_CHUNKS,
+    user_summary_max_output_chars: int = DEFAULT_USER_SUMMARY_MAX_OUTPUT_CHARS,
     **kwargs,
 ) -> str:
     """
@@ -210,6 +426,10 @@ async def complete(
             else:
                 return await cloud_provider.complete(**call_kwargs)
         except Exception as e:
+            # Preserve already-mapped unified exceptions.
+            if isinstance(e, LLMError):
+                raise
+
             # Map raw SDK exceptions to unified exceptions for retry logic
             from .error_mapping import map_error
 
@@ -232,8 +452,107 @@ async def complete(
         call_kwargs["api_version"] = api_version
         call_kwargs["binding"] = binding or "openai"
 
-    # Execute with retry (handled by tenacity decorator)
-    return await _do_complete(**call_kwargs)
+    # Execute with retry (handled by tenacity decorator), plus bounded shrink-and-retry
+    # for context window errors.
+    shrink_retries = max(0, int(context_shrink_retries))
+
+    # Ensure we have a messages array for shrink logic.
+    current_messages: List[Dict[str, Any]]
+    if call_kwargs.get("messages") is None:
+        current_messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": prompt},
+        ]
+        call_kwargs["messages"] = current_messages
+        # When messages are set, providers ignore prompt.
+        call_kwargs["prompt"] = ""
+    else:
+        current_messages = list(call_kwargs["messages"] or [])
+
+    # Track whether we've already summarized the user content so we don't re-summarize.
+    user_summarized = False
+
+    for shrink_attempt in range(shrink_retries + 1):
+        try:
+            call_kwargs["messages"] = current_messages
+            return await _do_complete(**call_kwargs)
+        except Exception as e:
+            if not enable_context_shrink or not _is_context_window_error(e):
+                raise
+
+            if shrink_attempt >= shrink_retries:
+                raise ProviderContextWindowError(
+                    "Context length exceeded (even after shrinking). Please shorten the input or disable RAG/context.",
+                    provider=getattr(e, "provider", None),
+                ) from e
+
+            # Shrink steps (deterministic order):
+            # 1) Trim older chat history (keep most recent messages)
+            # 2) Trim RAG/system context
+            # 3) Summarize oversized user content in bounded chunks
+            history_keep = DEFAULT_HISTORY_KEEP_LAST_LEVELS[
+                min(shrink_attempt, len(DEFAULT_HISTORY_KEEP_LAST_LEVELS) - 1)
+            ]
+            current_messages = _trim_history_messages(current_messages, history_keep)
+
+            if shrink_attempt >= 1:
+                rag_cap = DEFAULT_RAG_CONTEXT_MAX_CHARS_LEVELS[
+                    min(shrink_attempt - 1, len(DEFAULT_RAG_CONTEXT_MAX_CHARS_LEVELS) - 1)
+                ]
+                current_messages = _shrink_rag_context_messages(current_messages, rag_cap)
+
+            if shrink_attempt >= 2 and not user_summarized:
+                # Summarize only if user content is clearly oversized.
+                last_user_index = None
+                for i in range(len(current_messages) - 1, -1, -1):
+                    if _message_role(current_messages[i]) == "user":
+                        last_user_index = i
+                        break
+
+                if last_user_index is not None:
+                    last_user_content = current_messages[last_user_index].get("content")
+                    last_user_text = _extract_text_content(last_user_content)
+
+                    if len(last_user_text) >= int(user_summary_trigger_chars):
+                        chunks = _split_text_into_chunks(
+                            last_user_text,
+                            int(user_summary_chunk_chars),
+                            int(user_summary_max_chunks),
+                        )
+
+                        base_call_kwargs = {
+                            k: v
+                            for k, v in call_kwargs.items()
+                            if k
+                            in {
+                                "model",
+                                "api_key",
+                                "base_url",
+                                "api_version",
+                                "binding",
+                            }
+                        }
+
+                        summary = await _summarize_text_chunks_via_llm(
+                            chunks=chunks,
+                            do_complete=_do_complete,
+                            base_call_kwargs=base_call_kwargs,
+                            max_output_chars=int(user_summary_max_output_chars),
+                        )
+
+                        if summary.strip():
+                            current_messages[last_user_index] = {
+                                **current_messages[last_user_index],
+                                "content": (
+                                    "[User content was too long; summarized]\n\n" + summary.strip()
+                                ),
+                            }
+                            user_summarized = True
+
+            logger.warning(
+                "LLM context window exceeded; shrinking and retrying "
+                f"(attempt {shrink_attempt + 1}/{shrink_retries})."
+            )
 
 
 async def complete_with_vision(
@@ -304,6 +623,12 @@ async def stream(
     max_retries: int = DEFAULT_MAX_RETRIES,
     retry_delay: float = DEFAULT_RETRY_DELAY,
     exponential_backoff: bool = DEFAULT_EXPONENTIAL_BACKOFF,
+    enable_context_shrink: bool = True,
+    context_shrink_retries: int = DEFAULT_CONTEXT_SHRINK_RETRIES,
+    user_summary_trigger_chars: int = DEFAULT_USER_SUMMARY_TRIGGER_CHARS,
+    user_summary_chunk_chars: int = DEFAULT_USER_SUMMARY_CHUNK_CHARS,
+    user_summary_max_chunks: int = DEFAULT_USER_SUMMARY_MAX_CHUNKS,
+    user_summary_max_output_chars: int = DEFAULT_USER_SUMMARY_MAX_OUTPUT_CHARS,
     **kwargs,
 ) -> AsyncGenerator[str, None]:
     """
@@ -360,43 +685,139 @@ async def stream(
         call_kwargs["api_version"] = api_version
         call_kwargs["binding"] = binding or "openai"
 
-    # Retry logic for streaming (retry on connection errors)
-    last_exception = None
-    delay = retry_delay
+    # Bounded streaming retry: transient retry (inner loop) + shrink-and-retry for
+    # context window errors (outer loop). Context window errors are expected to happen
+    # before streaming begins (server rejects request), so restarting is safe.
+    shrink_retries = max(0, int(context_shrink_retries))
 
-    for attempt in range(max_retries + 1):
-        try:
-            # Route to appropriate provider
-            if use_local:
-                async for chunk in local_provider.stream(**call_kwargs):
-                    yield chunk
-            else:
-                async for chunk in cloud_provider.stream(**call_kwargs):
-                    yield chunk
-            # If we get here, streaming completed successfully
-            return
-        except Exception as e:
-            last_exception = e
+    current_messages: List[Dict[str, Any]]
+    if call_kwargs.get("messages") is None:
+        current_messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": prompt},
+        ]
+        call_kwargs["messages"] = current_messages
+        call_kwargs["prompt"] = ""
+    else:
+        current_messages = list(call_kwargs["messages"] or [])
 
-            # Check if we should retry
-            if attempt >= max_retries or not _is_retriable_error(e):
-                raise
+    user_summarized = False
+    last_exception: Exception | None = None
 
-            # Calculate delay for next attempt
-            if exponential_backoff:
-                current_delay = delay * (2**attempt)
-            else:
-                current_delay = delay
+    for shrink_attempt in range(shrink_retries + 1):
+        delay = retry_delay
+        for attempt in range(max_retries + 1):
+            try:
+                call_kwargs["messages"] = current_messages
+                if use_local:
+                    async for chunk in local_provider.stream(**call_kwargs):
+                        yield chunk
+                else:
+                    async for chunk in cloud_provider.stream(**call_kwargs):
+                        yield chunk
+                return
+            except Exception as e:
+                last_exception = e
 
-            # Special handling for rate limit errors with retry_after
-            if isinstance(e, LLMRateLimitError) and e.retry_after:
-                current_delay = max(current_delay, e.retry_after)
+                if enable_context_shrink and _is_context_window_error(e):
+                    if shrink_attempt >= shrink_retries:
+                        raise ProviderContextWindowError(
+                            "Context length exceeded (even after shrinking). Please shorten the input or disable RAG/context.",
+                            provider=getattr(e, "provider", None),
+                        ) from e
 
-            # Wait before retrying
-            await asyncio.sleep(current_delay)
+                    history_keep = DEFAULT_HISTORY_KEEP_LAST_LEVELS[
+                        min(shrink_attempt, len(DEFAULT_HISTORY_KEEP_LAST_LEVELS) - 1)
+                    ]
+                    current_messages = _trim_history_messages(current_messages, history_keep)
 
-    # Should not reach here, but just in case
-    if last_exception:
+                    if shrink_attempt >= 1:
+                        rag_cap = DEFAULT_RAG_CONTEXT_MAX_CHARS_LEVELS[
+                            min(
+                                shrink_attempt - 1,
+                                len(DEFAULT_RAG_CONTEXT_MAX_CHARS_LEVELS) - 1,
+                            )
+                        ]
+                        current_messages = _shrink_rag_context_messages(current_messages, rag_cap)
+
+                    if shrink_attempt >= 2 and not user_summarized:
+                        last_user_index = None
+                        for i in range(len(current_messages) - 1, -1, -1):
+                            if _message_role(current_messages[i]) == "user":
+                                last_user_index = i
+                                break
+
+                        if last_user_index is not None:
+                            last_user_text = _extract_text_content(
+                                current_messages[last_user_index].get("content")
+                            )
+                            if len(last_user_text) >= int(user_summary_trigger_chars):
+                                chunks = _split_text_into_chunks(
+                                    last_user_text,
+                                    int(user_summary_chunk_chars),
+                                    int(user_summary_max_chunks),
+                                )
+
+                                base_call_kwargs = {
+                                    k: v
+                                    for k, v in call_kwargs.items()
+                                    if k
+                                    in {
+                                        "model",
+                                        "api_key",
+                                        "base_url",
+                                        "api_version",
+                                        "binding",
+                                    }
+                                }
+
+                                # Summarize chunks using non-streaming completion, then retry streaming.
+                                async def _do_summary_complete(**summary_kwargs):
+                                    if use_local:
+                                        return await local_provider.complete(**summary_kwargs)
+                                    return await cloud_provider.complete(**summary_kwargs)
+
+                                summary = await _summarize_text_chunks_via_llm(
+                                    chunks=chunks,
+                                    do_complete=_do_summary_complete,
+                                    base_call_kwargs=base_call_kwargs,
+                                    max_output_chars=int(user_summary_max_output_chars),
+                                )
+
+                                if summary.strip():
+                                    current_messages[last_user_index] = {
+                                        **current_messages[last_user_index],
+                                        "content": (
+                                            "[User content was too long; summarized]\n\n"
+                                            + summary.strip()
+                                        ),
+                                    }
+                                    user_summarized = True
+
+                    logger.warning(
+                        "Streaming context window exceeded; shrinking and retrying "
+                        f"(attempt {shrink_attempt + 1}/{shrink_retries})."
+                    )
+                    break  # break inner transient retry loop; retry with shrunk context
+
+                # Not a context window error: handle transient retry.
+                if attempt >= max_retries or not _is_retriable_error(e):
+                    raise
+
+                if exponential_backoff:
+                    current_delay = delay * (2**attempt)
+                else:
+                    current_delay = delay
+
+                if isinstance(e, LLMRateLimitError) and e.retry_after:
+                    current_delay = max(current_delay, e.retry_after)
+
+                await asyncio.sleep(current_delay)
+
+        # Continue to next shrink attempt
+        continue
+
+    if last_exception is not None:
         raise last_exception
 
 

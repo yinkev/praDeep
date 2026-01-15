@@ -56,7 +56,13 @@ _GLOBAL_RULES: List[MappingRule] = [
         factory=lambda exc, provider: LLMRateLimitError(str(exc), provider=provider),
     ),
     MappingRule(
-        classifier=_message_contains("context length", "maximum context"),
+        classifier=_message_contains(
+            "context length",
+            "maximum context",
+            "context_length_exceeded",
+            "too many tokens",
+            "input is too long",
+        ),
         factory=lambda exc, provider: ProviderContextWindowError(str(exc), provider=provider),
     ),
 ]
