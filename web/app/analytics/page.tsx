@@ -24,8 +24,11 @@ import { apiUrl } from '@/lib/api'
 import { getTranslation } from '@/lib/i18n'
 import { useGlobal } from '@/context/GlobalContext'
 import PageWrapper, { PageHeader } from '@/components/ui/PageWrapper'
-import { Card, CardBody, CardContent, CardHeader } from '@/components/ui/Card'
-import Button from '@/components/ui/Button'
+import { Card, CardBody, CardHeader, CardTitle } from '@/components/ui/Card'
+import { Button } from '@/components/ui/Button'
+import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/ui/progress'
+import { StatCard } from '@/components/dashboard/StatCard'
 import { cn } from '@/lib/utils'
 
 type TimeRange = 'day' | 'week' | 'month' | 'all'
@@ -105,174 +108,63 @@ function SegmentedControl<TValue extends string>({
   ariaLabel: string
   className?: string
 }) {
-  const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0 })
-  const optionRefs = useRef<(HTMLButtonElement | null)[]>([])
-
-  useEffect(() => {
-    const updateIndicator = () => {
-      const activeIndex = options.findIndex(o => o.value === value)
-      const activeRef = optionRefs.current[activeIndex]
-      if (!activeRef) return
-
-      setIndicatorStyle({
-        left: activeRef.offsetLeft,
-        width: activeRef.offsetWidth,
-      })
-    }
-
-    updateIndicator()
-    window.addEventListener('resize', updateIndicator)
-    return () => window.removeEventListener('resize', updateIndicator)
-  }, [options, value])
-
   return (
     <div className={cn('relative', className)}>
       <div
         role="group"
         aria-label={ariaLabel}
-        onKeyDown={e => {
-          if (!options.length) return
-
-          const activeIndex = options.findIndex(o => o.value === value)
-          const clampIndex = (index: number) => (index + options.length) % options.length
-          const goTo = (index: number) => {
-            const nextIndex = clampIndex(index)
-            const next = options[nextIndex]?.value
-            if (!next) return
-            onChange(next)
-            optionRefs.current[nextIndex]?.focus()
-          }
-
-          if (e.key === 'ArrowLeft') {
-            e.preventDefault()
-            goTo(Math.max(0, activeIndex) - 1)
-          } else if (e.key === 'ArrowRight') {
-            e.preventDefault()
-            goTo(Math.max(0, activeIndex) + 1)
-          } else if (e.key === 'Home') {
-            e.preventDefault()
-            goTo(0)
-          } else if (e.key === 'End') {
-            e.preventDefault()
-            goTo(options.length - 1)
-          }
-        }}
         className={cn(
-          'relative inline-flex items-center gap-1 rounded-xl border border-glass-border bg-glass p-1 shadow-glass-sm backdrop-blur-md',
-          'dark:border-white/10 dark:bg-white/5'
+          'inline-flex items-center gap-1 rounded-full border border-border bg-surface-elevated/50 p-1 shadow-glass-sm backdrop-blur-md'
         )}
       >
-        {options.map((option, index) => {
+        {options.map((option) => {
           const isActive = option.value === value
 
           return (
             <button
               key={option.value}
-              ref={el => {
-                optionRefs.current[index] = el
-              }}
               type="button"
               aria-pressed={isActive}
               onClick={() => onChange(option.value)}
               className={cn(
-                'relative z-10 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors duration-200',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30',
+                'rounded-full px-4 py-1 text-[10px] font-bold uppercase tracking-widest transition-all duration-200 ease-out-expo',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/30',
                 isActive
-                  ? 'text-blue-700 dark:text-blue-300 shadow-sm'
-                  : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'
+                  ? 'bg-accent-primary text-white shadow-[0_0_15px_rgba(var(--color-accent-primary),0.2)]'
+                  : 'text-text-tertiary hover:text-text-secondary hover:bg-surface-base'
               )}
             >
               {option.label}
             </button>
           )
         })}
-
-        <div
-          aria-hidden="true"
-          className={cn(
-            'pointer-events-none absolute bottom-1 top-1 rounded-lg border border-white/55 bg-white/80 shadow-sm',
-            'dark:border-white/10 dark:bg-zinc-950/50',
-            'transition-[left,width] duration-200 ease-out-expo'
-          )}
-          style={{
-            left: indicatorStyle.left,
-            width: indicatorStyle.width,
-          }}
-        />
       </div>
     </div>
   )
 }
 
-function StatCard({
-  icon: Icon,
-  label,
-  value,
-  suffix,
-}: {
-  icon: React.ElementType
-  label: string
-  value: number
-  suffix?: string
-}) {
+function ChartShell({ children, title, subtitle, icon: Icon }: { children: React.ReactNode; title: string; subtitle?: string; icon: React.ElementType }) {
   return (
-    <Card variant="glass" padding="none" interactive className="h-full">
-      <CardContent className="flex items-start gap-4">
-        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-500/10 text-blue-700 ring-1 ring-blue-500/15 dark:text-blue-300 dark:ring-blue-500/20">
-          <Icon className="h-5 w-5" />
+    <Card interactive={false} className="overflow-hidden border-border bg-surface-base">
+      <CardHeader className="flex flex-row items-center gap-3 pb-2">
+        <div className="rounded-lg bg-surface-elevated p-2 border border-border-subtle">
+          <Icon className="h-4 w-4 text-accent-primary" />
         </div>
-
-        <div className="min-w-0">
-          <div className="text-sm font-medium text-zinc-500 dark:text-zinc-400">{label}</div>
-          <div className="mt-1 flex items-baseline gap-1.5">
-            <span className="text-3xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50 tabular-nums">
-              {Number.isFinite(value) ? value.toLocaleString() : '—'}
-            </span>
-            {suffix && (
-              <span className="text-sm font-medium text-zinc-500 dark:text-zinc-400">{suffix}</span>
-            )}
-          </div>
+        <div>
+          <CardTitle className="text-sm font-bold uppercase tracking-widest text-text-primary">
+            {title}
+          </CardTitle>
+          {subtitle && (
+            <p className="text-[10px] font-mono text-text-tertiary uppercase tracking-tight">{subtitle}</p>
+          )}
         </div>
-      </CardContent>
+      </CardHeader>
+      <CardBody className="pt-2">
+        <div className="rounded-xl border border-border-subtle bg-surface-elevated/30 p-6 overflow-hidden">
+          {children}
+        </div>
+      </CardBody>
     </Card>
-  )
-}
-
-function ProgressBar({
-  value,
-  max,
-  className,
-}: {
-  value: number
-  max: number
-  className?: string
-}) {
-  const percentage = max > 0 ? Math.min(100, (value / max) * 100) : 0
-
-  return (
-    <div className={cn('h-2 w-full rounded-full bg-zinc-200/70 dark:bg-white/10', className)}>
-      <div
-        className={cn(
-          'h-full rounded-full bg-gradient-to-r from-blue-600 to-blue-400',
-          'transition-[width] duration-500 ease-out-expo'
-        )}
-        style={{ width: `${percentage}%` }}
-      />
-    </div>
-  )
-}
-
-function ChartShell({ children, className }: { children: React.ReactNode; className?: string }) {
-  return (
-    <div
-      className={cn(
-        'rounded-xl border border-zinc-200/70 bg-white/70 shadow-sm',
-        'dark:border-white/10 dark:bg-zinc-950/30',
-        className
-      )}
-    >
-      {children}
-    </div>
   )
 }
 
@@ -281,39 +173,36 @@ function TimelineChart({ data, unitLabel }: { data: TimelineData[]; unitLabel: s
   const maxValue = Math.max(...points.map(p => p.total || 0), 1)
 
   return (
-    <div className="space-y-3">
-      <div className="flex h-32 items-end gap-2">
-        {points.map((point, idx) => {
-          const heightPercent = Math.max(2, (Math.max(0, point.total || 0) / maxValue) * 100)
-          const label = point.time.length >= 5 ? point.time.slice(-5) : point.time
+    <div className="flex h-32 items-end gap-2 px-2">
+      {points.map((point, idx) => {
+        const heightPercent = Math.max(2, (Math.max(0, point.total || 0) / maxValue) * 100)
+        const label = point.time.length >= 5 ? point.time.slice(-5) : point.time
 
-          return (
-            <div key={`${point.time}-${idx}`} className="group relative flex-1">
-              <div className="relative h-32 overflow-hidden rounded-lg bg-zinc-100/80 dark:bg-white/5">
-                <div
-                  className="absolute bottom-0 left-0 right-0 rounded-lg bg-gradient-to-t from-blue-600 to-blue-400 shadow-[0_-12px_24px_rgba(59,130,246,0.18)]"
-                  style={{ height: `${heightPercent}%` }}
-                />
-              </div>
-
-              <div className="mt-2 text-center text-[10px] text-zinc-500 dark:text-zinc-400">
-                {label}
-              </div>
-
+        return (
+          <div key={`${point.time}-${idx}`} className="group relative flex-1">
+            <div className="relative h-32 overflow-hidden rounded-sm bg-surface-elevated/50">
               <div
-                className={cn(
-                  'pointer-events-none absolute -top-9 left-1/2 -translate-x-1/2 whitespace-nowrap',
-                  'rounded-lg border border-white/60 bg-white/85 px-2.5 py-1 text-xs text-zinc-800 shadow-glass-sm backdrop-blur-md',
-                  'opacity-0 transition-opacity duration-150 group-hover:opacity-100',
-                  'dark:border-white/10 dark:bg-zinc-950/70 dark:text-zinc-100'
-                )}
-              >
-                {point.total} {unitLabel}
-              </div>
+                className="absolute bottom-0 left-0 right-0 rounded-t-[1px] bg-accent-primary transition-all duration-500 ease-out-expo group-hover:brightness-110 shadow-[0_0_15px_rgba(var(--color-accent-primary),0.2)]"
+                style={{ height: `${heightPercent}%` }}
+              />
             </div>
-          )
-        })}
-      </div>
+
+            <div className="mt-2 text-center text-[8px] font-mono font-bold text-text-quaternary uppercase tracking-tighter">
+              {label}
+            </div>
+
+            <div
+              className={cn(
+                'pointer-events-none absolute -top-10 left-1/2 -translate-x-1/2 whitespace-nowrap z-50',
+                'rounded border border-border bg-surface-base px-2 py-1 text-[10px] font-mono font-bold text-text-primary shadow-glass-sm backdrop-blur-md',
+                'opacity-0 transition-opacity duration-150 group-hover:opacity-100'
+              )}
+            >
+              {point.total} {unitLabel.toUpperCase()}
+            </div>
+          </div>
+        )
+      })}
     </div>
   )
 }
@@ -322,14 +211,14 @@ function ScoreBar({ label, score }: { label: string; score: number }) {
   const safeScore = Number.isFinite(score) ? Math.max(0, Math.min(100, score)) : 0
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between gap-3">
-        <span className="text-sm font-medium text-zinc-900 dark:text-zinc-50">{label}</span>
-        <span className="text-sm font-semibold tabular-nums text-zinc-700 dark:text-zinc-200">
-          {Math.round(safeScore)}
+    <div className="space-y-3">
+      <div className="flex items-center justify-between gap-3 px-1">
+        <span className="text-[10px] font-bold uppercase tracking-widest text-text-primary">{label}</span>
+        <span className="text-[10px] font-mono font-bold tabular-nums text-accent-primary">
+          {Math.round(safeScore)}%
         </span>
       </div>
-      <ProgressBar value={safeScore} max={100} className="h-2.5" />
+      <Progress value={safeScore} className="h-1.5" />
     </div>
   )
 }
@@ -431,11 +320,11 @@ export default function AnalyticsPage() {
       <PageHeader
         title={t('Learning Analytics')}
         description={t('Track your learning progress and identify areas for improvement')}
-        icon={<BarChart3 className="h-5 w-5 text-blue-600 dark:text-blue-300" />}
+        icon={<BarChart3 className="h-5 w-5 text-accent-primary" />}
         actions={
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
-            <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-zinc-400" />
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-end">
+            <div className="flex items-center gap-3">
+              <Clock className="h-3.5 w-3.5 text-text-quaternary" />
               <SegmentedControl<TimeRange>
                 ariaLabel={t('Time Range')}
                 value={timeRange}
@@ -449,375 +338,279 @@ export default function AnalyticsPage() {
               size="sm"
               onClick={fetchAnalytics}
               loading={loading}
-              iconLeft={<RefreshCw className="h-4 w-4" />}
+              className="font-mono text-[10px] uppercase tracking-widest h-8"
             >
+              <RefreshCw className="h-3 w-3 mr-2" />
               {t('Refresh')}
             </Button>
           </div>
         }
-        className="flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
+        className="flex-col gap-6 sm:flex-row sm:items-start sm:justify-between mb-8"
       />
 
-      <div className="space-y-6">
+      <div className="space-y-8">
         {loading ? (
-          <div className="flex items-center justify-center py-16">
-            <Card variant="glass" padding="none" interactive={false} className="overflow-hidden">
-              <CardBody className="flex items-center gap-3 text-zinc-600 dark:text-zinc-300">
-                <Loader2 className="h-5 w-5 animate-spin text-blue-600 dark:text-blue-400" />
-                <span className="text-sm">{t('Loading analytics')}...</span>
-              </CardBody>
-            </Card>
+          <div className="flex flex-col items-center justify-center py-32 gap-4">
+            <Loader2 className="h-8 w-8 animate-spin text-accent-primary" />
+            <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-text-tertiary">
+              {t('Loading analytics')}
+            </span>
           </div>
         ) : error ? (
-          <Card variant="glass" padding="none" interactive={false}>
-            <CardHeader className="flex-row items-start justify-between gap-4">
-              <div className="flex items-start gap-3">
-                <div className="mt-0.5 flex h-10 w-10 items-center justify-center rounded-xl bg-red-500/10 text-red-700 ring-1 ring-red-500/15 dark:text-red-300 dark:ring-red-500/20">
-                  <Target className="h-5 w-5" />
-                </div>
-                <div>
-                  <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
-                    {t('Error')}
-                  </h2>
-                  <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">{error}</p>
-                </div>
+          <Card interactive={false} className="border-error/20 bg-error-muted/10">
+            <CardBody className="flex flex-col items-center py-12 text-center">
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-error/10 text-error">
+                <Target className="h-6 w-6" />
               </div>
-
+              <h2 className="text-sm font-bold uppercase tracking-widest text-text-primary">
+                {t('Error')}
+              </h2>
+              <p className="mt-1 text-xs font-mono text-text-tertiary uppercase tracking-tight">{error}</p>
               <Button
                 variant="secondary"
                 size="sm"
                 onClick={fetchAnalytics}
-                iconLeft={<RefreshCw className="h-4 w-4" />}
+                className="mt-6"
               >
+                <RefreshCw className="h-3 w-3 mr-2" />
                 {t('Refresh')}
               </Button>
-            </CardHeader>
+            </CardBody>
           </Card>
         ) : (
           <>
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
               <StatCard
-                icon={Zap}
+                icon={<Zap size={20} />}
                 label={t('Total Activities')}
                 value={summary?.total_activities ?? 0}
               />
               <StatCard
-                icon={Trophy}
+                icon={<Trophy size={20} />}
                 label={t('Current Streak')}
                 value={progress?.current_streak ?? 0}
-                suffix={t('days')}
+                trend={`${progress?.active_days ?? 0} ACTIVE`}
               />
               <StatCard
-                icon={BookOpen}
+                icon={<BookOpen size={20} />}
                 label={t('Topics Covered')}
                 value={topics?.total_topics ?? 0}
               />
               <StatCard
-                icon={Calendar}
+                icon={<Calendar size={20} />}
                 label={t('Active Days')}
                 value={progress?.active_days ?? 0}
               />
             </div>
 
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-              <Card
-                variant="glass"
-                padding="none"
-                interactive={false}
-                className="lg:col-span-2 overflow-hidden"
+              <div className="lg:col-span-2">
+                <ChartShell 
+                  title={t('Activity Timeline')} 
+                  subtitle={timeRangeLabel.toUpperCase()} 
+                  icon={TrendingUp}
+                >
+                  {timeline.length > 0 ? (
+                    <TimelineChart data={timeline} unitLabel={t('activities')} />
+                  ) : (
+                    <div className="flex h-40 items-center justify-center text-[10px] font-mono uppercase tracking-[0.2em] text-text-quaternary">
+                      {t('No activity data available')}
+                    </div>
+                  )}
+                </ChartShell>
+              </div>
+
+              <ChartShell 
+                title={t('Activity Breakdown')} 
+                subtitle={`${t('Activities total')}: ${totalActivities.toLocaleString()}`} 
+                icon={Target}
               >
-                <CardHeader className="flex-row items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className="rounded-lg bg-blue-50/80 p-2 dark:bg-blue-500/10">
-                      <TrendingUp className="h-5 w-5 text-blue-600 dark:text-blue-300" />
-                    </div>
-                    <div>
-                      <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
-                        {t('Activity Timeline')}
-                      </h2>
-                      <p className="text-sm text-zinc-500 dark:text-zinc-400">{timeRangeLabel}</p>
-                    </div>
-                  </div>
-                </CardHeader>
+                {breakdownEntries.length > 0 ? (
+                  <div className="space-y-6">
+                    {breakdownEntries.map(([type, count]) => {
+                      const Icon = ACTIVITY_TYPE_ICON[type] ?? MessageCircle
+                      const percentage =
+                        totalActivities > 0 ? Math.round((count / totalActivities) * 100) : 0
+                      const typeLabel = t(`${type.slice(0, 1).toUpperCase()}${type.slice(1)}`)
 
-                <CardBody className="space-y-4">
-                  <ChartShell className="overflow-hidden p-6">
-                    {timeline.length > 0 ? (
-                      <TimelineChart data={timeline} unitLabel={t('activities')} />
-                    ) : (
-                      <div className="flex h-40 items-center justify-center text-sm text-zinc-500 dark:text-zinc-400">
-                        {t('No activity data available')}
-                      </div>
-                    )}
-                  </ChartShell>
-                </CardBody>
-              </Card>
-
-              <Card variant="glass" padding="none" interactive={false} className="overflow-hidden">
-                <CardHeader className="flex-row items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className="rounded-lg bg-blue-50/80 p-2 dark:bg-blue-500/10">
-                      <Target className="h-5 w-5 text-blue-600 dark:text-blue-300" />
-                    </div>
-                    <div>
-                      <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
-                        {t('Activity Breakdown')}
-                      </h2>
-                      <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                        {t('Activities total')}: {totalActivities.toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-                </CardHeader>
-
-                <CardBody>
-                  <ChartShell className="p-6">
-                    {breakdownEntries.length > 0 ? (
-                      <div className="space-y-4">
-                        {breakdownEntries.map(([type, count]) => {
-                          const Icon = ACTIVITY_TYPE_ICON[type] ?? MessageCircle
-                          const percentage =
-                            totalActivities > 0 ? Math.round((count / totalActivities) * 100) : 0
-                          const typeLabel = t(`${type.slice(0, 1).toUpperCase()}${type.slice(1)}`)
-
-                          return (
-                            <div key={type} className="space-y-2">
-                              <div className="flex items-center justify-between gap-3">
-                                <div className="flex min-w-0 items-center gap-2.5">
-                                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/70 text-blue-700 shadow-glass-sm ring-1 ring-white/60 backdrop-blur-md dark:bg-white/5 dark:text-blue-300 dark:ring-white/10">
-                                    <Icon className="h-4 w-4" />
-                                  </div>
-                                  <div className="min-w-0">
-                                    <div className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-50">
-                                      {typeLabel}
-                                    </div>
-                                    <div className="text-xs text-zinc-500 dark:text-zinc-400 tabular-nums">
-                                      {count.toLocaleString()} · {percentage}%
-                                    </div>
-                                  </div>
+                      return (
+                        <div key={type} className="space-y-2">
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex min-w-0 items-center gap-2.5">
+                              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-surface-elevated text-accent-primary border border-border-subtle shadow-glass-sm">
+                                <Icon className="h-4 w-4" />
+                              </div>
+                              <div className="min-w-0">
+                                <div className="truncate text-[10px] font-bold uppercase tracking-widest text-text-primary">
+                                  {typeLabel}
+                                </div>
+                                <div className="text-[10px] font-mono text-text-tertiary tabular-nums uppercase">
+                                  {count.toLocaleString()} · {percentage}%
                                 </div>
                               </div>
-                              <ProgressBar value={count} max={Math.max(totalActivities, 1)} />
                             </div>
-                          )
-                        })}
-                      </div>
-                    ) : (
-                      <div className="py-10 text-center text-sm text-zinc-500 dark:text-zinc-400">
-                        {t('No activities yet')}
-                      </div>
-                    )}
-                  </ChartShell>
-                </CardBody>
-              </Card>
-            </div>
-
-            <Card variant="glass" padding="none" interactive={false} className="overflow-hidden">
-              <CardHeader className="flex-row items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="rounded-lg bg-blue-50/80 p-2 dark:bg-blue-500/10">
-                    <Sparkles className="h-5 w-5 text-blue-600 dark:text-blue-300" />
-                  </div>
-                  <div>
-                    <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
-                      {t('Learning Scores')}
-                    </h2>
-                    <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                      {t('Track your learning progress and identify areas for improvement')}
-                    </p>
-                  </div>
-                </div>
-              </CardHeader>
-
-              <CardBody className="space-y-6">
-                <ChartShell className="p-6">
-                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                    <ScoreBar label={t('Overall')} score={predictions?.overall_score ?? 0} />
-                    <ScoreBar label={t('Engagement')} score={predictions?.engagement_score ?? 0} />
-                    <ScoreBar
-                      label={t('Consistency')}
-                      score={predictions?.consistency_score ?? 0}
-                    />
-                    <ScoreBar label={t('Diversity')} score={predictions?.diversity_score ?? 0} />
-                  </div>
-                </ChartShell>
-
-                {predictions?.recommendations && predictions.recommendations.length > 0 && (
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2 text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-                      <Sparkles className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                      {t('Recommendations')}
-                    </div>
-
-                    <div className="space-y-2">
-                      {predictions.recommendations.map((rec, idx) => (
-                        <div
-                          key={`${idx}-${rec}`}
-                          className={cn(
-                            'flex items-start gap-2 rounded-xl border border-white/55 bg-white/60 px-4 py-3 text-sm text-zinc-700 shadow-glass-sm backdrop-blur-md',
-                            'dark:border-white/10 dark:bg-white/5 dark:text-zinc-200'
-                          )}
-                        >
-                          <span className="mt-0.5 text-blue-600 dark:text-blue-400">*</span>
-                          <span>{rec}</span>
+                          </div>
+                          <Progress value={percentage} className="h-1" />
                         </div>
-                      ))}
-                    </div>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <div className="py-10 text-center text-[10px] font-mono uppercase tracking-[0.2em] text-text-quaternary">
+                    {t('No activities yet')}
                   </div>
                 )}
-              </CardBody>
-            </Card>
+              </ChartShell>
+            </div>
 
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-              <Card variant="glass" padding="none" interactive={false} className="overflow-hidden">
-                <CardHeader className="flex-row items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className="rounded-lg bg-blue-50/80 p-2 dark:bg-blue-500/10">
-                      <ArrowUpRight className="h-5 w-5 text-blue-600 dark:text-blue-300" />
-                    </div>
-                    <div>
-                      <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
-                        {t('Strength Areas')}
-                      </h2>
-                      <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                        {t('Topics')}: {(topics?.total_topics ?? 0).toLocaleString()}
-                      </p>
-                    </div>
+              <Card interactive={false} className="border-border bg-surface-base">
+                <CardHeader className="flex flex-row items-center gap-3">
+                  <div className="rounded-lg bg-surface-elevated p-2 border border-border-subtle">
+                    <Sparkles className="h-4 w-4 text-accent-primary" />
                   </div>
+                  <CardTitle className="text-sm font-bold uppercase tracking-widest text-text-primary">
+                    {t('Learning Scores')}
+                  </CardTitle>
                 </CardHeader>
+                <CardBody className="pt-2">
+                  <div className="grid grid-cols-1 gap-8 md:grid-cols-2 bg-surface-elevated/30 p-6 rounded-xl border border-border-subtle">
+                    <ScoreBar label={t('Overall')} score={predictions?.overall_score ?? 0} />
+                    <ScoreBar label={t('Engagement')} score={predictions?.engagement_score ?? 0} />
+                    <ScoreBar label={t('Consistency')} score={predictions?.consistency_score ?? 0} />
+                    <ScoreBar label={t('Diversity')} score={predictions?.diversity_score ?? 0} />
+                  </div>
 
-                <CardBody>
-                  <ChartShell className="p-6">
-                    {topics?.strength_areas && topics.strength_areas.length > 0 ? (
-                      <div className="space-y-3">
-                        {topics.strength_areas.slice(0, 8).map((item, idx) => {
-                          const count = item.sessions ?? item.count ?? 0
-                          return (
-                            <div
-                              key={`${idx}-${item.topic}`}
-                              className="rounded-xl border border-white/55 bg-white/70 px-4 py-3 shadow-glass-sm backdrop-blur-md dark:border-white/10 dark:bg-white/5"
-                            >
-                              <div className="flex items-start justify-between gap-3">
-                                <div className="min-w-0">
-                                  <div className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-50">
-                                    {item.topic}
-                                  </div>
-                                  <div className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
-                                    {count} {t('sessions')}
-                                  </div>
-                                </div>
-                                <div className="text-xs font-semibold tabular-nums text-blue-700 dark:text-blue-300">
-                                  {Math.round((count / strengthMax) * 100)}%
-                                </div>
-                              </div>
-                              <div className="mt-3">
-                                <ProgressBar value={count} max={strengthMax} />
-                              </div>
-                            </div>
-                          )
-                        })}
+                  {predictions?.recommendations && predictions.recommendations.length > 0 && (
+                    <div className="mt-8 space-y-4">
+                      <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-text-primary">
+                        <Sparkles className="h-3 w-3 text-accent-primary" />
+                        {t('Recommendations')}
                       </div>
-                    ) : (
-                      <div className="py-10 text-center text-sm text-zinc-500 dark:text-zinc-400">
-                        {t('Keep learning to identify your strengths!')}
+
+                      <div className="grid grid-cols-1 gap-2">
+                        {predictions.recommendations.map((rec, idx) => (
+                          <div
+                            key={`${idx}-${rec}`}
+                            className={cn(
+                              'flex items-start gap-3 rounded-xl border border-border-subtle bg-surface-elevated/40 px-4 py-3 text-xs text-text-secondary shadow-glass-sm backdrop-blur-md transition-colors hover:border-accent-primary/20 group'
+                            )}
+                          >
+                            <div className="mt-1 w-1.5 h-1.5 rounded-full bg-accent-primary shrink-0 group-hover:scale-125 transition-transform" />
+                            <span className="leading-relaxed">{rec}</span>
+                          </div>
+                        ))}
                       </div>
-                    )}
-                  </ChartShell>
+                    </div>
+                  )}
                 </CardBody>
               </Card>
 
-              <Card variant="glass" padding="none" interactive={false} className="overflow-hidden">
-                <CardHeader className="flex-row items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className="rounded-lg bg-blue-50/80 p-2 dark:bg-blue-500/10">
-                      <ArrowDownRight className="h-5 w-5 text-blue-600 dark:text-blue-300" />
-                    </div>
-                    <div>
-                      <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
-                        {t('Areas to Review')}
-                      </h2>
-                      <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                        {t('Track your learning progress and identify areas for improvement')}
-                      </p>
-                    </div>
-                  </div>
-                </CardHeader>
-
-                <CardBody>
-                  <ChartShell className="p-6">
-                    {topics?.knowledge_gaps && topics.knowledge_gaps.length > 0 ? (
-                      <div className="space-y-3">
-                        {topics.knowledge_gaps.slice(0, 8).map((item, idx) => {
-                          const badge =
-                            item.days_since_last !== undefined
-                              ? `${Math.round(item.days_since_last)} ${t('days ago')}`
-                              : `${item.sessions ?? item.count ?? 0} ${t('sessions')}`
-
-                          return (
-                            <div
-                              key={`${idx}-${item.topic}`}
-                              className="flex items-center justify-between gap-3 rounded-xl border border-white/55 bg-white/70 px-4 py-3 shadow-glass-sm backdrop-blur-md dark:border-white/10 dark:bg-white/5"
-                            >
+              <div className="space-y-6">
+                <ChartShell 
+                  title={t('Strength Areas')} 
+                  subtitle={`${t('Topics')}: ${(topics?.total_topics ?? 0).toLocaleString()}`} 
+                  icon={ArrowUpRight}
+                >
+                  {topics?.strength_areas && topics.strength_areas.length > 0 ? (
+                    <div className="space-y-4">
+                      {topics.strength_areas.slice(0, 5).map((item, idx) => {
+                        const count = item.sessions ?? item.count ?? 0
+                        const percentage = Math.round((count / strengthMax) * 100)
+                        return (
+                          <div
+                            key={`${idx}-${item.topic}`}
+                            className="group"
+                          >
+                            <div className="flex items-start justify-between gap-3 mb-2">
                               <div className="min-w-0">
-                                <div className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-50">
+                                <div className="truncate text-[10px] font-bold uppercase tracking-widest text-text-primary group-hover:text-accent-primary transition-colors">
                                   {item.topic}
                                 </div>
-                                <div className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
-                                  {t('Areas to Review')}
+                                <div className="text-[9px] font-mono text-text-tertiary uppercase tracking-tight">
+                                  {count} {t('sessions')}
                                 </div>
                               </div>
-
-                              <span className="shrink-0 rounded-full bg-blue-500/10 px-3 py-1 text-xs font-semibold text-blue-700 ring-1 ring-blue-500/15 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20">
-                                {badge}
-                              </span>
+                              <div className="text-[10px] font-mono font-bold text-accent-primary">
+                                {percentage}%
+                              </div>
                             </div>
-                          )
-                        })}
-                      </div>
-                    ) : (
-                      <div className="py-10 text-center text-sm text-zinc-500 dark:text-zinc-400">
-                        {t('Great! No knowledge gaps detected.')}
-                      </div>
-                    )}
-                  </ChartShell>
-                </CardBody>
-              </Card>
+                            <Progress value={percentage} className="h-1" />
+                          </div>
+                        )
+                      })}
+                    </div>
+                  ) : (
+                    <div className="py-10 text-center text-[10px] font-mono uppercase tracking-[0.2em] text-text-quaternary">
+                      {t('Keep learning to identify your strengths!')}
+                    </div>
+                  )}
+                </ChartShell>
+
+                <ChartShell 
+                  title={t('Areas to Review')} 
+                  subtitle={t('Knowledge Gaps Detected')}
+                  icon={ArrowDownRight}
+                >
+                  {topics?.knowledge_gaps && topics.knowledge_gaps.length > 0 ? (
+                    <div className="space-y-3">
+                      {topics.knowledge_gaps.slice(0, 5).map((item, idx) => {
+                        const badge =
+                          item.days_since_last !== undefined
+                            ? `${Math.round(item.days_since_last)}D AGO`
+                            : `${item.sessions ?? item.count ?? 0} SES`
+
+                        return (
+                          <div
+                            key={`${idx}-${item.topic}`}
+                            className="flex items-center justify-between gap-3 rounded-xl border border-border-subtle bg-surface-elevated/40 px-4 py-3 shadow-glass-sm backdrop-blur-md hover:border-accent-primary/20 transition-colors"
+                          >
+                            <div className="min-w-0">
+                              <div className="truncate text-[10px] font-bold uppercase tracking-widest text-text-primary">
+                                {item.topic}
+                              </div>
+                            </div>
+
+                            <span className="shrink-0 rounded-full bg-accent-primary/10 px-2 py-0.5 text-[8px] font-mono font-bold text-accent-primary border border-accent-primary/20 uppercase tracking-widest">
+                              {badge}
+                            </span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  ) : (
+                    <div className="py-10 text-center text-[10px] font-mono uppercase tracking-[0.2em] text-text-quaternary">
+                      {t('Great! No knowledge gaps detected.')}
+                    </div>
+                  )}
+                </ChartShell>
+              </div>
             </div>
 
             {topics?.all_topics && topics.all_topics.length > 0 && (
-              <Card variant="glass" padding="none" interactive={false} className="overflow-hidden">
-                <CardHeader className="flex-row items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className="rounded-lg bg-blue-50/80 p-2 dark:bg-blue-500/10">
-                      <BookOpen className="h-5 w-5 text-blue-600 dark:text-blue-300" />
-                    </div>
-                    <div>
-                      <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
-                        {t('All Topics')}
-                      </h2>
-                      <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                        {t('Topics')}: {(topics?.total_topics ?? 0).toLocaleString()}
-                      </p>
-                    </div>
+              <Card interactive={false} className="border-border bg-surface-base">
+                <CardHeader className="flex flex-row items-center gap-3">
+                  <div className="rounded-lg bg-surface-elevated p-2 border border-border-subtle">
+                    <BookOpen className="h-4 w-4 text-accent-primary" />
                   </div>
+                  <CardTitle className="text-sm font-bold uppercase tracking-widest text-text-primary">
+                    {t('All Topics')}
+                  </CardTitle>
                 </CardHeader>
-
-                <CardBody>
+                <CardBody className="pt-2">
                   <div className="flex flex-wrap gap-2">
                     {topics.all_topics.map((item, idx) => (
-                      <span
+                      <Badge
                         key={`${idx}-${item.topic}`}
-                        className={cn(
-                          'inline-flex max-w-full items-center gap-2 rounded-full border border-white/55 bg-white/60 px-3 py-1.5 text-sm text-zinc-700 shadow-glass-sm backdrop-blur-md',
-                          'dark:border-white/10 dark:bg-zinc-950/45 dark:text-zinc-200'
-                        )}
+                        variant="secondary"
+                        className="rounded-full border border-border-subtle bg-surface-elevated px-3 py-1 text-[9px] font-bold text-text-secondary uppercase tracking-widest hover:border-accent-primary/30 hover:text-accent-primary transition-all cursor-default"
                         title={`${item.topic} (${item.count ?? item.sessions ?? 0})`}
                       >
-                        <span className="truncate">{item.topic}</span>
-                        <span className="shrink-0 text-xs font-semibold text-blue-700 dark:text-blue-300 tabular-nums">
+                        <span className="truncate max-w-[120px]">{item.topic}</span>
+                        <span className="ml-2 shrink-0 font-mono text-accent-primary opacity-60">
                           {item.count ?? item.sessions ?? 0}
                         </span>
-                      </span>
+                      </Badge>
                     ))}
                   </div>
                 </CardBody>

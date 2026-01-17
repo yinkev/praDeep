@@ -28,10 +28,14 @@ import { cn } from '@/lib/utils'
 import { getTranslation } from '@/lib/i18n'
 import { useGlobal } from '@/context/GlobalContext'
 import PageWrapper, { PageHeader } from '@/components/ui/PageWrapper'
-import { Card } from '@/components/ui/Card'
-import { IconButton } from '@/components/ui/Button'
+import { Card, CardBody, CardHeader, CardTitle } from '@/components/ui/Card'
+import { IconButton, Button } from '@/components/ui/Button'
 import { FullPageLoading } from '@/components/ui/LoadingState'
 import { useToast } from '@/components/ui/Toast'
+import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/ui/progress'
+import { StatCard } from '@/components/dashboard/StatCard'
+import { Switch } from '@/components/ui/switch'
 
 interface Preference {
   response_style: string
@@ -102,145 +106,6 @@ const scaleIn: Variants = {
   },
 }
 
-interface ToggleSwitchProps {
-  checked: boolean
-  onChange: (checked: boolean) => void
-  disabled?: boolean
-}
-
-function ToggleSwitch({ checked, onChange, disabled }: ToggleSwitchProps) {
-  return (
-    <motion.button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      disabled={disabled}
-      onClick={() => onChange(!checked)}
-      whileTap={disabled ? undefined : { scale: 0.95 }}
-      className={cn(
-        'relative inline-flex h-6 w-11 items-center rounded-full transition-all duration-300',
-        checked ? 'bg-blue-600 shadow-lg shadow-blue-500/25' : 'bg-zinc-200 dark:bg-white/10',
-        disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:shadow-md',
-        'focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/35 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-zinc-950'
-      )}
-    >
-      <motion.span
-        layout
-        transition={{
-          type: 'spring',
-          stiffness: 500,
-          damping: 30,
-        }}
-        className={cn(
-          'inline-block h-4 w-4 rounded-full bg-white shadow-lg dark:bg-zinc-50',
-          checked ? 'translate-x-6' : 'translate-x-1'
-        )}
-      />
-    </motion.button>
-  )
-}
-
-interface StatCardProps {
-  icon: React.ReactNode
-  value: number | string
-  label: string
-}
-
-function StatCard({ icon, value, label }: StatCardProps) {
-  return (
-    <motion.div
-      variants={fadeInUp}
-      whileHover={{
-        scale: 1.02,
-        transition: { duration: 0.2, ease: [0.16, 1, 0.3, 1] },
-      }}
-      className="h-full"
-    >
-      <Card
-        variant="glass"
-        padding="sm"
-        className="h-full transition-shadow duration-300 hover:shadow-lg"
-      >
-        <div className="flex items-center gap-3">
-          <motion.div
-            whileHover={{ rotate: [0, -10, 10, -10, 0], scale: 1.1 }}
-            transition={{ duration: 0.5 }}
-            className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-blue-600 ring-1 ring-blue-100/80 dark:bg-blue-950/40 dark:text-blue-400 dark:ring-white/10"
-          >
-            {icon}
-          </motion.div>
-          <div className="min-w-0">
-            <div className="text-xs font-medium text-zinc-500 dark:text-zinc-400">{label}</div>
-            <motion.div
-              key={value}
-              initial={{ scale: 1.2, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-              className="mt-0.5 text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50 tabular-nums"
-            >
-              {value}
-            </motion.div>
-          </div>
-        </div>
-      </Card>
-    </motion.div>
-  )
-}
-
-interface ProgressBarProps {
-  label: string
-  value: number
-  maxValue: number
-}
-
-function ProgressBar({ label, value, maxValue }: ProgressBarProps) {
-  const pct = maxValue > 0 ? Math.min(1, value / maxValue) : 0
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, x: -20 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-      className="group flex items-center gap-3"
-    >
-      <div className="w-28 truncate text-xs font-medium text-zinc-600 transition-colors group-hover:text-zinc-900 dark:text-zinc-400 dark:group-hover:text-zinc-200">
-        {label}
-      </div>
-      <div className="relative h-2 flex-1 overflow-hidden rounded-full bg-zinc-200/70 dark:bg-white/10">
-        <motion.div
-          initial={{ width: 0 }}
-          animate={{ width: `${pct * 100}%` }}
-          transition={{
-            duration: 1.2,
-            delay: 0.2,
-            ease: [0.16, 1, 0.3, 1],
-          }}
-          className="h-full rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 shadow-sm"
-        />
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: [0, 1, 0] }}
-          transition={{
-            duration: 2,
-            delay: 0.2,
-            ease: 'easeInOut',
-          }}
-          className="absolute inset-y-0 left-0 w-full bg-gradient-to-r from-transparent via-white/30 to-transparent"
-          style={{ width: `${pct * 100}%` }}
-        />
-      </div>
-      <motion.div
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.3, delay: 0.5 }}
-        className="w-10 text-right text-xs font-medium text-zinc-500 tabular-nums dark:text-zinc-400"
-      >
-        {value}
-      </motion.div>
-    </motion.div>
-  )
-}
-
 function masteryPercent(score: number) {
   const normalized = score <= 1 ? score * 100 : score
   return Math.max(0, Math.min(100, normalized))
@@ -259,55 +124,37 @@ function TopicCard({ topic, formatTime }: TopicCardProps) {
   return (
     <motion.div
       variants={scaleIn}
-      whileHover={{
-        scale: 1.02,
-        y: -4,
-        transition: { duration: 0.2, ease: [0.16, 1, 0.3, 1] },
-      }}
+      whileHover={{ y: -4 }}
       className="h-full"
     >
       <Card
-        variant="glass"
-        padding="sm"
-        className="h-full transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/10"
+        interactive={true}
+        className="h-full border-border bg-surface-base hover:border-accent-primary/20 hover:shadow-glass-sm transition-all duration-300"
       >
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start justify-between gap-4 p-5">
           <div className="min-w-0">
-            <div className="truncate font-medium text-zinc-900 dark:text-zinc-50">{topic.name}</div>
-            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
+            <div className="truncate text-xs font-bold uppercase tracking-widest text-text-primary group-hover:text-accent-primary transition-colors">
+              {topic.name}
+            </div>
+            <div className="mt-3 flex flex-wrap items-center gap-3 text-[9px] font-mono uppercase tracking-widest text-text-tertiary">
               <span className="inline-flex items-center gap-1.5">
-                <Clock className="h-3.5 w-3.5" />
-                {formatTime(topic.last_accessed)}
+                <Clock className="h-3 w-3 text-text-quaternary" />
+                {formatTime(topic.last_accessed).toUpperCase()}
               </span>
               {topic.category && (
                 <>
-                  <span className="text-zinc-300 dark:text-zinc-700">•</span>
-                  <motion.span
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.1 }}
-                    className="text-blue-600 dark:text-blue-400"
-                  >
-                    {topic.category}
-                  </motion.span>
+                  <span className="text-text-quaternary">•</span>
+                  <span className="text-accent-primary opacity-80">{topic.category.toUpperCase()}</span>
                 </>
               )}
             </div>
           </div>
-          <motion.span
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{
-              type: 'spring',
-              stiffness: 260,
-              damping: 20,
-              delay: 0.1,
-            }}
-            whileHover={{ scale: 1.1 }}
-            className="shrink-0 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 ring-1 ring-blue-200/60 dark:bg-blue-950/40 dark:text-blue-300 dark:ring-white/10 tabular-nums"
+          <Badge 
+            variant="secondary"
+            className="shrink-0 rounded-full bg-accent-primary/10 px-2 py-0.5 text-[10px] font-mono font-bold text-accent-primary border border-accent-primary/20 uppercase tracking-widest"
           >
-            {topic.frequency}x
-          </motion.span>
+            {topic.frequency}X
+          </Badge>
         </div>
       </Card>
     </motion.div>
@@ -332,53 +179,39 @@ function QuestionCard({ question, onResolve, formatTime }: QuestionCardProps) {
     <motion.div
       variants={scaleIn}
       animate={isResolving ? { scale: 0.9, opacity: 0 } : {}}
-      whileHover={{
-        scale: 1.02,
-        y: -4,
-        transition: { duration: 0.2, ease: [0.16, 1, 0.3, 1] },
-      }}
+      whileHover={{ y: -4 }}
       className="h-full"
     >
       <Card
-        variant="glass"
-        padding="sm"
-        className="h-full transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/10"
+        interactive={true}
+        className="h-full border-border bg-surface-base hover:border-accent-primary/20 hover:shadow-glass-sm transition-all duration-300"
       >
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex items-start justify-between gap-6 p-5">
           <div className="min-w-0 flex-1">
-            <p className="line-clamp-2 leading-relaxed text-zinc-900 dark:text-zinc-50">
+            <p className="line-clamp-3 text-sm leading-relaxed text-text-primary font-medium">
               {question.normalized}
             </p>
-            <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-zinc-500 dark:text-zinc-400">
-              <motion.span
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ delay: 0.1, type: 'spring', stiffness: 260, damping: 20 }}
-                className="flex items-center gap-1.5 rounded-lg bg-blue-50 px-2 py-1 text-blue-700 ring-1 ring-blue-200/60 dark:bg-blue-950/40 dark:text-blue-300 dark:ring-white/10"
-              >
-                <TrendingUp className="h-3.5 w-3.5" />
-                Asked {question.frequency}x
-              </motion.span>
-              <span className="flex items-center gap-1.5">
-                <Clock className="h-3.5 w-3.5" />
-                {formatTime(question.last_asked)}
+            <div className="mt-4 flex flex-wrap items-center gap-4 text-[9px] font-mono uppercase tracking-widest text-text-tertiary">
+              <span className="flex items-center gap-1.5 text-accent-primary bg-accent-primary/10 border border-accent-primary/20 px-2 py-0.5 rounded-full font-bold">
+                <TrendingUp className="h-3 w-3" />
+                FREQ: {question.frequency}X
+              </span>
+              <span className="flex items-center gap-1.5 font-bold">
+                <Clock className="h-3 w-3 text-text-quaternary" />
+                {formatTime(question.last_asked).toUpperCase()}
               </span>
             </div>
           </div>
 
-          <motion.button
+          <button
             type="button"
             onClick={handleResolve}
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-            className="rounded-xl border border-blue-200/70 bg-blue-50 p-2.5 text-blue-700 shadow-sm transition-all duration-200 hover:bg-blue-100 hover:shadow-md hover:shadow-blue-500/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/35 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:border-white/10 dark:bg-blue-950/40 dark:text-blue-300 dark:hover:bg-blue-950/60 dark:focus-visible:ring-offset-zinc-950"
+            className="shrink-0 group flex h-10 w-10 items-center justify-center rounded-xl bg-surface-raised border border-border text-text-tertiary hover:text-success hover:border-success/30 hover:bg-success-muted/10 transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success/20"
             aria-label="Mark question as resolved"
             title="Mark as resolved"
           >
-            <motion.div whileHover={{ rotate: 360 }} transition={{ duration: 0.5 }}>
-              <CheckCircle className="h-5 w-5" />
-            </motion.div>
-          </motion.button>
+            <CheckCircle className="h-5 w-5 transition-transform group-hover:scale-110" />
+          </button>
         </div>
       </Card>
     </motion.div>
@@ -394,25 +227,25 @@ interface EmptyStateProps {
 
 function EmptyState({ icon, title, description, asCard = true }: EmptyStateProps) {
   const content = (
-    <>
-      <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-white/60 text-zinc-400 shadow-sm ring-1 ring-zinc-200/70 dark:bg-white/5 dark:text-zinc-500 dark:ring-white/10">
+    <div className="flex flex-col items-center py-12 px-6 text-center">
+      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-surface-elevated border border-border text-text-tertiary shadow-sm">
         {icon}
       </div>
-      <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">{title}</p>
-      <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{description}</p>
-    </>
+      <p className="text-sm font-bold uppercase tracking-widest text-text-primary">{title}</p>
+      <p className="mt-1 text-xs font-mono uppercase tracking-tight text-text-tertiary">{description}</p>
+    </div>
   )
 
   if (!asCard) {
     return (
-      <div className="rounded-xl border border-white/55 bg-white/70 p-8 text-center shadow-glass-sm backdrop-blur-md dark:border-white/10 dark:bg-white/5">
+      <div className="rounded-2xl border border-border bg-surface-base/50 backdrop-blur-md">
         {content}
       </div>
     )
   }
 
   return (
-    <Card variant="glass" interactive={false} className="py-12 text-center">
+    <Card interactive={false} className="border-border bg-surface-base/50">
       {content}
     </Card>
   )
@@ -564,8 +397,8 @@ export default function MemoryPage() {
 
   const itemsLayoutClassName =
     layout === 'grid'
-      ? 'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 md:gap-6 auto-rows-fr'
-      : 'flex flex-col gap-3'
+      ? 'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6'
+      : 'flex flex-col gap-4'
 
   const moduleUsage = useMemo(() => {
     if (!patterns) return []
@@ -593,62 +426,13 @@ export default function MemoryPage() {
         <PageHeader
           title={t('Memory')}
           description={t('Personalization & Learning Patterns')}
-          icon={<Brain className="h-5 w-5 text-blue-600 dark:text-blue-400" />}
+          icon={<Brain className="h-5 w-5 text-accent-primary" />}
         />
-        <div className="space-y-8">
-          {/* Skeleton Stats */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            {[1, 2, 3].map(i => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: i * 0.1 }}
-              >
-                <Card variant="glass" padding="sm">
-                  <div className="flex items-center gap-3">
-                    <div className="h-9 w-9 animate-pulse rounded-lg bg-blue-100/50 dark:bg-blue-950/30" />
-                    <div className="flex-1 space-y-2">
-                      <div className="h-3 w-20 animate-pulse rounded bg-zinc-200/70 dark:bg-white/10" />
-                      <div className="h-5 w-16 animate-pulse rounded bg-zinc-300/70 dark:bg-white/15" />
-                    </div>
-                  </div>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
-
-          {/* Skeleton Cards */}
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            {[1, 2].map(i => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.4, delay: 0.3 + i * 0.1 }}
-              >
-                <Card variant="glass" padding="lg">
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 animate-pulse rounded-xl bg-blue-100/50 dark:bg-blue-950/30" />
-                      <div className="space-y-2">
-                        <div className="h-4 w-32 animate-pulse rounded bg-zinc-200/70 dark:bg-white/10" />
-                        <div className="h-3 w-48 animate-pulse rounded bg-zinc-200/70 dark:bg-white/10" />
-                      </div>
-                    </div>
-                    <div className="space-y-3">
-                      {[1, 2, 3].map(j => (
-                        <div
-                          key={j}
-                          className="h-12 animate-pulse rounded-lg bg-zinc-100/70 dark:bg-white/5"
-                        />
-                      ))}
-                    </div>
-                  </div>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
+        <div className="flex flex-col items-center justify-center py-32 gap-4">
+          <RefreshCw className="h-8 w-8 animate-spin text-accent-primary" />
+          <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-text-tertiary">
+            {t('Syncing memory core')}
+          </span>
         </div>
       </PageWrapper>
     )
@@ -659,72 +443,97 @@ export default function MemoryPage() {
       <PageHeader
         title={t('Memory')}
         description={t('Personalization & Learning Patterns')}
-        icon={<Brain className="h-5 w-5 text-blue-600 dark:text-blue-400" />}
-        className="flex-col gap-4 sm:flex-row sm:items-start"
+        icon={<Brain className="h-5 w-5 text-accent-primary" />}
+        className="flex-col gap-6 sm:flex-row sm:items-start mb-8"
         actions={
-          <div className="flex flex-wrap items-center justify-end gap-2">
-            <div className="flex items-center rounded-xl border border-zinc-200/70 bg-white/60 p-1 shadow-sm backdrop-blur-md dark:border-white/10 dark:bg-white/5">
+          <div className="flex flex-wrap items-center justify-end gap-3">
+            <div className="flex items-center rounded-full border border-border bg-surface-elevated/50 p-1 shadow-glass-sm backdrop-blur-md">
               <IconButton
-                icon={<LayoutGrid className="h-4 w-4" />}
+                aria-label="Grid view"
+                icon={<LayoutGrid className="h-3.5 w-3.5" />}
                 variant="ghost"
                 size="sm"
-                aria-label="Grid view"
                 onClick={() => setLayout('grid')}
                 className={cn(
-                  'transition-colors',
+                  'rounded-full h-8 w-8 transition-all duration-200',
                   layout === 'grid'
-                    ? '!bg-white/90 !text-blue-600 shadow-sm border border-zinc-200/70 hover:!bg-white/90 dark:!bg-zinc-950/60 dark:!text-blue-400 dark:border-white/10 dark:hover:!bg-zinc-950/60'
-                    : '!bg-transparent text-zinc-600 hover:!bg-white/70 hover:!text-zinc-900 dark:text-zinc-300 dark:hover:!bg-white/5 dark:hover:!text-zinc-50'
+                    ? 'bg-accent-primary text-white shadow-sm'
+                    : 'text-text-tertiary hover:text-text-secondary hover:bg-surface-base'
                 )}
               />
               <IconButton
-                icon={<List className="h-4 w-4" />}
+                aria-label="List view"
+                icon={<List className="h-3.5 w-3.5" />}
                 variant="ghost"
                 size="sm"
-                aria-label="List view"
                 onClick={() => setLayout('list')}
                 className={cn(
-                  'transition-colors',
+                  'rounded-full h-8 w-8 transition-all duration-200',
                   layout === 'list'
-                    ? '!bg-white/90 !text-blue-600 shadow-sm border border-zinc-200/70 hover:!bg-white/90 dark:!bg-zinc-950/60 dark:!text-blue-400 dark:border-white/10 dark:hover:!bg-zinc-950/60'
-                    : '!bg-transparent text-zinc-600 hover:!bg-white/70 hover:!text-zinc-900 dark:text-zinc-300 dark:hover:!bg-white/5 dark:hover:!text-zinc-50'
+                    ? 'bg-accent-primary text-white shadow-sm'
+                    : 'text-text-tertiary hover:text-text-secondary hover:bg-surface-base'
                 )}
               />
 
-              <div className="mx-1 h-6 w-px bg-zinc-200/70 dark:bg-white/10" aria-hidden="true" />
+              <div className="mx-1 h-4 w-px bg-border-subtle" aria-hidden="true" />
+
+              <IconButton
+                aria-label="Refresh memory data"
+                size="sm"
+                variant="ghost"
+                icon={<RefreshCw className={cn('h-3.5 w-3.5', refreshing && 'animate-spin')} />}
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className="text-text-tertiary hover:text-accent-primary h-8 w-8 rounded-full"
+              />
+              <IconButton
+                aria-label="Export memory"
+                size="sm"
+                variant="ghost"
+                icon={<Download className="h-3.5 w-3.5" />}
+                onClick={exportMemory}
+                className="text-text-tertiary hover:text-accent-primary h-8 w-8 rounded-full"
+              />
+              <IconButton
+                aria-label="Import memory"
+                size="sm"
+                variant="ghost"
+                icon={<Upload className="h-3.5 w-3.5" />}
+                onClick={() => importInputRef.current?.click()}
+                className="text-text-tertiary hover:text-accent-primary h-8 w-8 rounded-full"
+              />
+              <IconButton
+                aria-label="Clear memory"
+                size="sm"
+                variant="ghost"
+                icon={<Trash2 className="h-3.5 w-3.5" />}
+                onClick={clearAllMemory}
+                className="text-error/60 hover:text-error hover:bg-error-muted/10 h-8 w-8 rounded-full"
+              />
 
               <IconButton
                 size="sm"
                 variant="ghost"
-                icon={<RefreshCw className={cn('h-4 w-4', refreshing && 'animate-spin')} />}
-                aria-label="Refresh"
-                onClick={handleRefresh}
-                disabled={refreshing}
-                className="text-zinc-700 dark:text-zinc-200"
-              />
-              <IconButton
-                size="sm"
-                variant="ghost"
-                icon={<Download className="h-4 w-4" />}
+                icon={<Download className="h-3.5 w-3.5" />}
                 aria-label="Export memory"
                 onClick={exportMemory}
-                className="text-zinc-700 dark:text-zinc-200"
+                className="text-text-tertiary hover:text-accent-primary h-8 w-8 rounded-full"
               />
               <IconButton
                 size="sm"
                 variant="ghost"
-                icon={<Upload className="h-4 w-4" />}
+                icon={<Upload className="h-3.5 w-3.5" />}
                 aria-label="Import memory"
                 onClick={() => importInputRef.current?.click()}
-                className="text-zinc-700 dark:text-zinc-200"
+                className="text-text-tertiary hover:text-accent-primary h-8 w-8 rounded-full"
               />
               <IconButton
                 size="sm"
                 variant="ghost"
-                icon={<Trash2 className="h-4 w-4" />}
+                icon={<Trash2 className="h-3.5 w-3.5" />}
                 aria-label="Clear all memory"
                 onClick={clearAllMemory}
-                className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40"
+                className="text-error/60 hover:text-error hover:bg-error-muted/10 h-8 w-8 rounded-full"
               />
             </div>
             <input
@@ -742,227 +551,228 @@ export default function MemoryPage() {
         initial="hidden"
         animate="visible"
         variants={staggerContainer}
-        className="space-y-8"
+        className="space-y-12"
       >
-        <motion.section variants={fadeInUp} className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <motion.section variants={fadeInUp} className="grid grid-cols-1 gap-6 sm:grid-cols-3">
           <StatCard
-            icon={<Sparkles className="h-4 w-4" />}
+            icon={<Sparkles size={20} />}
             value={patterns?.interaction_count ?? '—'}
             label="Total Interactions"
           />
           <StatCard
-            icon={<Target className="h-4 w-4" />}
+            icon={<Target size={20} />}
             value={topics.length}
             label="Topics Tracked"
           />
           <StatCard
-            icon={<MessageSquareQuote className="h-4 w-4" />}
+            icon={<MessageSquareQuote size={20} />}
             value={questions.length}
             label="Questions Tracked"
           />
         </motion.section>
 
-        <motion.section variants={fadeInUp} className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <Card variant="glass" padding="none" interactive={false} className="overflow-hidden">
-            <div className="flex items-start justify-between gap-4 border-b border-border/40 p-6 dark:border-white/10">
-              <div className="flex items-start gap-3">
-                <div className="mt-0.5 flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600 ring-1 ring-blue-100/80 dark:bg-blue-950/40 dark:text-blue-400 dark:ring-white/10">
+        <motion.section variants={fadeInUp} className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+          <Card interactive={false} className="overflow-hidden border-border bg-surface-base">
+            <CardHeader className="flex items-start justify-between gap-4 p-6 border-b border-border-subtle">
+              <div className="flex items-start gap-4">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-surface-secondary border border-border text-text-tertiary shadow-sm">
                   <Settings2 className="h-5 w-5" />
                 </div>
-                <div className="min-w-0">
-                  <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
+                <div>
+                  <CardTitle className="text-sm font-bold uppercase tracking-widest text-text-primary">
                     {t('Preferences')}
-                  </h2>
-                  <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-                    Response style and learning preferences
+                  </CardTitle>
+                  <p className="mt-1 text-[10px] font-mono uppercase tracking-tight text-text-tertiary">
+                    CORE SYSTEM PERSONALIZATION
                   </p>
                 </div>
               </div>
-              {saving && <span className="text-xs text-zinc-500 dark:text-zinc-400">Saving…</span>}
-            </div>
+              {saving && <Badge variant="outline" className="animate-pulse text-[9px] font-mono uppercase tracking-widest border-accent-primary/20 text-accent-primary">Saving…</Badge>}
+            </CardHeader>
 
-            <div className="p-6">
+            <CardBody className="p-6">
               {!preferences ? (
                 <EmptyState
-                  icon={<Settings2 className="h-5 w-5" />}
+                  icon={<Settings2 className="h-6 w-6" />}
                   title="No preferences available"
-                  description="We couldn’t load your preferences."
+                  description="Initial calibration required."
                   asCard={false}
                 />
               ) : (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: 0.1 }}
-                  className="grid grid-cols-1 gap-4 md:grid-cols-2"
-                >
-                  <motion.div whileHover={{ scale: 1.01 }} transition={{ duration: 0.2 }}>
-                    <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <label
+                      htmlFor="response-style"
+                      className="text-[10px] font-bold uppercase tracking-widest text-text-quaternary ml-1"
+                    >
                       Response Style
                     </label>
                     <select
+                      id="response-style"
                       value={preferences.response_style}
                       onChange={e => updatePreference('response_style', e.target.value)}
                       disabled={saving}
-                      className="mt-2 w-full rounded-xl border border-white/55 bg-white/70 px-3 py-2 text-sm text-zinc-900 shadow-glass-sm backdrop-blur-md transition-all duration-200 hover:bg-white/85 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500/40 dark:border-white/10 dark:bg-white/5 dark:text-zinc-100 dark:hover:bg-white/8"
+                      className="w-full rounded-xl border border-border bg-surface-elevated/50 px-3 py-2 text-xs font-bold uppercase tracking-widest text-text-primary shadow-glass-sm backdrop-blur-md transition-all hover:border-accent-primary/20 focus:outline-none focus:ring-2 focus:ring-accent-primary/20"
                     >
                       <option value="concise">Concise</option>
                       <option value="balanced">Balanced</option>
                       <option value="detailed">Detailed</option>
                     </select>
-                  </motion.div>
+                  </div>
 
-                  <motion.div whileHover={{ scale: 1.01 }} transition={{ duration: 0.2 }}>
-                    <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                  <div className="space-y-2">
+                    <label
+                      htmlFor="difficulty-level"
+                      className="text-[10px] font-bold uppercase tracking-widest text-text-quaternary ml-1"
+                    >
                       Difficulty Level
                     </label>
                     <select
+                      id="difficulty-level"
                       value={preferences.difficulty_level}
                       onChange={e => updatePreference('difficulty_level', e.target.value)}
                       disabled={saving}
-                      className="mt-2 w-full rounded-xl border border-white/55 bg-white/70 px-3 py-2 text-sm text-zinc-900 shadow-glass-sm backdrop-blur-md transition-all duration-200 hover:bg-white/85 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500/40 dark:border-white/10 dark:bg-white/5 dark:text-zinc-100 dark:hover:bg-white/8"
+                      className="w-full rounded-xl border border-border bg-surface-elevated/50 px-3 py-2 text-xs font-bold uppercase tracking-widest text-text-primary shadow-glass-sm backdrop-blur-md transition-all hover:border-accent-primary/20 focus:outline-none focus:ring-2 focus:ring-accent-primary/20"
                     >
                       <option value="adaptive">Adaptive</option>
                       <option value="beginner">Beginner</option>
                       <option value="intermediate">Intermediate</option>
                       <option value="advanced">Advanced</option>
                     </select>
-                  </motion.div>
+                  </div>
 
-                  <motion.div whileHover={{ scale: 1.01 }} transition={{ duration: 0.2 }}>
-                    <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                  <div className="space-y-2">
+                    <label
+                      htmlFor="explanation-format"
+                      className="text-[10px] font-bold uppercase tracking-widest text-text-quaternary ml-1"
+                    >
                       Explanation Format
                     </label>
                     <select
+                      id="explanation-format"
                       value={preferences.preferred_explanation_format}
                       onChange={e =>
                         updatePreference('preferred_explanation_format', e.target.value)
                       }
                       disabled={saving}
-                      className="mt-2 w-full rounded-xl border border-white/55 bg-white/70 px-3 py-2 text-sm text-zinc-900 shadow-glass-sm backdrop-blur-md transition-all duration-200 hover:bg-white/85 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500/40 dark:border-white/10 dark:bg-white/5 dark:text-zinc-100 dark:hover:bg-white/8"
+                      className="w-full rounded-xl border border-border bg-surface-elevated/50 px-3 py-2 text-xs font-bold uppercase tracking-widest text-text-primary shadow-glass-sm backdrop-blur-md transition-all hover:border-accent-primary/20 focus:outline-none focus:ring-2 focus:ring-accent-primary/20"
                     >
                       <option value="narrative">Narrative</option>
                       <option value="structured">Structured</option>
                       <option value="visual">Visual</option>
                     </select>
-                  </motion.div>
+                  </div>
 
-                  <motion.div
-                    whileHover={{ scale: 1.01 }}
-                    transition={{ duration: 0.2 }}
-                    className="flex items-center justify-between rounded-xl border border-white/55 bg-white/70 px-3 py-2 shadow-glass-sm backdrop-blur-md transition-all duration-200 hover:bg-white/85 hover:shadow-md dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/8"
-                  >
-                    <div className="min-w-0">
-                      <div className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
-                        Include Examples
+                  <div className="flex items-center justify-between rounded-xl border border-border bg-surface-elevated/50 px-4 py-3 shadow-glass-sm backdrop-blur-md transition-all hover:border-accent-primary/10">
+                    <div className="min-w-0 pr-4">
+                      <div className="text-[10px] font-bold uppercase tracking-widest text-text-primary">
+                        Examples
                       </div>
-                      <div className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
-                        Add more worked examples
+                      <div className="mt-0.5 text-[9px] font-mono uppercase tracking-tighter text-text-tertiary">
+                        WORKED STEP-BY-STEP
                       </div>
                     </div>
-                    <ToggleSwitch
+                    <Switch
                       checked={preferences.enable_examples}
-                      onChange={checked => updatePreference('enable_examples', checked)}
+                      onCheckedChange={checked => updatePreference('enable_examples', checked)}
                       disabled={saving}
                     />
-                  </motion.div>
+                  </div>
 
-                  <motion.div
-                    whileHover={{ scale: 1.01 }}
-                    transition={{ duration: 0.2 }}
-                    className="flex items-center justify-between rounded-xl border border-white/55 bg-white/70 px-3 py-2 shadow-glass-sm backdrop-blur-md transition-all duration-200 hover:bg-white/85 hover:shadow-md dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/8 md:col-span-2"
-                  >
-                    <div className="min-w-0">
-                      <div className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
+                  <div className="flex items-center justify-between rounded-xl border border-border bg-surface-elevated/50 px-4 py-3 shadow-glass-sm backdrop-blur-md transition-all hover:border-accent-primary/10 md:col-span-2">
+                    <div className="min-w-0 pr-4">
+                      <div className="text-[10px] font-bold uppercase tracking-widest text-text-primary">
                         Show Sources
                       </div>
-                      <div className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
-                        Include citations when available
+                      <div className="mt-0.5 text-[9px] font-mono uppercase tracking-tighter text-text-tertiary">
+                        CITATIONS & BIBLIOGRAPHY
                       </div>
                     </div>
-                    <ToggleSwitch
+                    <Switch
                       checked={preferences.show_sources}
-                      onChange={checked => updatePreference('show_sources', checked)}
+                      onCheckedChange={checked => updatePreference('show_sources', checked)}
                       disabled={saving}
                     />
-                  </motion.div>
-                </motion.div>
+                  </div>
+                </div>
               )}
-            </div>
+            </CardBody>
           </Card>
 
-          <Card variant="glass" padding="none" interactive={false} className="overflow-hidden">
-            <div className="flex items-start justify-between gap-4 border-b border-border/40 p-6 dark:border-white/10">
-              <div className="flex items-start gap-3">
-                <div className="mt-0.5 flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600 ring-1 ring-blue-100/80 dark:bg-blue-950/40 dark:text-blue-400 dark:ring-white/10">
+          <Card interactive={false} className="overflow-hidden border-border bg-surface-base">
+            <CardHeader className="flex items-start justify-between gap-4 p-6 border-b border-border-subtle">
+              <div className="flex items-start gap-4">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-surface-secondary border border-border text-text-tertiary shadow-sm">
                   <TrendingUp className="h-5 w-5" />
                 </div>
-                <div className="min-w-0">
-                  <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
+                <div>
+                  <CardTitle className="text-sm font-bold uppercase tracking-widest text-text-primary">
                     {t('Learning Patterns')}
-                  </h2>
-                  <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-                    What the system is learning from your usage
+                  </CardTitle>
+                  <p className="mt-1 text-[10px] font-mono uppercase tracking-tight text-text-tertiary">
+                    OBSERVED USAGE ANALYTICS
                   </p>
                 </div>
               </div>
-              <div className="text-xs text-zinc-500 dark:text-zinc-400 tabular-nums">
-                {patterns?.interaction_count ?? 0} interactions
-              </div>
-            </div>
+              <Badge variant="secondary" className="bg-surface-elevated text-text-tertiary border-border text-[9px] font-mono px-2 py-1">
+                {patterns?.interaction_count ?? 0} OPS
+              </Badge>
+            </CardHeader>
 
-            <div className="p-6">
+            <CardBody className="p-6">
               {!patterns ? (
                 <EmptyState
-                  icon={<TrendingUp className="h-5 w-5" />}
+                  icon={<TrendingUp className="h-6 w-6" />}
                   title="No learning data yet"
-                  description="Interact with the system and patterns will appear here."
+                  description="Accumulating interaction signals..."
                   asCard={false}
                 />
               ) : (
-                <div className="space-y-6">
-                  <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                <div className="space-y-8">
+                  <div className="grid grid-cols-1 gap-8 sm:grid-cols-2">
                     <div>
-                      <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-                        <BarChart3 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                        Module Usage
+                      <div className="mb-4 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-text-primary">
+                        <BarChart3 className="h-3.5 w-3.5 text-accent-primary" />
+                        Module Distribution
                       </div>
                       {moduleUsage.length === 0 ? (
-                        <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                          No module usage yet
+                        <p className="text-[10px] font-mono uppercase text-text-quaternary">
+                          No signals found
                         </p>
                       ) : (
-                        <div className="space-y-3">
+                        <div className="space-y-4">
                           {moduleUsage.map(([module, count]) => (
-                            <ProgressBar
-                              key={module}
-                              label={module}
-                              value={count}
-                              maxValue={maxModuleCount}
-                            />
+                            <div key={module} className="space-y-2">
+                               <div className="flex items-center justify-between px-1">
+                                 <span className="text-[10px] font-bold uppercase tracking-widest text-text-secondary">{module}</span>
+                                 <span className="text-[10px] font-mono font-bold text-text-primary">{count}</span>
+                               </div>
+                               <Progress value={(count / maxModuleCount) * 100} className="h-1" />
+                            </div>
                           ))}
                         </div>
                       )}
                     </div>
 
                     <div>
-                      <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-                        <Zap className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                        Peak Usage Hours
+                      <div className="mb-4 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-text-primary">
+                        <Zap className="h-3.5 w-3.5 text-accent-primary" />
+                        Peak Productivity
                       </div>
                       {patterns.peak_usage_hours.length === 0 ? (
-                        <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                          Not enough data yet
+                        <p className="text-[10px] font-mono uppercase text-text-quaternary">
+                          Insufficient data
                         </p>
                       ) : (
                         <div className="flex flex-wrap gap-2">
                           {patterns.peak_usage_hours.map(hour => (
-                            <span
+                            <Badge
                               key={hour}
-                              className="rounded-xl border border-blue-200/60 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 shadow-sm dark:border-white/10 dark:bg-blue-950/40 dark:text-blue-300"
+                              variant="secondary"
+                              className="rounded-xl border border-border-subtle bg-surface-elevated/40 px-3 py-1 text-[10px] font-mono font-bold text-text-secondary shadow-sm uppercase tracking-widest"
                             >
                               {hour}:00 - {(hour + 1) % 24}:00
-                            </span>
+                            </Badge>
                           ))}
                         </div>
                       )}
@@ -970,32 +780,23 @@ export default function MemoryPage() {
                   </div>
 
                   <div>
-                    <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-                      <Target className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                      Learning Velocity
+                    <div className="mb-4 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-text-primary">
+                      <Target className="h-3.5 w-3.5 text-accent-primary" />
+                      Learning Velocity (Mastery %)
                     </div>
                     {mastery.length === 0 ? (
-                      <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                        Not enough signal yet
+                      <p className="text-[10px] font-mono uppercase text-text-quaternary">
+                        No mastery maps yet
                       </p>
                     ) : (
-                      <div className="space-y-3">
+                      <div className="space-y-4">
                         {mastery.map(item => (
-                          <div key={item.label} className="flex items-center gap-3">
-                            <div className="w-32 truncate text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                              {item.label}
+                          <div key={item.label} className="space-y-2">
+                            <div className="flex items-center justify-between px-1">
+                              <span className="text-[10px] font-bold uppercase tracking-widest text-text-secondary">{item.label}</span>
+                              <span className="text-[10px] font-mono font-bold text-accent-primary">{formatMasteryPercent(item.score)}</span>
                             </div>
-                            <div className="h-2 flex-1 overflow-hidden rounded-full bg-zinc-200/70 dark:bg-white/10">
-                              <div
-                                className="h-full rounded-full bg-gradient-to-r from-blue-500 to-indigo-500"
-                                style={{
-                                  width: formatMasteryPercent(item.score),
-                                }}
-                              />
-                            </div>
-                            <div className="w-10 text-right text-xs text-zinc-500 tabular-nums dark:text-zinc-400">
-                              {formatMasteryPercent(item.score)}
-                            </div>
+                            <Progress value={masteryPercent(item.score)} className="h-1.5" />
                           </div>
                         ))}
                       </div>
@@ -1003,32 +804,27 @@ export default function MemoryPage() {
                   </div>
                 </div>
               )}
-            </div>
+            </CardBody>
           </Card>
         </motion.section>
 
-        <motion.section variants={fadeInUp} className="space-y-4">
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-            className="flex items-end justify-between gap-4"
-          >
+        <motion.section variants={fadeInUp} className="space-y-6">
+          <div className="flex items-end justify-between gap-4 px-1">
             <div>
-              <h2 className="text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+              <h2 className="text-lg font-bold uppercase tracking-tight text-text-primary">
                 {t('Topics')}
               </h2>
-              <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-                {topics.length} topics tracked
+              <p className="mt-1 text-[10px] font-mono uppercase tracking-tight text-text-tertiary">
+                {topics.length} UNIQUE CONCEPTS TRACKED
               </p>
             </div>
-          </motion.div>
+          </div>
 
           {topics.length === 0 ? (
             <EmptyState
-              icon={<Database className="h-5 w-5" />}
+              icon={<Database className="h-6 w-6" />}
               title="No topics tracked yet"
-              description="Topics will appear as you interact with the system."
+              description="Signals appear after first interaction."
             />
           ) : (
             <motion.div
@@ -1044,28 +840,23 @@ export default function MemoryPage() {
           )}
         </motion.section>
 
-        <motion.section variants={fadeInUp} className="space-y-4">
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-            className="flex items-end justify-between gap-4"
-          >
+        <motion.section variants={fadeInUp} className="space-y-6">
+          <div className="flex items-end justify-between gap-4 px-1">
             <div>
-              <h2 className="text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+              <h2 className="text-lg font-bold uppercase tracking-tight text-text-primary">
                 {t('Recurring Questions')}
               </h2>
-              <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-                Questions you've asked multiple times
+              <p className="mt-1 text-[10px] font-mono uppercase tracking-tight text-text-tertiary">
+                CONCEPTS REQUIRING REINFORCEMENT
               </p>
             </div>
-          </motion.div>
+          </div>
 
           {questions.length === 0 ? (
             <EmptyState
-              icon={<MessageSquareQuote className="h-5 w-5" />}
+              icon={<MessageSquareQuote className="h-6 w-6" />}
               title="No recurring questions yet"
-              description="Repeated questions will show up here."
+              description="Common patterns will be identified here."
             />
           ) : (
             <motion.div
@@ -1086,165 +877,129 @@ export default function MemoryPage() {
           )}
         </motion.section>
 
-        <motion.section variants={fadeInUp} className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <Card variant="glass" padding="none" interactive={false} className="overflow-hidden">
-            <div className="flex items-start gap-3 border-b border-border/40 p-6 dark:border-white/10">
-              <div className="mt-0.5 flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600 ring-1 ring-blue-100/80 dark:bg-blue-950/40 dark:text-blue-400 dark:ring-white/10">
+        <motion.section variants={fadeInUp} className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+          <Card interactive={false} className="overflow-hidden border-border bg-surface-base">
+            <CardHeader className="flex items-start gap-4 p-6 border-b border-border-subtle">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-surface-secondary border border-border text-text-tertiary shadow-sm">
                 <Database className="h-5 w-5" />
               </div>
-              <div className="min-w-0">
-                <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
+              <div>
+                <CardTitle className="text-sm font-bold uppercase tracking-widest text-text-primary">
                   Memory Systems
-                </h2>
-                <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-                  Where state is persisted on disk
+                </CardTitle>
+                <p className="mt-1 text-[10px] font-mono uppercase tracking-tight text-text-tertiary">
+                  PERSISTENT STATE INFRASTRUCTURE
                 </p>
               </div>
-            </div>
+            </CardHeader>
 
-            <div className="space-y-4 p-6">
-              <div className="flex items-start gap-3">
-                <div className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-blue-600 ring-1 ring-blue-100/80 dark:bg-blue-950/40 dark:text-blue-400 dark:ring-white/10">
+            <CardBody className="p-6 space-y-6">
+              <div className="flex items-start gap-4 p-4 rounded-xl border border-border-subtle bg-surface-elevated/30">
+                <div className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-lg bg-surface-raised border border-border text-text-tertiary">
                   <HardDrive className="h-4 w-4" />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-                    Persistent user memory (this page)
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-text-primary">
+                    PERSISTENT_USER_MEMORY
                   </div>
-                  <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                    Stored in{' '}
-                    <code className="rounded-md bg-zinc-100 px-1.5 py-0.5 text-xs font-mono text-zinc-700 dark:bg-white/10 dark:text-zinc-200">
+                  <p className="mt-2 text-sm text-text-secondary leading-relaxed opacity-80">
+                    Active state stored in{' '}
+                    <code className="rounded bg-surface-raised px-1.5 py-0.5 text-[10px] font-mono text-accent-primary border border-border-subtle">
                       data/user/memory/*.json
-                    </code>{' '}
-                    and managed via{' '}
-                    <code className="rounded-md bg-zinc-100 px-1.5 py-0.5 text-xs font-mono text-zinc-700 dark:bg-white/10 dark:text-zinc-200">
-                      /api/v1/memory/*
                     </code>
-                    .
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-start gap-3">
-                <div className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-blue-600 ring-1 ring-blue-100/80 dark:bg-blue-950/40 dark:text-blue-400 dark:ring-white/10">
+              <div className="flex items-start gap-4 p-4 rounded-xl border border-border-subtle bg-surface-elevated/30">
+                <div className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-lg bg-surface-raised border border-border text-text-tertiary">
                   <FileJson className="h-4 w-4" />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-                    Solve agent run memory (per run)
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-text-primary">
+                    SOLVE_SESSION_STATE
                   </div>
-                  <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                    Stored per solve run in{' '}
-                    <code className="rounded-md bg-zinc-100 px-1.5 py-0.5 text-xs font-mono text-zinc-700 dark:bg-white/10 dark:text-zinc-200">
+                  <p className="mt-2 text-sm text-text-secondary leading-relaxed opacity-80">
+                    Per-run logs stored in{' '}
+                    <code className="rounded bg-surface-raised px-1.5 py-0.5 text-[10px] font-mono text-accent-primary border border-border-subtle">
                       data/user/solve/solve_YYYYMMDD_HHMMSS/
                     </code>
-                    .
                   </p>
                 </div>
               </div>
-            </div>
+            </CardBody>
           </Card>
 
-          <Card variant="glass" padding="none" interactive={false} className="overflow-hidden">
-            <div className="flex items-start gap-3 border-b border-border/40 p-6 dark:border-white/10">
-              <div className="mt-0.5 flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600 ring-1 ring-blue-100/80 dark:bg-blue-950/40 dark:text-blue-400 dark:ring-white/10">
+          <Card interactive={false} className="overflow-hidden border-border bg-surface-base">
+            <CardHeader className="flex items-start gap-4 p-6 border-b border-border-subtle">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-surface-secondary border border-border text-text-tertiary shadow-sm">
                 <Upload className="h-5 w-5" />
               </div>
-              <div className="min-w-0">
-                <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
+              <div>
+                <CardTitle className="text-sm font-bold uppercase tracking-widest text-text-primary">
                   Data Tools
-                </h2>
-                <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-                  Export, import, or reset your memory data
+                </CardTitle>
+                <p className="mt-1 text-[10px] font-mono uppercase tracking-tight text-text-tertiary">
+                  SNAPSHOTTING & RECOVERY
                 </p>
               </div>
-            </div>
+            </CardHeader>
 
-            <div className="grid grid-cols-1 gap-3 p-6 sm:grid-cols-2">
-              <motion.button
-                type="button"
-                onClick={exportMemory}
-                whileHover={{
-                  scale: 1.02,
-                  y: -2,
-                  transition: { duration: 0.2, ease: [0.16, 1, 0.3, 1] },
-                }}
-                whileTap={{ scale: 0.98 }}
-                className="group flex items-start gap-3 rounded-xl border border-white/55 bg-white/70 p-4 text-left shadow-glass-sm backdrop-blur-md transition-all duration-200 hover:bg-white/85 hover:shadow-md dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/8"
-              >
-                <motion.div
-                  whileHover={{ rotate: [0, -10, 10, 0], scale: 1.1 }}
-                  transition={{ duration: 0.4 }}
-                  className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300"
+            <CardBody className="p-6">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <motion.button
+                  type="button"
+                  onClick={exportMemory}
+                  whileHover={{ scale: 1.02, y: -2 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="group flex flex-col gap-3 rounded-xl border border-border bg-surface-elevated/50 p-5 text-left shadow-glass-sm transition-all hover:border-accent-primary/20 hover:bg-surface-secondary"
                 >
-                  <Download className="h-4 w-4" />
-                </motion.div>
-                <div className="min-w-0">
-                  <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-                    Export
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-surface-raised border border-border text-text-tertiary group-hover:text-accent-primary group-hover:border-accent-primary/20 transition-all">
+                    <Download className="h-4 w-4" />
                   </div>
-                  <div className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
-                    Download a JSON snapshot
+                  <div className="min-w-0">
+                    <div className="text-[10px] font-bold uppercase tracking-widest text-text-primary">EXPORT</div>
+                    <div className="mt-1 text-[9px] font-mono uppercase tracking-tight text-text-quaternary">SNAP_SNAPSHOT.JSON</div>
                   </div>
-                </div>
-              </motion.button>
+                </motion.button>
 
-              <motion.button
-                type="button"
-                onClick={() => importInputRef.current?.click()}
-                whileHover={{
-                  scale: 1.02,
-                  y: -2,
-                  transition: { duration: 0.2, ease: [0.16, 1, 0.3, 1] },
-                }}
-                whileTap={{ scale: 0.98 }}
-                className="group flex items-start gap-3 rounded-xl border border-white/55 bg-white/70 p-4 text-left shadow-glass-sm backdrop-blur-md transition-all duration-200 hover:bg-white/85 hover:shadow-md dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/8"
-              >
-                <motion.div
-                  whileHover={{ rotate: [0, 10, -10, 0], scale: 1.1 }}
-                  transition={{ duration: 0.4 }}
-                  className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300"
+                <motion.button
+                  type="button"
+                  onClick={() => importInputRef.current?.click()}
+                  whileHover={{ scale: 1.02, y: -2 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="group flex flex-col gap-3 rounded-xl border border-border bg-surface-elevated/50 p-5 text-left shadow-glass-sm transition-all hover:border-accent-primary/20 hover:bg-surface-secondary"
                 >
-                  <Upload className="h-4 w-4" />
-                </motion.div>
-                <div className="min-w-0">
-                  <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-                    Import
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-surface-raised border border-border text-text-tertiary group-hover:text-accent-primary group-hover:border-accent-primary/20 transition-all">
+                    <Upload className="h-4 w-4" />
                   </div>
-                  <div className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
-                    Restore from a snapshot
+                  <div className="min-w-0">
+                    <div className="text-[10px] font-bold uppercase tracking-widest text-text-primary">IMPORT</div>
+                    <div className="mt-1 text-[9px] font-mono uppercase tracking-tight text-text-quaternary">RESTORE_SNAPSHOT.JSON</div>
                   </div>
-                </div>
-              </motion.button>
+                </motion.button>
 
-              <motion.button
-                type="button"
-                onClick={clearAllMemory}
-                whileHover={{
-                  scale: 1.02,
-                  y: -2,
-                  transition: { duration: 0.2, ease: [0.16, 1, 0.3, 1] },
-                }}
-                whileTap={{ scale: 0.98 }}
-                className="group flex items-start gap-3 rounded-xl border border-red-200/70 bg-red-50/70 p-4 text-left shadow-sm backdrop-blur-md transition-all duration-200 hover:bg-red-50 hover:shadow-md hover:shadow-red-500/10 dark:border-red-900/40 dark:bg-red-950/25 dark:hover:bg-red-950/35 sm:col-span-2"
-              >
-                <motion.div
-                  whileHover={{ rotate: [0, -10, 10, -10, 0], scale: 1.1 }}
-                  transition={{ duration: 0.5 }}
-                  className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-lg bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-300"
+                <motion.button
+                  type="button"
+                  onClick={clearAllMemory}
+                  whileHover={{ scale: 1.01, y: -1 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="group flex items-center gap-4 rounded-xl border border-error/20 bg-error-muted/5 p-4 text-left shadow-sm transition-all hover:bg-error-muted/10 sm:col-span-2"
                 >
-                  <Trash2 className="h-4 w-4" />
-                </motion.div>
-                <div className="min-w-0">
-                  <div className="text-sm font-semibold text-red-700 dark:text-red-200">
-                    Clear all memory
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-surface-raised border border-error/10 text-error/60 group-hover:text-error transition-all">
+                    <Trash2 className="h-4.5 w-4.5" />
                   </div>
-                  <div className="mt-0.5 text-xs text-red-700/80 dark:text-red-200/80">
-                    Irreversible. Use export first.
+                  <div className="min-w-0">
+                    <div className="text-[10px] font-bold uppercase tracking-widest text-error/80 group-hover:text-error transition-colors">
+                      DESTROY_ALL_MEMORY_OBJECTS
+                    </div>
+                    <div className="mt-1 text-[9px] font-mono uppercase tracking-tight text-error/40 group-hover:text-error/60 transition-colors">
+                      IRREVERSIBLE_ACTION. SNAPSHOT_STRONGLY_ADVISED.
+                    </div>
                   </div>
-                </div>
-              </motion.button>
-            </div>
+                </motion.button>
+              </div>
+            </CardBody>
           </Card>
         </motion.section>
       </motion.div>

@@ -238,11 +238,40 @@ CardFooter.displayName = 'CardFooter'
 // Backwards compatibility
 export const CardBody = CardContent
 
+export const CardTitle = React.forwardRef<
+  HTMLParagraphElement,
+  React.HTMLAttributes<HTMLHeadingElement>
+>(({ className, ...props }, ref) => (
+  <h3
+    ref={ref}
+    className={cn(
+      "text-lg font-semibold leading-none tracking-tight",
+      className
+    )}
+    {...props}
+  />
+))
+CardTitle.displayName = "CardTitle"
+
+export const CardDescription = React.forwardRef<
+  HTMLParagraphElement,
+  React.HTMLAttributes<HTMLParagraphElement>
+>(({ className, ...props }, ref) => (
+  <p
+    ref={ref}
+    className={cn("text-sm text-text-secondary", className)}
+    {...props}
+  />
+))
+CardDescription.displayName = "CardDescription"
+
 export const Card = Object.assign(CardRoot, {
   Header: CardHeader,
   Content: CardContent,
   Body: CardContent,
   Footer: CardFooter,
+  Title: CardTitle,
+  Description: CardDescription,
 })
 
 export default Card

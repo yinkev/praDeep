@@ -79,7 +79,8 @@ def init_user_directories(project_root: Path | None = None) -> None:
         "solve",  # Problem solving outputs
         "question",  # Question generation outputs
         "research",  # Research outputs (will have cache/ and reports/ subdirs)
-        "guide",  # Guided learning outputs
+        "guide",
+        "guide_v2",
         "notebook",  # Notebook data
         "co-writer",  # Co-writer outputs
         "council",  # Council mode transcripts

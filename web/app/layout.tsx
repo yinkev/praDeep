@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter, IBM_Plex_Mono, Cormorant_Garamond } from 'next/font/google'
+import { GeistSans } from 'geist/font/sans'
+import { GeistMono } from 'geist/font/mono'
 import './globals.css'
 import Sidebar from '@/components/Sidebar'
 import { GlobalProvider } from '@/context/GlobalContext'
@@ -9,25 +10,8 @@ import MotionProvider from '@/components/MotionProvider'
 import { APP_DESCRIPTION, APP_NAME, APP_TITLE } from '@/lib/app-meta'
 import { PWAInit } from './pwa-init'
 
-const inter = Inter({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-inter',
-})
-
-const ibmPlexMono = IBM_Plex_Mono({
-  subsets: ['latin'],
-  weight: ['400', '500', '600'],
-  display: 'swap',
-  variable: '--font-ibm-plex-mono',
-})
-
-const cormorantGaramond = Cormorant_Garamond({
-  subsets: ['latin'],
-  weight: ['400', '500', '600'],
-  display: 'swap',
-  variable: '--font-cormorant-garamond',
-})
+const geistSans = GeistSans
+const geistMono = GeistMono
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL
 
@@ -84,13 +68,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       lang="en"
       suppressHydrationWarning
       data-scroll-behavior="smooth"
-      className={`${inter.variable} ${ibmPlexMono.variable} ${cormorantGaramond.variable}`}
+      className={`${geistSans.variable} ${geistMono.variable}`}
     >
       <head>
         <ThemeScript />
       </head>
       <body
-        className={`${inter.className} min-h-dvh bg-surface-base antialiased transition-colors duration-200`}
+        className={`${geistSans.className} min-h-dvh bg-surface-base antialiased transition-colors duration-200`}
       >
         <MotionProvider>
           <ToastProvider>

@@ -26,9 +26,10 @@ import { useGlobal } from '@/context/GlobalContext'
 import ActivityDetail from '@/components/ActivityDetail'
 import ChatSessionDetail from '@/components/ChatSessionDetail'
 import PageWrapper, { PageHeader } from '@/components/ui/PageWrapper'
-import { Card, CardBody } from '@/components/ui/Card'
+import { Card, CardBody, CardTitle } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
-import Button from '@/components/ui/Button'
+import { Button } from '@/components/ui/Button'
+import { Badge } from '@/components/ui/badge'
 
 // ============================================================================
 // Types
@@ -70,30 +71,27 @@ const ACTIVITY_CONFIG = {
   solve: {
     icon: Calculator,
     labelKey: 'Solve',
-    iconClassName:
-      'bg-blue-500/10 text-blue-700 ring-1 ring-blue-500/10 dark:bg-blue-400/10 dark:text-blue-300 dark:ring-blue-400/20',
-    pillClassName:
-      'border-blue-500/20 bg-blue-500/10 text-blue-700 dark:border-blue-400/20 dark:bg-blue-400/10 dark:text-blue-300',
+    colorClass: 'text-accent-primary',
+    bgClass: 'bg-accent-primary/10',
+    borderClass: 'border-accent-primary/20',
   },
   question: {
     icon: FileText,
     labelKey: 'Question',
-    iconClassName:
-      'bg-indigo-500/10 text-indigo-700 ring-1 ring-indigo-500/10 dark:bg-indigo-400/10 dark:text-indigo-300 dark:ring-indigo-400/20',
-    pillClassName:
-      'border-indigo-500/20 bg-indigo-500/10 text-indigo-700 dark:border-indigo-400/20 dark:bg-indigo-400/10 dark:text-indigo-300',
+    colorClass: 'text-accent-primary',
+    bgClass: 'bg-accent-primary/10',
+    borderClass: 'border-accent-primary/20',
   },
   research: {
     icon: Microscope,
     labelKey: 'Research',
-    iconClassName:
-      'bg-sky-500/10 text-sky-700 ring-1 ring-sky-500/10 dark:bg-sky-400/10 dark:text-sky-300 dark:ring-sky-400/20',
-    pillClassName:
-      'border-sky-500/20 bg-sky-500/10 text-sky-700 dark:border-sky-400/20 dark:bg-sky-400/10 dark:text-sky-300',
+    colorClass: 'text-accent-primary',
+    bgClass: 'bg-accent-primary/10',
+    borderClass: 'border-accent-primary/20',
   },
 } satisfies Record<
   ActivityEntryType,
-  { icon: IconType; labelKey: string; iconClassName: string; pillClassName: string }
+  { icon: IconType; labelKey: string; colorClass: string; bgClass: string; borderClass: string }
 >
 
 type ActivityTimelineItem = { kind: 'activity'; id: string; timestamp: number; entry: HistoryEntry }
@@ -153,18 +151,16 @@ function TimelineActivityCard({ entry, onOpen, locale, t }: TimelineActivityCard
       onClick={onOpen}
       aria-label={entry.title || config.labelKey}
       className={cn(
-        'group relative w-full text-left',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30',
-        'focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-zinc-950'
+        'group relative w-full text-left outline-none rounded-xl',
+        'focus-visible:ring-2 focus-visible:ring-accent-primary/30',
+        'focus-visible:ring-offset-2 focus-visible:ring-offset-surface'
       )}
     >
       <Card
-        variant="glass"
         interactive={false}
-        padding="none"
         className={cn(
-          'transition-[box-shadow,transform,border-color,background-color] duration-200 ease-out-expo',
-          'hover:shadow-glass'
+          'transition-all duration-200 ease-out-expo border-border hover:border-accent-primary/40',
+          'bg-surface-base hover:bg-surface-elevated hover:shadow-glass-sm'
         )}
       >
         <CardBody className="p-4 sm:p-5">
@@ -172,8 +168,10 @@ function TimelineActivityCard({ entry, onOpen, locale, t }: TimelineActivityCard
             <div className="flex min-w-0 items-start gap-3">
               <div
                 className={cn(
-                  'mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl',
-                  config.iconClassName
+                  'mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border',
+                  config.bgClass,
+                  config.colorClass,
+                  config.borderClass
                 )}
               >
                 <IconComponent className="h-4 w-4" />
@@ -181,16 +179,19 @@ function TimelineActivityCard({ entry, onOpen, locale, t }: TimelineActivityCard
 
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <span
+                  <Badge 
+                    variant="secondary"
                     className={cn(
-                      'inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider',
-                      config.pillClassName
+                      'text-[10px] uppercase tracking-wider',
+                      config.bgClass,
+                      config.colorClass,
+                      config.borderClass
                     )}
                   >
                     {t(config.labelKey)}
-                  </span>
-                  <span className="text-xs text-zinc-400">·</span>
-                  <span className="flex items-center gap-1 text-xs text-zinc-500 dark:text-zinc-400">
+                  </Badge>
+                  <span className="text-text-quaternary font-mono text-[10px] tracking-widest">•</span>
+                  <span className="flex items-center gap-1 text-[10px] font-mono uppercase tracking-wider text-text-tertiary">
                     <Clock className="h-3 w-3" />
                     {new Date(entry.timestamp * 1000).toLocaleTimeString(locale, {
                       hour: '2-digit',
@@ -199,11 +200,11 @@ function TimelineActivityCard({ entry, onOpen, locale, t }: TimelineActivityCard
                   </span>
                 </div>
 
-                <h3 className="mt-1 truncate pr-4 text-sm font-semibold text-zinc-900 dark:text-zinc-100 transition-colors group-hover:text-blue-700 dark:group-hover:text-blue-300">
+                <h3 className="mt-2 truncate pr-4 text-sm font-bold text-text-primary uppercase tracking-tight transition-colors group-hover:text-accent-primary">
                   {entry.title}
                 </h3>
                 {entry.summary && (
-                  <p className="mt-1 line-clamp-2 text-sm text-zinc-600 dark:text-zinc-400">
+                  <p className="mt-1 line-clamp-2 text-sm text-text-secondary leading-relaxed">
                     {entry.summary}
                   </p>
                 )}
@@ -215,7 +216,7 @@ function TimelineActivityCard({ entry, onOpen, locale, t }: TimelineActivityCard
               whileHover={{ x: 4, opacity: 1 }}
               className="mt-2 opacity-0 transition-opacity group-hover:opacity-100"
             >
-              <ChevronRight className="h-4 w-4 text-zinc-400 group-hover:text-blue-600 dark:group-hover:text-blue-300" />
+              <ChevronRight className="h-4 w-4 text-text-quaternary group-hover:text-accent-primary" />
             </motion.div>
           </div>
         </CardBody>
@@ -249,18 +250,16 @@ function TimelineChatCard({ session, onView, onContinue, isLoading, locale, t }:
         }
       }}
       className={cn(
-        'group cursor-pointer outline-none',
-        'focus-visible:ring-2 focus-visible:ring-blue-500/30 focus-visible:ring-offset-2',
-        'focus-visible:ring-offset-white dark:focus-visible:ring-offset-zinc-950'
+        'group cursor-pointer outline-none rounded-xl',
+        'focus-visible:ring-2 focus-visible:ring-accent-primary/30 focus-visible:ring-offset-2',
+        'focus-visible:ring-offset-surface'
       )}
     >
       <Card
-        variant="glass"
         interactive={false}
-        padding="none"
         className={cn(
-          'transition-[box-shadow,transform,border-color,background-color] duration-200 ease-out-expo',
-          'hover:shadow-glass'
+          'transition-all duration-200 ease-out-expo border-border hover:border-accent-primary/40',
+          'bg-surface-base hover:bg-surface-elevated hover:shadow-glass-sm'
         )}
       >
         <CardBody className="p-4 sm:p-5">
@@ -268,9 +267,8 @@ function TimelineChatCard({ session, onView, onContinue, isLoading, locale, t }:
             <div className="mt-0.5 shrink-0">
               <motion.div
                 className={cn(
-                  'flex h-10 w-10 items-center justify-center rounded-xl',
-                  'bg-blue-500/10 text-blue-700 ring-1 ring-blue-500/10',
-                  'dark:bg-blue-400/10 dark:text-blue-300 dark:ring-blue-400/20'
+                  'flex h-10 w-10 items-center justify-center rounded-xl border',
+                  'bg-accent-primary/10 text-accent-primary border-accent-primary/20'
                 )}
                 whileHover={{ scale: 1.06, rotate: 4 }}
                 transition={{ type: 'spring' as const, stiffness: 400, damping: 17 }}
@@ -280,11 +278,14 @@ function TimelineChatCard({ session, onView, onContinue, isLoading, locale, t }:
             </div>
 
             <div className="flex-1 min-w-0">
-              <div className="flex justify-between items-start mb-1 gap-3">
-                <span className="inline-flex items-center rounded-full border border-blue-500/20 bg-blue-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-blue-700 dark:border-blue-400/20 dark:text-blue-300">
+              <div className="flex justify-between items-start mb-2 gap-3">
+                <Badge
+                  variant="secondary"
+                  className="bg-accent-primary/10 text-accent-primary border border-accent-primary/20 text-[10px] uppercase tracking-wider"
+                >
                   {t('Chat')}
-                </span>
-                <span className="flex items-center gap-1 text-xs text-zinc-500 dark:text-zinc-400">
+                </Badge>
+                <span className="flex items-center gap-1 text-[10px] font-mono uppercase tracking-wider text-text-tertiary">
                   <Clock className="h-3 w-3" />
                   {new Date(session.updated_at * 1000).toLocaleTimeString(locale, {
                     hour: '2-digit',
@@ -293,17 +294,17 @@ function TimelineChatCard({ session, onView, onContinue, isLoading, locale, t }:
                 </span>
               </div>
 
-              <h3 className="truncate pr-4 text-sm font-semibold text-zinc-900 dark:text-zinc-100 transition-colors group-hover:text-blue-700 dark:group-hover:text-blue-300">
+              <h3 className="truncate pr-4 text-sm font-bold text-text-primary uppercase tracking-tight transition-colors group-hover:text-accent-primary">
                 {session.title}
               </h3>
 
-              <div className="mt-1 flex items-center gap-2 min-w-0">
-                <span className="shrink-0 rounded-full bg-white/60 px-2 py-0.5 text-xs text-zinc-500 shadow-glass-sm backdrop-blur-md dark:bg-white/5 dark:text-zinc-400">
-                  {session.message_count} messages
+              <div className="mt-2 flex items-center gap-2 min-w-0">
+                <span className="shrink-0 rounded-full bg-surface-elevated px-2 py-0.5 text-[10px] font-mono text-text-tertiary border border-border-subtle uppercase tracking-widest">
+                  {session.message_count} MSG
                 </span>
                 {session.last_message && (
-                  <p className="truncate text-sm text-zinc-600 dark:text-zinc-400 flex-1">
-                    {session.last_message}
+                  <p className="truncate text-sm text-text-secondary flex-1 leading-relaxed italic opacity-80">
+                    "{session.last_message}"
                   </p>
                 )}
               </div>
@@ -318,14 +319,14 @@ function TimelineChatCard({ session, onView, onContinue, isLoading, locale, t }:
                   onContinue()
                 }}
                 loading={isLoading}
-                iconLeft={<MessageSquare className="w-3.5 h-3.5" />}
+                className="text-xs font-mono uppercase tracking-widest"
               >
                 {t('Continue')}
               </Button>
             </div>
 
             <div className="self-center sm:hidden">
-              <ChevronRight className="h-4 w-4 text-zinc-400 group-hover:text-blue-600 dark:group-hover:text-blue-300" />
+              <ChevronRight className="h-4 w-4 text-text-quaternary group-hover:text-accent-primary" />
             </div>
           </div>
         </CardBody>
@@ -492,7 +493,7 @@ export default function HistoryPage() {
       <PageHeader
         title={t('History')}
         description={t('All Activities')}
-        icon={<History className="w-5 h-5 text-blue-600 dark:text-blue-400" />}
+        icon={<History className="w-5 h-5 text-accent-primary" />}
         actions={
           hasActiveFilters ? (
             <Button
@@ -502,8 +503,9 @@ export default function HistoryPage() {
                 setFilterType('all')
                 setSearchQuery('')
               }}
-              iconLeft={<X className="h-3.5 w-3.5" />}
+              className="text-text-tertiary hover:text-accent-primary uppercase font-mono text-[10px] tracking-widest"
             >
+              <X className="h-3 w-3 mr-1" />
               {t('Clear Filters')}
             </Button>
           ) : null
@@ -512,37 +514,22 @@ export default function HistoryPage() {
 
       {/* Controls */}
       <motion.div variants={itemVariants} initial="hidden" animate="visible" className="mb-8">
-        <Card variant="glass" interactive={false} className="overflow-visible">
+        <Card interactive={false} className="overflow-visible border-border bg-surface-base/50 backdrop-blur-sm">
           <CardBody className="p-4 sm:p-5">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
               <div className="w-full sm:max-w-md">
                 <Input
                   placeholder={`${t('Search')}...`}
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
-                  leftIcon={<Search className="w-4 h-4" />}
-                  rightIcon={
-                    searchQuery ? (
-                      <button
-                        type="button"
-                        onClick={() => setSearchQuery('')}
-                        className="text-zinc-400 hover:text-zinc-700 dark:text-zinc-500 dark:hover:text-zinc-200"
-                        aria-label={t('Clear Filters')}
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    ) : undefined
-                  }
+                  leftIcon={<Search className="w-4 h-4 text-text-tertiary" />}
                   size="sm"
-                  className="bg-white/70 border-white/60 shadow-glass-sm backdrop-blur-md dark:bg-white/5 dark:border-white/10"
+                  className="bg-surface-elevated border-border-subtle focus:border-accent-primary/40 font-mono text-xs uppercase tracking-tight"
                 />
               </div>
 
-              <div className="flex items-start gap-3">
-                <div className="mt-1 hidden sm:block">
-                  <Filter className="h-4 w-4 text-zinc-400" />
-                </div>
-                <div role="group" aria-label={t('Filter by type')} className="flex flex-wrap gap-2">
+              <div className="flex items-center gap-3 overflow-x-auto pb-1 sm:pb-0 no-scrollbar">
+                <div className="flex items-center gap-1">
                   {FILTER_OPTIONS.map(option => {
                     const isActive = filterType === option.value
                     const Icon = option.icon
@@ -553,23 +540,15 @@ export default function HistoryPage() {
                         onClick={() => setFilterType(option.value)}
                         aria-pressed={isActive}
                         className={cn(
-                          'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium',
-                          'shadow-glass-sm backdrop-blur-xl',
-                          'transition-[background-color,border-color,color,box-shadow] duration-200 ease-out-expo',
-                          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30',
+                          'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-widest',
+                          'transition-all duration-200 ease-out-expo',
+                          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/30',
                           isActive
-                            ? 'border-blue-500/25 bg-blue-500/10 text-blue-700 dark:border-blue-400/20 dark:bg-blue-400/10 dark:text-blue-300'
-                            : 'border-white/60 bg-white/60 text-zinc-700 hover:bg-white/80 hover:text-zinc-900 dark:border-white/10 dark:bg-white/5 dark:text-zinc-300 dark:hover:bg-white/10 dark:hover:text-zinc-50'
+                            ? 'border-accent-primary bg-accent-primary text-white shadow-sm'
+                            : 'border-border-subtle bg-surface-elevated text-text-tertiary hover:border-border hover:text-text-secondary'
                         )}
                       >
-                        <Icon
-                          className={cn(
-                            'h-3.5 w-3.5',
-                            isActive
-                              ? 'text-blue-700 dark:text-blue-300'
-                              : 'text-zinc-400 dark:text-zinc-500'
-                          )}
-                        />
+                        <Icon className="h-3 w-3" />
                         {t(option.labelKey)}
                       </button>
                     )
@@ -585,52 +564,52 @@ export default function HistoryPage() {
       <div className="space-y-8">
         {loading ? (
           <motion.div variants={itemVariants} initial="hidden" animate="visible">
-            <Card variant="glass" interactive={false} className="py-10">
-              <CardBody className="flex items-center justify-center gap-3 text-sm text-zinc-600 dark:text-zinc-300">
-                <Loader2 className="h-4 w-4 animate-spin text-blue-600 dark:text-blue-400" />
+            <Card interactive={false} className="py-20 border-border bg-surface-base/50">
+              <CardBody className="flex flex-col items-center justify-center gap-4 text-sm text-text-tertiary font-mono uppercase tracking-widest">
+                <Loader2 className="h-6 w-6 animate-spin text-accent-primary" />
                 <span>{t('Loading')}</span>
               </CardBody>
             </Card>
           </motion.div>
         ) : timelineGroups.length === 0 ? (
           <motion.div variants={itemVariants} initial="hidden" animate="visible">
-            <Card variant="glass" interactive={false} className="py-12">
+            <Card interactive={false} className="py-20 border-border bg-surface-base/50">
               <CardBody className="flex flex-col items-center text-center">
-                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-700 ring-1 ring-blue-500/10 dark:bg-blue-400/10 dark:text-blue-300 dark:ring-blue-400/20">
+                <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-surface-elevated border border-border text-text-tertiary">
                   <History className="h-6 w-6" />
                 </div>
-                <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
+                <h3 className="text-sm font-bold text-text-primary uppercase tracking-widest">
                   {t('No history found')}
                 </h3>
-                <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                <p className="mt-1 text-xs text-text-tertiary uppercase tracking-tight font-mono">
                   {t('Your activities will appear here')}
                 </p>
               </CardBody>
             </Card>
           </motion.div>
         ) : (
-          <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-10">
+          <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-12">
             {timelineGroups.map(group => (
               <motion.section key={group.key} variants={itemVariants}>
-                <div className="mb-4 flex items-center gap-3">
-                  <div className="inline-flex items-center gap-2 rounded-full border border-white/60 bg-white/60 px-3 py-1 shadow-glass-sm backdrop-blur-md dark:border-white/10 dark:bg-white/5">
-                    <Calendar className="h-4 w-4 text-blue-600 dark:text-blue-300" />
-                    <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
+                <div className="mb-6 flex items-center gap-4">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-border bg-surface-elevated px-4 py-1.5 shadow-glass-sm backdrop-blur-md">
+                    <Calendar className="h-3.5 w-3.5 text-accent-primary" />
+                    <span className="text-[10px] font-bold text-text-primary uppercase tracking-[0.2em] font-mono">
                       {group.label}
                     </span>
-                    <span className="rounded-full bg-white/70 px-2 py-0.5 text-[11px] text-zinc-600 shadow-sm dark:bg-white/5 dark:text-zinc-300">
+                    <Badge variant="outline" className="ml-1 border-border-subtle bg-surface-base text-[10px] font-mono font-bold text-text-tertiary">
                       {group.items.length}
-                    </span>
+                    </Badge>
                   </div>
-                  <div className="h-px flex-1 bg-zinc-200/70 dark:bg-white/10" />
+                  <div className="h-px flex-1 bg-border-subtle/50" />
                 </div>
 
                 <div className="relative">
-                  <div className="absolute left-4 top-0 bottom-0 w-px bg-gradient-to-b from-blue-500/25 via-zinc-200/70 to-transparent dark:from-blue-400/25 dark:via-white/10" />
-                  <ol role="list" className="space-y-3">
+                  <div className="absolute left-4 top-0 bottom-0 w-px bg-gradient-to-b from-accent-primary/20 via-border-subtle to-transparent" />
+                  <ol role="list" className="space-y-4">
                     {group.items.map(item => (
-                      <li key={item.id} className="relative pl-8">
-                        <div className="pointer-events-none absolute left-4 top-[22px] h-2 w-2 -translate-x-1/2 rounded-full bg-blue-500 ring-4 ring-white/70 dark:ring-zinc-950/40" />
+                      <li key={item.id} className="relative pl-10">
+                        <div className="pointer-events-none absolute left-4 top-[24px] h-2 w-2 -translate-x-1/2 rounded-full bg-accent-primary ring-4 ring-surface shadow-sm" />
 
                         {item.kind === 'activity' ? (
                           <TimelineActivityCard

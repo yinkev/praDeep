@@ -1,9 +1,27 @@
-import { MessageSquare, FileText, Lightbulb, Search, Sparkles, type LucideIcon } from 'lucide-react'
+import { 
+  MessageSquare, 
+  FileText, 
+  Lightbulb, 
+  Search, 
+  Sparkles, 
+  History, 
+  BarChart2, 
+  Workflow, 
+  Brain, 
+  Database, 
+  Book, 
+  HelpCircle, 
+  Settings, 
+  FileSearch, 
+  type LucideIcon 
+} from 'lucide-react'
 import { apiUrl } from './api'
+import { type AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
 
 export interface CommandContext {
   text?: string
   selection?: string
+  router?: AppRouterInstance
 }
 
 export interface Command {
@@ -16,113 +34,19 @@ export interface Command {
 }
 
 /**
- * Navigate to question page with query
+ * Handle navigation to specific routes
  */
-function handleAsk(context: CommandContext): void {
-  const query = context.text || context.selection || ''
-  if (typeof window !== 'undefined') {
+function handleNavigate(path: string, context: CommandContext): void {
+  if (context.router) {
+    const query = context.text || context.selection || ''
     const params = new URLSearchParams()
     if (query) params.set('q', query)
-    window.location.href = `/question${query ? `?${params.toString()}` : ''}`
-  }
-}
-
-/**
- * Summarize text via API
- */
-async function handleSummarize(context: CommandContext): Promise<void> {
-  const text = context.selection || context.text
-  if (!text) {
-    console.warn('No text provided for summarization')
-    return
-  }
-
-  try {
-    const response = await fetch(apiUrl('/api/v1/summarize'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text }),
-    })
-
-    if (!response.ok) {
-      throw new Error(`Summarize API failed: ${response.statusText}`)
-    }
-
-    const data = await response.json()
-    console.log('Summary:', data)
-    // TODO: Show summary in UI (modal, toast, or inline)
-  } catch (error) {
-    console.error('Failed to summarize:', error)
-  }
-}
-
-/**
- * Explain concept via API
- */
-async function handleExplain(context: CommandContext): Promise<void> {
-  const text = context.selection || context.text
-  if (!text) {
-    console.warn('No text provided for explanation')
-    return
-  }
-
-  try {
-    const response = await fetch(apiUrl('/api/v1/explain'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text }),
-    })
-
-    if (!response.ok) {
-      throw new Error(`Explain API failed: ${response.statusText}`)
-    }
-
-    const data = await response.json()
-    console.log('Explanation:', data)
-    // TODO: Show explanation in UI
-  } catch (error) {
-    console.error('Failed to explain:', error)
-  }
-}
-
-/**
- * Research topic with sources
- */
-function handleResearch(context: CommandContext): void {
-  const query = context.text || context.selection || ''
-  if (typeof window !== 'undefined') {
+    context.router.push(`${path}${query ? `?${params.toString()}` : ''}`)
+  } else if (typeof window !== 'undefined') {
+    const query = context.text || context.selection || ''
     const params = new URLSearchParams()
     if (query) params.set('q', query)
-    window.location.href = `/research${query ? `?${params.toString()}` : ''}`
-  }
-}
-
-/**
- * Improve writing via API
- */
-async function handleImprove(context: CommandContext): Promise<void> {
-  const text = context.selection || context.text
-  if (!text) {
-    console.warn('No text provided for improvement')
-    return
-  }
-
-  try {
-    const response = await fetch(apiUrl('/api/v1/improve'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text }),
-    })
-
-    if (!response.ok) {
-      throw new Error(`Improve API failed: ${response.statusText}`)
-    }
-
-    const data = await response.json()
-    console.log('Improved text:', data)
-    // TODO: Show improved text in UI
-  } catch (error) {
-    console.error('Failed to improve:', error)
+    window.location.href = `${path}${query ? `?${params.toString()}` : ''}`
   }
 }
 
@@ -136,23 +60,7 @@ export const COMMANDS: Command[] = [
     description: 'Ask a question to the AI',
     icon: MessageSquare,
     shortcut: '⌘A',
-    handler: handleAsk,
-  },
-  {
-    id: 'summarize',
-    label: 'Summarize',
-    description: 'Summarize selected text',
-    icon: FileText,
-    shortcut: '⌘S',
-    handler: handleSummarize,
-  },
-  {
-    id: 'explain',
-    label: 'Explain',
-    description: 'Explain concept in detail',
-    icon: Lightbulb,
-    shortcut: '⌘E',
-    handler: handleExplain,
+    handler: (ctx) => handleNavigate('/question', ctx),
   },
   {
     id: 'research',
@@ -160,15 +68,87 @@ export const COMMANDS: Command[] = [
     description: 'Research a topic with sources',
     icon: Search,
     shortcut: '⌘R',
-    handler: handleResearch,
+    handler: (ctx) => handleNavigate('/research', ctx),
   },
   {
-    id: 'improve',
-    label: 'Improve',
-    description: 'Improve writing and clarity',
-    icon: Sparkles,
-    shortcut: '⌘I',
-    handler: handleImprove,
+    id: 'history',
+    label: 'History',
+    description: 'View your activity history',
+    icon: History,
+    handler: (ctx) => handleNavigate('/history', ctx),
+  },
+  {
+    id: 'analytics',
+    label: 'Analytics',
+    description: 'View insights and performance',
+    icon: BarChart2,
+    handler: (ctx) => handleNavigate('/analytics', ctx),
+  },
+  {
+    id: 'workflow',
+    label: 'Workflow',
+    description: 'Manage automation workflows',
+    icon: Workflow,
+    handler: (ctx) => handleNavigate('/workflow', ctx),
+  },
+  {
+    id: 'memory',
+    label: 'Memory',
+    description: 'Manage persistent memory',
+    icon: Brain,
+    handler: (ctx) => handleNavigate('/memory', ctx),
+  },
+  {
+    id: 'knowledge',
+    label: 'Knowledge',
+    description: 'Browse knowledge bases',
+    icon: Database,
+    handler: (ctx) => handleNavigate('/knowledge', ctx),
+  },
+  {
+    id: 'notebooks',
+    label: 'Notebooks',
+    description: 'Access your notebooks',
+    icon: Book,
+    handler: (ctx) => handleNavigate('/notebooks', ctx),
+  },
+  {
+    id: 'paper',
+    label: 'Papers',
+    description: 'Find recommended papers',
+    icon: FileSearch,
+    handler: (ctx) => handleNavigate('/paper', ctx),
+  },
+  {
+    id: 'summarize',
+    label: 'Summarize',
+    description: 'Summarize selected text',
+    icon: FileText,
+    shortcut: '⌘S',
+    handler: async (context) => {
+      const text = context.selection || context.text
+      if (!text) return
+      try {
+        const response = await fetch(apiUrl('/api/v1/summarize'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text }),
+        })
+        if (response.ok) {
+          const data = await response.json()
+          console.log('Summary:', data)
+        }
+      } catch (error) {
+        console.error('Failed to summarize:', error)
+      }
+    },
+  },
+  {
+    id: 'settings',
+    label: 'Settings',
+    description: 'Manage application settings',
+    icon: Settings,
+    handler: (ctx) => handleNavigate('/settings', ctx),
   },
 ]
 
