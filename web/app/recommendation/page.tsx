@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import ReactMarkdown from 'react-markdown'
 import { motion, AnimatePresence, type Variants } from 'framer-motion'
 import {
   BookOpen,
@@ -16,17 +15,21 @@ import {
   Sparkles,
   TrendingUp,
   X,
+  FileText,
+  Clock,
+  Layers,
+  Database,
 } from 'lucide-react'
+import ReactMarkdown from 'react-markdown'
 import { apiUrl, wsUrl } from '@/lib/api'
 import PageWrapper, { PageHeader } from '@/components/ui/PageWrapper'
-import { Card, CardBody, CardHeader } from '@/components/ui/Card'
-import Button, { IconButton } from '@/components/ui/Button'
+import { Card, CardBody, CardHeader, CardTitle, CardFooter } from '@/components/ui/Card'
+import { Button, IconButton } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/ui/progress'
+import { EmptyState } from '@/components/ui/EmptyState'
 import { cn } from '@/lib/utils'
-
-// ============================================================================
-// Types
-// ============================================================================
 
 interface Paper {
   paper_id: string
@@ -60,146 +63,22 @@ interface RecommendationResult {
 
 type RecommendationType = 'hybrid' | 'semantic' | 'citation'
 
-// ============================================================================
-// Animation Variants
-// ============================================================================
-
 const fadeInUp: Variants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0 },
-}
-
-const scaleIn: Variants = {
-  hidden: { opacity: 0, scale: 0.95 },
-  visible: { opacity: 1, scale: 1 },
-}
-
-const slideInRight: Variants = {
-  hidden: { opacity: 0, x: 20 },
-  visible: { opacity: 1, x: 0 },
+  hidden: { opacity: 0, y: 16 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] },
+  },
 }
 
 const staggerContainer: Variants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: {
-      staggerChildren: 0.08,
-      delayChildren: 0.1,
-    },
+    transition: { staggerChildren: 0.06, delayChildren: 0.1 },
   },
 }
-
-const paperCardVariants: Variants = {
-  hidden: { opacity: 0, y: 12 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      type: 'spring',
-      stiffness: 350,
-      damping: 30,
-    },
-  },
-  exit: {
-    opacity: 0,
-    y: -12,
-    transition: {
-      duration: 0.2,
-    },
-  },
-}
-
-const expandVariants: Variants = {
-  collapsed: {
-    opacity: 0,
-    height: 0,
-    marginTop: 0,
-    transition: {
-      duration: 0.3,
-      ease: [0.4, 0.0, 0.2, 1],
-    },
-  },
-  expanded: {
-    opacity: 1,
-    height: 'auto',
-    marginTop: '1rem',
-    transition: {
-      duration: 0.4,
-      ease: [0.4, 0.0, 0.2, 1],
-    },
-  },
-}
-
-const badgeVariants: Variants = {
-  hidden: { opacity: 0, scale: 0.8 },
-  visible: {
-    opacity: 1,
-    scale: 1,
-    transition: {
-      type: 'spring',
-      stiffness: 500,
-      damping: 30,
-    },
-  },
-}
-
-// ============================================================================
-// Helpers
-// ============================================================================
-
-const clamp01 = (value: number) => Math.min(1, Math.max(0, value))
-
-const formatPercent = (value: number) => `${Math.round(clamp01(value) * 100)}%`
-
-const formatAuthors = (authors: string[], max: number = 3) => {
-  if (authors.length <= max) return authors.join(', ')
-  return `${authors.slice(0, max).join(', ')} et al.`
-}
-
-const getSourceLabel = (source: string) => {
-  switch (source) {
-    case 'semantic_scholar':
-      return 'Semantic Scholar'
-    case 'openalex':
-      return 'OpenAlex'
-    default:
-      return 'arXiv'
-  }
-}
-
-const getSourceBadgeStyle = (source: string) => {
-  switch (source) {
-    case 'arxiv':
-      return 'border-red-500/15 bg-red-500/10 text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300'
-    case 'semantic_scholar':
-      return 'border-blue-500/15 bg-blue-500/10 text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300'
-    case 'openalex':
-      return 'border-emerald-500/15 bg-emerald-500/10 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300'
-    default:
-      return 'border-zinc-200/70 bg-zinc-100/70 text-zinc-700 dark:border-white/10 dark:bg-white/5 dark:text-zinc-300'
-  }
-}
-
-const glassFieldClassName =
-  'bg-white/70 border-white/60 shadow-glass-sm backdrop-blur-md dark:bg-white/5 dark:border-white/10'
-
-const selectClassName = cn(
-  'h-10 w-full rounded-lg px-3 text-sm outline-none',
-  'border border-white/60 bg-white/70 text-zinc-900 shadow-glass-sm backdrop-blur-md',
-  'transition-[border-color,box-shadow,background-color] duration-200 ease-out-expo',
-  'hover:border-white/80 focus:border-zinc-400 focus:ring-2 focus:ring-blue-500/20 focus:shadow-glow-blue',
-  'dark:border-white/10 dark:bg-white/5 dark:text-zinc-50 dark:hover:border-white/15 dark:focus:border-white/20'
-)
-
-function openExternal(url: string) {
-  if (!url) return
-  window.open(url, '_blank', 'noopener,noreferrer')
-}
-
-// ============================================================================
-// Component
-// ============================================================================
 
 export default function RecommendationPage() {
   const [query, setQuery] = useState('')
@@ -297,10 +176,7 @@ export default function RecommendationPage() {
         }),
       })
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch recommendations')
-      }
-
+      if (!response.ok) throw new Error('Failed to fetch recommendations')
       const data = await response.json()
       setResult(data)
     } catch (err) {
@@ -318,7 +194,6 @@ export default function RecommendationPage() {
     setError(null)
     setProgress('Connecting…')
 
-    // Close existing WebSocket
     if (wsRef.current) wsRef.current.close()
 
     const ws = new WebSocket(wsUrl('/api/v1/recommendation/recommend/stream'))
@@ -342,11 +217,8 @@ export default function RecommendationPage() {
     ws.onmessage = event => {
       try {
         const data = JSON.parse(event.data)
-
         if (data.type === 'progress') {
-          setProgress(
-            data.status === 'started' ? `${data.stage}: Starting…` : `${data.stage}: ${data.status}`
-          )
+          setProgress(data.status === 'started' ? `${data.stage}: Starting…` : `${data.stage}: ${data.status}`)
         } else if (data.type === 'result') {
           setResult(data.data)
           setIsLoading(false)
@@ -365,7 +237,6 @@ export default function RecommendationPage() {
     }
 
     ws.onerror = () => {
-      // Fallback to REST API
       fetchPapersRest()
       ws.close()
     }
@@ -379,938 +250,259 @@ export default function RecommendationPage() {
   const hasPapers = papers.length > 0
 
   return (
-    <PageWrapper maxWidth="wide" showPattern breadcrumbs={[{ label: 'Recommendations' }]}>
+    <PageWrapper maxWidth="wide" showPattern breadcrumbs={[{ label: 'Paper Recommendations' }]}>
       <PageHeader
-        title="Paper Recommendations"
-        description="High-signal papers ranked by semantic + citation signals, tuned for deep work."
-        icon={<BookOpen className="h-5 w-5 text-blue-600 dark:text-blue-400" />}
+        title="Scholar Recon"
+        description="High-signal academic retrieval ranked by semantic similarity and citation density."
+        icon={<BookOpen className="h-5 w-5 text-accent-primary" />}
+        className="mb-8"
         actions={
-          result || error || progress ? (
-            <Button
-              variant="ghost"
-              size="sm"
-              iconLeft={<X className="h-4 w-4" />}
-              onClick={clearResults}
-            >
-              Clear
+          (result || error || progress) && (
+            <Button variant="ghost" size="sm" onClick={clearResults} className="text-[10px] font-mono uppercase tracking-widest text-text-tertiary hover:text-accent-primary">
+              <X size={12} className="mr-2" />
+              Clear Results
             </Button>
-          ) : null
+          )
         }
       />
 
-      {/* Top: Search + Filters */}
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_24rem] items-start">
-        {/* Search */}
-        <Card variant="glass" padding="none" interactive={false}>
-          <CardHeader padding="none" className="px-5 py-4">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">Search</div>
-                <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                  Use a topic, a question, or a paper title.
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="hidden sm:flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400">
-                  <Sparkles className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
-                  <span className="font-medium">Best results with specific queries</span>
-                </div>
-              </div>
-            </div>
-          </CardHeader>
-          <CardBody padding="none" className="px-5 pb-5">
-            <form
-              onSubmit={e => {
-                e.preventDefault()
-                searchPapers()
-              }}
-              className="space-y-4"
-            >
-              <Input
-                value={query}
-                onChange={e => setQuery(e.target.value)}
-                placeholder="e.g. diffusion transformers for video generation"
-                leftIcon={<Search className="h-5 w-5" />}
-                rightIcon={
-                  query ? (
-                    <motion.button
-                      type="button"
-                      onClick={() => setQuery('')}
-                      initial={{ opacity: 0, scale: 0.8, rotate: -90 }}
-                      animate={{ opacity: 1, scale: 1, rotate: 0 }}
-                      exit={{ opacity: 0, scale: 0.8, rotate: 90 }}
-                      whileHover={{ scale: 1.1, rotate: 90 }}
-                      whileTap={{ scale: 0.9 }}
-                      transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-                      className="text-zinc-400 transition-colors duration-200 hover:text-zinc-700 dark:text-zinc-500 dark:hover:text-zinc-200"
-                      aria-label="Clear query"
-                    >
-                      <X className="h-4 w-4" />
-                    </motion.button>
-                  ) : undefined
-                }
-                size="lg"
-                className={glassFieldClassName}
-              />
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[400px_1fr]">
+         {/* Controls Column */}
+         <aside className="space-y-6">
+            <Card interactive={false} className="border-border bg-surface-base/80 backdrop-blur-md shadow-glass-sm">
+               <CardHeader className="p-6 border-b border-border-subtle">
+                  <div className="flex items-center justify-between">
+                     <div className="text-sm font-bold uppercase tracking-widest">Query Parameters</div>
+                     {hasActiveFilters && (
+                       <IconButton 
+                         aria-label="Reset filters"
+                         icon={<RefreshCw size={14} />} 
+                         size="sm" 
+                         variant="ghost" 
+                         onClick={resetFilters} 
+                         className="text-text-tertiary" 
+                       />
+                     )}
 
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-                  <motion.span
-                    layout
-                    whileHover={{ scale: 1.05, y: -1 }}
-                    transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-white/50 bg-white/60 px-2.5 py-1 shadow-glass-sm backdrop-blur-md transition-shadow duration-200 hover:shadow-md dark:border-white/10 dark:bg-white/5"
-                  >
-                    <SlidersHorizontal className="h-3.5 w-3.5" />
-                    <span className="font-medium">
-                      {recommendationType === 'hybrid'
-                        ? 'Hybrid'
-                        : recommendationType === 'semantic'
-                          ? 'Semantic'
-                          : 'Citation'}
-                    </span>
-                  </motion.span>
-                  <AnimatePresence mode="wait">
-                    {yearStart !== undefined || yearEnd !== undefined ? (
-                      <motion.span
-                        layout
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.8 }}
-                        whileHover={{ scale: 1.05, y: -1 }}
-                        transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-                        className="inline-flex items-center gap-1.5 rounded-full border border-white/50 bg-white/60 px-2.5 py-1 shadow-glass-sm backdrop-blur-md transition-shadow duration-200 hover:shadow-md dark:border-white/10 dark:bg-white/5"
-                      >
-                        <span className="font-medium">
-                          {yearStart ?? '…'}–{yearEnd ?? '…'}
-                        </span>
-                      </motion.span>
-                    ) : null}
-                  </AnimatePresence>
-                  <motion.span
-                    layout
-                    whileHover={{ scale: 1.05, y: -1 }}
-                    transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-white/50 bg-white/60 px-2.5 py-1 shadow-glass-sm backdrop-blur-md transition-shadow duration-200 hover:shadow-md dark:border-white/10 dark:bg-white/5"
-                  >
-                    <span className="font-medium">{maxResults}</span>
-                    <span>max</span>
-                  </motion.span>
-                </div>
-
-                <Button
-                  type="submit"
-                  size="lg"
-                  loading={isLoading}
-                  disabled={!query.trim()}
-                  iconLeft={!isLoading ? <Sparkles className="h-5 w-5" /> : undefined}
-                >
-                  {isLoading ? 'Searching…' : 'Recommend'}
-                </Button>
-              </div>
-            </form>
-          </CardBody>
-        </Card>
-
-        {/* Filters */}
-        <Card variant="glass" padding="none" interactive={false} className="overflow-hidden">
-          <CardHeader padding="none" className="px-5 py-4">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <div className="flex items-center gap-2 text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-                  <SlidersHorizontal className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                  Filters
-                </div>
-                <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                  Adjust ranking strategy and output.
-                </div>
-              </div>
-              {hasActiveFilters ? (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={resetFilters}
-                  iconLeft={<RefreshCw className="h-4 w-4" />}
-                >
-                  Reset
-                </Button>
-              ) : null}
-            </div>
-          </CardHeader>
-          <CardBody padding="none" className="px-5 pb-5 space-y-4">
-            <div>
-              <label className="mb-1.5 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                Recommendation Type
-              </label>
-              <select
-                value={recommendationType}
-                onChange={e => setRecommendationType(e.target.value as RecommendationType)}
-                className={selectClassName}
-              >
-                <option value="hybrid">Hybrid (Recommended)</option>
-                <option value="semantic">Semantic Similarity</option>
-                <option value="citation">Citation-based</option>
-              </select>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <Input
-                label="Year from"
-                type="number"
-                inputMode="numeric"
-                placeholder="e.g. 2018"
-                value={yearStart ?? ''}
-                onChange={e => setYearStart(e.target.value ? parseInt(e.target.value) : undefined)}
-                size="sm"
-                className={glassFieldClassName}
-              />
-              <Input
-                label="Year to"
-                type="number"
-                inputMode="numeric"
-                placeholder="e.g. 2025"
-                value={yearEnd ?? ''}
-                onChange={e => setYearEnd(e.target.value ? parseInt(e.target.value) : undefined)}
-                size="sm"
-                className={glassFieldClassName}
-              />
-            </div>
-
-            <Input
-              label="Max results"
-              type="number"
-              inputMode="numeric"
-              min={1}
-              max={50}
-              value={maxResults}
-              onChange={e => setMaxResults(parseInt(e.target.value) || 10)}
-              size="sm"
-              className={glassFieldClassName}
-            />
-
-            <div className="space-y-2">
-              <label className="flex items-start gap-3 rounded-xl border border-white/55 bg-white/60 p-3 shadow-glass-sm backdrop-blur-md transition-colors hover:bg-white/80 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/8">
-                <input
-                  type="checkbox"
-                  checked={generateExplanation}
-                  onChange={e => setGenerateExplanation(e.target.checked)}
-                  className="mt-0.5 h-4 w-4 rounded border-zinc-300 accent-blue-600 dark:border-white/20"
-                />
-                <div>
-                  <div className="text-sm font-medium text-zinc-800 dark:text-zinc-100">
-                    AI explanation
                   </div>
-                  <div className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
-                    Generate a concise rationale for the ranked list.
-                  </div>
-                </div>
-              </label>
-
-              <label className="flex items-start gap-3 rounded-xl border border-white/55 bg-white/60 p-3 shadow-glass-sm backdrop-blur-md transition-colors hover:bg-white/80 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/8">
-                <input
-                  type="checkbox"
-                  checked={suggestTopics}
-                  onChange={e => setSuggestTopics(e.target.checked)}
-                  className="mt-0.5 h-4 w-4 rounded border-zinc-300 accent-blue-600 dark:border-white/20"
-                />
-                <div>
-                  <div className="text-sm font-medium text-zinc-800 dark:text-zinc-100">
-                    Related topics
-                  </div>
-                  <div className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
-                    Suggest adjacent areas worth exploring.
-                  </div>
-                </div>
-              </label>
-            </div>
-          </CardBody>
-        </Card>
-      </div>
-
-      {/* Bottom: Results + Insights */}
-      <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_24rem] items-start">
-        {/* Results */}
-        <Card variant="glass" padding="none" interactive={false} className="overflow-hidden">
-          <CardHeader padding="none" className="px-5 py-4">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">Results</div>
-                <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                  {result ? (
-                    <>
-                      Ranked papers for{' '}
-                      <span className="text-zinc-700 dark:text-zinc-200">“{result.query}”</span>
-                    </>
-                  ) : (
-                    'Run a search to see ranked papers.'
-                  )}
-                </div>
-              </div>
-
-              <AnimatePresence mode="wait">
-                {result ? (
-                  <motion.div
-                    key="result-stats"
-                    initial={{ opacity: 0, x: 10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -10 }}
-                    transition={{ duration: 0.3 }}
-                    className="flex flex-col items-end gap-1 text-xs text-zinc-500 dark:text-zinc-400"
-                  >
-                    <motion.span
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: 0.1, type: 'spring', stiffness: 400, damping: 25 }}
-                      className="inline-flex items-center gap-1.5"
-                    >
-                      <TrendingUp className="h-3.5 w-3.5" />
-                      <span className="font-medium text-zinc-700 dark:text-zinc-200">
-                        {result.papers.length}
-                      </span>
-                      <span>of {result.total_candidates}</span>
-                    </motion.span>
-                    <motion.span
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: 0.2 }}
-                    >
-                      {Math.round(result.processing_time_ms)}ms
-                    </motion.span>
-                  </motion.div>
-                ) : null}
-              </AnimatePresence>
-            </div>
-          </CardHeader>
-
-          {/* Status */}
-          <AnimatePresence mode="wait">
-            {(progress || error) && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.3 }}
-                className="px-5 pt-5"
-              >
-                <AnimatePresence mode="wait">
-                  {progress ? (
-                    <motion.div
-                      key="progress"
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.95 }}
-                      transition={{ duration: 0.2 }}
-                      className="flex items-center justify-between gap-4 rounded-xl border border-blue-500/15 bg-blue-500/10 px-4 py-3 text-sm text-blue-800 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-200"
-                    >
-                      <div className="flex items-center gap-2">
-                        <RefreshCw className="h-4 w-4 animate-spin" />
-                        <span className="font-medium">{progress}</span>
-                      </div>
-                      <motion.span
-                        animate={{ opacity: [0.5, 1, 0.5] }}
-                        transition={{ duration: 2, repeat: Infinity }}
-                        className="text-xs text-blue-700/80 dark:text-blue-200/80"
-                      >
-                        Working…
-                      </motion.span>
-                    </motion.div>
-                  ) : null}
-
-                  {error ? (
-                    <motion.div
-                      key="error"
-                      initial={{ opacity: 0, scale: 0.95, x: -10 }}
-                      animate={{ opacity: 1, scale: 1, x: 0 }}
-                      exit={{ opacity: 0, scale: 0.95, x: 10 }}
-                      transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-                      className="flex items-start gap-3 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-800 dark:border-red-500/25 dark:bg-red-500/10 dark:text-red-200"
-                    >
-                      <motion.div
-                        animate={{ rotate: [0, -10, 10, -10, 0] }}
-                        transition={{ duration: 0.5 }}
-                      >
-                        <X className="mt-0.5 h-4 w-4 flex-shrink-0" />
-                      </motion.div>
-                      <div className="min-w-0">
-                        <div className="font-medium">Something went wrong</div>
-                        <div className="mt-0.5 text-xs text-red-700/80 dark:text-red-200/80">
-                          {error}
+               </CardHeader>
+               <CardBody className="p-6 space-y-6">
+                  <div className="space-y-4">
+                     <div className="space-y-2">
+                        <label htmlFor="p-query" className="text-[10px] font-bold uppercase tracking-[0.2em] text-text-tertiary ml-1">Research_Topic</label>
+                        <div className="relative">
+                           <Input 
+                             id="p-query"
+                             placeholder="Search papers or concepts..." 
+                             value={query} 
+                             onChange={e => setQuery(e.target.value)} 
+                             className="h-12 bg-surface-secondary/40 border-border text-xs font-bold uppercase pr-10"
+                             onKeyDown={e => e.key === 'Enter' && searchPapers()}
+                           />
+                           <div className="absolute right-3 top-1/2 -translate-y-1/2 text-text-quaternary">
+                              <Search size={16} />
+                           </div>
                         </div>
-                      </div>
-                    </motion.div>
-                  ) : null}
-                </AnimatePresence>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                     </div>
 
-          <CardBody padding="none" className="pt-2">
-            {hasPapers ? (
-              <motion.ol
-                variants={staggerContainer}
-                initial="hidden"
-                animate="visible"
-                className="divide-y divide-zinc-200/60 dark:divide-white/10"
-              >
-                {papers.map((paper, index) => {
-                  const expanded = expandedPapers.has(paper.paper_id)
-                  const isSaved = savedPapers.has(paper.paper_id)
-                  const combined = clamp01(paper.combined_score)
-
-                  return (
-                    <motion.li
-                      key={paper.paper_id}
-                      variants={paperCardVariants}
-                      layout
-                      className="group relative px-5 py-4 transition-all duration-300 ease-out hover:bg-white/40 dark:hover:bg-white/5"
-                    >
-                      <div className="flex items-start gap-4">
-                        <motion.div
-                          initial={{ scale: 0.8, opacity: 0 }}
-                          animate={{ scale: 1, opacity: 1 }}
-                          transition={{
-                            type: 'spring',
-                            stiffness: 400,
-                            damping: 25,
-                            delay: index * 0.05,
-                          }}
-                          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/55 bg-white/60 text-xs font-bold text-zinc-700 shadow-glass-sm backdrop-blur-md transition-all duration-300 group-hover:scale-105 group-hover:shadow-lg group-hover:border-blue-500/30 dark:border-white/10 dark:bg-white/5 dark:text-zinc-200"
+                     <div className="space-y-2">
+                        <label htmlFor="ranking-logic" className="text-[10px] font-bold uppercase tracking-[0.2em] text-text-tertiary ml-1">Ranking_Logic</label>
+                        <select
+                          id="ranking-logic"
+                          value={recommendationType}
+                          onChange={e => setRecommendationType(e.target.value as RecommendationType)}
+                          className="w-full h-10 rounded-xl border border-border bg-surface-secondary/40 px-3 text-[10px] font-bold uppercase tracking-widest outline-none focus:border-accent-primary/40"
                         >
-                          {index + 1}
-                        </motion.div>
+                           <option value="hybrid">Hybrid (Meta-Rank)</option>
+                           <option value="semantic">Semantic Similarity</option>
+                           <option value="citation">Citation Density</option>
+                        </select>
+                     </div>
 
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-start justify-between gap-4">
-                            <div className="min-w-0">
-                              <motion.button
-                                type="button"
-                                onClick={() => openExternal(paper.url)}
-                                whileHover={{ x: 2 }}
-                                whileTap={{ scale: 0.98 }}
-                                transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-                                className="block text-left text-sm font-semibold text-zinc-900 transition-colors duration-200 hover:text-blue-700 dark:text-zinc-50 dark:hover:text-blue-300"
-                              >
-                                <span className="line-clamp-2">{paper.title}</span>
-                              </motion.button>
-
-                              <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-zinc-500 dark:text-zinc-400">
-                                <span className="text-zinc-600 dark:text-zinc-300">
-                                  {formatAuthors(paper.authors)}
-                                </span>
-                                <span className="text-zinc-300 dark:text-zinc-700">•</span>
-                                <span>{paper.year}</span>
-                                {paper.venue ? (
-                                  <>
-                                    <span className="text-zinc-300 dark:text-zinc-700">•</span>
-                                    <span className="truncate">{paper.venue}</span>
-                                  </>
-                                ) : null}
-                              </div>
-
-                              <div className="mt-2 flex flex-wrap items-center gap-2">
-                                <motion.span
-                                  variants={badgeVariants}
-                                  initial="hidden"
-                                  animate="visible"
-                                  whileHover={{ scale: 1.05, y: -1 }}
-                                  transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-                                  className={cn(
-                                    'inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium transition-shadow duration-200 hover:shadow-md',
-                                    getSourceBadgeStyle(paper.source)
-                                  )}
-                                >
-                                  {getSourceLabel(paper.source)}
-                                </motion.span>
-
-                                {paper.citation_count !== undefined &&
-                                paper.citation_count !== null ? (
-                                  <motion.span
-                                    variants={badgeVariants}
-                                    initial="hidden"
-                                    animate="visible"
-                                    whileHover={{ scale: 1.05, y: -1 }}
-                                    transition={{
-                                      type: 'spring',
-                                      stiffness: 400,
-                                      damping: 20,
-                                      delay: 0.05,
-                                    }}
-                                    className="inline-flex items-center rounded-full border border-zinc-200/70 bg-white/60 px-2.5 py-1 text-xs text-zinc-600 shadow-glass-sm backdrop-blur-md transition-shadow duration-200 hover:shadow-md dark:border-white/10 dark:bg-white/5 dark:text-zinc-300"
-                                  >
-                                    {paper.citation_count} citations
-                                  </motion.span>
-                                ) : null}
-                              </div>
-                            </div>
-
-                            <div className="flex shrink-0 flex-col items-end gap-2">
-                              <div className="flex flex-col items-end gap-1.5">
-                                <motion.span
-                                  initial={{ opacity: 0, scale: 0.8 }}
-                                  animate={{ opacity: 1, scale: 1 }}
-                                  transition={{
-                                    type: 'spring',
-                                    stiffness: 400,
-                                    damping: 25,
-                                    delay: index * 0.05 + 0.2,
-                                  }}
-                                  whileHover={{ scale: 1.08 }}
-                                  className="inline-flex items-center gap-2 rounded-full border border-blue-500/15 bg-blue-500/10 px-2.5 py-1 text-xs font-semibold text-blue-800 transition-all duration-200 hover:shadow-lg hover:border-blue-500/30 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-200"
-                                >
-                                  {formatPercent(paper.combined_score)}
-                                </motion.span>
-                                <div className="h-1.5 w-24 overflow-hidden rounded-full bg-zinc-200/60 dark:bg-white/10">
-                                  <motion.div
-                                    initial={{ width: 0 }}
-                                    animate={{ width: `${Math.round(combined * 100)}%` }}
-                                    transition={{
-                                      duration: 0.8,
-                                      delay: index * 0.05 + 0.3,
-                                      ease: [0.4, 0.0, 0.2, 1],
-                                    }}
-                                    whileHover={{ scaleY: 1.2 }}
-                                    className="h-full rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 transition-all duration-200"
-                                  />
-                                </div>
-                              </div>
-
-                              <div className="flex items-center gap-2">
-                                <IconButton
-                                  size="sm"
-                                  variant={isSaved ? 'secondary' : 'outline'}
-                                  icon={
-                                    isSaved ? (
-                                      <Check className="h-4 w-4" />
-                                    ) : (
-                                      <BookmarkPlus className="h-4 w-4" />
-                                    )
-                                  }
-                                  aria-label={isSaved ? 'Saved' : 'Save paper'}
-                                  onClick={() => savePaper(paper)}
-                                  disabled={isSaved}
-                                  className={
-                                    isSaved ? 'text-blue-700 dark:text-blue-200' : undefined
-                                  }
-                                />
-
-                                <IconButton
-                                  size="sm"
-                                  variant="ghost"
-                                  icon={<ExternalLink className="h-4 w-4" />}
-                                  aria-label="Open paper"
-                                  onClick={() => openExternal(paper.url)}
-                                />
-
-                                <IconButton
-                                  size="sm"
-                                  variant="ghost"
-                                  icon={
-                                    expanded ? (
-                                      <ChevronUp className="h-4 w-4" />
-                                    ) : (
-                                      <ChevronDown className="h-4 w-4" />
-                                    )
-                                  }
-                                  aria-label={expanded ? 'Collapse details' : 'Expand details'}
-                                  aria-expanded={expanded}
-                                  onClick={() => togglePaperExpand(paper.paper_id)}
-                                />
-                              </div>
-                            </div>
-                          </div>
-
-                          <AnimatePresence mode="wait">
-                            {expanded && (
-                              <motion.div
-                                key={`expanded-${paper.paper_id}`}
-                                variants={expandVariants}
-                                initial="collapsed"
-                                animate="expanded"
-                                exit="collapsed"
-                                className="overflow-hidden"
-                              >
-                                <div className="rounded-xl border border-zinc-200/70 bg-white/60 p-4 shadow-glass-sm backdrop-blur-md dark:border-white/10 dark:bg-white/5">
-                                  <div className="grid gap-5 md:grid-cols-2">
-                                    <div className="space-y-4">
-                                      {paper.recommendation_reason ? (
-                                        <div>
-                                          <div className="text-xs font-semibold tracking-wide text-zinc-500 dark:text-zinc-400">
-                                            Why this paper
-                                          </div>
-                                          <p className="mt-1 text-sm text-zinc-700 dark:text-zinc-200">
-                                            {paper.recommendation_reason}
-                                          </p>
-                                        </div>
-                                      ) : null}
-
-                                      {paper.abstract ? (
-                                        <div>
-                                          <div className="text-xs font-semibold tracking-wide text-zinc-500 dark:text-zinc-400">
-                                            Abstract
-                                          </div>
-                                          <div className="mt-2 prose prose-sm max-w-none prose-p:leading-relaxed prose-p:text-zinc-600 dark:prose-invert dark:prose-p:text-zinc-300">
-                                            <ReactMarkdown>{paper.abstract}</ReactMarkdown>
-                                          </div>
-                                        </div>
-                                      ) : null}
-
-                                      {paper.fields_of_study?.length ? (
-                                        <div>
-                                          <div className="text-xs font-semibold tracking-wide text-zinc-500 dark:text-zinc-400">
-                                            Fields
-                                          </div>
-                                          <div className="mt-2 flex flex-wrap gap-2">
-                                            {paper.fields_of_study
-                                              .slice(0, 6)
-                                              .map((field, fieldIndex) => (
-                                                <motion.span
-                                                  key={field}
-                                                  initial={{ opacity: 0, scale: 0.8, y: 4 }}
-                                                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                                                  transition={{
-                                                    delay: fieldIndex * 0.05,
-                                                    type: 'spring',
-                                                    stiffness: 400,
-                                                    damping: 25,
-                                                  }}
-                                                  whileHover={{ scale: 1.05, y: -2 }}
-                                                  className="rounded-full border border-zinc-200/70 bg-zinc-100/70 px-2.5 py-1 text-xs text-zinc-700 transition-shadow duration-200 hover:shadow-md dark:border-white/10 dark:bg-white/5 dark:text-zinc-300"
-                                                >
-                                                  {field}
-                                                </motion.span>
-                                              ))}
-                                          </div>
-                                        </div>
-                                      ) : null}
-                                    </div>
-
-                                    <div className="space-y-4">
-                                      <div>
-                                        <div className="text-xs font-semibold tracking-wide text-zinc-500 dark:text-zinc-400">
-                                          Signals
-                                        </div>
-                                        <div className="mt-2 space-y-2">
-                                          {[
-                                            { label: 'Similarity', value: paper.similarity_score },
-                                            { label: 'Citation', value: paper.citation_score },
-                                            { label: 'Recency', value: paper.recency_score },
-                                          ].map((metric, metricIndex) => (
-                                            <motion.div
-                                              key={metric.label}
-                                              initial={{ opacity: 0, x: -10 }}
-                                              animate={{ opacity: 1, x: 0 }}
-                                              transition={{
-                                                delay: metricIndex * 0.1,
-                                                duration: 0.3,
-                                              }}
-                                              className="group/metric flex items-center gap-3"
-                                            >
-                                              <div className="w-20 text-xs text-zinc-600 dark:text-zinc-300">
-                                                {metric.label}
-                                              </div>
-                                              <div className="h-2 flex-1 overflow-hidden rounded-full bg-zinc-200/60 transition-all duration-200 group-hover/metric:h-2.5 dark:bg-white/10">
-                                                <motion.div
-                                                  initial={{ width: 0 }}
-                                                  animate={{
-                                                    width: `${Math.round(clamp01(metric.value) * 100)}%`,
-                                                  }}
-                                                  transition={{
-                                                    delay: metricIndex * 0.1 + 0.2,
-                                                    duration: 0.6,
-                                                    ease: [0.4, 0.0, 0.2, 1],
-                                                  }}
-                                                  className="h-full rounded-full bg-gradient-to-r from-blue-600 to-indigo-600"
-                                                />
-                                              </div>
-                                              <motion.div
-                                                initial={{ opacity: 0 }}
-                                                animate={{ opacity: 1 }}
-                                                transition={{
-                                                  delay: metricIndex * 0.1 + 0.4,
-                                                }}
-                                                className="w-10 text-right text-xs font-medium text-zinc-700 dark:text-zinc-200"
-                                              >
-                                                {formatPercent(metric.value)}
-                                              </motion.div>
-                                            </motion.div>
-                                          ))}
-                                        </div>
-                                      </div>
-
-                                      {(paper.arxiv_id || paper.doi) && (
-                                        <div>
-                                          <div className="text-xs font-semibold tracking-wide text-zinc-500 dark:text-zinc-400">
-                                            Identifiers
-                                          </div>
-                                          <dl className="mt-2 space-y-1 text-xs text-zinc-600 dark:text-zinc-300">
-                                            {paper.arxiv_id ? (
-                                              <div className="flex justify-between gap-3">
-                                                <dt className="text-zinc-500 dark:text-zinc-400">
-                                                  arXiv
-                                                </dt>
-                                                <dd className="font-medium text-zinc-700 dark:text-zinc-200">
-                                                  {paper.arxiv_id}
-                                                </dd>
-                                              </div>
-                                            ) : null}
-                                            {paper.doi ? (
-                                              <div className="flex justify-between gap-3">
-                                                <dt className="text-zinc-500 dark:text-zinc-400">
-                                                  DOI
-                                                </dt>
-                                                <dd className="font-medium text-zinc-700 dark:text-zinc-200">
-                                                  {paper.doi}
-                                                </dd>
-                                              </div>
-                                            ) : null}
-                                          </dl>
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-                                </div>
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
+                     <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-2">
+                           <label htmlFor="start-year" className="text-[10px] font-bold uppercase tracking-[0.2em] text-text-tertiary ml-1">Start_Year</label>
+                           <Input id="start-year" type="number" placeholder="2018" value={yearStart ?? ''} onChange={e => setYearStart(e.target.value ? parseInt(e.target.value) : undefined)} className="text-center font-mono" />
                         </div>
-                      </div>
-                    </motion.li>
-                  )
-                })}
-              </motion.ol>
-            ) : result && papers.length === 0 ? (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4 }}
-                className="px-5 py-16 text-center"
-              >
-                <motion.div
-                  initial={{ scale: 0.8, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ delay: 0.1, type: 'spring', stiffness: 300, damping: 25 }}
-                  className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-100 text-zinc-500 dark:bg-white/5 dark:text-zinc-300"
-                >
-                  <Search className="h-5 w-5" />
-                </motion.div>
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.2 }}
-                  className="mt-4 text-sm font-semibold text-zinc-900 dark:text-zinc-50"
-                >
-                  No papers found
-                </motion.div>
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.3 }}
-                  className="mt-1 text-sm text-zinc-600 dark:text-zinc-300"
-                >
-                  Try a different query or broaden your filters.
-                </motion.div>
-              </motion.div>
-            ) : isLoading ? (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.3 }}
-                className="px-5 py-16 text-center"
-              >
-                <motion.div
-                  animate={{
-                    scale: [1, 1.05, 1],
-                    rotate: [0, 360],
-                  }}
-                  transition={{
-                    scale: {
-                      duration: 2,
-                      repeat: Infinity,
-                      ease: 'easeInOut',
-                    },
-                    rotate: {
-                      duration: 3,
-                      repeat: Infinity,
-                      ease: 'linear',
-                    },
-                  }}
-                  className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-700 dark:text-blue-200"
-                >
-                  <RefreshCw className="h-5 w-5" />
-                </motion.div>
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.2 }}
-                  className="mt-4 text-sm font-semibold text-zinc-900 dark:text-zinc-50"
-                >
-                  Working…
-                </motion.div>
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.3 }}
-                  className="mt-1 text-sm text-zinc-600 dark:text-zinc-300"
-                >
-                  Streaming progress as results are computed.
-                </motion.div>
-              </motion.div>
+                        <div className="space-y-2">
+                           <label htmlFor="end-year" className="text-[10px] font-bold uppercase tracking-[0.2em] text-text-tertiary ml-1">End_Year</label>
+                           <Input id="end-year" type="number" placeholder="2025" value={yearEnd ?? ''} onChange={e => setYearEnd(e.target.value ? parseInt(e.target.value) : undefined)} className="text-center font-mono" />
+                        </div>
+                     </div>
+
+                     <div className="space-y-3 pt-2">
+                        {[
+                          { label: 'AI_EXPLANATION', val: generateExplanation, set: setGenerateExplanation },
+                          { label: 'SUGGEST_TOPICS', val: suggestTopics, set: setSuggestTopics }
+                        ].map(toggle => (
+                          <label key={toggle.label} className="flex items-center justify-between p-3 rounded-xl border border-border-subtle bg-surface-secondary/20 cursor-pointer hover:bg-surface-secondary/40 transition-colors">
+                             <span className="text-[10px] font-bold uppercase tracking-widest text-text-secondary">{toggle.label}</span>
+                             <input 
+                               type="checkbox" 
+                               checked={toggle.val} 
+                               onChange={e => toggle.set(e.target.checked)} 
+                               className="w-4 h-4 rounded border-border accent-accent-primary" 
+                             />
+                          </label>
+                        ))}
+                     </div>
+                  </div>
+
+                  <AnimatePresence>
+                     {progress && (
+                       <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+                          <div className="rounded-2xl border border-accent-primary/20 bg-accent-primary/5 p-4 flex items-center gap-3">
+                             <RefreshCw size={14} className="animate-spin text-accent-primary" />
+                             <span className="text-[10px] font-bold uppercase tracking-widest text-text-primary truncate">{progress}</span>
+                          </div>
+                       </motion.div>
+                     )}
+                  </AnimatePresence>
+               </CardBody>
+               <CardFooter className="p-6 pt-0">
+                  <Button 
+                    variant="primary" 
+                    size="lg" 
+                    className="w-full h-12 text-sm font-bold uppercase tracking-[0.15em] shadow-xl" 
+                    iconLeft={<Sparkles size={18} />}
+                    onClick={searchPapers}
+                    loading={isLoading}
+                    disabled={!query.trim()}
+                  >
+                    Execute Recon
+                  </Button>
+               </CardFooter>
+            </Card>
+         </aside>
+
+         {/* Results Column */}
+         <div className="space-y-6">
+            {!result && !isLoading && !error ? (
+              <EmptyState 
+                icon={<Database size={32} />} 
+                title="Scholar Archive Idle" 
+                description="Input a research vector to retrieve and rank relevant literature." 
+              />
+            ) : error ? (
+              <Card interactive={false} className="border-error/20 bg-error-muted/5 p-8 text-center">
+                 <X size={32} className="mx-auto mb-4 text-error opacity-40" />
+                 <h3 className="text-sm font-bold uppercase tracking-widest text-error mb-1">RECON_FAILURE</h3>
+                 <p className="text-xs font-mono text-text-tertiary uppercase">{error}</p>
+                 <Button variant="outline" size="sm" onClick={searchPapers} className="mt-6 font-mono text-[10px] uppercase h-8 border-error/20 hover:bg-error-muted/10">Retry_Sync</Button>
+              </Card>
             ) : (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.4, ease: [0.4, 0.0, 0.2, 1] }}
-                className="px-5 py-16 text-center"
-              >
-                <motion.div
-                  animate={{
-                    y: [0, -4, 0],
-                    rotate: [0, 5, -5, 0],
-                  }}
-                  transition={{
-                    duration: 4,
-                    repeat: Infinity,
-                    ease: 'easeInOut',
-                  }}
-                  className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-700 dark:text-blue-200"
-                >
-                  <Sparkles className="h-5 w-5" />
-                </motion.div>
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.2 }}
-                  className="mt-4 text-sm font-semibold text-zinc-900 dark:text-zinc-50"
-                >
-                  Ready when you are
-                </motion.div>
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.3 }}
-                  className="mt-1 text-sm text-zinc-600 dark:text-zinc-300"
-                >
-                  Enter a query above to get ranked recommendations.
-                </motion.div>
-              </motion.div>
+              <div className="space-y-6">
+                 {result?.explanation && (
+                   <Card interactive={false} className="border-accent-primary/20 bg-accent-primary/5 p-6">
+                      <div className="flex items-start gap-4">
+                         <Sparkles size={18} className="text-accent-primary shrink-0 mt-1" />
+                         <div className="space-y-2">
+                            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-accent-primary">AI_SYNTHESIS_REPORT</span>
+                            <p className="text-sm text-text-primary leading-relaxed">{result.explanation}</p>
+                         </div>
+                      </div>
+                   </Card>
+                 )}
+
+                 <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="space-y-4">
+                    <div className="flex items-center justify-between px-2">
+                       <div>
+                          <h2 className="text-lg font-bold uppercase tracking-tight text-text-primary">Ranked_Citations</h2>
+                          <p className="text-[10px] font-mono text-text-tertiary uppercase">Found {result?.total_candidates} candidates :: Top {papers.length} mapped</p>
+                       </div>
+                    </div>
+
+                    {papers.map((paper, idx) => {
+                      const isExpanded = expandedPapers.has(paper.paper_id)
+                      const isSaved = savedPapers.has(paper.paper_id)
+                      const score = Math.round(paper.combined_score * 100)
+                      
+                      return (
+                        <motion.div key={paper.paper_id} variants={fadeInUp}>
+                           <Card className={cn("group border-border bg-surface-base transition-all duration-300", isExpanded && "ring-1 ring-accent-primary/10 shadow-glass-sm")}>
+                              <div className="p-6">
+                                 <div className="flex items-start gap-6">
+                                    <div className="flex flex-col items-center gap-2 pt-1 shrink-0">
+                                       <div className="w-10 h-10 rounded-xl bg-surface-secondary border border-border flex items-center justify-center text-xs font-bold text-text-primary shadow-sm group-hover:border-accent-primary/30 transition-colors">
+                                          {idx + 1}
+                                       </div>
+                                       <div className="text-[10px] font-mono font-bold text-accent-primary">{score}%</div>
+                                    </div>
+
+                                    <div className="flex-1 min-w-0">
+                                       <div className="flex items-center gap-2 mb-2">
+                                          <Badge variant="outline" className="text-[8px] font-mono border-border-subtle bg-surface-elevated uppercase">{paper.source.replace('_', ' ')}</Badge>
+                                          {paper.year && <span className="text-[10px] font-mono text-text-tertiary">{paper.year}</span>}
+                                          {paper.citation_count !== undefined && (
+                                            <span className="text-[10px] font-mono text-text-tertiary border-l border-border-subtle pl-2 flex items-center gap-1">
+                                               <Layers size={10} /> {paper.citation_count} CIT
+                                            </span>
+                                          )}
+                                       </div>
+
+                                       <h3 
+                                         onClick={() => window.open(paper.url, '_blank')}
+                                         className="text-base font-bold text-text-primary uppercase tracking-tight hover:text-accent-primary cursor-pointer transition-colors line-clamp-2"
+                                       >
+                                         {paper.title}
+                                       </h3>
+                                       <p className="mt-2 text-[10px] font-mono text-text-tertiary uppercase tracking-tight truncate">{paper.authors.join(' · ')}</p>
+                                       
+                                        <div className="mt-4 flex items-center gap-4">
+                                           <Button variant="ghost" size="sm" iconLeft={<FileText size={14} />} onClick={() => togglePaperExpand(paper.paper_id)} className="text-[10px] font-mono uppercase tracking-widest text-text-secondary h-8 px-2">Abstract</Button>
+                                           <Button variant="ghost" size="sm" iconLeft={<ExternalLink size={14} />} onClick={() => window.open(paper.url, '_blank')} className="text-[10px] font-mono uppercase tracking-widest text-text-secondary h-8 px-2">External</Button>
+                                           <div className="ml-auto">
+                                             <IconButton 
+                                               aria-label={isSaved ? "Saved" : "Save paper"}
+                                               icon={isSaved ? <Check size={16} /> : <BookmarkPlus size={16} />} 
+                                               variant={isSaved ? "secondary" : "ghost"} 
+                                               size="sm" 
+                                               onClick={() => savePaper(paper)}
+                                               disabled={isSaved}
+                                               className={cn("rounded-full", isSaved ? "text-success border-success/20 bg-success-muted/10" : "text-text-tertiary hover:text-accent-primary")}
+                                             />
+                                          </div>
+                                       </div>
+                                    </div>
+                                 </div>
+
+                                 <AnimatePresence>
+                                    {isExpanded && (
+                                      <motion.div
+                                        initial={{ height: 0, opacity: 0 }}
+                                        animate={{ height: 'auto', opacity: 1 }}
+                                        exit={{ height: 0, opacity: 0 }}
+                                        className="overflow-hidden"
+                                      >
+                                         <div className="mt-6 pt-6 border-t border-border-subtle space-y-6">
+                                            <div className="space-y-2">
+                                               <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-accent-primary">SYNTHESIS_REASON</span>
+                                               <p className="text-xs text-text-primary leading-relaxed italic">{paper.recommendation_reason}</p>
+                                            </div>
+                                            <div className="space-y-2">
+                                               <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-text-tertiary">ABSTRACT_RAW</span>
+                                               <p className="text-sm text-text-secondary leading-relaxed">{paper.abstract}</p>
+                                            </div>
+                                            {paper.fields_of_study && paper.fields_of_study.length > 0 && (
+                                              <div className="flex flex-wrap gap-2">
+                                                 {paper.fields_of_study.map(f => (
+                                                   <Badge key={f} variant="secondary" className="text-[8px] uppercase tracking-widest bg-surface-secondary border-border-subtle">{f}</Badge>
+                                                 ))}
+                                              </div>
+                                            )}
+                                         </div>
+                                      </motion.div>
+                                    )}
+                                 </AnimatePresence>
+                              </div>
+                           </Card>
+                        </motion.div>
+                      )
+                    })}
+                 </motion.div>
+              </div>
             )}
-          </CardBody>
-        </Card>
-
-        {/* Insights */}
-        <Card
-          variant="glass"
-          padding="none"
-          interactive={false}
-          className="overflow-hidden lg:sticky lg:top-4"
-        >
-          <CardHeader
-            padding="none"
-            className="px-5 py-4 bg-gradient-to-r from-blue-50/70 via-white/40 to-transparent dark:from-blue-500/10 dark:via-white/5"
-          >
-            <div className="flex items-center gap-2 text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-              <Sparkles className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-              AI Insights
-            </div>
-            <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-              Explanation + related topics (optional).
-            </div>
-          </CardHeader>
-
-          <CardBody padding="none" className="px-5 py-5">
-            <AnimatePresence mode="wait">
-              {result?.explanation || result?.related_topics ? (
-                <motion.div
-                  key="insights-content"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.4, ease: [0.4, 0.0, 0.2, 1] }}
-                  className="space-y-6 max-h-[calc(100vh-14rem)] overflow-y-auto pr-1"
-                >
-                  {result.explanation ? (
-                    <motion.section
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.1, duration: 0.3 }}
-                    >
-                      <div className="text-xs font-semibold tracking-wide text-zinc-500 dark:text-zinc-400">
-                        Why these papers
-                      </div>
-                      <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.2, duration: 0.4 }}
-                        className="mt-2 prose prose-sm max-w-none prose-p:text-zinc-600 dark:prose-invert dark:prose-p:text-zinc-300"
-                      >
-                        <ReactMarkdown>{result.explanation}</ReactMarkdown>
-                      </motion.div>
-                    </motion.section>
-                  ) : null}
-
-                  {result.related_topics ? (
-                    <motion.section
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.3, duration: 0.3 }}
-                    >
-                      <div className="text-xs font-semibold tracking-wide text-zinc-500 dark:text-zinc-400">
-                        Related topics to explore
-                      </div>
-                      <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.4, duration: 0.4 }}
-                        className="mt-2 prose prose-sm max-w-none prose-p:text-zinc-600 dark:prose-invert dark:prose-p:text-zinc-300"
-                      >
-                        <ReactMarkdown>{result.related_topics}</ReactMarkdown>
-                      </motion.div>
-                    </motion.section>
-                  ) : null}
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="insights-empty"
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.3 }}
-                  className="py-10 text-center"
-                >
-                  <motion.div
-                    animate={{
-                      y: [0, -3, 0],
-                    }}
-                    transition={{
-                      duration: 3,
-                      repeat: Infinity,
-                      ease: 'easeInOut',
-                    }}
-                    className="mx-auto flex h-10 w-10 items-center justify-center rounded-2xl bg-white/60 text-zinc-500 shadow-glass-sm backdrop-blur-md dark:bg-white/5 dark:text-zinc-300"
-                  >
-                    <Sparkles className="h-4 w-4" />
-                  </motion.div>
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.1 }}
-                    className="mt-4 text-sm font-semibold text-zinc-900 dark:text-zinc-50"
-                  >
-                    No insights yet
-                  </motion.div>
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.2 }}
-                    className="mt-1 text-sm text-zinc-600 dark:text-zinc-300"
-                  >
-                    Enable "AI explanation" or "Related topics", then search.
-                  </motion.div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </CardBody>
-        </Card>
+         </div>
       </div>
     </PageWrapper>
   )
