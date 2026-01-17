@@ -59,7 +59,7 @@ import Button, { IconButton } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { useToast } from "@/components/ui/Toast";
 import Modal from "@/components/ui/Modal";
-import { Tabs, type TabsItem } from "@/components/ui/Tabs";
+import { SimpleTabs, type TabsItem } from "@/components/ui/Tabs";
 import CouncilDetails from "@/components/CouncilDetails";
 import { eliteTheme } from "@/lib/elite-theme";
 
@@ -68,9 +68,6 @@ type TranscriptResponse = {
   language?: string;
 };
 
-// ============================================================================
-// Types
-// ============================================================================
 
 interface RecentHistoryEntry {
   id: string;
@@ -90,9 +87,6 @@ interface ConversationStarter {
 
 type WelcomeSection = "hero" | "starters" | "modules";
 
-// ============================================================================
-// Animation Variants
-// ============================================================================
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -172,9 +166,240 @@ const messageVariants = {
   },
 };
 
-// ============================================================================
-// Component
-// ============================================================================
+const defaultParallaxVars = {
+  "--hp-l0-x": "0px",
+  "--hp-l0-y": "0px",
+  "--hp-l1-x": "0px",
+  "--hp-l1-y": "0px",
+  "--hp-l2-x": "0px",
+  "--hp-l2-y": "0px",
+  "--hp-l3-x": "0px",
+  "--hp-l3-y": "0px",
+} as unknown as React.CSSProperties;
+
+type HomeWallpaperParallaxProps = {
+  scrollRootRef: React.RefObject<HTMLElement | null>;
+  reduceMotion: boolean;
+  variant?: "welcome" | "chat";
+};
+
+function HomeWallpaperParallax({
+  scrollRootRef,
+  reduceMotion,
+  variant = "welcome",
+}: HomeWallpaperParallaxProps) {
+  const rootRef = useRef<HTMLDivElement>(null);
+  const rafRef = useRef<number | null>(null);
+  const stateRef = useRef({
+    scrollTop: 0,
+    px: 0,
+    py: 0,
+  });
+
+  const scheduleUpdate = useCallback(() => {
+    if (rafRef.current != null) return;
+
+    rafRef.current = window.requestAnimationFrame(() => {
+      rafRef.current = null;
+
+      const root = rootRef.current;
+      if (!root) return;
+
+      const { scrollTop, px, py } = stateRef.current;
+      const depth = variant === "chat" ? 0.75 : 1;
+
+      const l0x = (scrollTop * 0.015 + px * 8) * depth;
+      const l0y = (scrollTop * -0.02 + py * 6) * depth;
+      const l1x = (scrollTop * -0.03 + px * 14) * depth;
+      const l1y = (scrollTop * 0.045 + py * 10) * depth;
+      const l2x = (scrollTop * 0.055 + px * 18) * depth;
+      const l2y = (scrollTop * 0.08 + py * 14) * depth;
+      const l3x = (scrollTop * -0.08 + px * 22) * depth;
+      const l3y = (scrollTop * -0.11 + py * 18) * depth;
+
+      root.style.setProperty("--hp-l0-x", `${l0x.toFixed(2)}px`);
+      root.style.setProperty("--hp-l0-y", `${l0y.toFixed(2)}px`);
+      root.style.setProperty("--hp-l1-x", `${l1x.toFixed(2)}px`);
+      root.style.setProperty("--hp-l1-y", `${l1y.toFixed(2)}px`);
+      root.style.setProperty("--hp-l2-x", `${l2x.toFixed(2)}px`);
+      root.style.setProperty("--hp-l2-y", `${l2y.toFixed(2)}px`);
+      root.style.setProperty("--hp-l3-x", `${l3x.toFixed(2)}px`);
+      root.style.setProperty("--hp-l3-y", `${l3y.toFixed(2)}px`);
+    });
+  }, [variant]);
+
+  useEffect(() => {
+    if (reduceMotion) return;
+
+    const root = rootRef.current;
+    const scrollEl =
+      scrollRootRef.current ?? document.getElementById("app-scroll");
+    if (!root || !scrollEl) return;
+
+    const onScroll = () => {
+      stateRef.current.scrollTop = scrollEl.scrollTop;
+      scheduleUpdate();
+    };
+
+    const onPointerMove = (event: PointerEvent) => {
+      const rect = scrollEl.getBoundingClientRect();
+      if (rect.width <= 1 || rect.height <= 1) return;
+
+      const nx = (event.clientX - rect.left) / rect.width - 0.5;
+      const ny = (event.clientY - rect.top) / rect.height - 0.5;
+
+      stateRef.current.px = Math.max(-0.5, Math.min(0.5, nx));
+      stateRef.current.py = Math.max(-0.5, Math.min(0.5, ny));
+      scheduleUpdate();
+    };
+
+    const onPointerLeave = () => {
+      stateRef.current.px = 0;
+      stateRef.current.py = 0;
+      scheduleUpdate();
+    };
+
+    const finePointer = window.matchMedia?.("(pointer: fine)")?.matches;
+
+    scrollEl.addEventListener("scroll", onScroll, { passive: true });
+    if (finePointer) {
+      scrollEl.addEventListener("pointermove", onPointerMove, { passive: true });
+      scrollEl.addEventListener("pointerleave", onPointerLeave, { passive: true });
+    }
+
+    onScroll();
+
+    return () => {
+      scrollEl.removeEventListener("scroll", onScroll);
+      if (finePointer) {
+        scrollEl.removeEventListener("pointermove", onPointerMove);
+        scrollEl.removeEventListener("pointerleave", onPointerLeave);
+      }
+
+      if (rafRef.current != null) {
+        window.cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+    };
+  }, [reduceMotion, scheduleUpdate, scrollRootRef]);
+
+  return (
+    <div
+      ref={rootRef}
+      aria-hidden="true"
+      className={cn(
+        "pointer-events-none absolute inset-0 overflow-hidden",
+        variant === "chat" ? "opacity-70" : "opacity-100",
+      )}
+      style={defaultParallaxVars}
+    >
+      <div
+        className={cn(
+          "absolute -inset-24 blur-2xl",
+          "bg-[radial-gradient(1100px_700px_at_18%_22%,rgba(14,165,233,0.18),transparent_58%),radial-gradient(900px_600px_at_82%_28%,rgba(249,115,22,0.10),transparent_55%),radial-gradient(760px_520px_at_62%_84%,rgba(56,189,248,0.10),transparent_60%),radial-gradient(680px_520px_at_22%_88%,rgba(15,23,42,0.06),transparent_55%)]",
+          "dark:bg-[radial-gradient(1100px_700px_at_18%_22%,rgba(56,189,248,0.12),transparent_58%),radial-gradient(900px_600px_at_82%_28%,rgba(249,115,22,0.10),transparent_60%),radial-gradient(760px_520px_at_62%_84%,rgba(59,130,246,0.10),transparent_60%),radial-gradient(680px_520px_at_22%_88%,rgba(255,255,255,0.05),transparent_55%)]",
+        )}
+        style={{ transform: "translate3d(var(--hp-l0-x), var(--hp-l0-y), 0)" }}
+      />
+
+      <div
+        className="absolute inset-0 opacity-70 dark:opacity-50"
+        style={{ transform: "translate3d(var(--hp-l1-x), var(--hp-l1-y), 0)" }}
+      >
+        <svg
+          className="h-full w-full"
+          viewBox="0 0 1200 800"
+          preserveAspectRatio="none"
+          fill="none"
+        >
+          <g
+            className="text-sky-900/10 dark:text-white/10"
+            stroke="currentColor"
+            strokeWidth="1"
+          >
+            <path d="M-40 120 C 200 40, 330 70, 520 120 S 900 220, 1240 120" />
+            <path d="M-60 210 C 210 140, 360 150, 560 210 S 940 320, 1260 210" />
+            <path d="M-80 320 C 220 260, 390 260, 600 320 S 960 460, 1280 320" />
+            <path d="M-100 460 C 220 420, 420 410, 640 460 S 980 580, 1300 460" />
+            <path d="M-120 610 C 220 590, 450 560, 690 610 S 1000 700, 1320 610" />
+          </g>
+          <g
+            className="text-sky-900/7 dark:text-white/7"
+            stroke="currentColor"
+            strokeWidth="1"
+          >
+            <path d="M-40 160 C 160 110, 340 110, 520 160 S 920 270, 1240 160" />
+            <path d="M-60 260 C 160 220, 360 220, 560 260 S 950 390, 1260 260" />
+            <path d="M-80 390 C 160 360, 390 360, 610 390 S 970 520, 1280 390" />
+            <path d="M-100 540 C 160 520, 420 510, 650 540 S 980 640, 1300 540" />
+          </g>
+        </svg>
+      </div>
+
+      <div
+        className="absolute inset-0 opacity-55 mix-blend-multiply dark:mix-blend-screen dark:opacity-35"
+        style={{ transform: "translate3d(var(--hp-l2-x), var(--hp-l2-y), 0)" }}
+      >
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(15,23,42,0.10)_1px,transparent_0)] [background-size:28px_28px] dark:bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.10)_1px,transparent_0)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(2,132,199,0.10)_1px,transparent_1px),linear-gradient(to_bottom,rgba(2,132,199,0.10)_1px,transparent_1px)] [background-size:140px_140px] opacity-40" />
+      </div>
+
+      <div
+        className="absolute inset-0"
+        style={{ transform: "translate3d(var(--hp-l3-x), var(--hp-l3-y), 0)" }}
+      >
+        <svg
+          className="h-full w-full"
+          viewBox="0 0 1200 800"
+          preserveAspectRatio="none"
+          fill="none"
+        >
+          <g strokeLinecap="round" strokeLinejoin="round">
+            <path
+              d="M210 220 C 320 180, 420 200, 520 165"
+              className="text-orange-500/35 dark:text-orange-300/25"
+              stroke="currentColor"
+              strokeWidth="2"
+            />
+            <path
+              d="M700 560 C 820 520, 900 560, 1020 510"
+              className="text-orange-500/28 dark:text-orange-300/22"
+              stroke="currentColor"
+              strokeWidth="2"
+            />
+            <circle
+              cx="520"
+              cy="165"
+              r="3.2"
+              className="fill-orange-500/35 dark:fill-orange-300/25"
+            />
+            <circle
+              cx="210"
+              cy="220"
+              r="2.8"
+              className="fill-orange-500/28 dark:fill-orange-300/22"
+            />
+            <circle
+              cx="700"
+              cy="560"
+              r="3.4"
+              className="fill-orange-500/30 dark:fill-orange-300/22"
+            />
+            <circle
+              cx="1020"
+              cy="510"
+              r="2.8"
+              className="fill-orange-500/24 dark:fill-orange-300/18"
+            />
+          </g>
+        </svg>
+      </div>
+
+      <div className="absolute inset-0 bg-[linear-gradient(to_bottom,hsl(var(--background))_0%,rgba(255,255,255,0)_32%,rgba(255,255,255,0)_70%,hsl(var(--background))_112%)] opacity-90 dark:bg-[linear-gradient(to_bottom,hsl(var(--background))_0%,rgba(0,0,0,0)_30%,rgba(0,0,0,0)_72%,hsl(var(--background))_110%)]" />
+    </div>
+  );
+}
+
 
 export default function HomePage() {
   const {
@@ -689,18 +914,20 @@ export default function HomePage() {
     return () => observer.disconnect();
   }, [conversationStarters.length, hasMessages, shouldReduceMotion]);
 
-  // ============================================================================
-  // Render: Welcome Screen (No Messages)
-  // ============================================================================
 
   if (!hasMessages) {
-    return (
-      <div
-        className={cn(
-          "relative min-h-dvh overflow-x-hidden",
-          eliteTheme.surface,
-        )}
-      >
+      return (
+        <div
+          className={cn(
+            "relative min-h-dvh overflow-x-hidden",
+            eliteTheme.surface,
+          )}
+        >
+          <HomeWallpaperParallax
+            scrollRootRef={scrollRootRef}
+            reduceMotion={!!shouldReduceMotion}
+            variant="welcome"
+          />
         <div className="sticky top-0 z-40">
           <div className="border-b border-border bg-surface-elevated/75 backdrop-blur-xl dark:border-white/10 dark:bg-zinc-950/55">
             <div
@@ -711,7 +938,7 @@ export default function HomePage() {
               )}
             >
               <div className="flex min-w-0 items-center gap-2">
-                <Tabs
+                <SimpleTabs
                   tabs={welcomeTabs()}
                   activeTab={activeWelcomeSection}
                   onTabChange={(id) =>
@@ -719,6 +946,7 @@ export default function HomePage() {
                   }
                   layoutId="welcomeNavActive"
                 />
+
               </div>
 
               <div className="flex items-center gap-3">
@@ -828,42 +1056,42 @@ export default function HomePage() {
                     variants={fadeInUp}
                     className="mt-8 grid max-w-xl grid-cols-1 gap-3 sm:grid-cols-2"
                   >
-                    <Card
-                      variant="glass"
-                      padding="sm"
-                      interactive={false}
-                      className="flex items-center gap-3 border-border bg-surface-elevated/50 dark:border-white/10 dark:bg-white/5"
-                    >
-                      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-accent-primary dark:bg-blue-500/15 dark:text-blue-300">
-                        <Database className="h-4 w-4" />
-                      </div>
-                      <div>
-                        <div className="text-sm font-semibold text-text-primary dark:text-zinc-50">
-                          {t("Grounded")}
+                      <Card
+                        variant="glass"
+                        padding="sm"
+                        interactive={false}
+                        className="flex items-center gap-3 border-border bg-surface-elevated/50 dark:border-white/10 dark:bg-white/5"
+                      >
+                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent-primary/10 text-accent-primary dark:bg-accent-primary/20 dark:text-accent-primary">
+                          <Database className="h-4 w-4" />
                         </div>
-                        <div className="text-xs text-text-tertiary dark:text-zinc-400">
-                          {t("Use your knowledge base")}
+                        <div>
+                          <div className="text-sm font-semibold text-text-primary dark:text-zinc-50">
+                            {t("Grounded")}
+                          </div>
+                          <div className="text-xs text-text-tertiary dark:text-zinc-400">
+                            {t("Use your knowledge base")}
+                          </div>
                         </div>
-                      </div>
-                    </Card>
-                    <Card
-                      variant="glass"
-                      padding="sm"
-                      interactive={false}
-                      className="flex items-center gap-3 border-border bg-surface-elevated/50 dark:border-white/10 dark:bg-white/5"
-                    >
-                      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-accent-primary dark:bg-blue-500/15 dark:text-blue-300">
-                        <Globe className="h-4 w-4" />
-                      </div>
-                      <div>
-                        <div className="text-sm font-semibold text-text-primary dark:text-zinc-50">
-                          {t("Connected")}
+                      </Card>
+                      <Card
+                        variant="glass"
+                        padding="sm"
+                        interactive={false}
+                        className="flex items-center gap-3 border-border bg-surface-elevated/50 dark:border-white/10 dark:bg-white/5"
+                      >
+                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent-primary/10 text-accent-primary dark:bg-accent-primary/20 dark:text-accent-primary">
+                          <Globe className="h-4 w-4" />
                         </div>
-                        <div className="text-xs text-text-tertiary dark:text-zinc-400">
-                          {t("Optional web search")}
+                        <div>
+                          <div className="text-sm font-semibold text-text-primary dark:text-zinc-50">
+                            {t("Connected")}
+                          </div>
+                          <div className="text-xs text-text-tertiary dark:text-zinc-400">
+                            {t("Optional web search")}
+                          </div>
                         </div>
-                      </div>
-                    </Card>
+                      </Card>
                   </motion.div>
                 </motion.div>
 
@@ -1075,29 +1303,31 @@ export default function HomePage() {
                               />
                             </div>
 
-                            {chatState.enableRag && (
-                              <div className="mt-4 space-y-1.5">
-                                <label className="text-xs font-semibold text-text-tertiary dark:text-zinc-400">
-                                  {t("Knowledge base")}
-                                </label>
-                                <select
-                                  value={chatState.selectedKb}
-                                  onChange={(e) =>
-                                    setChatState((prev) => ({
-                                      ...prev,
-                                      selectedKb: e.target.value,
-                                    }))
-                                  }
-                                  className="h-9 w-full rounded-xl border border-border bg-surface-elevated/70 px-3 text-sm text-text-primary outline-none backdrop-blur-md transition-colors duration-150 hover:bg-surface-elevated/85 focus:border-blue-400/70 dark:border-white/10 dark:bg-zinc-950/50 dark:text-zinc-100 dark:hover:bg-zinc-950/60"
-                                >
-                                  {kbs.map((kb) => (
-                                    <option key={kb.name} value={kb.name}>
-                                      {kb.name}
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-                            )}
+                             {chatState.enableRag && (
+                               <div className="mt-4 space-y-1.5">
+                                 <label htmlFor="kb-select-home" className="text-xs font-semibold text-text-tertiary dark:text-zinc-400">
+                                   {t("Knowledge base")}
+                                 </label>
+                                 <select
+                                   id="kb-select-home"
+                                   value={chatState.selectedKb}
+                                   onChange={(e) =>
+                                     setChatState((prev) => ({
+                                       ...prev,
+                                       selectedKb: e.target.value,
+                                     }))
+                                   }
+                                   className="h-9 w-full rounded-xl border border-border bg-surface-elevated/70 px-3 text-sm text-text-primary outline-none backdrop-blur-md transition-colors duration-150 hover:bg-surface-elevated/85 focus:border-accent-primary/70 dark:border-white/10 dark:bg-zinc-950/50 dark:text-zinc-100 dark:hover:bg-zinc-950/60"
+                                 >
+                                   {kbs.map((kb) => (
+                                     <option key={kb.name} value={kb.name}>
+                                       {kb.name}
+                                     </option>
+                                   ))}
+                                 </select>
+                               </div>
+                             )}
+
 
                             <p className="mt-4 text-xs text-text-tertiary dark:text-zinc-400">
                               {t(
@@ -1110,31 +1340,31 @@ export default function HomePage() {
 
                       <div className="mt-5">
                         <div className="relative">
-                          <div
-                            className={cn(
-                              "rounded-2xl transition-shadow duration-150",
-                              isFocused
-                                ? "shadow-[0_0_0_4px_rgba(59,130,246,0.10),0_12px_30px_-12px_rgba(59,130,246,0.22)]"
-                                : "shadow-glass-sm",
-                            )}
-                          >
-                            <input
-                              ref={inputRef}
-                              type="text"
-                              className={`
-	                            w-full rounded-2xl border px-5 py-4 pr-44 text-base
-	                            bg-surface-elevated/70 backdrop-blur-md
-	                            placeholder:text-text-tertiary text-text-primary
-	                            dark:bg-zinc-950/50 dark:placeholder:text-text-tertiary dark:text-zinc-100
-	                            ${
-                                isFocused
-                                  ? "border-blue-400/70 dark:border-blue-400/60"
-                                  : "border-border hover:border-border-hover dark:border-white/10 dark:hover:border-white/20"
-                              }
-	                            focus:outline-none
-	                            shadow-glass-sm
-	                            transition-colors duration-150
-	                          `}
+                           <div
+                             className={cn(
+                               "rounded-2xl transition-shadow duration-150",
+                               isFocused
+                                 ? "shadow-[0_0_0_4px_rgba(199,48,0,0.10),0_12px_30px_-12px_rgba(199,48,0,0.22)]"
+                                 : "shadow-glass-sm",
+                             )}
+                           >
+                             <input
+                               ref={inputRef}
+                               type="text"
+                               className={`
+                                 w-full rounded-2xl border px-5 py-4 pr-44 text-base
+                                 bg-surface-elevated/70 backdrop-blur-md
+                                 placeholder:text-text-tertiary text-text-primary
+                                 dark:bg-zinc-950/50 dark:placeholder:text-text-tertiary dark:text-zinc-100
+                                 ${
+                                   isFocused
+                                     ? "border-accent-primary/70 dark:border-accent-primary/60"
+                                     : "border-border hover:border-border-hover dark:border-white/10 dark:hover:border-white/20"
+                                 }
+                                 focus:outline-none
+                                 shadow-glass-sm
+                                 transition-colors duration-150
+                               `}
                               aria-label={t("Message")}
                               placeholder="Ask Co-Pilot..."
                               value={inputMessage}
@@ -1420,12 +1650,14 @@ export default function HomePage() {
     );
   }
 
-  // ============================================================================
-  // Render: Chat Interface (Has Messages)
-  // ============================================================================
 
   return (
     <div className={cn("relative h-dvh overflow-hidden", eliteTheme.surface)}>
+      <HomeWallpaperParallax
+        scrollRootRef={scrollRootRef}
+        reduceMotion={!!shouldReduceMotion}
+        variant="chat"
+      />
       <div
         aria-hidden="true"
         className="pointer-events-none absolute -bottom-56 right-10 h-[520px] w-[520px] rounded-full bg-indigo-500/10 blur-3xl dark:bg-indigo-500/10"

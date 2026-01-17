@@ -12,6 +12,7 @@ from src.api.routers import (
     config,
     dashboard,
     guide,
+    guide_v2,
     ideagen,
     knowledge,
     notebook,
@@ -175,6 +176,7 @@ app.include_router(dashboard.router, prefix="/api/v1/dashboard", tags=["dashboar
 app.include_router(co_writer.router, prefix="/api/v1/co_writer", tags=["co_writer"])
 app.include_router(notebook.router, prefix="/api/v1/notebook", tags=["notebook"])
 app.include_router(guide.router, prefix="/api/v1/guide", tags=["guide"])
+app.include_router(guide_v2.router, prefix="/api/v2/guide", tags=["guide_v2"])
 app.include_router(ideagen.router, prefix="/api/v1/ideagen", tags=["ideagen"])
 app.include_router(settings.router, prefix="/api/v1/settings", tags=["settings"])
 app.include_router(system.router, prefix="/api/v1/system", tags=["system"])
