@@ -2,7 +2,7 @@
 export { default as Button, IconButton } from './Button'
 
 // Card components
-export { Card, CardHeader, CardBody, CardFooter } from './Card'
+export { Card, CardHeader, CardContent, CardBody, CardFooter } from './Card'
 
 // Input components
 export { Input, Textarea } from './Input'
