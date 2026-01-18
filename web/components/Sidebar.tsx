@@ -1,9 +1,9 @@
 'use client'
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { motion, AnimatePresence, type Variants } from 'framer-motion'
+import { motion, AnimatePresence, type Variants, useMotionValue, useTransform, useSpring } from 'framer-motion'
 import {
   type LucideIcon,
   Home,
@@ -156,6 +156,29 @@ export default function Sidebar({ collapsible = true }: SidebarProps) {
 
   const [hoveredItem, setHoveredItem] = useState<string | null>(null)
 
+  // Scroll tracking for the tracing beam
+  const scrollProgress = useMotionValue(0)
+  const beamTop = useTransform(scrollProgress, [0, 1], ["2%", "92%"]) // Keep within vertical bounds
+  const springBeamTop = useSpring(beamTop, { stiffness: 200, damping: 25 })
+
+  useEffect(() => {
+    const scrollContainer = document.getElementById("app-scroll")
+    if (!scrollContainer) return
+
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = scrollContainer
+      const maxScroll = scrollHeight - clientHeight
+      const progress = maxScroll > 0 ? scrollTop / maxScroll : 0
+      scrollProgress.set(progress)
+    }
+
+    // Initial calculation
+    handleScroll()
+
+    scrollContainer.addEventListener("scroll", handleScroll, { passive: true })
+    return () => scrollContainer.removeEventListener("scroll", handleScroll)
+  }, [scrollProgress])
+
   const navGroups = useMemo<NavGroup[]>(
     () =>
       NAV_GROUP_DEFINITIONS.map(group => ({
@@ -181,6 +204,18 @@ export default function Sidebar({ collapsible = true }: SidebarProps) {
       initial={false}
       animate={isCollapsed ? 'collapsed' : 'expanded'}
     >
+      {/* Tech vibe vertical tracing beam */}
+      <div className="absolute right-0 top-0 bottom-0 w-[1px] overflow-hidden pointer-events-none z-50">
+        <motion.div
+          className="absolute left-0 right-0 h-24 bg-gradient-to-b from-transparent via-accent-primary to-transparent"
+          style={{ top: springBeamTop, opacity: 0.8 }}
+        />
+        <motion.div
+          className="absolute left-0 right-0 h-12 bg-gradient-to-b from-transparent via-blue-400 to-transparent"
+          style={{ top: springBeamTop, opacity: 0.5, y: 10 }} // Slight offset for layering
+        />
+      </div>
+
       {/* Logo Area */}
       <div className="px-4 py-5 flex items-center justify-between">
         <div className={cn('flex items-center', isCollapsed ? 'justify-center' : 'gap-3')}>
