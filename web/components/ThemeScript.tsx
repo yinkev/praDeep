@@ -42,8 +42,7 @@ export default function ThemeScript() {
         var theme = localStorage.getItem('deeptutor-theme');
 
         if (!theme) {
-          // Use system preference if not set
-          theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+          theme = 'light';
           localStorage.setItem('deeptutor-theme', theme);
         }
 
@@ -85,5 +84,7 @@ export default function ThemeScript() {
     })();
   `
 
-  return <script dangerouslySetInnerHTML={{ __html: themeScript }} suppressHydrationWarning />
+  return (
+    <script suppressHydrationWarning>{themeScript}</script>
+  )
 }

@@ -1,9 +1,7 @@
-
-@plugin "tailwindcss-animate";
-
-@config '../tailwind.config.js';
 @import "tailwindcss";
 @import "tw-animate-css";
+@plugin "tailwindcss-animate";
+@config '../tailwind.config.js';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -22,7 +20,7 @@
 
     --primary: var(--color-accent-primary);
     --primary-hover: var(--color-accent-primary);
-    --primary-muted: 254 245 242;
+    --primary-muted: 224 231 255; /* Indigo tinted muted */
 
     --muted: var(--color-surface-muted);
     --muted-foreground: var(--color-text-secondary);
@@ -40,7 +38,7 @@
     --accent-foreground: var(--color-text-primary);
 
     --destructive: var(--error);
-    --destructive-foreground: 0 0% 100%;
+    --destructive-foreground: 255 255 255;
 
     --input: var(--color-border);
     --primary-foreground: var(--color-accent-primary-foreground);
@@ -53,7 +51,6 @@
     --error-muted: 254 242 242;
     --info: 14 165 233;
     --info-muted: 240 249 255;
-    --destructive-foreground: 255 255 255;
 
     --glow-primary: var(--primary);
     --glow-cyan: 6 182 212;
@@ -133,7 +130,7 @@
     --color-text-tertiary: 113 113 122;
     --color-text-quaternary: 161 161 170;
 
-    --color-accent-primary: 199 48 0;
+    --color-accent-primary: 99 102 241; /* Indigo-500 equivalent */
     --color-accent-primary-foreground: 255 255 255;
 
     --color-border: 228 228 231;
@@ -157,7 +154,7 @@
 
     --primary: var(--color-accent-primary);
     --primary-hover: var(--color-accent-primary);
-    --primary-muted: 45 11 0;
+    --primary-muted: 49 46 129; /* Indigo-900 equivalent */
     --primary-foreground: var(--color-accent-primary-foreground);
 
     --muted: var(--color-surface-muted);
@@ -176,7 +173,7 @@
     --accent-foreground: var(--color-text-primary);
 
     --destructive: var(--error);
-    --destructive-foreground: 0 0% 100%;
+    --destructive-foreground: 255 255 255;
 
     --input: var(--color-border);
 
@@ -188,7 +185,6 @@
     --error-muted: 69 10 10;
     --info: 14 165 233;
     --info-muted: 8 47 73;
-    --destructive-foreground: 255 255 255;
 
     --dot-color: rgba(255, 255, 255, 0.04);
     --dot-color-strong: rgba(255, 255, 255, 0.1);
@@ -222,7 +218,7 @@
     --color-text-tertiary: 113 113 122;
     --color-text-quaternary: 82 82 91;
 
-    --color-accent-primary: 199 48 0;
+    --color-accent-primary: 99 102 241; /* Indigo-500 equivalent */
     --color-accent-primary-foreground: 255 255 255;
 
     --color-border: 39 39 42;
@@ -303,20 +299,11 @@
 
   button:focus-visible,
   a:focus-visible,
-  [role=\"button\"]:focus-visible,
-  [role=\"link\"]:focus-visible {
+  [role="button"]:focus-visible,
+  [role="link"]:focus-visible {
     outline: var(--ring-width) solid rgb(var(--ring));
     outline-offset: var(--ring-offset-width);
     box-shadow: 0 0 0 var(--ring-offset-width) rgb(var(--ring-offset));
-  }
-
-  button:focus-visible,
-  a:focus-visible,
-  [role="button"]:focus-visible,
-  [role="link"]:focus-visible {
-    outline: var(--ring-width) solid hsl(var(--ring));
-    outline-offset: var(--ring-offset-width);
-    box-shadow: 0 0 0 var(--ring-offset-width) hsl(var(--ring-offset));
   }
 
   :disabled,
@@ -380,6 +367,28 @@
 }
 
 @layer utilities {
+  @keyframes meteor-effect {
+    0% {
+      transform: translate3d(0, 0, 0) rotate(215deg);
+      opacity: 0;
+    }
+
+    12% {
+      opacity: 1;
+    }
+
+    100% {
+      transform: translate3d(700px, 700px, 0) rotate(215deg);
+      opacity: 0;
+    }
+  }
+
+  .animate-meteor-effect {
+    animation-name: meteor-effect;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+  }
+
   .surface-base {
     background: rgb(var(--background));
   }
@@ -452,4 +461,3 @@
     color: rgb(var(--info));
   }
 }
-

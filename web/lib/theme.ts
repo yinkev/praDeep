@@ -37,7 +37,9 @@ export function subscribeToThemeChanges(
  * Notify all listeners of theme change
  */
 function notifyThemeChange(theme: Theme): void {
-  themeListeners.forEach((listener) => listener(theme));
+  themeListeners.forEach((listener) => {
+    listener(theme);
+  });
 }
 
 /**
@@ -146,11 +148,10 @@ export function initializeTheme(): Theme {
     return stored;
   }
 
-  // Fall back to system preference
-  const systemTheme = getSystemTheme();
-  applyThemeToDocument(systemTheme);
-  saveThemeToStorage(systemTheme);
-  return systemTheme;
+  const defaultTheme: Theme = "light";
+  applyThemeToDocument(defaultTheme);
+  saveThemeToStorage(defaultTheme);
+  return defaultTheme;
 }
 
 /**

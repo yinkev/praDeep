@@ -2,6 +2,7 @@
 
 import React, {
   createContext,
+  useCallback,
   useContext,
   useRef,
   useState,
@@ -337,6 +338,16 @@ interface GlobalContextType {
     council_audio_mode: "off" | "final" | "all";
     council_checkpoint_timeout_s: number;
   };
+  setUiSettings: React.Dispatch<
+    React.SetStateAction<{
+      theme: Theme;
+      language: "en" | "zh";
+      council_depth: "standard" | "quick" | "deep";
+      enable_council_interaction: boolean;
+      council_audio_mode: "off" | "final" | "all";
+      council_checkpoint_timeout_s: number;
+    }>
+  >;
   refreshSettings: () => Promise<void>;
 
   // Sidebar
@@ -369,7 +380,7 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
 
   const [isInitialized, setIsInitialized] = useState(false);
 
-  const refreshSettings = async () => {
+  const refreshSettings = useCallback(async () => {
     try {
       const res = await fetch(apiUrl("/api/v1/settings"));
       if (res.ok) {
@@ -420,7 +431,7 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
         setUiSettings((prev) => ({ ...prev, theme: stored }));
       }
     }
-  };
+  }, []);
 
   useEffect(() => {
     // Initialize theme immediately on first render
@@ -432,7 +443,7 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
       // Then fetch from backend and sync
       refreshSettings();
     }
-  }, [isInitialized]);
+  }, [isInitialized, refreshSettings]);
 
   // --- Sidebar State ---
   const SIDEBAR_MIN_WIDTH = 64;
@@ -2024,6 +2035,7 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
         loadChatSession,
         newChatSession,
         uiSettings,
+        setUiSettings,
         refreshSettings,
         sidebarWidth,
         setSidebarWidth,

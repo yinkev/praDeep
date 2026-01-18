@@ -19,6 +19,8 @@ import {
   WifiOff,
   Zap,
 } from 'lucide-react'
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer } from 'recharts'
+import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
 import { apiUrl, wsUrl } from '@/lib/api'
 import { cn } from '@/lib/utils'
 import { getTranslation } from '@/lib/i18n'
@@ -34,6 +36,8 @@ import { StatCard } from '@/components/dashboard/StatCard'
 // ============================================================================
 // Types
 // ============================================================================
+
+import { HoverBorderGradient } from '@/components/ui/hover-border-gradient'
 
 interface MetricsSummary {
   total_calls: number
@@ -223,6 +227,13 @@ function MiniSparkline({ id, values }: { id: string; values: number[] }) {
   )
 }
 
+const trendsConfig = {
+  value: {
+    label: "Value",
+    color: "rgb(var(--color-accent-primary))",
+  },
+} satisfies ChartConfig
+
 function PremiumAreaChart({
   id,
   values,
@@ -234,29 +245,12 @@ function PremiumAreaChart({
   labels: string[]
   formatValue: (value: number) => string
 }) {
-  const width = 1000
-  const height = 260
-  const padding = 18
-  const { line, area, points, min, max } = buildLineAreaPath(values, width, height, padding)
+  const data = values.map((v, i) => ({
+    time: labels[i] || i.toString(),
+    value: v
+  }))
 
-  const containerRef = useRef<HTMLDivElement | null>(null)
-  const [activeIndex, setActiveIndex] = useState<number | null>(null)
-
-  const setFromClientX = (clientX: number) => {
-    const el = containerRef.current
-    if (!el || points.length === 0) return
-    const rect = el.getBoundingClientRect()
-    const ratio = clamp((clientX - rect.left) / rect.width, 0, 1)
-    const idx = Math.round(ratio * (points.length - 1))
-    setActiveIndex(clamp(idx, 0, points.length - 1))
-  }
-
-  const activePoint = activeIndex === null ? null : points[activeIndex]
-  const activeLabel = activeIndex === null ? null : labels[activeIndex]
-
-  const tooltipLeftPercent = activePoint ? clamp((activePoint.x / width) * 100, 6, 94) : 0
-
-  if (!line || values.length <= 1) {
+  if (values.length <= 1) {
     return (
       <div className="flex h-56 items-center justify-center rounded-2xl border border-border bg-surface-elevated/40 text-[10px] font-mono uppercase tracking-[0.2em] text-text-quaternary backdrop-blur-md">
         No chart data yet
@@ -265,88 +259,43 @@ function PremiumAreaChart({
   }
 
   return (
-    <div ref={containerRef} className="relative">
-      <svg
-        viewBox={`0 0 ${width} ${height}`}
-        className="h-56 w-full"
-        preserveAspectRatio="none"
-        onPointerMove={e => setFromClientX(e.clientX)}
-        onPointerLeave={() => setActiveIndex(null)}
-        role="img"
-        aria-label="Trend chart"
-      >
-        <defs>
-          <linearGradient id={`${id}-fill`} x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stopColor="rgba(var(--color-accent-primary), 0.15)" />
-            <stop offset="100%" stopColor="rgba(var(--color-accent-primary), 0)" />
-          </linearGradient>
-          <linearGradient id={`${id}-stroke`} x1="0" x2="1" y1="0" y2="0">
-            <stop offset="0%" stopColor="rgb(var(--color-accent-primary))" />
-            <stop offset="100%" stopColor="rgb(var(--color-accent-primary))" stopOpacity="0.6" />
-          </linearGradient>
-        </defs>
-
-        {[0.25, 0.5, 0.75].map(tick => {
-          const y = padding + (height - padding * 2) * tick
-          return (
-            <line
-              key={tick}
-              x1={padding}
-              x2={width - padding}
-              y1={y}
-              y2={y}
-              stroke="rgb(var(--color-border-subtle))"
-              strokeDasharray="3 3"
-            />
-          )
-        })}
-
-        <path d={area} fill={`url(#${id}-fill)`} />
-        <path
-          d={line}
-          fill="none"
-          stroke={`url(#${id}-stroke)`}
-          strokeWidth="3"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-
-        {activePoint && (
-          <>
-            <line
-              x1={activePoint.x}
-              x2={activePoint.x}
-              y1={padding}
-              y2={height - padding}
-              stroke="rgb(var(--color-accent-primary))"
-              strokeOpacity="0.2"
-            />
-            <circle cx={activePoint.x} cy={activePoint.y} r="8" fill="rgb(var(--color-accent-primary))" opacity={0.12} />
-            <circle cx={activePoint.x} cy={activePoint.y} r="4" fill="rgb(var(--color-accent-primary))" />
-          </>
-        )}
-      </svg>
-
-      <div className="mt-4 flex items-center justify-between text-[10px] font-mono text-text-quaternary uppercase tracking-tight">
-        <span className="tabular-nums">MIN: {formatValue(min)}</span>
-        <span className="tabular-nums">MAX: {formatValue(max)}</span>
-      </div>
-
-      {activePoint && activeLabel && (
-        <div
-          className="pointer-events-none absolute top-3 -translate-x-1/2"
-          style={{ left: `${tooltipLeftPercent}%` }}
+    <div className="relative h-64 w-full">
+      <ChartContainer config={trendsConfig} className="h-full w-full">
+        <AreaChart
+          accessibilityLayer
+          data={data}
+          margin={{
+            top: 20,
+            right: 0,
+            left: 0,
+            bottom: 0,
+          }}
         >
-          <div className="rounded border border-border bg-surface-base/90 px-3 py-2 text-[10px] font-mono font-bold text-text-primary shadow-lg backdrop-blur-md">
-            <div className="flex items-center justify-between gap-4">
-              <span className="text-text-tertiary">{activeLabel.toUpperCase()}</span>
-              <span className="text-accent-primary tabular-nums">
-                {formatValue(activePoint.value)}
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
+          <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="var(--color-border-subtle)" opacity={0.5} />
+          <XAxis 
+             dataKey="time"
+             hide
+          />
+          <ChartTooltip
+            cursor={{ stroke: 'var(--color-text-tertiary)', strokeWidth: 1, strokeDasharray: '4 4' }}
+            content={<ChartTooltipContent indicator="line" />}
+          />
+          <Area
+            dataKey="value"
+            type="monotone"
+            fill="url(#fillValue)"
+            fillOpacity={0.2}
+            stroke="rgb(var(--color-accent-primary))"
+            strokeWidth={2}
+          />
+          <defs>
+            <linearGradient id="fillValue" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="rgb(var(--color-accent-primary))" stopOpacity={0.3} />
+              <stop offset="95%" stopColor="rgb(var(--color-accent-primary))" stopOpacity={0} />
+            </linearGradient>
+          </defs>
+        </AreaChart>
+      </ChartContainer>
     </div>
   )
 }
@@ -991,60 +940,67 @@ export default function MetricsPage() {
           >
             {/* Overview */}
             <motion.section variants={itemVariants} className="grid gap-6 lg:grid-cols-3">
-              <Card
-                interactive={false}
-                className="relative overflow-hidden lg:col-span-2 border-border bg-surface-base"
+              <HoverBorderGradient
+                as="div"
+                containerClassName="p-0 border-none bg-transparent shadow-none w-full lg:col-span-2"
+                className="w-full p-0 bg-transparent border-none"
+                duration={4}
               >
-                <div
-                  aria-hidden="true"
-                  className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(var(--color-accent-primary),0.06),transparent_60%)]"
-                />
-
-                <CardHeader className="relative flex-col gap-4 sm:flex-row sm:items-center sm:justify-between p-6">
-                  <div className="flex items-start gap-4">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-surface-secondary border border-border text-text-tertiary">
-                      <BarChart3 className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-sm font-bold uppercase tracking-widest text-text-primary">Trends</CardTitle>
-                      <p className="mt-1 text-[10px] font-mono uppercase tracking-tight text-text-tertiary">
-                        LAST {recentHistory.length} EVENTS
-                      </p>
-                    </div>
-                  </div>
-
-                  <MetricToggle value={trendMetric} onChange={setTrendMetric} options={metricOptions} />
-                </CardHeader>
-
-                <CardBody className="relative p-6 pt-0">
-                  <PremiumAreaChart
-                    id={`metrics-${trendMetric}`}
-                    values={chartValues}
-                    labels={chartLabels}
-                    formatValue={chartFormatter}
+                <Card
+                  interactive={false}
+                  className="relative overflow-hidden w-full h-full border-border bg-surface-base"
+                >
+                  <div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(var(--color-accent-primary),0.06),transparent_60%)]"
                   />
 
-                  {chartStats && (
-                    <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
-                      {[
-                        { label: 'AVG', val: chartStats.avg },
-                        { label: 'P95', val: chartStats.p95 },
-                        { label: 'MIN', val: chartStats.min },
-                        { label: 'MAX', val: chartStats.max }
-                      ].map(stat => (
-                        <div key={stat.label} className="rounded-xl border border-border-subtle bg-surface-elevated/40 p-4 shadow-glass-sm backdrop-blur-md">
-                          <div className="text-[9px] font-bold uppercase tracking-widest text-text-quaternary">
-                            {stat.label}
-                          </div>
-                          <div className="mt-1 font-mono text-sm font-bold text-text-primary tabular-nums">
-                            {chartFormatter(stat.val)}
-                          </div>
-                        </div>
-                      ))}
+                  <CardHeader className="relative flex-col gap-4 sm:flex-row sm:items-center sm:justify-between p-6">
+                    <div className="flex items-start gap-4">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-surface-secondary border border-border text-text-tertiary">
+                        <BarChart3 className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-sm font-bold uppercase tracking-widest text-text-primary">Trends</CardTitle>
+                        <p className="mt-1 text-[10px] font-mono uppercase tracking-tight text-text-tertiary">
+                          LAST {recentHistory.length} EVENTS
+                        </p>
+                      </div>
                     </div>
-                  )}
-                </CardBody>
-              </Card>
+
+                    <MetricToggle value={trendMetric} onChange={setTrendMetric} options={metricOptions} />
+                  </CardHeader>
+
+                  <CardBody className="relative p-6 pt-0">
+                    <PremiumAreaChart
+                      id={`metrics-${trendMetric}`}
+                      values={chartValues}
+                      labels={chartLabels}
+                      formatValue={chartFormatter}
+                    />
+
+                    {chartStats && (
+                      <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                        {[
+                          { label: 'AVG', val: chartStats.avg },
+                          { label: 'P95', val: chartStats.p95 },
+                          { label: 'MIN', val: chartStats.min },
+                          { label: 'MAX', val: chartStats.max }
+                        ].map(stat => (
+                          <div key={stat.label} className="rounded-xl border border-border-subtle bg-surface-elevated/40 p-4 shadow-glass-sm backdrop-blur-md">
+                            <div className="text-[9px] font-bold uppercase tracking-widest text-text-quaternary">
+                              {stat.label}
+                            </div>
+                            <div className="mt-1 font-mono text-sm font-bold text-text-primary tabular-nums">
+                              {chartFormatter(stat.val)}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardBody>
+                </Card>
+              </HoverBorderGradient>
 
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-1">
                 <KpiCard icon={Zap} label={t('Total Calls')} value={(summary?.total_calls ?? 0).toString()} />

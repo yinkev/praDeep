@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { PenTool, Check, Trash2, Sparkles, X, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Card, CardBody, CardHeader, CardTitle } from "./ui/Card";
@@ -17,13 +17,14 @@ interface Mark {
 export default function CoMarkerEditor() {
   const [marks, setMarks] = useState<Mark[]>([]);
   const [inputText, setInputTopic] = useState("");
+  const nextMarkIdRef = useRef(0);
 
   const addMark = (type: Mark["type"]) => {
     const selection = window.getSelection()?.toString();
     if (!selection) return;
 
     const newMark: Mark = {
-      id: Math.random().toString(36).substring(7),
+      id: `mark-${nextMarkIdRef.current++}`,
       text: selection,
       type,
     };
@@ -45,14 +46,22 @@ export default function CoMarkerEditor() {
             <CardTitle className="text-sm font-bold uppercase tracking-widest">Co_Marker</CardTitle>
           </div>
           <div className="flex items-center gap-2">
-            {["circle", "highlight", "underline", "box", "bracket"].map((type) => (
+            {(
+              [
+                "circle",
+                "highlight",
+                "underline",
+                "box",
+                "bracket",
+              ] as Mark["type"][]
+            ).map((type) => (
               <IconButton
                 key={type}
                 aria-label={`Mark as ${type}`}
                 icon={<Plus size={14} />}
                 variant="ghost"
                 size="sm"
-                onClick={() => addMark(type as any)}
+                onClick={() => addMark(type)}
                 title={`Mark ${type}`}
                 className="h-8 w-8 hover:bg-accent-primary/10 hover:text-accent-primary"
               />
@@ -65,9 +74,10 @@ export default function CoMarkerEditor() {
         <div className="flex-1 p-8 overflow-y-auto bg-surface-base border-r border-border">
           <div
             contentEditable
+            suppressContentEditableWarning
             onInput={(e) => setInputTopic(e.currentTarget.innerText)}
             className="w-full h-full outline-none font-sans text-base leading-relaxed text-text-primary prose dark:prose-invert max-w-none"
-            placeholder="Paste text here to begin marking..."
+            aria-label="Paste text here to begin marking"
           />
         </div>
         <aside className="w-80 bg-surface-secondary/10 overflow-y-auto p-4 flex flex-col gap-4">

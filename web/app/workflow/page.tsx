@@ -18,10 +18,14 @@ import {
 import { useGlobal } from '@/context/GlobalContext'
 import { getTranslation } from '@/lib/i18n'
 import PageWrapper, { PageHeader } from '@/components/ui/PageWrapper'
-import { Card, CardBody } from '@/components/ui/Card'
+import { Card, CardBody, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
+import { BentoGrid, BentoGridItem } from '@/components/ui/bento-grid'
+import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
+
+import { Line, LineChart, ResponsiveContainer, XAxis, YAxis } from 'recharts'
 
 // ============================================================================
 // Types
@@ -223,6 +227,34 @@ function TimelineNode({ node, isLast }: { node: WorkflowNode; isLast: boolean })
   )
 }
 
+function MiniActivityChart() {
+  const data = [
+    { value: 10 },
+    { value: 15 },
+    { value: 12 },
+    { value: 20 },
+    { value: 25 },
+    { value: 18 },
+    { value: 30 },
+  ]
+
+  return (
+    <div className="h-12 w-24">
+      <ChartContainer config={{ value: { color: "rgb(var(--color-accent-primary))" } }} className="h-full w-full">
+        <LineChart data={data}>
+          <Line
+            type="monotone"
+            dataKey="value"
+            stroke="var(--color-value)"
+            strokeWidth={2}
+            dot={false}
+          />
+        </LineChart>
+      </ChartContainer>
+    </div>
+  )
+}
+
 // ============================================================================
 // Main Page
 // ============================================================================
@@ -311,25 +343,39 @@ export default function WorkflowInsightsPage() {
               />
 
               <div className="relative p-8">
-                <Badge variant="secondary" className="bg-accent-primary/10 text-accent-primary border-accent-primary/20 text-[9px] font-bold uppercase tracking-widest">
-                  <Sparkles className="h-3 w-3 mr-1.5" />
-                  {t('Flow at a glance')}
-                </Badge>
+                <div className="flex items-center justify-between">
+                  <Badge variant="secondary" className="bg-accent-primary/10 text-accent-primary border-accent-primary/20 text-[9px] font-bold uppercase tracking-widest">
+                    <Sparkles className="h-3 w-3 mr-1.5" />
+                    {t('Flow at a glance')}
+                  </Badge>
+                  <MiniActivityChart />
+                </div>
 
                 <h2 className="mt-6 text-xl font-bold text-text-primary uppercase tracking-tight">
                   {t('Four modules. One clean loop.')}
                 </h2>
-                <p className="mt-3 text-sm leading-relaxed text-text-secondary opacity-80">
+                <p className="mt-3 text-sm leading-relaxed text-text-secondary opacity-80 mb-8">
                   {t(
                     'Start by grounding the system in your sources, then solve, research, and review outputs — repeat as you learn.'
                   )}
                 </p>
 
-                <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <BentoGrid className="grid-cols-1 md:grid-cols-2">
                   {nodes.map((node) => (
-                    <QuickAccessCard key={node.id} node={node} />
+                    <BentoGridItem
+                      key={node.id}
+                      title={node.title}
+                      description={node.description}
+                      header={
+                        <div className="flex w-full flex-1 items-center justify-center rounded-xl bg-surface-raised/50 min-h-[6rem]">
+                          <node.icon className="h-8 w-8 text-accent-primary opacity-80" />
+                        </div>
+                      }
+                      icon={<div className="text-[10px] font-mono text-text-quaternary uppercase tracking-tighter mb-1">STEP {node.step}</div>}
+                      className={cn("cursor-pointer bg-surface-base border-border hover:border-accent-primary/30", "transition-all duration-300")}
+                    />
                   ))}
-                </div>
+                </BentoGrid>
               </div>
             </Card>
           </motion.div>

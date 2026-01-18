@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { GeistSans } from 'geist/font/sans'
 import { GeistMono } from 'geist/font/mono'
+import { Newsreader } from 'next/font/google'
 import './globals.css'
 import Sidebar from '@/components/Sidebar'
 import { GlobalProvider } from '@/context/GlobalContext'
@@ -9,85 +10,78 @@ import { ToastProvider } from '@/components/ui/Toast'
 import MotionProvider from '@/components/MotionProvider'
 import { APP_DESCRIPTION, APP_NAME, APP_TITLE } from '@/lib/app-meta'
 import { PWAInit } from './pwa-init'
+import { AppHeader } from '@/components/AppHeader'
+import { AppBackground } from '@/components/AppBackground'
 
 const geistSans = GeistSans
 const geistMono = GeistMono
+const newsreader = Newsreader({
+  subsets: ['latin'],
+  variable: '--font-newsreader',
+  display: 'swap',
+  style: 'italic',
+})
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL
 
 export const metadata: Metadata = {
-  applicationName: APP_NAME,
   title: {
     default: APP_TITLE,
-    template: `%s · ${APP_NAME}`,
+    template: `%s | ${APP_NAME}`,
   },
   description: APP_DESCRIPTION,
-  manifest: '/manifest.json',
   metadataBase: siteUrl ? new URL(siteUrl) : undefined,
-  alternates: {
-    canonical: '/',
-  },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      'max-video-preview': -1,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
-    },
-  },
-  openGraph: {
-    type: 'website',
-    title: APP_TITLE,
-    description: APP_DESCRIPTION,
-    siteName: APP_NAME,
-    url: '/',
-  },
-  twitter: {
-    card: 'summary',
-    title: APP_TITLE,
-    description: APP_DESCRIPTION,
-  },
-  icons: {
-    icon: '/logo.png',
-    apple: '/logo.png',
-  },
 }
 
 export const viewport: Viewport = {
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
+    { media: '(prefers-color-scheme: dark)', color: '#09090b' },
+  ],
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
 }
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode
+}>) {
   return (
     <html
       lang="en"
       suppressHydrationWarning
       data-scroll-behavior="smooth"
-      className={`${geistSans.variable} ${geistMono.variable}`}
+      className={`${geistSans.variable} ${geistMono.variable} ${newsreader.variable}`}
     >
       <head>
         <ThemeScript />
+        <PWAInit />
       </head>
       <body
-        className={`${geistSans.className} min-h-dvh bg-surface-base antialiased transition-colors duration-200`}
+        className={`${geistSans.className} min-h-dvh bg-surface-base antialiased transition-colors duration-200 selection:bg-accent-primary/20 selection:text-accent-primary`}
       >
         <MotionProvider>
           <ToastProvider>
-            <PWAInit />
             <GlobalProvider>
               <div className="flex h-dvh w-full overflow-hidden">
                 <Sidebar />
                 <main
                   id="app-scroll"
-                  className="flex-1 overflow-y-auto scroll-smooth bg-[radial-gradient(circle_at_1px_1px,rgb(var(--color-border-subtle))_1px,transparent_0)] [background-size:24px_24px]"
-                  style={{ backgroundPosition: 'center center' }}
+                  className="flex-1 flex flex-col overflow-hidden bg-surface-base"
                 >
-                  {children}
+                  <div className="relative flex-1 overflow-hidden">
+                    <AppBackground />
+                    <div className="relative z-10 flex h-full flex-col overflow-hidden">
+                      <div className="flex-shrink-0 z-50">
+                        <AppHeader />
+                      </div>
+                      <div className="flex-1 overflow-y-auto scroll-smooth relative">
+                        {children}
+                      </div>
+                    </div>
+                  </div>
                 </main>
               </div>
             </GlobalProvider>
@@ -97,3 +91,4 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     </html>
   )
 }
+

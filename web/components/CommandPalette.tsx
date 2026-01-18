@@ -36,12 +36,28 @@ export function CommandPalette() {
     const down = (e: KeyboardEvent) => {
       if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault()
-        setOpen((open) => !open)
+        setOpen((prev) => !prev)
       }
     }
 
     document.addEventListener("keydown", down)
     return () => document.removeEventListener("keydown", down)
+  }, [])
+
+  React.useEffect(() => {
+    const onCommandPaletteEvent = (event: Event) => {
+      const customEvent = event as CustomEvent<{ action?: "toggle" | "open" | "close" }>
+      const action = customEvent.detail?.action ?? "toggle"
+
+      setOpen((prev) => {
+        if (action === "open") return true
+        if (action === "close") return false
+        return !prev
+      })
+    }
+
+    window.addEventListener("opentutor:command-palette", onCommandPaletteEvent)
+    return () => window.removeEventListener("opentutor:command-palette", onCommandPaletteEvent)
   }, [])
 
   const runCommand = React.useCallback(

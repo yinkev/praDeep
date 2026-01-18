@@ -70,6 +70,7 @@ module.exports = {
       fontFamily: {
         sans: ['var(--font-geist-sans)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
         mono: ['var(--font-geist-mono)', 'ui-monospace', 'SFMono-Regular', 'monospace'],
+        serif: ['var(--font-newsreader)', 'ui-serif', 'Georgia', 'serif'],
         display: ['var(--font-geist-sans)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
       boxShadow: {

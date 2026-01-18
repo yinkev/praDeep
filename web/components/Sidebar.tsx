@@ -24,6 +24,7 @@ import {
   Brain,
   Activity,
   User,
+  MessageCircle,
 } from 'lucide-react'
 import { useGlobal } from '@/context/GlobalContext'
 import { getTranslation } from '@/lib/i18n'
@@ -108,6 +109,7 @@ const NAV_GROUP_DEFINITIONS: readonly NavGroupDefinition[] = [
     id: 'main',
     items: [
       { nameKey: 'Home', href: '/', icon: Home },
+      { nameKey: 'Dashboard', href: '/chat', icon: MessageCircle },
       { nameKey: 'History', href: '/history', icon: History },
       { nameKey: 'Analytics', href: '/analytics', icon: BarChart3 },
       { nameKey: 'Workflow Insights', href: '/workflow', icon: Sparkles },
@@ -172,7 +174,8 @@ export default function Sidebar({ collapsible = true }: SidebarProps) {
     <motion.aside
       className={cn(
         'relative flex h-full flex-shrink-0 flex-col',
-        'border-r border-border bg-surface-base text-text-primary'
+        'border-r border-border bg-surface-base text-text-primary',
+        'shadow-[20px_0_40px_-10px_rgba(0,0,0,0.02)]' // Subtle depth
       )}
       variants={sidebarVariants}
       initial={false}
@@ -180,9 +183,9 @@ export default function Sidebar({ collapsible = true }: SidebarProps) {
     >
       {/* Logo Area */}
       <div className="px-4 py-5 flex items-center justify-between">
-        <div className={cn('flex items-center', isCollapsed ? 'justify-center' : 'gap-2.5')}>
-          <div className="ui-frame w-8 h-8 rounded-md bg-accent-primary flex items-center justify-center shadow-none ring-1 ring-border">
-            <span className="text-text-primary text-sm font-semibold">P</span>
+        <div className={cn('flex items-center', isCollapsed ? 'justify-center' : 'gap-3')}>
+          <div className="w-8 h-8 rounded-lg bg-surface-elevated flex items-center justify-center border border-border shadow-sm">
+            <span className="text-text-primary text-sm font-bold font-serif italic">P</span>
           </div>
 
           <AnimatePresence>
@@ -192,7 +195,7 @@ export default function Sidebar({ collapsible = true }: SidebarProps) {
                 initial="hidden"
                 animate="visible"
                 exit="hidden"
-                className="text-[15px] font-semibold text-text-primary tracking-tight"
+                className="text-[17px] font-semibold text-text-primary tracking-tight font-serif italic"
               >
                 praDeep
               </motion.span>
@@ -237,7 +240,7 @@ export default function Sidebar({ collapsible = true }: SidebarProps) {
                     initial="hidden"
                     animate="visible"
                     exit="hidden"
-                    className="text-xs font-semibold ui-mono text-text-tertiary uppercase tracking-wider px-3 mb-2 mt-6 first:mt-0"
+                    className="text-[10px] font-bold font-mono text-text-tertiary uppercase tracking-widest px-3 mb-2 mt-6 first:mt-0 opacity-80"
                   >
                     {group.label}
                   </motion.div>
@@ -280,7 +283,7 @@ export default function Sidebar({ collapsible = true }: SidebarProps) {
                             layoutId="activeIndicator"
                             className={cn(
                               'absolute left-0 top-1/2 -translate-y-1/2',
-                              'h-4 w-0 border-l-2 border-accent-primary'
+                              'h-5 w-0.5 rounded-r-full bg-accent-primary shadow-[0_0_8px_rgba(var(--primary)/0.5)]'
                             )}
                             transition={{ duration: 0.3, ease: 'easeOut' as const }}
                           />
@@ -409,39 +412,39 @@ export default function Sidebar({ collapsible = true }: SidebarProps) {
           </AnimatePresence>
         </div>
 
-        {/* User Profile */}
-        <div
-          className={cn(
-            'flex h-11 items-center rounded-md py-2 cursor-pointer',
-            'transition-colors duration-150 ease-out',
-            'hover:bg-surface-secondary',
-            isCollapsed ? 'justify-center px-2.5' : 'gap-3 px-3'
-          )}
-        >
-          {/* Clean avatar */}
-          <div className="relative flex-shrink-0">
-            <div className="w-8 h-8 rounded-full bg-surface-secondary border border-border flex items-center justify-center">
-              <User className="w-4 h-4 text-text-tertiary" strokeWidth={1.75} />
-            </div>
-            {/* Online indicator */}
-            <div className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-accent-primary border-[1.5px] border-border" />
-          </div>
-
-          <AnimatePresence>
-            {!isCollapsed && (
-              <motion.div
-                variants={textVariants}
-                initial="hidden"
-                animate="visible"
-                exit="hidden"
-                className="flex-1 min-w-0"
-              >
-                <div className="text-sm font-semibold text-text-primary truncate">Researcher</div>
-                <div className="text-[11px] text-text-tertiary truncate">Active</div>
-              </motion.div>
+          {/* User Profile */}
+          <div
+            className={cn(
+              'flex h-12 items-center rounded-lg py-2 cursor-pointer border border-transparent',
+              'transition-all duration-200 ease-out',
+              'hover:bg-surface-elevated hover:border-border hover:shadow-sm',
+              isCollapsed ? 'justify-center px-2.5' : 'gap-3 px-3'
             )}
-          </AnimatePresence>
-        </div>
+          >
+            {/* Clean avatar */}
+            <div className="relative flex-shrink-0">
+              <div className="w-8 h-8 rounded-full bg-surface-muted border border-border flex items-center justify-center overflow-hidden">
+                <User className="w-4 h-4 text-text-tertiary" strokeWidth={1.75} />
+              </div>
+              {/* Online indicator */}
+              <div className="absolute bottom-0.5 right-0.5 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-surface-base" />
+            </div>
+
+            <AnimatePresence>
+              {!isCollapsed && (
+                <motion.div
+                  variants={textVariants}
+                  initial="hidden"
+                  animate="visible"
+                  exit="hidden"
+                  className="flex-1 min-w-0"
+                >
+                  <div className="text-sm font-medium text-text-primary truncate">Researcher</div>
+                  <div className="text-[10px] text-text-tertiary truncate font-mono">PRO MEMBER</div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
       </div>
     </motion.aside>
   )

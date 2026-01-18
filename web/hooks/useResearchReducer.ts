@@ -464,10 +464,6 @@ export const researchReducer = (
       };
 
     case "outline_completed":
-      // Determine the generated outline sections count
-      const outlineData = event as any; // Full outline payload might be in event
-      // But usually event just says outline_completed.
-      // If the outline data is passed in payload:
       return {
         ...state,
         reporting: {

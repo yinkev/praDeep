@@ -41,6 +41,7 @@ import { parseKnowledgeBaseList } from '@/lib/knowledge'
 import { processLatexContent } from '@/lib/latex'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
+import { EmptyState } from '@/components/ui/EmptyState'
 
 // ============================================================================
 // Helpers & Types
@@ -96,7 +97,7 @@ function StageIndicator({ stage, isSolving }: { stage: string | null; isSolving:
 
   return (
     <Badge variant="secondary" className="bg-accent-primary/10 text-accent-primary border-accent-primary/20 px-3 py-1.5 rounded-full font-mono text-[9px] uppercase tracking-widest gap-2">
-      <Spinner size="xs" className="text-accent-primary" />
+      <Spinner size="sm" className="text-accent-primary" />
       {stage || 'PROCESS_EXEC'}
     </Badge>
   )
@@ -236,7 +237,7 @@ export default function SolverPage() {
                          onClick={handleSolve}
                          disabled={(!draft.trim() && draftMedia.length === 0) || solverState.isSolving}
                          className="h-10 px-8 uppercase font-bold tracking-widest shadow-lg"
-                         iconLeft={solverState.isSolving ? <Spinner size="xs" /> : <Sparkles size={14} />}
+                         iconLeft={solverState.isSolving ? <Spinner size="sm" /> : <Sparkles size={14} />}
                        >
                          {solverState.isSolving ? 'Solving...' : 'Solve'}
                        </Button>
@@ -306,7 +307,7 @@ export default function SolverPage() {
                        <div className="text-[9px] font-mono text-text-tertiary uppercase">{solverState.logs.length} ENTRIES</div>
                     </div>
                  </div>
-                 {solverState.isSolving && <Spinner size="xs" className="text-accent-primary" />}
+                 {solverState.isSolving && <Spinner size="sm" className="text-accent-primary" />}
               </div>
               <div ref={traceContainerRef} className="flex-1 overflow-y-auto p-4 space-y-2 bg-surface-secondary/5">
                  {solverState.logs.length === 0 ? (

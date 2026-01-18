@@ -42,6 +42,7 @@ import {
   ChevronRight,
   Import,
   Zap,
+  Save,
 } from "lucide-react";
 import AddToNotebookModal from "./AddToNotebookModal";
 import NotebookImportModal from "./NotebookImportModal";
@@ -55,7 +56,7 @@ import "katex/dist/katex.min.css";
 import { processLatexContent } from "@/lib/latex";
 import { cn } from "@/lib/utils";
 import { Badge } from "./ui/badge";
-import { Button } from "./ui/Button";
+import { Button, IconButton } from "./ui/Button";
 
 interface CoWriterEditorProps {
   initialValue?: string;

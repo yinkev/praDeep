@@ -20,6 +20,9 @@ import {
   Trophy,
   Zap,
 } from 'lucide-react'
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer } from 'recharts'
+import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
+import { ActivityChartDemo } from '@/components/charts/ActivityChartDemo'
 import { apiUrl } from '@/lib/api'
 import { getTranslation } from '@/lib/i18n'
 import { useGlobal } from '@/context/GlobalContext'
@@ -30,6 +33,9 @@ import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { StatCard } from '@/components/dashboard/StatCard'
 import { cn } from '@/lib/utils'
+
+import { HoverBorderGradient } from '@/components/ui/hover-border-gradient'
+import { BentoGrid } from '@/components/ui/bento-grid'
 
 type TimeRange = 'day' | 'week' | 'month' | 'all'
 
@@ -143,9 +149,9 @@ function SegmentedControl<TValue extends string>({
   )
 }
 
-function ChartShell({ children, title, subtitle, icon: Icon }: { children: React.ReactNode; title: string; subtitle?: string; icon: React.ElementType }) {
+function ChartShell({ children, title, subtitle, icon: Icon, className }: { children: React.ReactNode; title: string; subtitle?: string; icon: React.ElementType; className?: string }) {
   return (
-    <Card interactive={false} className="overflow-hidden border-border bg-surface-base">
+    <Card interactive={false} className={cn("overflow-hidden border-border bg-surface-base", className)}>
       <CardHeader className="flex flex-row items-center gap-3 pb-2">
         <div className="rounded-lg bg-surface-elevated p-2 border border-border-subtle">
           <Icon className="h-4 w-4 text-accent-primary" />
@@ -160,7 +166,7 @@ function ChartShell({ children, title, subtitle, icon: Icon }: { children: React
         </div>
       </CardHeader>
       <CardBody className="pt-2">
-        <div className="rounded-xl border border-border-subtle bg-surface-elevated/30 p-6 overflow-hidden">
+        <div className="rounded-xl border border-border-subtle bg-surface-elevated/30 p-4 sm:p-6 overflow-hidden">
           {children}
         </div>
       </CardBody>
@@ -168,42 +174,43 @@ function ChartShell({ children, title, subtitle, icon: Icon }: { children: React
   )
 }
 
+const timelineConfig = {
+  total: {
+    label: "Activities",
+    color: "rgb(var(--color-accent-primary))",
+  },
+} satisfies ChartConfig
+
 function TimelineChart({ data, unitLabel }: { data: TimelineData[]; unitLabel: string }) {
+  // Take last 14 points or all if less
   const points = data.slice(-14)
-  const maxValue = Math.max(...points.map(p => p.total || 0), 1)
-
+  
   return (
-    <div className="flex h-32 items-end gap-2 px-2">
-      {points.map((point, idx) => {
-        const heightPercent = Math.max(2, (Math.max(0, point.total || 0) / maxValue) * 100)
-        const label = point.time.length >= 5 ? point.time.slice(-5) : point.time
-
-        return (
-          <div key={`${point.time}-${idx}`} className="group relative flex-1">
-            <div className="relative h-32 overflow-hidden rounded-sm bg-surface-elevated/50">
-              <div
-                className="absolute bottom-0 left-0 right-0 rounded-t-[1px] bg-accent-primary transition-all duration-500 ease-out-expo group-hover:brightness-110 shadow-[0_0_15px_rgba(var(--color-accent-primary),0.2)]"
-                style={{ height: `${heightPercent}%` }}
-              />
-            </div>
-
-            <div className="mt-2 text-center text-[8px] font-mono font-bold text-text-quaternary uppercase tracking-tighter">
-              {label}
-            </div>
-
-            <div
-              className={cn(
-                'pointer-events-none absolute -top-10 left-1/2 -translate-x-1/2 whitespace-nowrap z-50',
-                'rounded border border-border bg-surface-base px-2 py-1 text-[10px] font-mono font-bold text-text-primary shadow-glass-sm backdrop-blur-md',
-                'opacity-0 transition-opacity duration-150 group-hover:opacity-100'
-              )}
-            >
-              {point.total} {unitLabel.toUpperCase()}
-            </div>
-          </div>
-        )
-      })}
-    </div>
+    <ChartContainer config={timelineConfig} className="h-32 w-full">
+      <BarChart accessibilityLayer data={points}>
+        <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="var(--color-border-subtle)" opacity={0.5} />
+        <XAxis
+          dataKey="time"
+          tickLine={false}
+          tickMargin={10}
+          axisLine={false}
+          tickFormatter={(value) => value.length >= 5 ? value.slice(-5) : value}
+          stroke="var(--color-text-quaternary)"
+          fontSize={10}
+          fontFamily="var(--font-mono)"
+        />
+        <ChartTooltip
+          cursor={{ fill: 'var(--color-surface-raised)', opacity: 0.4 }}
+          content={<ChartTooltipContent indicator="line" />}
+        />
+        <Bar
+          dataKey="total"
+          fill="var(--color-total)"
+          radius={[4, 4, 0, 0]}
+          maxBarSize={40}
+        />
+      </BarChart>
+    </ChartContainer>
   )
 }
 
@@ -403,6 +410,34 @@ export default function AnalyticsPage() {
               />
             </div>
 
+            {/* Bento Grid Section */}
+            <BentoGrid className="md:auto-rows-auto">
+              <div className="md:col-span-2">
+                 <ActivityChartDemo className="h-full border-border bg-surface-base" />
+              </div>
+              <div className="md:col-span-1">
+                <Card interactive={false} className="h-full border-border bg-surface-base">
+                  <CardHeader>
+                     <CardTitle className="text-sm font-bold uppercase tracking-widest text-text-primary">
+                       {t('Sessions')}
+                     </CardTitle>
+                     <p className="text-[10px] font-mono text-text-tertiary uppercase tracking-tight">
+                       {t('Last 7 Days')}
+                     </p>
+                  </CardHeader>
+                  <CardBody>
+                    <ChartContainer config={{ sessions: { label: t('Sessions'), color: "rgb(var(--color-accent-primary))" } }} className="h-[200px] w-full">
+                       <BarChart accessibilityLayer data={timeline.slice(-7)}>
+                         <XAxis dataKey="time" hide />
+                         <ChartTooltip content={<ChartTooltipContent />} />
+                         <Bar dataKey="total" fill="var(--color-sessions)" radius={[4, 4, 4, 4]} />
+                       </BarChart>
+                    </ChartContainer>
+                  </CardBody>
+                </Card>
+              </div>
+            </BentoGrid>
+
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
               <div className="lg:col-span-2">
                 <ChartShell 
@@ -462,163 +497,10 @@ export default function AnalyticsPage() {
                 )}
               </ChartShell>
             </div>
-
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-              <Card interactive={false} className="border-border bg-surface-base">
-                <CardHeader className="flex flex-row items-center gap-3">
-                  <div className="rounded-lg bg-surface-elevated p-2 border border-border-subtle">
-                    <Sparkles className="h-4 w-4 text-accent-primary" />
-                  </div>
-                  <CardTitle className="text-sm font-bold uppercase tracking-widest text-text-primary">
-                    {t('Learning Scores')}
-                  </CardTitle>
-                </CardHeader>
-                <CardBody className="pt-2">
-                  <div className="grid grid-cols-1 gap-8 md:grid-cols-2 bg-surface-elevated/30 p-6 rounded-xl border border-border-subtle">
-                    <ScoreBar label={t('Overall')} score={predictions?.overall_score ?? 0} />
-                    <ScoreBar label={t('Engagement')} score={predictions?.engagement_score ?? 0} />
-                    <ScoreBar label={t('Consistency')} score={predictions?.consistency_score ?? 0} />
-                    <ScoreBar label={t('Diversity')} score={predictions?.diversity_score ?? 0} />
-                  </div>
-
-                  {predictions?.recommendations && predictions.recommendations.length > 0 && (
-                    <div className="mt-8 space-y-4">
-                      <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-text-primary">
-                        <Sparkles className="h-3 w-3 text-accent-primary" />
-                        {t('Recommendations')}
-                      </div>
-
-                      <div className="grid grid-cols-1 gap-2">
-                        {predictions.recommendations.map((rec, idx) => (
-                          <div
-                            key={`${idx}-${rec}`}
-                            className={cn(
-                              'flex items-start gap-3 rounded-xl border border-border-subtle bg-surface-elevated/40 px-4 py-3 text-xs text-text-secondary shadow-glass-sm backdrop-blur-md transition-colors hover:border-accent-primary/20 group'
-                            )}
-                          >
-                            <div className="mt-1 w-1.5 h-1.5 rounded-full bg-accent-primary shrink-0 group-hover:scale-125 transition-transform" />
-                            <span className="leading-relaxed">{rec}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </CardBody>
-              </Card>
-
-              <div className="space-y-6">
-                <ChartShell 
-                  title={t('Strength Areas')} 
-                  subtitle={`${t('Topics')}: ${(topics?.total_topics ?? 0).toLocaleString()}`} 
-                  icon={ArrowUpRight}
-                >
-                  {topics?.strength_areas && topics.strength_areas.length > 0 ? (
-                    <div className="space-y-4">
-                      {topics.strength_areas.slice(0, 5).map((item, idx) => {
-                        const count = item.sessions ?? item.count ?? 0
-                        const percentage = Math.round((count / strengthMax) * 100)
-                        return (
-                          <div
-                            key={`${idx}-${item.topic}`}
-                            className="group"
-                          >
-                            <div className="flex items-start justify-between gap-3 mb-2">
-                              <div className="min-w-0">
-                                <div className="truncate text-[10px] font-bold uppercase tracking-widest text-text-primary group-hover:text-accent-primary transition-colors">
-                                  {item.topic}
-                                </div>
-                                <div className="text-[9px] font-mono text-text-tertiary uppercase tracking-tight">
-                                  {count} {t('sessions')}
-                                </div>
-                              </div>
-                              <div className="text-[10px] font-mono font-bold text-accent-primary">
-                                {percentage}%
-                              </div>
-                            </div>
-                            <Progress value={percentage} className="h-1" />
-                          </div>
-                        )
-                      })}
-                    </div>
-                  ) : (
-                    <div className="py-10 text-center text-[10px] font-mono uppercase tracking-[0.2em] text-text-quaternary">
-                      {t('Keep learning to identify your strengths!')}
-                    </div>
-                  )}
-                </ChartShell>
-
-                <ChartShell 
-                  title={t('Areas to Review')} 
-                  subtitle={t('Knowledge Gaps Detected')}
-                  icon={ArrowDownRight}
-                >
-                  {topics?.knowledge_gaps && topics.knowledge_gaps.length > 0 ? (
-                    <div className="space-y-3">
-                      {topics.knowledge_gaps.slice(0, 5).map((item, idx) => {
-                        const badge =
-                          item.days_since_last !== undefined
-                            ? `${Math.round(item.days_since_last)}D AGO`
-                            : `${item.sessions ?? item.count ?? 0} SES`
-
-                        return (
-                          <div
-                            key={`${idx}-${item.topic}`}
-                            className="flex items-center justify-between gap-3 rounded-xl border border-border-subtle bg-surface-elevated/40 px-4 py-3 shadow-glass-sm backdrop-blur-md hover:border-accent-primary/20 transition-colors"
-                          >
-                            <div className="min-w-0">
-                              <div className="truncate text-[10px] font-bold uppercase tracking-widest text-text-primary">
-                                {item.topic}
-                              </div>
-                            </div>
-
-                            <span className="shrink-0 rounded-full bg-accent-primary/10 px-2 py-0.5 text-[8px] font-mono font-bold text-accent-primary border border-accent-primary/20 uppercase tracking-widest">
-                              {badge}
-                            </span>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  ) : (
-                    <div className="py-10 text-center text-[10px] font-mono uppercase tracking-[0.2em] text-text-quaternary">
-                      {t('Great! No knowledge gaps detected.')}
-                    </div>
-                  )}
-                </ChartShell>
-              </div>
-            </div>
-
-            {topics?.all_topics && topics.all_topics.length > 0 && (
-              <Card interactive={false} className="border-border bg-surface-base">
-                <CardHeader className="flex flex-row items-center gap-3">
-                  <div className="rounded-lg bg-surface-elevated p-2 border border-border-subtle">
-                    <BookOpen className="h-4 w-4 text-accent-primary" />
-                  </div>
-                  <CardTitle className="text-sm font-bold uppercase tracking-widest text-text-primary">
-                    {t('All Topics')}
-                  </CardTitle>
-                </CardHeader>
-                <CardBody className="pt-2">
-                  <div className="flex flex-wrap gap-2">
-                    {topics.all_topics.map((item, idx) => (
-                      <Badge
-                        key={`${idx}-${item.topic}`}
-                        variant="secondary"
-                        className="rounded-full border border-border-subtle bg-surface-elevated px-3 py-1 text-[9px] font-bold text-text-secondary uppercase tracking-widest hover:border-accent-primary/30 hover:text-accent-primary transition-all cursor-default"
-                        title={`${item.topic} (${item.count ?? item.sessions ?? 0})`}
-                      >
-                        <span className="truncate max-w-[120px]">{item.topic}</span>
-                        <span className="ml-2 shrink-0 font-mono text-accent-primary opacity-60">
-                          {item.count ?? item.sessions ?? 0}
-                        </span>
-                      </Badge>
-                    ))}
-                  </div>
-                </CardBody>
-              </Card>
-            )}
           </>
         )}
       </div>
     </PageWrapper>
   )
 }
+

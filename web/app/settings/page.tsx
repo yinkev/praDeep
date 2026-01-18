@@ -3,31 +3,27 @@
 import { useCallback, useState } from 'react'
 import { 
   Settings, 
-  Globe, 
-  Moon, 
-  Sun, 
-  Shield, 
+  Languages, 
+  Layout, 
   Cpu, 
-  Terminal, 
-  History, 
+  Shield, 
   Save, 
-  RefreshCw,
-  Layout,
-  Languages,
-  Zap,
-  Key,
+  Sun, 
+  Moon, 
+  Zap, 
+  Terminal, 
+  Key 
 } from 'lucide-react'
 import { motion, type Variants } from 'framer-motion'
 import { useGlobal } from '@/context/GlobalContext'
+import { useTheme } from '@/hooks/useTheme'
 import { getTranslation } from '@/lib/i18n'
 import PageWrapper, { PageHeader } from '@/components/ui/PageWrapper'
 import { Card, CardBody, CardHeader, CardTitle, CardFooter } from '@/components/ui/Card'
 import { Button, IconButton } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs'
-import { cn } from '@/lib/utils'
 
 const fadeInUp: Variants = {
   hidden: { opacity: 0, y: 12 },
@@ -40,6 +36,7 @@ const fadeInUp: Variants = {
 
 export default function SettingsPage() {
   const { uiSettings, setUiSettings } = useGlobal()
+  const { theme, setTheme, isDark } = useTheme()
   const [activeTab, setActiveTab] = useState('general')
   const [apiKey, setApiKey] = useState('')
   const [saving, setSaving] = useState(false)
@@ -116,7 +113,12 @@ export default function SettingsPage() {
                             <select 
                               id="language-select"
                               value={uiSettings.language}
-                              onChange={e => setUiSettings({...uiSettings, language: e.target.value as any})}
+                              onChange={(e) => {
+                                const nextLanguage = e.target.value
+                                if (nextLanguage === 'en' || nextLanguage === 'zh') {
+                                  setUiSettings({ ...uiSettings, language: nextLanguage as 'en' | 'zh' })
+                                }
+                              }}
                               className="w-full h-11 rounded-xl border border-border bg-surface-secondary/40 px-4 text-xs font-bold uppercase tracking-widest outline-none focus:border-accent-primary/40"
                             >
                                <option value="en">English (US)</option>
@@ -156,22 +158,24 @@ export default function SettingsPage() {
                                <div className="text-[10px] font-mono text-text-tertiary uppercase">Toggle between light and dark modes</div>
                             </div>
                          </div>
-                         <div className="flex bg-surface-elevated p-1 rounded-full border border-border-subtle">
-                            <IconButton 
-                              aria-label="Switch to light mode"
-                              icon={<Sun size={14} />} 
-                              variant="ghost" 
-                              size="sm" 
-                              className="h-8 w-8 rounded-full" 
-                            />
-                            <IconButton 
-                              aria-label="Switch to dark mode"
-                              icon={<Moon size={14} />} 
-                              variant="ghost" 
-                              size="sm" 
-                              className="h-8 w-8 rounded-full" 
-                            />
-                         </div>
+                        <div className="flex bg-surface-elevated p-1 rounded-full border border-border-subtle">
+                           <IconButton 
+                             aria-label="Switch to light mode"
+                             icon={<Sun size={14} />} 
+                             variant={!isDark ? "primary" : "ghost"}
+                             size="sm" 
+                             className="h-8 w-8 rounded-full" 
+                             onClick={() => setTheme('light')}
+                           />
+                           <IconButton 
+                             aria-label="Switch to dark mode"
+                             icon={<Moon size={14} />} 
+                             variant={isDark ? "primary" : "ghost"} 
+                             size="sm" 
+                             className="h-8 w-8 rounded-full" 
+                             onClick={() => setTheme('dark')}
+                           />
+                        </div>
 
                       </div>
 
@@ -230,22 +234,23 @@ export default function SettingsPage() {
                       </div>
                    </CardHeader>
                    <CardBody className="p-6 space-y-6">
-                      <div className="space-y-2">
-                         <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-text-quaternary ml-1">SYSTEM_ACCESS_KEY</label>
-                         <div className="relative">
-                            <Input 
-                              type="password"
-                              placeholder="••••••••••••••••"
-                              value={apiKey}
-                              onChange={e => setApiKey(e.target.value)}
-                              className="h-12 bg-surface-secondary/40 border-border text-xs font-mono font-bold pr-12"
-                            />
-                            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-text-quaternary">
-                               <Key size={16} />
-                            </div>
-                         </div>
-                         <p className="text-[9px] font-mono text-text-quaternary uppercase px-1">Keys are stored locally in the browser's persistent storage.</p>
-                      </div>
+                          <div className="space-y-2">
+                             <label htmlFor="system-access-key" className="text-[10px] font-bold uppercase tracking-[0.2em] text-text-quaternary ml-1">SYSTEM_ACCESS_KEY</label>
+                             <div className="relative">
+                                <Input 
+                                  id="system-access-key"
+                                  type="password"
+                                  placeholder="••••••••••••••••"
+                                  value={apiKey}
+                                  onChange={e => setApiKey(e.target.value)}
+                                  className="h-12 bg-surface-secondary/40 border-border text-xs font-mono font-bold pr-12"
+                                />
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-text-quaternary">
+                                   <Key size={16} />
+                                </div>
+                             </div>
+                             <p className="text-[9px] font-mono text-text-quaternary uppercase px-1">Keys are stored locally in the browser's persistent storage.</p>
+                          </div>
                    </CardBody>
                    <CardFooter className="p-6 pt-0">
                       <Button variant="outline" className="w-full text-error/60 border-error/20 hover:bg-error-muted/5 font-mono text-[10px] uppercase h-10">Purge_Credentials</Button>
