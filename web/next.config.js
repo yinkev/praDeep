@@ -1,6 +1,12 @@
 /** @type {import('next').NextConfig} */
 
 const nextConfig = {
+  images: {
+    domains: [
+      "api.microlink.io", // Microlink Image Preview
+      "assets.aceternity.com", // Demo assets
+    ],
+  },
   // Move dev indicator to bottom-right corner
   devIndicators: {
     position: "bottom-right",

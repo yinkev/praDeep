@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useRef, useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { motion, Reorder, useDragControls, useReducedMotion } from "framer-motion";
 import {
   Send,
@@ -304,6 +305,14 @@ function ChatMessageBubble({
                 rehypePlugins={[rehypeKatex]}
                 components={{
                   p: ({ children }) => <p className="mb-2 last:mb-0 leading-relaxed">{children}</p>,
+                  a: ({ href, children }) => {
+                    if (!href) return <span>{children}</span>;
+                    return (
+                        <LinkPreview url={href} className="font-bold text-accent-primary hover:underline">
+                            {children}
+                        </LinkPreview>
+                    );
+                  },
                   code: ({ className, children, ...props }) => {
                     const match = /language-(\w+)/.exec(className || "");
                     return match ? (
@@ -371,6 +380,8 @@ function ChatMessageBubble({
     </div>
   );
 }
+
+import { LinkPreview } from "@/components/ui/link-preview";
 
 export default function ChatPage() {
   const { chatState, sendChatMessage } = useGlobal();

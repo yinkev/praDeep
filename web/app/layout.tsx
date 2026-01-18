@@ -10,7 +10,7 @@ import { ToastProvider } from '@/components/ui/Toast'
 import MotionProvider from '@/components/MotionProvider'
 import { APP_DESCRIPTION, APP_NAME, APP_TITLE } from '@/lib/app-meta'
 import { PWAInit } from './pwa-init'
-import { AppHeader } from '@/components/AppHeader'
+import AppHeader from '@/components/AppHeader'
 import { AppBackground } from '@/components/AppBackground'
 
 const geistSans = GeistSans
